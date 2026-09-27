@@ -1,0 +1,66 @@
+.claude/skills/mastra-factory/SKILL.md
+  h_d083fb1648bfd3 1-47
+.claude/skills/mastra-factory/references/connection.md
+  h_d083fb1648bfd3 1-89
+.claude/skills/mastra-factory/references/factory-supervisor.md
+  h_d083fb1648bfd3 1-361
+.claude/skills/mastra-factory/references/session-inspection.md
+  h_d083fb1648bfd3 1-122
+.claude/skills/mastra/SKILL.md
+  h_d083fb1648bfd3 1-150
+.claude/skills/mastra/references/common-errors.md
+  h_d083fb1648bfd3 1-537
+.claude/skills/mastra/references/core-concepts.md
+  h_d083fb1648bfd3 1-17
+.claude/skills/mastra/references/create-mastra.md
+  h_d083fb1648bfd3 1-230
+.claude/skills/mastra/references/embedded-docs.md
+  h_d083fb1648bfd3 1-103
+.claude/skills/mastra/references/mastra-api.md
+  h_d083fb1648bfd3 1-208
+.claude/skills/mastra/references/migration-guide.md
+  h_d083fb1648bfd3 1-180
+.claude/skills/mastra/references/model-selection.md
+  h_d083fb1648bfd3 1-24
+.claude/skills/mastra/references/remote-docs.md
+  h_d083fb1648bfd3 1-193
+.claude/skills/mastra/references/trace-intelligence.md
+  h_d083fb1648bfd3 1-220
+.claude/skills/mastra/references/trace-query.md
+  h_d083fb1648bfd3 1-98
+.claude/skills/mastra/scripts/provider-registry.mjs
+  h_d083fb1648bfd3 1-180
+.env.example
+  h_d083fb1648bfd3 1
+.gitignore
+  h_d083fb1648bfd3 1-14
+AGENTS.md
+  h_d083fb1648bfd3 1-14
+README.md
+  h_d083fb1648bfd3 1-58
+package-lock.json
+  h_d083fb1648bfd3 1-6653
+package.json
+  h_d083fb1648bfd3 1-32
+skills-lock.json
+  h_d083fb1648bfd3 1-17
+src/mastra/agents/agent.ts
+  h_d083fb1648bfd3 1-77
+src/mastra/index.ts
+  h_d083fb1648bfd3 1-40
+src/mastra/tools/schedule-tools.ts
+  h_d083fb1648bfd3 1-33
+tsconfig.json
+  h_d083fb1648bfd3 1-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "597373de76496e65286814936de3ee7637e584cb",
+  "prompts": {},
+  "humans": {
+    "h_d083fb1648bfd3": {
+      "author": "sxy <545231960@qq.com>"
+    }
+  }
+}
