@@ -108,3 +108,41 @@ test('tool-result does not invent an approval', () => {
   });
   assert.equal(turn.tools[0]?.approval, 'none');
 });
+
+import { createMastraClient } from '../web/src/lib/mastra-client.ts';
+
+test('client creates a thread and consumes an SSE text delta', async () => {
+  let createdBody: { resourceId?: string; title?: string } | undefined;
+  const fetchImpl: typeof fetch = async (input, init) => {
+    const url = String(input);
+    if (url.includes('/api/memory/threads?') && init?.method === 'POST') {
+      createdBody = JSON.parse(String(init?.body)) as { resourceId?: string; title?: string };
+      assert.match(url, /agentId=agent/);
+      return new Response(JSON.stringify({
+        id: 't1',
+        title: '帮我看天气',
+        resourceId: 'local-user',
+        createdAt: '2026-09-28T03:12:38.000Z',
+        updatedAt: '2026-09-28T03:12:38.000Z',
+      }), { status: 200 });
+    }
+    if (url.endsWith('/api/agents/agent/stream')) {
+      const body = new TextEncoder().encode('data: {"type":"text-delta","runId":"r1","payload":{"text":"你好"}}\n\n');
+      return new Response(new ReadableStream({ start(controller) { controller.enqueue(body); controller.close(); } }), { status: 200 });
+    }
+    return new Response('nope', { status: 500 });
+  };
+  const client = createMastraClient(fetchImpl);
+  const thread = await client.createThread('帮我看天气');
+  assert.equal(thread.id, 't1');
+  assert.equal(createdBody?.resourceId, 'local-user');
+  assert.equal(createdBody?.title, '帮我看天气');
+  const turns: string[] = [];
+  await client.streamMessage('t1', '帮我看天气', (turn) => turns.push(turn.text));
+  assert.equal(turns.at(-1), '你好');
+});
+
+test('client throws when thread list is not ok', async () => {
+  const client = createMastraClient(async () => new Response('down', { status: 503 }));
+  await assert.rejects(() => client.listThreads(), /503/);
+});
