@@ -60,7 +60,7 @@ For local file changes, end with a plain-text URL using ${pathToFileURL(`${works
   },
   memory: new Memory({
     options: {
-      generateTitle: true,
+      generateTitle: false,
       observationalMemory: {
         model: 'deepseek/deepseek-v4-flash',
       },

@@ -10,6 +10,7 @@ import {
 } from '../web/src/lib/thread-label.ts';
 import { readSse } from '../web/src/lib/sse.ts';
 import { emptyTurn, reduceChunk } from '../web/src/lib/stream-reducer.ts';
+import { historyFromMessages } from '../web/src/lib/messages.ts';
 
 test('dev script starts mastra and the web shell together', () => {
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as {
@@ -145,4 +146,17 @@ test('client creates a thread and consumes an SSE text delta', async () => {
 test('client throws when thread list is not ok', async () => {
   const client = createMastraClient(async () => new Response('down', { status: 503 }));
   await assert.rejects(() => client.listThreads(), /503/);
+});
+
+test('historyFromMessages keeps user and assistant text parts', () => {
+  const history = historyFromMessages([
+    { id: '1', role: 'user', content: '帮我看天气' },
+    { id: '2', role: 'assistant', content: [{ type: 'text', text: '今天晴' }] },
+    { id: '3', role: 'system', content: '忽略' },
+    { role: 'user', parts: [{ type: 'text', text: '' }] },
+  ]);
+  assert.deepEqual(history, [
+    { id: '1', role: 'user', text: '帮我看天气' },
+    { id: '2', role: 'assistant', text: '今天晴' },
+  ]);
 });
