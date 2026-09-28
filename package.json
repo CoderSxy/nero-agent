@@ -5,7 +5,7 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "dev": "mastra dev",
+    "dev": "concurrently -k -n mastra,web \"mastra dev\" \"npm run dev --prefix web\"",
     "build": "mastra build",
     "start": "mastra start",
     "test": "tsx --test tests/*.test.ts"
@@ -26,6 +26,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "concurrently": "^9.2.0",
     "@types/node": "latest",
     "mastra": "1.31.3",
     "tsx": "^4.21.0",
