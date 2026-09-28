@@ -1,0 +1,34 @@
+src/mastra/index.ts
+  s_cc32685d03d4fe::t_01da196ab4e003 13,20
+.env.example
+  s_cc32685d03d4fe::t_01da196ab4e003 2
+README.md
+  s_cc32685d03d4fe::t_01da196ab4e003 12,19,25
+  s_cc32685d03d4fe::t_398df0937a829b 26
+tests/tavily-search-tool.test.ts
+  s_cc32685d03d4fe::t_945f1276fed0ab 1-73
+src/mastra/agents/agent.ts
+  s_cc32685d03d4fe::t_01da196ab4e003 4,8,65,75
+package.json
+  s_cc32685d03d4fe::t_945f1276fed0ab 10-11,31
+src/mastra/tools/tavily-search-tool.ts
+  s_cc32685d03d4fe::t_01da196ab4e003 1-105
+package-lock.json
+  s_cc32685d03d4fe::t_1dd169a1a8a1b1 22,6275-6293
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "304563540435f56016966436a6632c4e510599ef",
+  "prompts": {},
+  "sessions": {
+    "s_cc32685d03d4fe": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0e33a-5c9a-76f3-80ca-b2f89a31f7cf",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
