@@ -8,7 +8,7 @@ This starter provides you with a general-purpose Mastra agent that can research 
 
 - A local `workspace/` for files and command execution (created under `src/mastra/public/workspace/` when running `mastra dev`)
 - Approval gates for file changes, deletions, and shell commands
-- Conversation memory, generated thread titles, and task tracking
+- Conversation memory, first-question thread titles, and task tracking
 - Tavily-powered web search and direct web page fetching
 - Recurring schedules that persist across restarts
 - Local libSQL storage and DuckDB observability, with optional Turso storage

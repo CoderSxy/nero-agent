@@ -57,7 +57,7 @@ export function ChatPage({ client }: { client?: MastraClient }) {
   const [collapsed, setCollapsed] = useState(false);
   const [listError, setListError] = useState<string>();
   const [banner, setBanner] = useState<string>();
-  const [reloadKey, setReloadKey] = useState(0);
+  const [listReloadKey, setListReloadKey] = useState(0);
   const assistantRef = useRef<AssistantTurn | null>(null);
   const controllersRef = useRef(new Set<AbortController>());
   const skipLoadThreadIdsRef = useRef(new Set<string>());
@@ -105,14 +105,16 @@ export function ChatPage({ client }: { client?: MastraClient }) {
     return () => {
       active = false;
     };
-  }, [api, reloadKey]);
+  }, [api, listReloadKey]);
 
   useEffect(() => {
     const previousThreadId = prevThreadIdRef.current;
     prevThreadIdRef.current = threadId;
     activeThreadRef.current = threadId;
+    setBanner(undefined);
 
     if (previousThreadId !== undefined && previousThreadId !== threadId) {
+      skipLoadThreadIdsRef.current.delete(previousThreadId);
       activeTurnTokenRef.current += 1;
       abortAllControllers();
       setPending(false);
@@ -149,7 +151,7 @@ export function ChatPage({ client }: { client?: MastraClient }) {
     return () => {
       active = false;
     };
-  }, [api, navigate, reloadKey, threadId]);
+  }, [api, navigate, threadId]);
 
   useEffect(() => () => abortAllControllers(), []);
 
@@ -199,6 +201,7 @@ export function ChatPage({ client }: { client?: MastraClient }) {
   async function handleSend(text: string) {
     let targetId = threadId;
     if (!targetId) {
+      setPending(true);
       try {
         const thread = await api.createThread(text);
         targetId = thread.id;
@@ -206,6 +209,7 @@ export function ChatPage({ client }: { client?: MastraClient }) {
         setThreads((items) => [thread, ...items.filter((item) => item.id !== thread.id)]);
         navigate(`/chat/${thread.id}`, { replace: true });
       } catch {
+        setPending(false);
         lastFailedTextRef.current = text;
         setBanner('无法创建会话，请稍后重试');
         return;
@@ -274,7 +278,7 @@ export function ChatPage({ client }: { client?: MastraClient }) {
       void handleSend(text);
       return;
     }
-    setReloadKey((key) => key + 1);
+    setListReloadKey((key) => key + 1);
   }
 
   return (
