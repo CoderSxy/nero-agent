@@ -35,6 +35,35 @@ function messageText(message: MastraDBMessage): string {
   return textFromParts(content.parts) || textFromParts(content.content);
 }
 
+function pendingApprovalFromMessages(messages: MastraDBMessage[]): ApprovalEntry | undefined {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const entries = approvalEntries(messages[index]);
+    if (entries.length > 0) return entries[entries.length - 1];
+    const parts = messages[index].content?.parts ?? [];
+    for (const part of parts) {
+      if (!isToolPart(part)) continue;
+      const tool = readToolPart(part);
+      if (tool.toolCallId) return { toolCallId: tool.toolCallId, toolName: tool.toolName };
+    }
+  }
+  return undefined;
+}
+
+function messageShowsApproval(message: MastraDBMessage): boolean {
+  const parts = message.content?.parts ?? [];
+  const approvals = approvalEntries(message);
+  if (approvals.some((entry) => !parts.some((part) => (
+    isToolPart(part) && readToolPart(part).toolCallId === entry.toolCallId
+  )))) {
+    return true;
+  }
+  return parts.some((part) => {
+    if (!isToolPart(part)) return false;
+    const tool = readToolPart(part);
+    return approvals.some((entry) => entry.toolCallId === tool.toolCallId);
+  });
+}
+
 function approvalEntries(message: MastraDBMessage): ApprovalEntry[] {
   const metadata = message.content?.metadata as {
     requireApprovalMetadata?: Record<string, ApprovalEntry>;
@@ -125,6 +154,9 @@ export function AgentChatPanel({
 
   const [draft, setDraft] = useState('');
   const showWelcome = !threadId && messages.length === 0;
+  const fallbackApproval = isAwaitingToolApproval && !messages.some(messageShowsApproval)
+    ? pendingApprovalFromMessages(messages)
+    : undefined;
 
   async function handleSend(text: string) {
     const trimmed = text.trim();
@@ -192,6 +224,21 @@ export function AgentChatPanel({
                   onDecline={(toolCallId) => void declineToolCall(toolCallId)}
                 />
               ))}
+              {fallbackApproval ? (
+                <div className="message message--assistant" data-role="assistant">
+                  <section className="tool-card">
+                    <strong>{fallbackApproval.toolName || '工具调用'}</strong>
+                    <div className="tool-actions">
+                      <button type="button" onClick={() => void approveToolCall(fallbackApproval.toolCallId)}>
+                        批准
+                      </button>
+                      <button type="button" onClick={() => void declineToolCall(fallbackApproval.toolCallId)}>
+                        拒绝
+                      </button>
+                    </div>
+                  </section>
+                </div>
+              ) : null}
             </ChatShell.Column>
           </ChatShell.Content>
         </ChatShell.Viewport>

@@ -39,3 +39,9 @@ test('AgentChatPanel wires useChat and optional ensureThread', () => {
   assert.match(source, /ChatShell/);
   assert.match(source, /Composer/);
 });
+
+test('ChatPage renders AgentChatPanel instead of ChatView', () => {
+  const source = readFileSync(new URL('../web/src/pages/ChatPage.tsx', import.meta.url), 'utf8');
+  assert.match(source, /AgentChatPanel/);
+  assert.doesNotMatch(source, /from ['"]\.\.\/components\/ChatView['"]/);
+});
