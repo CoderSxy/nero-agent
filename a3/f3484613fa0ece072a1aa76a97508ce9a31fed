@@ -1,0 +1,34 @@
+web/src/pages/ChatPage.tsx
+  s_3d581157092273::t_66d022685df712 62,65,74-91
+  s_3d581157092273::t_5465ecdb8721c0 154,157-160,165,178
+  s_3d581157092273::t_d34f173982a115 240-243,248,262
+  s_3d581157092273::t_adec8c8d7d26df 214,222-223
+  s_3d581157092273::t_29a2295520ff00 115-117
+  s_2659c79ea8d5e4::t_ffe6675a8b3630 92
+tests/chat-shell.test.ts
+  s_3d581157092273::t_d71efa502307f1 178-194
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a3f3484613fa0ece072a1aa76a97508ce9a31fed",
+  "prompts": {},
+  "sessions": {
+    "s_2659c79ea8d5e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0e6d9-eb3d-74a2-8448-1e5dbca62014",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_3d581157092273": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "58c87fc3-8d52-4bbf-bda2-9a78a2156406",
+        "model": "composer-2.5"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
