@@ -22,9 +22,9 @@ Set the API key for your chosen model provider and `TAVILY_API_KEY` in `.env` or
 npm run dev
 ```
 
-`web_search` uses Tavily's provider-independent search API for every model provider, including DeepSeek. `web_fetch` remains available for reading a URL that is already known.
+Open `http://127.0.0.1:5173` in your browser for the chat interface. Open `http://127.0.0.1:5173/studio` for [Mastra Studio](https://mastra.ai/docs/studio/overview) administration (the Studio app itself is still served on port 4111).
 
-Open [http://localhost:4111](http://localhost:4111) in your browser to access [Mastra Studio](https://mastra.ai/docs/studio/overview).
+`web_search` uses Tavily's provider-independent search API for every model provider, including DeepSeek. `web_fetch` remains available for reading a URL that is already known.
 
 Select **Agent** in Mastra Studio and try one of these prompts:
 
