@@ -1,0 +1,26 @@
+web/src/main.tsx
+  s_36a472df5ca744::t_a3722e24284a96 5,11-15
+web/src/mastra-provider.tsx
+  s_36a472df5ca744::t_33d464f7063b3d 5-9,14
+  s_36a472df5ca744::t_3a87cdf58d7674 1-4,10-13,15-19
+web/src/components/AgentChatPanel.tsx
+  s_36a472df5ca744::t_b5998113abcd3d 1-224
+tests/agent-model.test.ts
+  s_36a472df5ca744::t_2f7e2161fae8c2 26-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "7b24b373b5fea00c4b36f9fa7717e22bf7f0db32",
+  "prompts": {},
+  "sessions": {
+    "s_36a472df5ca744": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f8081f00-3d74-4e23-9330-45640d32630e",
+        "model": "composer-2.5"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
