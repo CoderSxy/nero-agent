@@ -10,6 +10,7 @@ import {
   type AssistantTurn,
   type ToolCard,
 } from '../lib/stream-reducer';
+import { shouldApplyThreadUpdate, shouldSkipThreadLoad } from '../lib/thread-guards';
 import { sortThreads, type ThreadSummary } from '../lib/thread-label';
 
 type MastraClient = ReturnType<typeof createMastraClient>;
@@ -59,7 +60,9 @@ export function ChatPage({ client }: { client?: MastraClient }) {
   const [reloadKey, setReloadKey] = useState(0);
   const assistantRef = useRef<AssistantTurn | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
-  const createdThreadRef = useRef<string | null>(null);
+  const skipLoadThreadIdsRef = useRef(new Set<string>());
+  const activeThreadRef = useRef<string | undefined>(threadId);
+  const prevThreadIdRef = useRef<string | undefined>(undefined);
   const lastFailedTextRef = useRef<string | null>(null);
 
   function updateAssistant(turn: AssistantTurn | null) {
@@ -85,14 +88,28 @@ export function ChatPage({ client }: { client?: MastraClient }) {
   }, [api, reloadKey]);
 
   useEffect(() => {
+    const previousThreadId = prevThreadIdRef.current;
+    prevThreadIdRef.current = threadId;
+    activeThreadRef.current = threadId;
+
+    if (previousThreadId !== undefined && previousThreadId !== threadId && controllerRef.current) {
+      controllerRef.current.abort();
+      controllerRef.current = null;
+      setPending(false);
+      void api.abortThread(previousThreadId).catch(() => {
+        // The local stream is already stopped; keep the partial reply.
+      });
+    }
+  }, [api, threadId]);
+
+  useEffect(() => {
     if (!threadId) {
       setHistory([]);
       setUserMessages([]);
       updateAssistant(null);
       return;
     }
-    if (createdThreadRef.current === threadId) {
-      createdThreadRef.current = null;
+    if (shouldSkipThreadLoad(skipLoadThreadIdsRef.current, threadId)) {
       return;
     }
     let active = true;
@@ -122,14 +139,19 @@ export function ChatPage({ client }: { client?: MastraClient }) {
     setPending(true);
     setBanner(undefined);
     lastFailedTextRef.current = text;
+    const onTurn = (turn: AssistantTurn) => {
+      if (!shouldApplyThreadUpdate(activeThreadRef.current, thread)) return;
+      updateAssistant(turn);
+    };
     try {
-      await api.streamMessage(thread, text, updateAssistant, controller.signal);
+      await api.streamMessage(thread, text, onTurn, controller.signal);
       lastFailedTextRef.current = null;
     } catch (error) {
       if (!(error instanceof DOMException && error.name === 'AbortError')) {
         setBanner('回复失败，可重新发送');
       }
     } finally {
+      skipLoadThreadIdsRef.current.delete(thread);
       if (controllerRef.current === controller) {
         controllerRef.current = null;
         setPending(false);
@@ -160,7 +182,7 @@ export function ChatPage({ client }: { client?: MastraClient }) {
       try {
         const thread = await api.createThread(text);
         targetId = thread.id;
-        createdThreadRef.current = thread.id;
+        skipLoadThreadIdsRef.current.add(thread.id);
         setThreads((items) => [thread, ...items.filter((item) => item.id !== thread.id)]);
         navigate(`/chat/${thread.id}`, { replace: true });
       } catch {
@@ -190,22 +212,33 @@ export function ChatPage({ client }: { client?: MastraClient }) {
 
   async function handleApproval(toolCallId: string, approval: 'approved' | 'declined') {
     const current = assistantRef.current;
-    if (!current?.runId) return;
+    const thread = threadId;
+    if (!current?.runId || !thread) return;
     const base = markApproval(current, toolCallId, approval);
     updateAssistant(base);
+    const controller = new AbortController();
+    controllerRef.current = controller;
     setPending(true);
     setBanner(undefined);
     try {
-      const receive = (addition: AssistantTurn) => updateAssistant(appendTurn(base, addition));
+      const receive = (addition: AssistantTurn) => {
+        if (!shouldApplyThreadUpdate(activeThreadRef.current, thread)) return;
+        updateAssistant(appendTurn(base, addition));
+      };
       if (approval === 'approved') {
-        await api.approveTool(current.runId, toolCallId, receive);
+        await api.approveTool(current.runId, toolCallId, receive, controller.signal);
       } else {
-        await api.declineTool(current.runId, toolCallId, receive);
+        await api.declineTool(current.runId, toolCallId, receive, controller.signal);
       }
-    } catch {
-      setBanner('回复失败，可重新发送');
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        setBanner('回复失败，可重新发送');
+      }
     } finally {
-      setPending(false);
+      if (controllerRef.current === controller) {
+        controllerRef.current = null;
+        setPending(false);
+      }
     }
   }
 

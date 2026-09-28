@@ -82,17 +82,19 @@ export function createMastraClient(fetchImpl: FetchLike = fetch) {
       });
       if (!response.ok) throw new Error(`Mastra ${response.status}`);
     },
-    approveTool(runId: string, toolCallId: string, onTurn: (turn: AssistantTurn) => void) {
+    approveTool(runId: string, toolCallId: string, onTurn: (turn: AssistantTurn) => void, signal?: AbortSignal) {
       return fetchImpl('/api/agents/agent/approve-tool-call', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal,
         body: JSON.stringify({ runId, toolCallId }),
       }).then((response) => consumeSse(response, onTurn));
     },
-    declineTool(runId: string, toolCallId: string, onTurn: (turn: AssistantTurn) => void) {
+    declineTool(runId: string, toolCallId: string, onTurn: (turn: AssistantTurn) => void, signal?: AbortSignal) {
       return fetchImpl('/api/agents/agent/decline-tool-call', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal,
         body: JSON.stringify({ runId, toolCallId }),
       }).then((response) => consumeSse(response, onTurn));
     },

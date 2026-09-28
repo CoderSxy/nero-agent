@@ -11,6 +11,7 @@ import {
 import { readSse } from '../web/src/lib/sse.ts';
 import { emptyTurn, reduceChunk } from '../web/src/lib/stream-reducer.ts';
 import { historyFromMessages } from '../web/src/lib/messages.ts';
+import { shouldApplyThreadUpdate, shouldSkipThreadLoad } from '../web/src/lib/thread-guards.ts';
 
 test('dev script starts mastra and the web shell together', () => {
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as {
@@ -146,6 +147,32 @@ test('client creates a thread and consumes an SSE text delta', async () => {
 test('client throws when thread list is not ok', async () => {
   const client = createMastraClient(async () => new Response('down', { status: 503 }));
   await assert.rejects(() => client.listThreads(), /503/);
+});
+
+test('thread guards skip load while streaming and gate late updates', () => {
+  const skip = new Set(['t-streaming']);
+  assert.equal(shouldSkipThreadLoad(skip, 't-streaming'), true);
+  assert.equal(shouldSkipThreadLoad(skip, 't-other'), false);
+  assert.equal(shouldApplyThreadUpdate('t-active', 't-active'), true);
+  assert.equal(shouldApplyThreadUpdate('t-active', 't-stale'), false);
+  assert.equal(shouldApplyThreadUpdate(undefined, 't-stale'), false);
+});
+
+test('approveTool forwards an abort signal to fetch', async () => {
+  let seenSignal: AbortSignal | null | undefined;
+  const fetchImpl: typeof fetch = async (input, init) => {
+    const url = String(input);
+    if (url.endsWith('/api/agents/agent/approve-tool-call')) {
+      seenSignal = init?.signal ?? null;
+      const body = new TextEncoder().encode('data: {"type":"text-delta","payload":{"text":"ok"}}\n\n');
+      return new Response(new ReadableStream({ start(controller) { controller.enqueue(body); controller.close(); } }), { status: 200 });
+    }
+    return new Response('nope', { status: 500 });
+  };
+  const client = createMastraClient(fetchImpl);
+  const controller = new AbortController();
+  await client.approveTool('run-1', 'tool-1', () => {}, controller.signal);
+  assert.equal(seenSignal, controller.signal);
 });
 
 test('historyFromMessages keeps user and assistant text parts', () => {
