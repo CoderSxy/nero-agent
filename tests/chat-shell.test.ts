@@ -175,6 +175,23 @@ test('approveTool forwards an abort signal to fetch', async () => {
   assert.equal(seenSignal, controller.signal);
 });
 
+test('declineTool forwards an abort signal to fetch', async () => {
+  let seenSignal: AbortSignal | null | undefined;
+  const fetchImpl: typeof fetch = async (input, init) => {
+    const url = String(input);
+    if (url.endsWith('/api/agents/agent/decline-tool-call')) {
+      seenSignal = init?.signal ?? null;
+      const body = new TextEncoder().encode('data: {"type":"text-delta","payload":{"text":"no"}}\n\n');
+      return new Response(new ReadableStream({ start(controller) { controller.enqueue(body); controller.close(); } }), { status: 200 });
+    }
+    return new Response('nope', { status: 500 });
+  };
+  const client = createMastraClient(fetchImpl);
+  const controller = new AbortController();
+  await client.declineTool('run-1', 'tool-1', () => {}, controller.signal);
+  assert.equal(seenSignal, controller.signal);
+});
+
 test('historyFromMessages keeps user and assistant text parts', () => {
   const history = historyFromMessages([
     { id: '1', role: 'user', content: '帮我看天气' },

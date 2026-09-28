@@ -59,15 +59,35 @@ export function ChatPage({ client }: { client?: MastraClient }) {
   const [banner, setBanner] = useState<string>();
   const [reloadKey, setReloadKey] = useState(0);
   const assistantRef = useRef<AssistantTurn | null>(null);
-  const controllerRef = useRef<AbortController | null>(null);
+  const controllersRef = useRef(new Set<AbortController>());
   const skipLoadThreadIdsRef = useRef(new Set<string>());
   const activeThreadRef = useRef<string | undefined>(threadId);
+  const activeTurnTokenRef = useRef(0);
   const prevThreadIdRef = useRef<string | undefined>(undefined);
   const lastFailedTextRef = useRef<string | null>(null);
 
   function updateAssistant(turn: AssistantTurn | null) {
     assistantRef.current = turn;
     setAssistant(turn);
+  }
+
+  function abortAllControllers() {
+    for (const controller of controllersRef.current) {
+      controller.abort();
+    }
+    controllersRef.current.clear();
+  }
+
+  function trackController(controller: AbortController) {
+    controllersRef.current.add(controller);
+    return controller;
+  }
+
+  function releaseController(controller: AbortController, turnToken: number) {
+    controllersRef.current.delete(controller);
+    if (controllersRef.current.size === 0 && activeTurnTokenRef.current === turnToken) {
+      setPending(false);
+    }
   }
 
   useEffect(() => {
@@ -92,9 +112,9 @@ export function ChatPage({ client }: { client?: MastraClient }) {
     prevThreadIdRef.current = threadId;
     activeThreadRef.current = threadId;
 
-    if (previousThreadId !== undefined && previousThreadId !== threadId && controllerRef.current) {
-      controllerRef.current.abort();
-      controllerRef.current = null;
+    if (previousThreadId !== undefined && previousThreadId !== threadId) {
+      activeTurnTokenRef.current += 1;
+      abortAllControllers();
       setPending(false);
       void api.abortThread(previousThreadId).catch(() => {
         // The local stream is already stopped; keep the partial reply.
@@ -131,15 +151,18 @@ export function ChatPage({ client }: { client?: MastraClient }) {
     };
   }, [api, navigate, reloadKey, threadId]);
 
-  useEffect(() => () => controllerRef.current?.abort(), []);
+  useEffect(() => () => abortAllControllers(), []);
 
   async function stream(thread: string, text: string) {
-    const controller = new AbortController();
-    controllerRef.current = controller;
+    activeThreadRef.current = thread;
+    const turnToken = activeTurnTokenRef.current + 1;
+    activeTurnTokenRef.current = turnToken;
+    const controller = trackController(new AbortController());
     setPending(true);
     setBanner(undefined);
     lastFailedTextRef.current = text;
     const onTurn = (turn: AssistantTurn) => {
+      if (activeTurnTokenRef.current !== turnToken) return;
       if (!shouldApplyThreadUpdate(activeThreadRef.current, thread)) return;
       updateAssistant(turn);
     };
@@ -152,10 +175,7 @@ export function ChatPage({ client }: { client?: MastraClient }) {
       }
     } finally {
       skipLoadThreadIdsRef.current.delete(thread);
-      if (controllerRef.current === controller) {
-        controllerRef.current = null;
-        setPending(false);
-      }
+      releaseController(controller, turnToken);
     }
   }
 
@@ -191,6 +211,7 @@ export function ChatPage({ client }: { client?: MastraClient }) {
         return;
       }
     }
+    activeThreadRef.current = targetId;
     moveCurrentTurnToHistory();
     setUserMessages([{ id: `user-${Date.now()}`, text }]);
     updateAssistant(emptyTurn());
@@ -198,8 +219,8 @@ export function ChatPage({ client }: { client?: MastraClient }) {
   }
 
   async function handleStop() {
-    controllerRef.current?.abort();
-    controllerRef.current = null;
+    activeTurnTokenRef.current += 1;
+    abortAllControllers();
     setPending(false);
     if (threadId) {
       try {
@@ -216,12 +237,15 @@ export function ChatPage({ client }: { client?: MastraClient }) {
     if (!current?.runId || !thread) return;
     const base = markApproval(current, toolCallId, approval);
     updateAssistant(base);
-    const controller = new AbortController();
-    controllerRef.current = controller;
+    const turnToken = activeTurnTokenRef.current + 1;
+    activeTurnTokenRef.current = turnToken;
+    abortAllControllers();
+    const controller = trackController(new AbortController());
     setPending(true);
     setBanner(undefined);
     try {
       const receive = (addition: AssistantTurn) => {
+        if (activeTurnTokenRef.current !== turnToken) return;
         if (!shouldApplyThreadUpdate(activeThreadRef.current, thread)) return;
         updateAssistant(appendTurn(base, addition));
       };
@@ -235,10 +259,7 @@ export function ChatPage({ client }: { client?: MastraClient }) {
         setBanner('回复失败，可重新发送');
       }
     } finally {
-      if (controllerRef.current === controller) {
-        controllerRef.current = null;
-        setPending(false);
-      }
+      releaseController(controller, turnToken);
     }
   }
 
