@@ -1,0 +1,21 @@
+web/src/lib/mastra-client.ts
+  s_febd90030c507c::t_5db2637be7f741 1-100
+tests/chat-shell.test.ts
+  s_febd90030c507c::t_42bf453d0689a8 111-148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "bde4f7ee3e9a8bdef2112b377a7d5ebe4f73e9b3",
+  "prompts": {},
+  "sessions": {
+    "s_febd90030c507c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4e9af712-0cbe-4ba4-a8c6-5acb0b473943",
+        "model": "composer-2.5-fast"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
