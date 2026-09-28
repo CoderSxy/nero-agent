@@ -1,0 +1,24 @@
+tests/chat-shell.test.ts
+  s_fd7b6720e04ad2::t_58bb649b413052 11-12
+  s_fd7b6720e04ad2::t_ce16f63992a2b9 60-97
+web/src/lib/sse.ts
+  s_fd7b6720e04ad2::t_7bc117813a2a80 1-20
+web/src/lib/stream-reducer.ts
+  s_fd7b6720e04ad2::t_14d4d080f1d52c 1-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "67a8c8d9415d3f824c91d1a46d6aec2f251abc9c",
+  "prompts": {},
+  "sessions": {
+    "s_fd7b6720e04ad2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "94a44401-51d0-46de-9dd2-271997e1a8fb",
+        "model": "composer-2.5-fast"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
