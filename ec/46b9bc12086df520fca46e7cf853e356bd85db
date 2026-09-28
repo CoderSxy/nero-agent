@@ -1,0 +1,41 @@
+docs/superpowers/plans/2026-09-28-chinese-chat-shell.md
+  s_04c5c945293f6d::t_63aae71d0bc477 1-417,419-564,566-633,635-637,640-649,651-656,659-677,679-680,780-800,802-864,866,921,924-952,954-958,960-964,966-1008
+  s_04c5c945293f6d::t_0deda61c1498af 801
+  s_04c5c945293f6d::t_d6650f6bf43c00 965
+  s_04c5c945293f6d::t_091af398672be3 418
+  s_04c5c945293f6d::t_e6451fe1e9f187 959
+  s_04c5c945293f6d::t_0d058a2008f3d4 565
+  s_04c5c945293f6d::t_12b0a0f7024d29 922-923
+  s_04c5c945293f6d::t_1282d65e14bb9e 953
+  s_04c5c945293f6d::t_dc38f37bbbc1c8 865,867-920
+  s_04c5c945293f6d::t_5c9915a719f2a1 634,638-639,650,657-658
+  s_04c5c945293f6d::t_9c3bd43bf2e8fa 678,681-779
+web/tsconfig.tsbuildinfo
+  s_36a472df5ca744::t_305480a4dab620 1
+.gitignore
+  s_04c5c945293f6d::t_be077024f7db89 15-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ec46b9bc12086df520fca46e7cf853e356bd85db",
+  "prompts": {},
+  "sessions": {
+    "s_04c5c945293f6d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "230c990c-3a6b-4e10-81f5-c31ce728e7cd",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_36a472df5ca744": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f8081f00-3d74-4e23-9330-45640d32630e",
+        "model": "composer-2.5"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
