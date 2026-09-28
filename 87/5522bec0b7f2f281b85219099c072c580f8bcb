@@ -1,0 +1,29 @@
+web/src/pages/ChatPage.tsx
+  s_c4990c7e904857::t_0d2944993d7de3 1,3,20,28-30,42-43,45,56-58,60-67,69-72,74,76
+  s_c4990c7e904857::t_65fbe8f4086fe2 91-102
+web/src/styles.css
+  s_c4990c7e904857::t_ab1c79f1b7e816 183-190
+  s_c4990c7e904857::t_4d94bdad13f02b 142-152,154,158-182,191-206
+tests/agent-model.test.ts
+  s_c4990c7e904857::t_3eb3abc6c8d302 42-47
+web/src/components/AgentChatPanel.tsx
+  s_c4990c7e904857::t_66c074c31a0433 157-159
+  s_c4990c7e904857::t_f8b4e2e90e4280 227-241
+  s_c4990c7e904857::t_ad64fd7a6ec96c 38-66
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "875522bec0b7f2f281b85219099c072c580f8bcb",
+  "prompts": {},
+  "sessions": {
+    "s_c4990c7e904857": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6f2408c0-8234-4cec-a4be-59a302d30f15",
+        "model": "composer-2.5"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
