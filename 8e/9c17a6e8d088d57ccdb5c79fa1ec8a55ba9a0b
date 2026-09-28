@@ -1,0 +1,37 @@
+web/src/pages/StudioPage.tsx
+  s_4f990c14c4ac92::t_bfda94d4d4caf2 1-5
+web/src/components/ChatView.tsx
+  s_4f990c14c4ac92::t_2c0d522047f8d8 1-172
+web/src/pages/ChatPage.tsx
+  s_4f990c14c4ac92::t_2595839bdd4082 62-63,95,127
+  s_4f990c14c4ac92::t_13a41fb213afa9 1-61,64-94,96-126,128-250
+web/src/App.tsx
+  s_4f990c14c4ac92::t_db1bf4e2d42969 1-4,6-13
+tests/chat-shell.test.ts
+  s_4f990c14c4ac92::t_ce387d389197b7 13,150-161
+  s_4f990c14c4ac92::t_698648ec80f9b6 162
+web/src/lib/messages.ts
+  s_4f990c14c4ac92::t_e84d9fbe82bad0 1-24
+web/src/components/LeftPanel.tsx
+  s_4f990c14c4ac92::t_087693e1e5ed21 1-44
+src/mastra/agents/agent.ts
+  s_4f990c14c4ac92::t_0e6ea30b662f9f 63
+web/src/styles.css
+  s_4f990c14c4ac92::t_a6b6217e8d8e2b 1,4-221
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "8e9c17a6e8d088d57ccdb5c79fa1ec8a55ba9a0b",
+  "prompts": {},
+  "sessions": {
+    "s_4f990c14c4ac92": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c66f134c-eaac-4eb3-81ca-767ad72f2330",
+        "model": "gpt-5.6-sol-medium"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
