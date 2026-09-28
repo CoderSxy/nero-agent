@@ -23,3 +23,19 @@ test('web package depends on playground-ui and mastra react', () => {
   assert.ok(pkg.dependencies['@tanstack/react-query']);
   assert.ok(pkg.dependencies.tailwindcss);
 });
+
+test('MastraAppProvider points at the Vite /api prefix', () => {
+  const source = readFileSync(new URL('../web/src/mastra-provider.tsx', import.meta.url), 'utf8');
+  assert.match(source, /MastraReactProvider/);
+  assert.match(source, /apiPrefix:\s*['"]\/api['"]|baseUrl:\s*['"]['"]/);
+});
+
+test('AgentChatPanel wires useChat and optional ensureThread', () => {
+  const source = readFileSync(new URL('../web/src/components/AgentChatPanel.tsx', import.meta.url), 'utf8');
+  assert.match(source, /useChat/);
+  assert.match(source, /AGENT_ID/);
+  assert.match(source, /RESOURCE_ID/);
+  assert.match(source, /ensureThread\?/);
+  assert.match(source, /ChatShell/);
+  assert.match(source, /Composer/);
+});
