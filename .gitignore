@@ -12,3 +12,5 @@ src/mastra/public/
 .vercel
 *.duckdb
 *.duckdb.wal
+
+.superpowers/
