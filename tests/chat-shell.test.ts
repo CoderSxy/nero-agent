@@ -71,6 +71,19 @@ test('readSse emits each data payload', async () => {
   assert.deepEqual(events, ['{"type":"text-delta"}', '[DONE]']);
 });
 
+test('readSse flushes a final frame that is not terminated', async () => {
+  const encoded = new TextEncoder().encode('data: {"ok":true}');
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(encoded);
+      controller.close();
+    },
+  });
+  const events: string[] = [];
+  await readSse(stream, (data) => events.push(data));
+  assert.deepEqual(events, ['{"ok":true}']);
+});
+
 test('reduceChunk accumulates text, reasoning, tools, approval, and errors', () => {
   let turn = emptyTurn();
   turn = reduceChunk(turn, { type: 'text-delta', runId: 'run-1', payload: { text: '你好' } });
