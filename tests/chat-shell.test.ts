@@ -8,6 +8,8 @@ import {
   threadSubtitle,
   threadTitle,
 } from '../web/src/lib/thread-label.ts';
+import { readSse } from '../web/src/lib/sse.ts';
+import { emptyTurn, reduceChunk } from '../web/src/lib/stream-reducer.ts';
 
 test('dev script starts mastra and the web shell together', () => {
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as {
@@ -54,4 +56,42 @@ test('sortThreads orders by updatedAt descending', () => {
     { id: 'new', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-02-01T00:00:00.000Z' },
   ]);
   assert.deepEqual(sorted.map((item) => item.id), ['new', 'old']);
+});
+
+test('readSse emits each data payload', async () => {
+  const encoded = new TextEncoder().encode('data: {"type":"text-delta"}\n\ndata: [DONE]\n\n');
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(encoded);
+      controller.close();
+    },
+  });
+  const events: string[] = [];
+  await readSse(stream, (data) => events.push(data));
+  assert.deepEqual(events, ['{"type":"text-delta"}', '[DONE]']);
+});
+
+test('reduceChunk accumulates text, reasoning, tools, approval, and errors', () => {
+  let turn = emptyTurn();
+  turn = reduceChunk(turn, { type: 'text-delta', runId: 'run-1', payload: { text: '你好' } });
+  turn = reduceChunk(turn, { type: 'text-delta', payload: { text: '。' } });
+  turn = reduceChunk(turn, { type: 'reasoning-delta', payload: { text: '先查一下' } });
+  turn = reduceChunk(turn, { type: 'tool-call', payload: { toolCallId: 'c1', toolName: 'web_search', args: { q: '天气' } } });
+  turn = reduceChunk(turn, { type: 'tool-call-approval', payload: { toolCallId: 'c1', toolName: 'web_search', args: { q: '天气' } } });
+  turn = reduceChunk(turn, { type: 'tool-result', payload: { toolCallId: 'c1', toolName: 'web_search', result: { ok: true } } });
+  turn = reduceChunk(turn, { type: 'error', payload: { message: '中断' } });
+  assert.equal(turn.text, '你好。');
+  assert.equal(turn.reasoning, '先查一下');
+  assert.equal(turn.runId, 'run-1');
+  assert.equal(turn.tools[0]?.approval, 'approved');
+  assert.deepEqual(turn.tools[0]?.result, { ok: true });
+  assert.equal(turn.error, '中断');
+});
+
+test('tool-result does not invent an approval', () => {
+  const turn = reduceChunk(emptyTurn(), {
+    type: 'tool-result',
+    payload: { toolCallId: 'c2', toolName: 'web_fetch', result: 'ok' },
+  });
+  assert.equal(turn.tools[0]?.approval, 'none');
 });
