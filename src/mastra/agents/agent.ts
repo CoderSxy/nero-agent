@@ -1,10 +1,11 @@
 import { pathToFileURL } from 'node:url';
 import { Agent } from '@mastra/core/agent';
 import { TaskSignalProvider } from '@mastra/core/signals';
-import { askUserTool, webFetchTool, webSearchTool } from '@mastra/core/tools';
+import { askUserTool, webFetchTool } from '@mastra/core/tools';
 import { LocalFilesystem, LocalSandbox, WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace';
 import { Memory } from '@mastra/memory';
 import { startScheduleTool, stopScheduleTool } from '../tools/schedule-tools';
+import { tavilySearchTool } from '../tools/tavily-search-tool';
 
 const workspacePath = 'workspace';
 
@@ -61,7 +62,7 @@ For local file changes, end with a plain-text URL using ${pathToFileURL(`${works
     options: {
       generateTitle: true,
       observationalMemory: {
-        model: 'openai/gpt-5-mini',
+        model: 'deepseek/deepseek-v4-flash',
       },
     },
   }),
@@ -71,7 +72,7 @@ For local file changes, end with a plain-text URL using ${pathToFileURL(`${works
     start_schedule: startScheduleTool,
     stop_schedule: stopScheduleTool,
     web_fetch: webFetchTool,
-    web_search: webSearchTool,
+    web_search: tavilySearchTool,
   },
   signals: [new TaskSignalProvider()],
 });

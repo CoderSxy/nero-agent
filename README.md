@@ -9,18 +9,20 @@ This starter provides you with a general-purpose Mastra agent that can research 
 - A local `workspace/` for files and command execution (created under `src/mastra/public/workspace/` when running `mastra dev`)
 - Approval gates for file changes, deletions, and shell commands
 - Conversation memory, generated thread titles, and task tracking
-- Built-in web search and direct web page fetching
+- Tavily-powered web search and direct web page fetching
 - Recurring schedules that persist across restarts
 - Local libSQL storage and DuckDB observability, with optional Turso storage
 - A bundled Mastra skill that helps coding agents use current Mastra APIs
 
 ## Get started
 
-Set your `OPENAI_API_KEY` in `.env` or in your environment, then run:
+Set the API key for your chosen model provider and `TAVILY_API_KEY` in `.env` or in your environment, then run:
 
 ```shell
 npm run dev
 ```
+
+`web_search` uses Tavily's provider-independent search API for every model provider, including DeepSeek. `web_fetch` remains available for reading a URL that is already known.
 
 Open [http://localhost:4111](http://localhost:4111) in your browser to access [Mastra Studio](https://mastra.ai/docs/studio/overview).
 

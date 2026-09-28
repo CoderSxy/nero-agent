@@ -10,13 +10,14 @@ import {
 } from '@mastra/observability';
 import { agent } from './agents/agent';
 import { startScheduleTool, stopScheduleTool } from './tools/schedule-tools';
+import { tavilySearchTool } from './tools/tavily-search-tool';
 
 export const mastra = new Mastra({
   bundler: {
     externals: ['@duckdb/node-bindings'],
   },
   agents: { agent },
-  tools: { startScheduleTool, stopScheduleTool },
+  tools: { startScheduleTool, stopScheduleTool, tavilySearchTool },
   storage: new MastraCompositeStore({
     id: 'composite-storage',
     default: new LibSQLStore({
