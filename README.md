@@ -16,7 +16,7 @@ This starter provides you with a general-purpose Mastra agent that can research 
 
 ## Get started
 
-Set the API key for your chosen model provider and `TAVILY_API_KEY` in `.env` or in your environment, then run:
+Set `DEEPSEEK_API_KEY` (required for local chat), `TAVILY_API_KEY`, and any other provider keys in `.env` or in your environment, then run:
 
 ```shell
 npm run dev
