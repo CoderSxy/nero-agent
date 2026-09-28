@@ -1,0 +1,27 @@
+web/src/pages/ChatPage.tsx
+  s_c0c2fa8b6b4cc2::t_202d47ef725ce7 60
+  s_c0c2fa8b6b4cc2::t_a7433de9023237 204,212
+  s_c0c2fa8b6b4cc2::t_9fc83eb526921b 154
+  s_c0c2fa8b6b4cc2::t_8aa0b47c295318 108,114,117
+  s_c0c2fa8b6b4cc2::t_5e70ff2eb9be4b 281
+README.md
+  s_c0c2fa8b6b4cc2::t_74d4e22f30cec1 11
+web/src/styles.css
+  s_c0c2fa8b6b4cc2::t_d6eff037f5df1d 8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a6da7f294eb5d58578e2b1a45643963f51dca7e7",
+  "prompts": {},
+  "sessions": {
+    "s_c0c2fa8b6b4cc2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "982563cd-6152-4cad-adc0-6dc4c00b12c1",
+        "model": "composer-2.5"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
