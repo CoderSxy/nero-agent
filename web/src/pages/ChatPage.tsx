@@ -40,13 +40,23 @@ export function ChatPage({ client }: { client?: MastraClient }) {
 
   useEffect(() => {
     if (!threadId) return;
-    if (skipLoadThreadIdsRef.current.has(threadId)) return;
+    if (skipLoadThreadIdsRef.current.has(threadId)) {
+      skipLoadThreadIdsRef.current.delete(threadId);
+      return;
+    }
     let active = true;
-    api.getThread(threadId).catch((error: unknown) => {
+    api.getThread(threadId).then(() => {
+      if (!active) return;
+      setBanner((current) => (
+        current === '无法连接助手，请确认 npm run dev 已启动' ? undefined : current
+      ));
+    }).catch((error: unknown) => {
       if (!active) return;
       if (error instanceof Error && /\b404\b/.test(error.message)) {
         navigate('/chat/new', { replace: true });
+        return;
       }
+      setBanner('无法连接助手，请确认 npm run dev 已启动');
     });
     return () => {
       active = false;
@@ -76,6 +86,10 @@ export function ChatPage({ client }: { client?: MastraClient }) {
   }, [api, navigate]);
 
   function handleRetry() {
+    if (banner === '无法创建会话，请稍后重试') {
+      setBanner(undefined);
+      return;
+    }
     setListReloadKey((key) => key + 1);
   }
 
