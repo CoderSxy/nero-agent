@@ -1,0 +1,19 @@
+web/src/pages/ChatPage.tsx
+  s_04c5c945293f6d::t_97b25f2e8c4b78 43-46,48-53,57,59,89-92
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "4705b9150984ddcb35bc5d80598c9df703cd8359",
+  "prompts": {},
+  "sessions": {
+    "s_04c5c945293f6d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "230c990c-3a6b-4e10-81f5-c31ce728e7cd",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
