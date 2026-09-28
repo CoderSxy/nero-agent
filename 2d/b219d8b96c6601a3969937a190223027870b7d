@@ -1,0 +1,45 @@
+tests/chat-shell.test.ts
+  s_1eb46db0d51b4d::t_3da995d01b9e50 152-177
+  s_1eb46db0d51b4d::t_96543d622649e1 14
+web/src/lib/thread-guards.ts
+  s_1eb46db0d51b4d::t_86376697f96b97 1-7
+web/src/lib/mastra-client.ts
+  s_1eb46db0d51b4d::t_f963ba7e3d46aa 85,89,93,97
+web/src/pages/ChatPage.tsx
+  s_1eb46db0d51b4d::t_a2d6c2979aef88 13
+  s_1eb46db0d51b4d::t_806491c025a2b2 142-145,147,154
+  s_1eb46db0d51b4d::t_aae56e6709702d 215-216,219-220,224-227,229,231-235,238-241
+  s_1eb46db0d51b4d::t_08c0d5f80f0fa3 63-65
+  s_1eb46db0d51b4d::t_f6e77f51cb6203 91-104,112
+  s_1eb46db0d51b4d::t_709147d10069c1 185
+  s_2659c79ea8d5e4::t_3880570ce47afa 90
+web/src/styles.css
+  s_1eb46db0d51b4d::t_43bf1c3fb7ca3f 81,84,87
+  s_1eb46db0d51b4d::t_860b5b8e769c2f 14-15,17
+web/src/components/ChatView.tsx
+  s_1eb46db0d51b4d::t_593c64aa2ddfda 114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "2db219d8b96c6601a3969937a190223027870b7d",
+  "prompts": {},
+  "sessions": {
+    "s_1eb46db0d51b4d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "919688ac-5d3f-43dc-ab69-a425b2695561",
+        "model": "composer-2.5"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_2659c79ea8d5e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0e6d9-eb3d-74a2-8448-1e5dbca62014",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
