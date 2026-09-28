@@ -1,0 +1,25 @@
+.env.example
+  s_2e26956e61a723::t_a7336cf69db21e 1,3-4
+README.md
+  s_2e26956e61a723::t_7888c5b0ed4b91 19
+tests/agent-model.test.ts
+  s_2e26956e61a723::t_fa4b4426c44d64 1-14
+src/mastra/agents/agent.ts
+  s_2e26956e61a723::t_d5afba4b2a88b1 56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "16bf82ffe4f9d7421564dc9c6a78dad954391da1",
+  "prompts": {},
+  "sessions": {
+    "s_2e26956e61a723": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9f985680-5154-485c-995a-700c608276ab",
+        "model": "composer-2.5-fast"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
