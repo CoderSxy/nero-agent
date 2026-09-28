@@ -1,0 +1,19 @@
+README.md
+  s_31f03a82b75731::t_2a23a7222035ed 25,27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "760cb1603859f6002ee8ffe580a84f87dd1518f6",
+  "prompts": {},
+  "sessions": {
+    "s_31f03a82b75731": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "fb283d0a-de8f-44ed-86ae-6200abb1f771",
+        "model": "composer-2.5-fast"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
