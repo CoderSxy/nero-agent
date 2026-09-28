@@ -1,0 +1,22 @@
+tests/chat-shell.test.ts
+  s_ef5d7fd656f545::t_7e4dd4728bc7c0 23-57
+  s_ef5d7fd656f545::t_5a4b651d08e252 5-10
+web/src/lib/thread-label.ts
+  s_ef5d7fd656f545::t_b9ede28143efd1 1-31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "26c05a9e8353cc0e1088185b242b2a6f01f6aa30",
+  "prompts": {},
+  "sessions": {
+    "s_ef5d7fd656f545": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0880cdfd-e3cd-4d05-b957-a91ab298b7d1",
+        "model": "composer-2.5-fast"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
