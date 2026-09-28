@@ -1,0 +1,21 @@
+docs/superpowers/specs/2026-09-28-chinese-chat-shell-design.md
+  s_04c5c945293f6d::t_97b1afb1e2ab70 4-5
+docs/superpowers/specs/2026-09-28-playground-ui-agent-shell-design.md
+  s_04c5c945293f6d::t_78902e7de692fd 1-146
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b691bc3e3b1b034099c8b5698464ef2db4717fe7",
+  "prompts": {},
+  "sessions": {
+    "s_04c5c945293f6d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "230c990c-3a6b-4e10-81f5-c31ce728e7cd",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
