@@ -5,8 +5,12 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "dev": "mastra dev",
-    "build": "mastra build",
+    "dev": "concurrently -k -n mastra,web \"npm run dev:mastra\" \"npm run dev:web\"",
+    "dev:mastra": "mastra dev",
+    "dev:web": "npm run dev --prefix web",
+    "build": "npm run build:mastra && npm run build:web",
+    "build:mastra": "mastra build",
+    "build:web": "npm run build --prefix web",
     "start": "mastra start",
     "test": "tsx --test tests/*.test.ts"
   },
@@ -27,6 +31,7 @@
   },
   "devDependencies": {
     "@types/node": "latest",
+    "concurrently": "9.2.0",
     "mastra": "1.31.3",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3"

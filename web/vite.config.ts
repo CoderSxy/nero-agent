@@ -1,0 +1,9 @@
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  server: { proxy: { '/api': 'http://127.0.0.1:4111' } },
+  test: { environment: 'jsdom', restoreMocks: true, server: { deps: { inline: ['@mastra/playground-ui'] } } },
+});
