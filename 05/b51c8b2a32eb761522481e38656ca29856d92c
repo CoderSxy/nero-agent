@@ -1,0 +1,19 @@
+docs/superpowers/specs/2026-09-29-independent-agent-page-design.md
+  s_d978c69b960cd5::t_8a0a9dfee17fba 1-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "05b51c8b2a32eb761522481e38656ca29856d92c",
+  "prompts": {},
+  "sessions": {
+    "s_d978c69b960cd5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ebd6-1218-7f23-8cda-73e6219aa289",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
