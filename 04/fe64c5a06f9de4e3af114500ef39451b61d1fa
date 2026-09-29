@@ -1,0 +1,35 @@
+src/mastra/tools/schedule-tools.ts
+  s_efe17e88929bcf::t_48e62d49abdd98 6,8-9,13,28,30
+src/mastra/tools/tavily-search-tool.ts
+  s_efe17e88929bcf::t_48e62d49abdd98 5-6
+  s_efe17e88929bcf::t_baa61720d58f44 101
+tests/studio-zh.test.ts
+  s_efe17e88929bcf::t_b621ba42230003 1-23
+src/mastra/agents/agent.ts
+  s_efe17e88929bcf::t_dc260711c3d1d2 14,36,38,41-43,46,48,50,52
+src/mastra/studio-zh.ts
+  s_efe17e88929bcf::t_85efa80fbf72b1 1-3,6,10-30,69-70,72-75,77-79,82-132
+  s_efe17e88929bcf::t_793beb29eabc08 80-81
+  s_efe17e88929bcf::t_9cd2e78bf2726a 31-68
+  s_efe17e88929bcf::t_63558cec24c3d2 4-5,7-9,71,76
+README.md
+  s_efe17e88929bcf::t_38ab6ca4cb5f4f 3,5,7,9,13,15,17-19,21,23,25,27,29,31-34,36
+src/mastra/index.ts
+  s_efe17e88929bcf::t_dc260711c3d1d2 14,17-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "04fe64c5a06f9de4e3af114500ef39451b61d1fa",
+  "prompts": {},
+  "sessions": {
+    "s_efe17e88929bcf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0e72d-26e5-7eb0-b311-cd00faab5b6f",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
