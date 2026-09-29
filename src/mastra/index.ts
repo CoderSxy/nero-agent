@@ -11,8 +11,12 @@ import {
 import { agent } from './agents/agent';
 import { startScheduleTool, stopScheduleTool } from './tools/schedule-tools';
 import { tavilySearchTool } from './tools/tavily-search-tool';
+import { studioChineseMiddleware } from './studio-zh';
 
 export const mastra = new Mastra({
+  server: {
+    middleware: [studioChineseMiddleware],
+  },
   bundler: {
     externals: ['@duckdb/node-bindings'],
   },

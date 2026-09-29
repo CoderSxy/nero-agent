@@ -2,8 +2,8 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 
 const tavilySearchInputSchema = z.object({
-  query: z.string().trim().min(1).max(400).describe('The topic or question to search for.'),
-  maxResults: z.number().int().min(1).max(10).default(5).describe('Maximum number of results to return.'),
+  query: z.string().trim().min(1).max(400).describe('要搜索的主题或问题。'),
+  maxResults: z.number().int().min(1).max(10).default(5).describe('最多返回的结果数量。'),
 });
 
 const tavilySearchOutputSchema = z.object({
@@ -98,7 +98,7 @@ export async function searchTavily(
 export const tavilySearchTool = createTool({
   id: 'web_search',
   description:
-    'Search the public web for current information. Use this to discover relevant sources and URLs; use web_fetch to read a specific known URL.',
+    '搜索公开网络中的最新信息，用于发现相关来源和网址；已知具体网址时使用 web_fetch 阅读。',
   inputSchema: tavilySearchInputSchema,
   outputSchema: tavilySearchOutputSchema,
   execute: async (input, { abortSignal }) => searchTavily(input, { abortSignal }),

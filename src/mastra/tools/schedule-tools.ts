@@ -3,14 +3,14 @@ import { z } from 'zod';
 
 export const startScheduleTool = createTool({
   id: 'start_schedule',
-  description: 'Start a recurring schedule for the default agent.',
+  description: '为默认智能体创建周期性定时任务。',
   inputSchema: z.object({
-    schedule: z.string().describe('Cron expression for when to run.'),
-    prompt: z.string().describe('Prompt to run on the schedule.'),
+    schedule: z.string().describe('指定运行时间的 Cron 表达式。'),
+    prompt: z.string().describe('定时运行时使用的提示词。'),
   }),
   execute: async ({ schedule, prompt }, { mastra, agent }) => {
     if (!agent?.threadId || !agent.resourceId) {
-      throw new Error('A threadId and resourceId are required to create a schedule.');
+      throw new Error('创建定时任务需要 threadId 和 resourceId。');
     }
 
     return mastra!.schedules.create({
@@ -25,9 +25,9 @@ export const startScheduleTool = createTool({
 
 export const stopScheduleTool = createTool({
   id: 'stop_schedule',
-  description: 'Stop a schedule by pausing it.',
+  description: '暂停指定定时任务。',
   inputSchema: z.object({
-    scheduleId: z.string().describe('Schedule id returned by start_schedule.'),
+    scheduleId: z.string().describe('start_schedule 返回的定时任务 ID。'),
   }),
   execute: async ({ scheduleId }, { mastra }) => mastra!.schedules.pause(scheduleId),
 });

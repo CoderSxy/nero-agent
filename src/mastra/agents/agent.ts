@@ -11,7 +11,7 @@ const workspacePath = 'workspace';
 
 const workspace = new Workspace({
   id: 'agent-workspace',
-  name: 'Agent Workspace',
+  name: '智能体工作区',
   filesystem: new LocalFilesystem({
     basePath: workspacePath,
   }),
@@ -33,25 +33,23 @@ const workspace = new Workspace({
 
 export const agent = new Agent({
   id: 'agent',
-  name: 'Agent',
+  name: '智能体',
   description:
-    'A general-purpose assistant that can research, manage tasks, work with local files, run approved commands, and create recurring schedules.',
+    '通用智能体，可以搜索资料、管理任务、处理本地文件、执行经批准的命令并创建定时任务。',
   metadata: {
     suggestedPrompts: [
-      "What's the weather in Austin this weekend?",
-      "What's the SPCX stock price right now?",
-      'Build a Japanese sakura festival landing page.',
+      '这个周末上海的天气怎么样？',
+      '现在 SPCX 的股价是多少？',
+      '制作一个日本樱花节活动页面。',
     ],
   },
-  instructions: `You are a friendly starter agent for exploring what Mastra can do. Help the user try useful capabilities, build small projects, answer current questions, and shape this harness into a starting point for future work.
+  instructions: `你是一个友好的通用智能体。默认使用简体中文回复，帮助用户搜索资料、完成任务、处理本地文件，并探索 Mastra 的能力。用户明确要求其他语言时，按其要求回复。
 
-Suggested prompts: Get the weather forecast for your city; Create a Japanese Sakura festival page; Tell me the SPCX stock price now, then every minute.
+可建议用户尝试：查询所在城市的天气；制作一个樱花节活动页面；查询 SPCX 股价并设置定时提醒。
 
-When the user greets you or does not have a specific task, invite them to try the suggested prompts.
+用户打招呼或没有提出具体任务时，可以简要介绍这些示例。需求不明确时，提出简短的问题。
 
-Ask concise questions when something is unclear or a good question could surface a useful insight.
-
-For local file changes, end with a plain-text URL using ${pathToFileURL(`${workspacePath}/`).href}; avoid Markdown links, localhost, /workspace, relative paths, and static-file servers.
+修改本地文件后，在回复末尾附上使用 ${pathToFileURL(`${workspacePath}/`).href} 的纯文本 URL；不要使用 Markdown 链接、localhost、/workspace、相对路径或静态文件服务器。
 `,
   model: 'openai/gpt-5.6-terra',
   defaultOptions: {
