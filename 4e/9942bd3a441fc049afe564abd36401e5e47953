@@ -1,0 +1,114 @@
+web/tsconfig.json
+  s_d978c69b960cd5::t_8548268d661d91 1-14
+web/src/agent/AgentChat.tsx
+  s_d978c69b960cd5::t_ac6e8076abab8c 21,56-57
+  s_d978c69b960cd5::t_10246fb626ca95 17,24-31,35-37,41-43,52-53
+  s_d978c69b960cd5::t_416c0ba6886ed4 16,38,44,46-47
+  s_d978c69b960cd5::t_f24d66730cf8bc 23
+  s_d978c69b960cd5::t_e2fa0feaf720fa 1-8,11-15,18-20,22,32-34,39-40,45,48-51,54-55,58-60
+  s_d978c69b960cd5::t_8430c18d5de991 9-10
+web/src/agent/message-parts.ts
+  s_d978c69b960cd5::t_e2fa0feaf720fa 1-3,13-14,16,25,28-33
+  s_d978c69b960cd5::t_1b5f766a49a86b 5-12
+  s_d978c69b960cd5::t_60fc3062d2f5dc 17
+  s_d978c69b960cd5::t_3543cadcbd7e9a 4,15,18-24,26-27
+web/src/agent/AgentPage.tsx
+  s_d978c69b960cd5::t_c7a21a0cbdd044 1-54,56-62
+  s_d978c69b960cd5::t_f530872e88669c 55
+web/src/agent/ConfigPanel.test.tsx
+  s_d978c69b960cd5::t_1f2de4d1d55c00 1-23
+web/package.json
+  s_d978c69b960cd5::t_204091ed8332f2 12
+  s_d978c69b960cd5::t_6fa4e2f9a506f3 1-11,13-33
+web/src/agent/MessageList.test.tsx
+  s_d978c69b960cd5::t_313633ed15a5c4 1,36-45
+  s_d978c69b960cd5::t_f530872e88669c 2-8,10-27,46-47
+  s_d978c69b960cd5::t_f5d335ee7fa8ef 9,28-35
+web/src/agent/AgentComposer.test.tsx
+  s_d978c69b960cd5::t_a736827532c5b7 1-16
+web/src/App.test.tsx
+  s_d978c69b960cd5::t_9c855f0d2b8173 1,3,5-6
+  s_d978c69b960cd5::t_a5af395c7f0385 2,4,7-19
+web/src/App.tsx
+  s_d978c69b960cd5::t_8548268d661d91 1,3-5,8-10
+  s_d978c69b960cd5::t_c7a21a0cbdd044 2,6-7
+README.md
+  s_d978c69b960cd5::t_8548268d661d91 13
+  s_d978c69b960cd5::t_14f2d520f13123 15-21
+  s_d978c69b960cd5::t_a2488ebb5127ac 14
+web/src/agent/ConfigPanel.tsx
+  s_d978c69b960cd5::t_8430c18d5de991 29
+  s_d978c69b960cd5::t_f5d335ee7fa8ef 34-37
+  s_d978c69b960cd5::t_c7a21a0cbdd044 1-15,17-28,30-33,43-46
+  s_d978c69b960cd5::t_6bfddac1938988 40
+  s_d978c69b960cd5::t_925c45a9818e66 16,38-39,41-42
+web/src/main.tsx
+  s_d978c69b960cd5::t_8548268d661d91 1-19
+web/src/agent/MessageList.tsx
+  s_d978c69b960cd5::t_10246fb626ca95 9-10,47
+  s_d978c69b960cd5::t_e2fa0feaf720fa 1-6,8,11-13,15-21,23-24,28-29,31,41-45,49-52,55-60
+  s_d978c69b960cd5::t_1b5f766a49a86b 7,40,46
+  s_d978c69b960cd5::t_26eb94227ed219 32-39,53-54
+  s_d978c69b960cd5::t_ac6e8076abab8c 25-27,48
+  s_d978c69b960cd5::t_f530872e88669c 22
+  s_d978c69b960cd5::t_4ee063f9e59fac 14
+  s_d978c69b960cd5::t_2c823c1e3651a9 30
+web/src/agent/thread-scope.ts
+  s_d978c69b960cd5::t_617d9e344b2476 10-15,17-19,37-44,46-48
+  s_d978c69b960cd5::t_c5173db3b56c55 21-24,27-31
+  s_d978c69b960cd5::t_609ff1e2002581 1-9,20,32-36,49
+  s_d978c69b960cd5::t_0b1a1f768ca994 25-26
+  s_d978c69b960cd5::t_d80560128aec29 16,45
+web/src/agent/ThreadSidebar.tsx
+  s_d978c69b960cd5::t_609ff1e2002581 1-21
+.gitignore
+  s_d978c69b960cd5::t_96d97011f308c3 4
+web/src/styles.css
+  s_d978c69b960cd5::t_8548268d661d91 1-4
+  s_d978c69b960cd5::t_c7a21a0cbdd044 5-36
+web/src/agent/use-thread-list.ts
+  s_d978c69b960cd5::t_609ff1e2002581 1-21
+web/src/agent/use-thread-list.test.tsx
+  s_d978c69b960cd5::t_a736827532c5b7 1-21
+web/src/agent/thread-scope.test.ts
+  s_d978c69b960cd5::t_230f3c001bfeff 35-41
+  s_d978c69b960cd5::t_f530872e88669c 1-11,13-34,42
+  s_d978c69b960cd5::t_c5173db3b56c55 12
+web/vite.config.ts
+  s_d978c69b960cd5::t_ba147af022675c 8
+  s_d978c69b960cd5::t_8548268d661d91 1-7,9
+package.json
+  s_d978c69b960cd5::t_8548268d661d91 8-13,34
+web/src/agent/AgentComposer.tsx
+  s_d978c69b960cd5::t_e2fa0feaf720fa 1-18
+web/src/agent/message-parts.test.ts
+  s_d978c69b960cd5::t_63e19071505c3a 2,8-15
+  s_d978c69b960cd5::t_1b5f766a49a86b 1,3-7,16-17
+web/index.html
+  s_d978c69b960cd5::t_8548268d661d91 1-5
+web/src/agent/AgentChat.test.tsx
+  s_d978c69b960cd5::t_89b363dea002b9 19-21
+  s_d978c69b960cd5::t_1f2de4d1d55c00 1-18,22-31
+web/src/agent/client.ts
+  s_d978c69b960cd5::t_8548268d661d91 1-4
+package-lock.json
+  s_d978c69b960cd5::t_3aaaf6affe8b2f 21,2520-2545,2892-2921,2972-3006,3055-3080,3273-3279,3696-3705,3783-3792,3984-3993,4333-4339,5883-5892,6053-6062,6220-6232,6324-6351,6386-6401,6498-6507,6800-6817,6852-6861,6878-6906
+web/package-lock.json
+  s_d978c69b960cd5::t_358d6c9cb56a39 1-7389
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "4e9942bd3a441fc049afe564abd36401e5e47953",
+  "prompts": {},
+  "sessions": {
+    "s_d978c69b960cd5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ebd6-1218-7f23-8cda-73e6219aa289",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
