@@ -1,0 +1,24 @@
+docs/superpowers/plans/2026-09-29-independent-agent-page.md
+  s_d978c69b960cd5::t_3d7b1d17ff5d31 60,67,72,83,94,101,105,114
+  s_d978c69b960cd5::t_a98359ad62f259 53,57-59
+  s_d978c69b960cd5::t_3c5a791248e473 1-52,54-56,61-66,68-71,73-82,84-93,95-100,102-104,106-113,115-117
+docs/superpowers/specs/2026-09-29-independent-agent-page-design.md
+  s_d978c69b960cd5::t_3c5a791248e473 4
+  s_d978c69b960cd5::t_3d7b1d17ff5d31 45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "be1f159680f90840c614279015e35d6d0c3135a4",
+  "prompts": {},
+  "sessions": {
+    "s_d978c69b960cd5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ebd6-1218-7f23-8cda-73e6219aa289",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
