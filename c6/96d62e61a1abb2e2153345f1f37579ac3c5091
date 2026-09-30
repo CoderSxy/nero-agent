@@ -1,0 +1,23 @@
+web/src/styles.css
+  s_d978c69b960cd5::t_ceb680dc74549d 29-36,60
+web/src/agent/AgentChat.test.tsx
+  s_d978c69b960cd5::t_cda58b710bf611 7-8,10,13-14,17-31
+web/src/agent/AgentChat.tsx
+  s_d978c69b960cd5::t_a74f57193edc95 15,21,25,51,58-63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c696d62e61a1abb2e2153345f1f37579ac3c5091",
+  "prompts": {},
+  "sessions": {
+    "s_d978c69b960cd5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ebd6-1218-7f23-8cda-73e6219aa289",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
