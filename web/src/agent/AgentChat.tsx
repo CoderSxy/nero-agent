@@ -12,15 +12,17 @@ export function AgentChat({ threadId, resourceId, initialMessages, onMessageSent
   models: ModelSettings;
 }) {
   const [draft, setDraft] = useState('');
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [failedDecisions, setFailedDecisions] = useState<Set<string>>(new Set());
   const [pendingApprovalIds, setPendingApprovalIds] = useState<Set<string>>(new Set());
   const requestContext = useMemo(() => createMemoryRequestContext(models.memoryModel), [models.memoryModel]);
   const chat = useChat({ agentId: AGENT_ID, resourceId, threadId, initialMessages, requestContext });
+  const isEmpty = !hasSubmitted && initialMessages.length === 0 && chat.messages.length === 0;
   async function send() {
     const message = draft.trim();
     if (!message || chat.isRunning || chat.isAwaitingToolApproval) return;
-    setDraft(''); setError(null);
+    setHasSubmitted(true); setDraft(''); setError(null);
     try { await chat.sendMessage({ message, mode: 'stream', threadId,
       model: models.chatModel, requestContext,
       onChunk: async chunk => {
@@ -46,14 +48,19 @@ export function AgentChat({ threadId, resourceId, initialMessages, onMessageSent
   }
   const visibleApprovals = Object.fromEntries(Object.entries(chat.toolCallApprovals)
     .filter(([id]) => !failedDecisions.has(id)));
-  return <ChatShell className="chat-shell">
+  return <ChatShell className={`chat-shell ${isEmpty ? 'chat-shell--empty' : 'chat-shell--active'}`}>
     <ChatShell.Bar><div className="chat-title">智能体对话</div></ChatShell.Bar>
     <ChatShell.Stage><ChatShell.Viewport><ChatShell.Content><ChatShell.Column>
       <MessageList messages={chat.messages} isRunning={chat.isRunning} error={error}
         approvals={visibleApprovals} pendingApprovalIds={pendingApprovalIds}
         awaitingApproval={chat.isAwaitingToolApproval} onApprove={approve} onDecline={decline} />
     </ChatShell.Column></ChatShell.Content></ChatShell.Viewport></ChatShell.Stage>
-    <ChatShell.Dock><ChatShell.Column><AgentComposer draft={draft} onDraftChange={setDraft}
+    <ChatShell.Dock><ChatShell.Column>
+      <div className="chat-welcome" aria-hidden={!isEmpty}>
+        <span className="chat-welcome-icon" aria-hidden="true">智</span>
+        <h1>有什么可以帮你？</h1>
+      </div>
+      <AgentComposer draft={draft} onDraftChange={setDraft}
       isRunning={chat.isRunning || chat.isAwaitingToolApproval} onSend={() => void send()}
       onStop={() => { chat.cancelRun(); setError('已停止'); }} />
     </ChatShell.Column></ChatShell.Dock>

@@ -26,6 +26,14 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .theme-options button[aria-pressed='true'] { background: var(--foreground); color: var(--background); }
 .agent-center { min-width: 0; position: relative; }
 .chat-shell { height: 100%; --chat-surface: var(--background); }
+.chat-shell::after { content: ''; flex: 0 1 0; transition: flex-grow 520ms cubic-bezier(.22, 1, .36, 1); }
+.chat-shell--empty::after { flex-grow: 1; }
+.chat-shell [data-slot='chat-shell-dock'] [data-slot='chat-shell-column'] { max-width: min(100%, 48rem); transition: max-width 520ms cubic-bezier(.22, 1, .36, 1); }
+.chat-shell--empty [data-slot='chat-shell-dock'] [data-slot='chat-shell-column'] { max-width: min(100%, 52rem); }
+.chat-welcome { display: flex; flex-direction: column; align-items: center; gap: 12px; max-height: 0; margin-bottom: 0; opacity: 0; overflow: hidden; transition: max-height 420ms ease, margin-bottom 420ms ease, opacity 220ms ease; }
+.chat-shell--empty .chat-welcome { max-height: 140px; margin-bottom: 24px; opacity: 1; }
+.chat-welcome-icon { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--border); border-radius: 50%; background: var(--card); color: var(--foreground); font-size: 14px; }
+.chat-welcome h1 { margin: 0; color: var(--foreground); font-size: clamp(20px, 2vw, 26px); font-weight: 500; text-align: center; }
 .chat-title { padding: 18px 30px; font-weight: 600; }
 .message-list { padding: 28px 0 80px; display: flex; flex-direction: column; gap: 24px; }
 .agent-composer { margin-bottom: 24px; }
@@ -49,3 +57,4 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .notice { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background: var(--popover); padding: 8px 14px; z-index: 2; border-radius: 8px; }
 @media (max-width: 1050px) { .agent-layout { grid-template-columns: 210px minmax(0, 1fr); } .config-panel { display: none; } }
 @media (max-width: 650px) { .agent-layout { grid-template-columns: 1fr; } .agent-sidebar { display: none; } }
+@media (prefers-reduced-motion: reduce) { .chat-shell::after, .chat-shell [data-slot='chat-shell-dock'] [data-slot='chat-shell-column'], .chat-welcome { transition: none; } }
