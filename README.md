@@ -12,13 +12,13 @@ npm run dev
 
 用户页面打开 [http://localhost:5173/agent/new](http://localhost:5173/agent/new)；原 Mastra Studio 保留在 [http://localhost:4111](http://localhost:4111)。Studio 界面常用文案由项目中间件汉化；尚未实现的 Workflows 导航入口已隐藏。Mastra Studio 是依赖包提供的界面，升级 Mastra 后可能需要补充或调整 [汉化映射](src/mastra/studio-zh.ts)。
 
-独立页面直接复用 `@mastra/playground-ui` 的会话、消息、Composer、工具批准和卡片组件，并使用 `@mastra/react` 的 `useChat` 管理流式回复。默认使用 Agent 配置的模型；如果当前模型没有可用的 API Key，可在启动前设置 `VITE_AGENT_MODEL` 选择已配置的模型，例如：
+独立页面直接复用 `@mastra/playground-ui` 的会话、消息、Composer、工具批准和卡片组件，并使用 `@mastra/react` 的 `useChat` 管理流式回复。左侧底部的「设置」菜单可以为当前会话选择会话模型和记忆模型，也可以切换浅色、深色主题。模型选择保存在会话元数据中，刷新后仍然有效；主题选择保存在当前浏览器中。新会话会优先使用已连接的模型供应商，避免默认模型缺少 API Key 时直接报错。也可以在启动前通过 `VITE_AGENT_MODEL` 指定新会话偏好的模型，例如：
 
 ```sh
 VITE_AGENT_MODEL=deepseek/deepseek-v4-flash npm run dev
 ```
 
-这个变量只作用于独立页面的对话请求，Studio 的 Agent 配置不变。构建前端使用 `npm run build:web`，构建全部使用 `npm run build`。
+这个变量只作用于独立页面的新会话默认值，Studio 的 Agent 配置不变。模型菜单里的选择从下一条消息开始生效。构建前端使用 `npm run build:web`，构建全部使用 `npm run build`。
 
 可以尝试：
 

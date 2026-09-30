@@ -1,27 +1,28 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { MastraDBMessage } from '@mastra/core/agent/message-list';
 import { useChat } from '@mastra/react';
 import { ChatShell } from '@mastra/playground-ui/components/ChatShell';
 import { AGENT_ID } from './client';
 import { AgentComposer } from './AgentComposer';
 import { MessageList } from './MessageList';
+import { createMemoryRequestContext, type ModelSettings } from './model-settings';
 
-const modelOverride = import.meta.env.VITE_AGENT_MODEL?.trim();
-
-export function AgentChat({ threadId, resourceId, initialMessages, onMessageSent }: {
+export function AgentChat({ threadId, resourceId, initialMessages, onMessageSent, models }: {
   threadId: string; resourceId: string; initialMessages: MastraDBMessage[]; onMessageSent: () => void;
+  models: ModelSettings;
 }) {
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [failedDecisions, setFailedDecisions] = useState<Set<string>>(new Set());
   const [pendingApprovalIds, setPendingApprovalIds] = useState<Set<string>>(new Set());
-  const chat = useChat({ agentId: AGENT_ID, resourceId, threadId, initialMessages });
+  const requestContext = useMemo(() => createMemoryRequestContext(models.memoryModel), [models.memoryModel]);
+  const chat = useChat({ agentId: AGENT_ID, resourceId, threadId, initialMessages, requestContext });
   async function send() {
     const message = draft.trim();
     if (!message || chat.isRunning || chat.isAwaitingToolApproval) return;
     setDraft(''); setError(null);
     try { await chat.sendMessage({ message, mode: 'stream', threadId,
-      ...(modelOverride ? { model: modelOverride } : {}),
+      model: models.chatModel, requestContext,
       onChunk: async chunk => {
         if (chunk.type === 'tool-call-approval' || chunk.type === 'tool-call-suspended') {
           const id = chunk.payload?.toolCallId;

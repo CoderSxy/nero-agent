@@ -20,4 +20,13 @@ describe('read only agent configuration', () => {
     fireEvent.click(screen.getByRole('button', { name: '展开概览' }));
     expect(screen.getByText('deepseek-v4')).toBeTruthy();
   });
+  it('shows the session model and memory model selected in settings', () => {
+    render(<ConfigPanel agent={{ name: '智能体', modelId: 'openai/gpt-5.6-terra', tools: {} } as never}
+      memory={{ config: { observationalMemory: { enabled: true } } } as never}
+      models={{ chatModel: 'deepseek/deepseek-v4-flash', memoryModel: 'deepseek/deepseek-v4-pro' }}
+      loading={false} error={null} />);
+    expect(screen.getByText('deepseek/deepseek-v4-flash')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '展开记忆' }));
+    expect(screen.getByText('deepseek/deepseek-v4-pro')).toBeTruthy();
+  });
 });

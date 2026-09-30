@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { GetAgentResponse, GetMemoryConfigResponse } from '@mastra/client-js';
 import { SectionCard } from '@mastra/playground-ui/components/SectionCard';
+import type { ModelSettings } from './model-settings';
 
 function display(value: unknown) {
   if (value == null || value === '') return '未提供';
@@ -9,8 +10,9 @@ function display(value: unknown) {
   return JSON.stringify(value, null, 2);
 }
 
-export function ConfigPanel({ agent, memory, loading, error }: {
-  agent: GetAgentResponse | null; memory?: GetMemoryConfigResponse | null; loading: boolean; error: string | null;
+export function ConfigPanel({ agent, memory, models, loading, error }: {
+  agent: GetAgentResponse | null; memory?: GetMemoryConfigResponse | null; models?: ModelSettings;
+  loading: boolean; error: string | null;
 }) {
   const [open, setOpen] = useState<Record<string, boolean>>({ overview: true, tools: true });
   const memoryConfig = memory?.config;
@@ -26,7 +28,7 @@ export function ConfigPanel({ agent, memory, loading, error }: {
     {agent && <div className="config-sections">
       {section('overview', '概览', <dl>
         <dt>名称</dt><dd>{display(agent.name)}</dd>
-        <dt>模型</dt><dd>{display(import.meta.env.VITE_AGENT_MODEL || agent.modelId)}</dd>
+        <dt>会话模型</dt><dd>{display(models?.chatModel || agent.modelId)}</dd>
         <dt>描述</dt><dd>{display(agent.description)}</dd>
       </dl>)}
       {section('tools', '工具', <div>{Object.keys(agent.tools ?? {}).length ? Object.keys(agent.tools).map(name =>
@@ -36,6 +38,7 @@ export function ConfigPanel({ agent, memory, loading, error }: {
         {agent.workspaceTools?.map(name => <div className="config-item" key={name}>{name}</div>)}
       </div>)}
       {memoryConfig && section('memory', '记忆', <dl>
+        {models?.memoryModel && <><dt>记忆模型</dt><dd>{models.memoryModel}</dd></>}
         <dt>上下文</dt><dd>{typeof memoryConfig.lastMessages === 'number' ? `最近 ${memoryConfig.lastMessages} 条消息` : '未提供'}</dd>
         <dt>标题</dt><dd>{'generateTitle' in memoryConfig && memoryConfig.generateTitle ? '自动生成' : '未启用'}</dd>
         <dt>观察记忆</dt><dd>{memoryConfig.observationalMemory?.enabled ? '已启用' : '未启用'}</dd>

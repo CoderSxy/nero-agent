@@ -1,14 +1,22 @@
 import { ThreadList, ThreadListEmpty, ThreadListItem, ThreadListItems, ThreadListNewItem } from '@mastra/playground-ui/components/ThreadList';
 import type { Thread } from './thread-scope';
+import type { ModelProvider, ModelSettings } from './model-settings';
+import { ModelSettingsMenu, type Theme } from './ModelSettingsMenu';
 
-export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSelect }: {
+export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSelect,
+  models, providers, theme, onModelsChange, onThemeChange, settingsError, settingsSaving, canCreate = true }: {
   threads: Thread[]; currentId?: string; loading: boolean; error: string | null;
   onNew: () => void; onSelect: (id: string) => void;
+  models: ModelSettings; providers: ModelProvider[]; theme: Theme;
+  onModelsChange: (models: ModelSettings) => void; onThemeChange: (theme: Theme) => void;
+  settingsError?: string | null; settingsSaving?: boolean;
+  canCreate?: boolean;
 }) {
   return <aside className="agent-sidebar">
     <div className="brand">NERO <span>AGENT</span></div>
+    <div className="thread-scroll">
     <ThreadList aria-label="会话列表" embedded>
-      <ThreadListNewItem render={<button type="button" onClick={onNew} />}>＋ 新建会话</ThreadListNewItem>
+      <ThreadListNewItem render={<button type="button" onClick={onNew} disabled={!canCreate} />}>＋ 新建会话</ThreadListNewItem>
       <ThreadListItems>
         {threads.map(thread => <ThreadListItem key={thread.id} isActive={currentId === thread.id}
           onClick={() => onSelect(thread.id)}>{thread.title || '未命名会话'}</ThreadListItem>)}
@@ -17,5 +25,9 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
     </ThreadList>
     {loading && <p className="muted sidebar-note">加载会话中…</p>}
     {error && <p role="alert" className="error sidebar-note">{error}</p>}
+    </div>
+    <ModelSettingsMenu models={models} providers={providers} theme={theme}
+      onModelsChange={onModelsChange} onThemeChange={onThemeChange}
+      error={settingsError} disabled={settingsSaving} />
   </aside>;
 }

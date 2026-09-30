@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AGENT_ID, client } from './client';
 import { listScopedThreads, RESOURCE_ID, type Thread } from './thread-scope';
+import { withThreadModels, type ModelSettings } from './model-settings';
 
 export function useThreadList() {
   const [threads, setThreads] = useState<Thread[]>([]);
@@ -12,8 +13,9 @@ export function useThreadList() {
     finally { setLoading(false); }
   }, []);
   useEffect(() => { void refresh(); }, [refresh]);
-  const createThread = useCallback(async () => {
-    const thread = await client.createMemoryThread({ agentId: AGENT_ID, resourceId: RESOURCE_ID, title: '新会话' });
+  const createThread = useCallback(async (models: ModelSettings) => {
+    const thread = await client.createMemoryThread({ agentId: AGENT_ID, resourceId: RESOURCE_ID,
+      title: '新会话', metadata: withThreadModels(null, models) });
     await refresh();
     return thread;
   }, [refresh]);

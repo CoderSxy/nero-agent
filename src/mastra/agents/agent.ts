@@ -3,7 +3,7 @@ import { Agent } from '@mastra/core/agent';
 import { TaskSignalProvider } from '@mastra/core/signals';
 import { askUserTool, webFetchTool } from '@mastra/core/tools';
 import { LocalFilesystem, LocalSandbox, WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace';
-import { Memory } from '@mastra/memory';
+import { memoryForRequest } from './memory-model';
 import { startScheduleTool, stopScheduleTool } from '../tools/schedule-tools';
 import { tavilySearchTool } from '../tools/tavily-search-tool';
 
@@ -56,14 +56,7 @@ export const agent = new Agent({
     maxSteps: 100,
     autoResumeSuspendedTools: true,
   },
-  memory: new Memory({
-    options: {
-      generateTitle: true,
-      observationalMemory: {
-        model: 'deepseek/deepseek-v4-flash',
-      },
-    },
-  }),
+  memory: memoryForRequest,
   workspace,
   tools: {
     ask_user: askUserTool,
