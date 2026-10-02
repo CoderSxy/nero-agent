@@ -7,6 +7,8 @@ src/mastra/public/
 .env.development
 .env
 .env.local
+.env.postgres
+.local-accounts
 *.db
 *.db-*
 .netlify

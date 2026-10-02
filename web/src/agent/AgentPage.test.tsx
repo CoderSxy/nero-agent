@@ -33,7 +33,8 @@ afterEach(() => { cleanup(); vi.clearAllMocks(); document.documentElement.classL
 
 function renderPage() {
   return render(<MemoryRouter initialEntries={['/agent/thread-1']}><Routes>
-    <Route path="/agent/:threadId" element={<AgentPage />} />
+    <Route path="/agent/:threadId" element={<AgentPage user={{ id: 'agent', email: 'test@example.com',
+      displayName: 'Test', roles: ['user'] }} onLogout={vi.fn()} />} />
   </Routes></MemoryRouter>);
 }
 

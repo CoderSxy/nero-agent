@@ -2,15 +2,18 @@ import { ThreadList, ThreadListEmpty, ThreadListItem, ThreadListItems, ThreadLis
 import type { Thread } from './thread-scope';
 import type { ModelProvider, ModelSettings } from './model-settings';
 import { ModelSettingsMenu, type Theme } from './ModelSettingsMenu';
+import type { CurrentUser } from '../App';
 
 export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSelect,
-  models, providers, theme, onModelsChange, onThemeChange, settingsError, settingsSaving, canCreate = true }: {
+  models, providers, theme, onModelsChange, onThemeChange, settingsError, settingsSaving, canCreate = true,
+  user, onLogout }: {
   threads: Thread[]; currentId?: string; loading: boolean; error: string | null;
   onNew: () => void; onSelect: (id: string) => void;
   models: ModelSettings; providers: ModelProvider[]; theme: Theme;
   onModelsChange: (models: ModelSettings) => void; onThemeChange: (theme: Theme) => void;
   settingsError?: string | null; settingsSaving?: boolean;
   canCreate?: boolean;
+  user?: CurrentUser; onLogout?: () => void;
 }) {
   return <aside className="agent-sidebar">
     <div className="brand">NERO <span>AGENT</span></div>
@@ -29,5 +32,7 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
     <ModelSettingsMenu models={models} providers={providers} theme={theme}
       onModelsChange={onModelsChange} onThemeChange={onThemeChange}
       error={settingsError} disabled={settingsSaving} />
+    {user && <div className="account-footer"><span title={user.email}>{user.displayName}</span>
+      <button type="button" onClick={onLogout}>退出登录</button></div>}
   </aside>;
 }

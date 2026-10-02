@@ -6,6 +6,7 @@ import { LocalFilesystem, LocalSandbox, WORKSPACE_TOOLS, Workspace } from '@mast
 import { memoryForRequest } from './memory-model';
 import { startScheduleTool, stopScheduleTool } from '../tools/schedule-tools';
 import { tavilySearchTool } from '../tools/tavily-search-tool';
+import type { AuthUser } from '../auth/service';
 
 const workspacePath = 'workspace';
 
@@ -57,13 +58,17 @@ export const agent = new Agent({
     autoResumeSuspendedTools: true,
   },
   memory: memoryForRequest,
-  workspace,
-  tools: {
-    ask_user: askUserTool,
-    start_schedule: startScheduleTool,
-    stop_schedule: stopScheduleTool,
-    web_fetch: webFetchTool,
-    web_search: tavilySearchTool,
+  workspace: ({ requestContext }) => {
+    const user = requestContext.get('user') as AuthUser | undefined;
+    return user?.roles.includes('admin') ? workspace : undefined;
+  },
+  tools: ({ requestContext }) => {
+    const user = requestContext.get('user') as AuthUser | undefined;
+    const common = { ask_user: askUserTool, web_fetch: webFetchTool, web_search: tavilySearchTool };
+    if (user?.roles.includes('admin')) return {
+      ...common, start_schedule: startScheduleTool, stop_schedule: stopScheduleTool,
+    };
+    return common;
   },
   signals: [new TaskSignalProvider()],
 });

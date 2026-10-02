@@ -12,7 +12,12 @@
     "build:mastra": "mastra build",
     "build:web": "npm run build --prefix web",
     "start": "mastra start",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "node --import tsx --test tests/*.test.ts",
+    "test:db": "node --env-file-if-exists=.env --import tsx --test tests/auth-db.test.ts",
+    "db:migrate": "node --env-file-if-exists=.env --import tsx scripts/migrate.ts",
+    "db:local:setup": "node scripts/setup-local-postgres.mjs",
+    "db:import:libsql": "node --env-file-if-exists=.env --import tsx scripts/import-libsql.ts",
+    "user:create": "node --env-file-if-exists=.env --import tsx scripts/create-user.ts"
   },
   "keywords": [],
   "author": "",
@@ -27,10 +32,13 @@
     "@mastra/libsql": "1.23.3",
     "@mastra/memory": "1.32.1",
     "@mastra/observability": "1.18.1",
+    "@mastra/pg": "^1.28.0",
+    "pg": "^8.23.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "latest",
+    "@types/pg": "^8.23.1",
     "concurrently": "9.2.0",
     "mastra": "1.31.3",
     "tsx": "^4.21.0",

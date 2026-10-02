@@ -4,13 +4,14 @@ import type { GetAgentResponse, GetMemoryConfigResponse } from '@mastra/client-j
 import type { MastraDBMessage } from '@mastra/core/agent/message-list';
 import { AGENT_ID, client } from './client';
 import { useThreadList } from './use-thread-list';
-import { loadScopedThread, RESOURCE_ID } from './thread-scope';
+import { loadScopedThread } from './thread-scope';
 import { ThreadSidebar } from './ThreadSidebar';
 import { AgentChat } from './AgentChat';
 import { ConfigPanel } from './ConfigPanel';
 import { getDefaultModels, readThreadModels, saveThreadModels, type ModelProvider,
   type ModelSettings } from './model-settings';
 import type { Theme } from './ModelSettingsMenu';
+import type { CurrentUser } from '../App';
 
 function initialTheme(): Theme {
   try { return localStorage.getItem('nero-agent-theme') === 'light' ? 'light' : 'dark'; }
@@ -25,10 +26,10 @@ function configuredMemoryModel(memory: GetMemoryConfigResponse | null): string |
   return undefined;
 }
 
-export function AgentPage() {
+export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () => void }) {
   const { threadId } = useParams();
   const navigate = useNavigate();
-  const list = useThreadList();
+  const list = useThreadList(user.id);
   const [messages, setMessages] = useState<MastraDBMessage[]>([]);
   const [loadingThread, setLoadingThread] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -68,14 +69,14 @@ export function AgentPage() {
     if (!threadId) { setMessages([]); setThreadModels({}); return; }
     let active = true;
     setLoadingThread(true); setMessages([]); setThreadModels({});
-    loadScopedThread(threadId).then(result => {
+    loadScopedThread(threadId, user.id).then(result => {
       if (active) { setMessages(result.messages as MastraDBMessage[]);
         setThreadModels(readThreadModels(result.thread.metadata)); setNotice(null); setLoadingThread(false); }
     }).catch(() => {
       if (active) { setMessages([]); setLoadingThread(false); setNotice('会话不存在或无权访问'); navigate('/agent/new', { replace: true }); }
     });
     return () => { active = false; };
-  }, [threadId, navigate]);
+  }, [threadId, navigate, user.id]);
   async function create() {
     if (!canCreate) { setNotice('模型配置尚未加载，请稍后重试'); return; }
     try { const thread = await list.createThread(models); setNotice(null); navigate(`/agent/${thread.id}`); }
@@ -96,11 +97,11 @@ export function AgentPage() {
       onNew={() => void create()} onSelect={id => navigate(`/agent/${id}`)}
       models={models} providers={providers} theme={theme} onModelsChange={next => void changeModels(next)}
       onThemeChange={setTheme} settingsError={settingsError} settingsSaving={settingsSaving}
-      canCreate={canCreate} />
+      canCreate={canCreate} user={user} onLogout={onLogout} />
     <section className="agent-center">
       {notice && <div role="alert" className="notice">{notice}</div>}
       {loadingThread ? <div className="empty-chat">加载会话中…</div> : threadId && !notice ?
-        <AgentChat key={threadId} threadId={threadId} resourceId={RESOURCE_ID} initialMessages={messages} models={models}
+        <AgentChat key={threadId} threadId={threadId} resourceId={user.id} initialMessages={messages} models={models}
           onMessageSent={() => void list.refresh()} /> :
         <div className="empty-chat"><h1>智能体</h1><p>开始一段新对话</p><button type="button"
           disabled={!canCreate} onClick={() => void create()}>新建会话</button></div>}

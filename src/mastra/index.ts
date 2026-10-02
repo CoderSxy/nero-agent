@@ -1,5 +1,5 @@
 import { Mastra } from '@mastra/core/mastra';
-import { LibSQLStore } from '@mastra/libsql';
+import { PostgresStore } from '@mastra/pg';
 import { DuckDBStore } from '@mastra/duckdb';
 import { MastraCompositeStore } from '@mastra/core/storage';
 import {
@@ -12,10 +12,20 @@ import { agent } from './agents/agent';
 import { startScheduleTool, stopScheduleTool } from './tools/schedule-tools';
 import { tavilySearchTool } from './tools/tavily-search-tool';
 import { studioChineseMiddleware } from './studio-zh';
+import { authRoutes } from './auth/routes';
+import { getUserByToken } from './auth/service';
+
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) throw new Error('DATABASE_URL 未配置，请先运行 npm run db:local:setup');
 
 export const mastra = new Mastra({
   server: {
     middleware: [studioChineseMiddleware],
+    apiRoutes: authRoutes,
+    auth: {
+      authenticateToken: async token => getUserByToken(token),
+      mapUserToResourceId: user => user.id,
+    },
   },
   bundler: {
     externals: ['@duckdb/node-bindings'],
@@ -24,10 +34,9 @@ export const mastra = new Mastra({
   tools: { startScheduleTool, stopScheduleTool, tavilySearchTool },
   storage: new MastraCompositeStore({
     id: 'composite-storage',
-    default: new LibSQLStore({
+    default: new PostgresStore({
       id: 'mastra-storage',
-      url: process.env.TURSO_DATABASE_URL || 'file:./mastra.db',
-      authToken: process.env.TURSO_AUTH_TOKEN || undefined,
+      connectionString: databaseUrl,
     }),
     domains: {
       observability: await new DuckDBStore().getStore('observability'),
