@@ -1,0 +1,30 @@
+web/src/agent/AgentPage.tsx
+  s_7e2736e2553cff::t_eddca7dbd70a74 99-101
+web/src/agent/model-settings.ts
+  s_7e2736e2553cff::t_993fd3a79dbfef 63
+web/src/agent/model-settings.test.ts
+  s_7e2736e2553cff::t_952dca88c6ed75 86-92
+web/src/agent/AgentPage.test.tsx
+  s_7e2736e2553cff::t_1d7904a3ff7d2d 75-100
+README.md
+  s_7e2736e2553cff::t_57c51492b3e6fc 15
+  s_7e2736e2553cff::t_6ca83a7d023b1d 27,29-54,56
+.env.example
+  s_7e2736e2553cff::t_a73f4b29e82139 3-7,10-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9f1b8012c19bb78d46c316bc3a2c34c197a186d0",
+  "prompts": {},
+  "sessions": {
+    "s_7e2736e2553cff": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5999c604-7e87-465a-878e-d4e5d3f0127f",
+        "model": "claude-sonnet-5-5-high"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
