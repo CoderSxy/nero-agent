@@ -6,12 +6,13 @@ import { ModelSettingsMenu, type Theme } from './ModelSettingsMenu';
 import type { CurrentUser } from '../App';
 
 export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSelect,
-  models, catalog, theme, onModelsChange, onThemeChange, settingsError, settingsSaving, canCreate = true,
-  user, onLogout }: {
+  models, catalog, theme, onModelsChange, onThemeChange, onCatalogChange, settingsError, settingsSaving,
+  canCreate = true, user, onLogout }: {
   threads: Thread[]; currentId?: string; loading: boolean; error: string | null;
   onNew: () => void; onSelect: (id: string) => void;
   models: Partial<ModelSettings>; catalog: SafeModel[]; theme: Theme;
   onModelsChange: (models: ModelSettings) => void; onThemeChange: (theme: Theme) => void;
+  onCatalogChange?: () => void | Promise<void>;
   settingsError?: string | null; settingsSaving?: boolean;
   canCreate?: boolean;
   user?: CurrentUser; onLogout?: () => void;
@@ -32,7 +33,7 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
     </div>
     <ModelSettingsMenu models={models} catalog={catalog} theme={theme}
       onModelsChange={onModelsChange} onThemeChange={onThemeChange}
-      error={settingsError} disabled={settingsSaving} />
+      onCatalogChange={onCatalogChange} error={settingsError} disabled={settingsSaving} />
     {user && <div className="account-footer"><span title={user.email}>{user.displayName}</span>
       <button type="button" onClick={onLogout}>退出登录</button></div>}
   </aside>;

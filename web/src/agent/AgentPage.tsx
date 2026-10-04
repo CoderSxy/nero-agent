@@ -54,7 +54,7 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
   const canCreate = Boolean(catalog && newThreadModels);
   const sendBlockedReason = !catalog ? (catalogError ?? '模型列表加载中…')
     : !selected && catalog.length === 0 ? '请先配置可用模型'
-      : !selected ? '该会话使用的模型已不可用，请在「设置」中重新选择' : null;
+      : !selected ? '该会话使用的模型已不可用，请在「设置」中重新选择模型' : null;
   const names = new Map((catalog ?? []).map(model => [model.ref, model.displayName]));
   const configModels = selected
     ? { chatModel: names.get(selected.chatModel) ?? selected.chatModel,
@@ -105,11 +105,15 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
       setSettingsError(cause instanceof Error ? cause.message : '保存模型配置失败'); }
     finally { setSettingsSaving(false); }
   }
+  async function refreshCatalog() {
+    try { setCatalog(await getSelectableModels()); setCatalogError(null); }
+    catch (cause) { setCatalogError(cause instanceof Error ? cause.message : '刷新模型列表失败'); }
+  }
   return <main className="agent-layout">
     <ThreadSidebar threads={list.threads} currentId={threadId} loading={list.loading} error={list.error}
       onNew={() => void create()} onSelect={id => navigate(`/agent/${id}`)}
       models={models} catalog={catalog ?? []} theme={theme} onModelsChange={next => void changeModels(next)}
-      onThemeChange={setTheme} settingsError={settingsError ?? catalogError} settingsSaving={settingsSaving}
+      onThemeChange={setTheme} onCatalogChange={refreshCatalog} settingsError={settingsError ?? catalogError} settingsSaving={settingsSaving}
       canCreate={canCreate} user={user} onLogout={onLogout} />
     <section className="agent-center">
       {notice && <div role="alert" className="notice">{notice}</div>}
