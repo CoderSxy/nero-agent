@@ -13,6 +13,7 @@ import { startScheduleTool, stopScheduleTool } from './tools/schedule-tools';
 import { tavilySearchTool } from './tools/tavily-search-tool';
 import { studioChineseMiddleware } from './studio-zh';
 import { authRoutes } from './auth/routes';
+import { modelRoutes } from './models/routes';
 import { getUserByToken } from './auth/service';
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -21,7 +22,7 @@ if (!databaseUrl) throw new Error('DATABASE_URL 未配置，请先运行 npm run
 export const mastra = new Mastra({
   server: {
     middleware: [studioChineseMiddleware],
-    apiRoutes: authRoutes,
+    apiRoutes: [...authRoutes, ...modelRoutes],
     auth: {
       authenticateToken: async token => getUserByToken(token),
       mapUserToResourceId: user => user.id,
