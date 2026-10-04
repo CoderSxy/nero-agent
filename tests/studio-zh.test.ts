@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { studioChineseMiddleware } from '../src/mastra/studio-zh';
+import { createRequire } from 'node:module';
+import { localizeStudioHtml, studioChineseMiddleware } from '../src/mastra/studio-zh';
 
 test('Studio middleware injects the Chinese UI only into HTML responses', async () => {
   const htmlContext = {
@@ -20,4 +21,44 @@ test('Studio middleware injects the Chinese UI only into HTML responses', async 
   };
   await studioChineseMiddleware.handler(apiContext, async () => {});
   assert.equal(await apiContext.res.text(), '{"agents":[]}');
+});
+
+const requireFromWeb = createRequire(new URL('../web/package.json', import.meta.url));
+const { JSDOM } = requireFromWeb('jsdom') as typeof import('jsdom');
+
+const STUDIO_HTML = '<!doctype html><html><head><title>Mastra Studio</title></head><body><div id="root"></div></body></html>';
+
+function countLinks(html: string) {
+  return html.split('/model-admin').length - 1;
+}
+
+test('Studio HTML gets exactly one /model-admin link; non-Studio HTML is untouched', () => {
+  assert.equal(countLinks(localizeStudioHtml(STUDIO_HTML)), 1);
+  const fragment = '<p>no head here</p>';
+  assert.equal(localizeStudioHtml(fragment), fragment);
+  assert.equal(countLinks(fragment), 0);
+});
+
+async function renderStudio(path: string) {
+  const dom = new JSDOM(localizeStudioHtml(STUDIO_HTML), {
+    url: `http://localhost:4111${path}`,
+    runScripts: 'dangerously',
+    pretendToBeVisual: true,
+  });
+  const { document } = dom.window;
+  const main = document.createElement('main');
+  document.body.appendChild(main);
+  await new Promise(resolve => setTimeout(resolve, 80));
+  return document;
+}
+
+test('the Settings page shows one /model-admin link and other pages show none', async () => {
+  const settings = await renderStudio('/settings');
+  assert.equal(settings.querySelectorAll('a[href="/model-admin"]').length, 1);
+  settings.body.appendChild(settings.createElement('div'));
+  await new Promise(resolve => setTimeout(resolve, 80));
+  assert.equal(settings.querySelectorAll('a[href="/model-admin"]').length, 1);
+
+  const agents = await renderStudio('/agents');
+  assert.equal(agents.querySelectorAll('a[href="/model-admin"]').length, 0);
 });

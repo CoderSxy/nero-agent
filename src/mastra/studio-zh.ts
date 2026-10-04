@@ -91,6 +91,20 @@ export function studioChineseClient() {
       link.closest('li')?.setAttribute('hidden', '');
       link.setAttribute('hidden', '');
     }
+
+    const links = document.querySelectorAll<HTMLAnchorElement>('a[data-model-admin-link]');
+    const onSettings = location.pathname === '/settings' || location.pathname.startsWith('/settings/');
+    links.forEach((link, index) => {
+      if (!onSettings || index > 0) link.remove();
+    });
+    if (onSettings && links.length === 0) {
+      const link = document.createElement('a');
+      link.href = '/model-admin';
+      link.setAttribute('data-model-admin-link', '');
+      link.textContent = '公共模型管理';
+      link.style.cssText = 'display:inline-block;margin:16px;text-decoration:underline;';
+      (document.querySelector('main') ?? document.body).appendChild(link);
+    }
   }
 
   document.documentElement.lang = 'zh-CN';
@@ -111,7 +125,8 @@ export function studioChineseClient() {
   scheduleTranslate();
 }
 
-const injection = `<script>(${studioChineseClient.toString()})();</script>`;
+// esbuild's keepNames helper may be emitted into toString() output under tsx; shim it for the browser.
+const injection = `<script>window.__name=window.__name||function(t){return t};var __name=window.__name;(${studioChineseClient.toString()})();</script>`;
 
 export function localizeStudioHtml(html: string): string {
   return html.replace('</head>', `${injection}</head>`);
@@ -122,6 +137,7 @@ export const studioChineseMiddleware = {
   handler: async (context: { req: { path: string }; res: Response }, next: () => Promise<void>) => {
     await next();
     if (context.req.path.startsWith('/api/') || context.req.path.startsWith('/assets/')) return;
+    if (context.req.path === '/model-admin') return;
     if (!context.res.headers.get('content-type')?.includes('text/html')) return;
     const html = await context.res.text();
     context.res = new Response(localizeStudioHtml(html), {
