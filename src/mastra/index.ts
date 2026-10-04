@@ -12,6 +12,7 @@ import { agent } from './agents/agent';
 import { startScheduleTool, stopScheduleTool } from './tools/schedule-tools';
 import { tavilySearchTool } from './tools/tavily-search-tool';
 import { studioChineseMiddleware } from './studio-zh';
+import { agentModelLockMiddleware } from './agent-model-lock';
 import { authRoutes } from './auth/routes';
 import { modelRoutes } from './models/routes';
 import { modelAdminRoutes } from './models/admin-page';
@@ -22,7 +23,7 @@ if (!databaseUrl) throw new Error('DATABASE_URL 未配置，请先运行 npm run
 
 export const mastra = new Mastra({
   server: {
-    middleware: [studioChineseMiddleware],
+    middleware: [agentModelLockMiddleware, studioChineseMiddleware],
     apiRoutes: [...authRoutes, ...modelRoutes, ...modelAdminRoutes],
     auth: {
       authenticateToken: async token => getUserByToken(token),

@@ -5,9 +5,9 @@ import { askUserTool, webFetchTool } from '@mastra/core/tools';
 import { LocalFilesystem, LocalSandbox, WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace';
 import { memoryForRequest } from './memory-model';
 import { startScheduleTool, stopScheduleTool } from '../tools/schedule-tools';
-import { resolveSelectedModel } from '../models/resolver';
+import type { RequestContext } from '@mastra/core/request-context';
+import { resolveSelectedModel, trustedUserFrom } from '../models/resolver';
 import { tavilySearchTool } from '../tools/tavily-search-tool';
-import type { AuthUser } from '../auth/service';
 
 const workspacePath = 'workspace';
 
@@ -32,6 +32,14 @@ const workspace = new Workspace({
     },
   },
 });
+
+function isAdmin(requestContext: RequestContext): boolean {
+  try {
+    return trustedUserFrom(requestContext).roles.includes('admin');
+  } catch {
+    return false;
+  }
+}
 
 export const agent = new Agent({
   id: 'agent',
@@ -59,14 +67,10 @@ export const agent = new Agent({
     autoResumeSuspendedTools: true,
   },
   memory: memoryForRequest,
-  workspace: ({ requestContext }) => {
-    const user = requestContext.get('user') as AuthUser | undefined;
-    return user?.roles.includes('admin') ? workspace : undefined;
-  },
+  workspace: ({ requestContext }) => (isAdmin(requestContext) ? workspace : undefined),
   tools: ({ requestContext }) => {
-    const user = requestContext.get('user') as AuthUser | undefined;
     const common = { ask_user: askUserTool, web_fetch: webFetchTool, web_search: tavilySearchTool };
-    if (user?.roles.includes('admin')) return {
+    if (isAdmin(requestContext)) return {
       ...common, start_schedule: startScheduleTool, stop_schedule: stopScheduleTool,
     };
     return common;
