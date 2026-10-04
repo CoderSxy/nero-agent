@@ -72,6 +72,32 @@ describe('Agent page settings', () => {
     } }));
     expect(screen.getByTestId('models').textContent).toContain(`${pro}|${flash}`);
   });
+  it('takes choices from GET /model-catalog even when VITE_AGENT_MODEL is set', async () => {
+    vi.stubEnv('VITE_AGENT_MODEL', 'openai/env-only-model');
+    try {
+      threadWith(undefined);
+      renderPage();
+      await waitFor(() => expect(screen.getByTestId('models').textContent).toContain(`${flash}|${flash}`));
+      expect(getSelectableModels).toHaveBeenCalled();
+      expect(screen.getByTestId('models').textContent).not.toContain('env-only-model');
+      fireEvent.click(screen.getByRole('button', { name: '设置' }));
+      const options = within(screen.getByRole('combobox', { name: '会话模型' })).getAllByRole('option');
+      expect(options.map(option => option.getAttribute('value'))).toEqual([flash, pro]);
+    } finally { vi.unstubAllEnvs(); }
+  });
+  it('rejects an arbitrary provider/model string as a new selection', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByTestId('models').textContent).toContain(`${flash}|${flash}`));
+    fireEvent.click(screen.getByRole('button', { name: '设置' }));
+    const select = screen.getByRole('combobox', { name: '会话模型' });
+    const forged = document.createElement('option');
+    forged.value = 'openai/gpt-5.6-terra'; forged.textContent = 'forged';
+    select.appendChild(forged);
+    fireEvent.change(select, { target: { value: 'openai/gpt-5.6-terra' } });
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('模型'));
+    expect(update).not.toHaveBeenCalled();
+    expect(screen.getByTestId('models').textContent).toContain(`${flash}|${flash}`);
+  });
   it('maps a unique legacy string to its public ref and allows sending', async () => {
     threadWith({ chatModel: 'deepseek/deepseek-v4-flash', memoryModel: 'deepseek/deepseek-v4-flash' });
     renderPage();

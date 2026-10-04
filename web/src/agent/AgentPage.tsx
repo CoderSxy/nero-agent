@@ -96,6 +96,9 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
     catch (cause) { setNotice(cause instanceof Error ? cause.message : '新建会话失败'); }
   }
   async function changeModels(next: ModelSettings) {
+    if (!available.has(next.chatModel) || !available.has(next.memoryModel)) {
+      setSettingsError('所选模型不在可用列表中，请重新选择'); return;
+    }
     if (!threadId) { setDraftModels(next); setSettingsError(null); return; }
     const previous = threadMetadata;
     setThreadMetadata(withThreadModels(previous, next)); setSettingsSaving(true); setSettingsError(null);

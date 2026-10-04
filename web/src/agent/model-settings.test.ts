@@ -83,6 +83,13 @@ describe('catalog-based model settings', () => {
     await saveThreadModels({ get, update }, models, 'user-1');
     expect(update).toHaveBeenCalledWith({ metadata: { other: 'keep', neroAgentModels: models } });
   });
+  it('refuses to save an arbitrary provider/model string as a new selection', async () => {
+    const get = vi.fn().mockResolvedValue({ resourceId: 'user-1', metadata: {} });
+    const update = vi.fn();
+    const forged = { chatModel: 'openai/gpt-5.6-terra', memoryModel: publicPlain.ref } as never;
+    await expect(saveThreadModels({ get, update }, forged, 'user-1')).rejects.toThrow();
+    expect(update).not.toHaveBeenCalled();
+  });
   it('refuses to save onto a thread owned by someone else', async () => {
     const get = vi.fn().mockResolvedValue({ resourceId: 'other', metadata: {} });
     const update = vi.fn();

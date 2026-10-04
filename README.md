@@ -12,7 +12,7 @@ npm run db:local:setup
 
 首次本地设置会把数据库连接写入被 Git 忽略的 `.env`，容器凭据保存在 `.env.postgres`。本地容器使用 `postgres:16`，监听 `127.0.0.1:5433`；数据保存在 Docker 命名卷。上线时设置 `DATABASE_URL` 指向生产 PostgreSQL，并在发布应用前运行 `npm run db:migrate`。
 
-在 `.env` 中配置模型供应商的 API Key 和 `TAVILY_API_KEY`，然后运行：
+在 `.env` 中配置 `TAVILY_API_KEY`、`MODEL_CONFIG_ENCRYPTION_KEY` 和 `MODEL_ENDPOINT_ALLOWLIST`（见下文「模型目录」），然后运行：
 
 ```sh
 npm run dev
@@ -24,13 +24,36 @@ npm run dev
 
 若本地已有旧 LibSQL 会话，可在创建管理员并启动 Mastra 后执行 `npm run db:import:libsql -- <旧数据库路径> <管理员邮箱>`。导入脚本把旧会话、消息、观测记忆和线程状态归到指定管理员，重复执行不会复制已有记录；原 LibSQL 文件不会删除。
 
-独立页面直接复用 `@mastra/playground-ui` 的会话、消息、Composer、工具批准和卡片组件，并使用 `@mastra/react` 的 `useChat` 管理流式回复。左侧底部的「设置」菜单可以为当前会话选择会话模型和记忆模型，也可以切换浅色、深色主题。模型选择保存在会话元数据中，刷新后仍然有效；主题选择保存在当前浏览器中。新会话会优先使用已连接的模型供应商，避免默认模型缺少 API Key 时直接报错。也可以在启动前通过 `VITE_AGENT_MODEL` 指定新会话偏好的模型，例如：
+独立页面直接复用 `@mastra/playground-ui` 的会话、消息、Composer、工具批准和卡片组件，并使用 `@mastra/react` 的 `useChat` 管理流式回复。左侧底部的「设置」菜单可以为当前会话选择会话模型和记忆模型，也可以切换浅色、深色主题。模型选择保存在会话元数据中，刷新后仍然有效；主题选择保存在当前浏览器中。可选模型全部来自服务端模型目录（`GET /model-catalog`），不再读取环境变量或供应商连接状态；新会话默认使用公共默认模型，其次第一个启用的公共模型，再其次本人第一个启用的私有模型。模型菜单里的选择从下一条消息开始生效。构建前端使用 `npm run build:web`，构建全部使用 `npm run build`。
 
-```sh
-VITE_AGENT_MODEL=deepseek/deepseek-v4-flash npm run dev
-```
+## 模型目录
 
-这个变量只作用于独立页面的新会话默认值，Studio 的 Agent 配置不变。模型菜单里的选择从下一条消息开始生效。构建前端使用 `npm run build:web`，构建全部使用 `npm run build`。
+模型分为两类，均只支持 OpenAI 兼容的聊天接口，API Key 在服务端以 AES-256-GCM 加密保存，浏览器、会话元数据和列表接口都拿不到明文：
+
+- **公共模型**：由管理员维护，所有登录用户可选。
+- **私有模型**：每个用户在独立页面维护，仅本人可见、可选、可调用。
+
+### 配置
+
+| 环境变量 | 说明 |
+| --- | --- |
+| `MODEL_CONFIG_ENCRYPTION_KEY` | 必填。32 字节密钥的 Base64 编码，例如 `openssl rand -base64 32`。数据库备份不含该密钥；密钥丢失后已保存的模型 Key 无法解密，需重新录入。本版不提供密钥轮换。 |
+| `MODEL_ENDPOINT_ALLOWLIST` | 必填。逗号分隔的 HTTPS 源（origin），例如 `https://api.deepseek.com,https://api.openai.com`。模型的 Base URL 必须落在其中；环回、内网、链路本地和云元数据地址始终被拒绝。 |
+
+### 迁移与首次启用
+
+1. 运行 `npm run db:migrate`，创建 `app_public_models` 和 `app_private_models`（可重复执行）。
+2. 先创建管理员（见上文 `npm run user:create`），再启动服务。
+3. **在使用 Studio 或让用户聊天之前，管理员必须先创建至少一个公共模型并设为默认。** 原 `.env` 中的供应商 Key 不会自动导入，也不再被使用；没有公共模型时，Studio 中运行 Agent 会提示「请先配置公共模型」，但用户仍可在独立页面使用自己的私有模型。
+
+### 管理入口
+
+- 公共模型：[http://localhost:4111/model-admin](http://localhost:4111/model-admin)，也可从 Studio「设置」中的「公共模型管理」进入。该页面需要管理员用 `/auth/login` 单独登录一次，令牌只保存在当前标签页。
+- 私有模型：独立页面左下角「设置 → API Key 管理」，可添加、编辑、替换 Key、停用和删除本人模型。编辑时留空 Key 表示保留原 Key。
+
+### 旧会话
+
+旧会话元数据中保存的是 `provider/model` 字符串。读取时只有恰好一个启用的公共模型的 `providerId/modelId` 与之相同才会自动转换为新的模型引用；没有匹配、有多个匹配、或匹配的是私有模型时，历史消息仍可查看，但输入框会提示「该会话使用的模型已不可用」，需要在「设置」中重新选择会话模型和记忆模型后才能继续发送。删除或停用当前会话正在使用的模型同理。新接口不再接受 `provider/model` 字符串作为模型引用。
 
 可以尝试：
 
