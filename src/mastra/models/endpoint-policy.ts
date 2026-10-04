@@ -10,6 +10,46 @@ const BLOCKED_HOSTNAMES = new Set([
 let cachedAllowlistValue: string | undefined;
 let cachedAllowlistOrigins: Set<string> | undefined;
 
+function parseAllowlistEntry(entry: string): string {
+  let url: URL;
+  try {
+    url = new URL(entry);
+  } catch {
+    throw new ModelCatalogError(
+      'invalid_input',
+      `MODEL_ENDPOINT_ALLOWLIST entry is not a valid HTTPS origin: ${entry}`,
+    );
+  }
+
+  if (url.protocol !== 'https:') {
+    throw new ModelCatalogError(
+      'invalid_input',
+      `MODEL_ENDPOINT_ALLOWLIST entry must use HTTPS: ${entry}`,
+    );
+  }
+  if (url.username || url.password) {
+    throw new ModelCatalogError(
+      'invalid_input',
+      `MODEL_ENDPOINT_ALLOWLIST entry must not include credentials: ${entry}`,
+    );
+  }
+  if (url.search) {
+    throw new ModelCatalogError(
+      'invalid_input',
+      `MODEL_ENDPOINT_ALLOWLIST entry must not include a query: ${entry}`,
+    );
+  }
+  if (url.hash) {
+    throw new ModelCatalogError(
+      'invalid_input',
+      `MODEL_ENDPOINT_ALLOWLIST entry must not include a fragment: ${entry}`,
+    );
+  }
+
+  url.hostname = url.hostname.toLowerCase();
+  return url.origin;
+}
+
 function parseAllowlist(): Set<string> {
   const raw = process.env.MODEL_ENDPOINT_ALLOWLIST;
   if (!raw || !raw.trim()) {
@@ -20,18 +60,18 @@ function parseAllowlist(): Set<string> {
   }
   if (cachedAllowlistValue === raw && cachedAllowlistOrigins) return cachedAllowlistOrigins;
 
-  const origins = new Set(
-    raw
-      .split(',')
-      .map((entry) => entry.trim())
-      .filter(Boolean),
-  );
-  if (origins.size === 0) {
+  const entries = raw
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  if (entries.length === 0) {
     throw new ModelCatalogError(
       'invalid_input',
       'MODEL_ENDPOINT_ALLOWLIST is required and must list approved HTTPS origins',
     );
   }
+
+  const origins = new Set(entries.map(parseAllowlistEntry));
 
   cachedAllowlistValue = raw;
   cachedAllowlistOrigins = origins;
@@ -69,6 +109,13 @@ function isBlockedIp(address: string): boolean {
   return false;
 }
 
+function hostnameForIpCheck(hostname: string): string {
+  if (hostname.startsWith('[') && hostname.endsWith(']')) {
+    return hostname.slice(1, -1);
+  }
+  return hostname;
+}
+
 function assertBlockedHostname(hostname: string): void {
   const lower = hostname.toLowerCase();
   if (BLOCKED_HOSTNAMES.has(lower)) {
@@ -77,7 +124,7 @@ function assertBlockedHostname(hostname: string): void {
   if (lower.endsWith('.localhost') || lower.endsWith('.local')) {
     throw new ModelCatalogError('invalid_input', 'Model endpoint hostname is not allowed');
   }
-  if (isBlockedIp(hostname)) {
+  if (isBlockedIp(hostnameForIpCheck(hostname))) {
     throw new ModelCatalogError('invalid_input', 'Model endpoint address is not allowed');
   }
 }

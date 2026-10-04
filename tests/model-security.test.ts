@@ -99,8 +99,28 @@ test('endpoint policy rejects unsafe URLs', async () => {
     await rejectPolicy('https://10.0.0.1/v1');
     await rejectPolicy('https://192.168.1.1/v1');
     await rejectPolicy('https://169.254.169.254/latest/meta-data');
+    await rejectPolicy('https://metadata.google.internal/');
+    await rejectPolicy('https://[::1]/');
+    await rejectPolicy('https://[fe80::1]/');
     await rejectPolicy('https://evil.example.com/v1');
   });
+});
+
+test('endpoint policy rejects invalid allowlist entries', async () => {
+  await withEnvAsync(
+    { MODEL_ENDPOINT_ALLOWLIST: 'http://api.openai.com,https://api.anthropic.com' },
+    async () => {
+      const url = normalizeModelEndpoint('https://api.anthropic.com/v1');
+      await assert.rejects(() => assertAllowedEndpoint(url), /must use HTTPS/);
+    },
+  );
+  await withEnvAsync(
+    { MODEL_ENDPOINT_ALLOWLIST: 'not-a-url,https://api.anthropic.com' },
+    async () => {
+      const url = normalizeModelEndpoint('https://api.anthropic.com/v1');
+      await assert.rejects(() => assertAllowedEndpoint(url), /not a valid HTTPS origin/);
+    },
+  );
 });
 
 test('endpoint policy accepts allowlisted HTTPS origins', async () => {

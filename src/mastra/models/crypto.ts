@@ -19,15 +19,7 @@ function loadEncryptionKey(): Buffer {
   }
   if (cachedKeyValue === raw && cachedKeyBuffer) return cachedKeyBuffer;
 
-  let decoded: Buffer;
-  try {
-    decoded = Buffer.from(raw, 'base64');
-  } catch {
-    throw new ModelCatalogError(
-      'invalid_input',
-      'MODEL_CONFIG_ENCRYPTION_KEY must be valid Base64 encoding 32 bytes',
-    );
-  }
+  const decoded = Buffer.from(raw, 'base64');
   if (decoded.length !== KEY_BYTES) {
     throw new ModelCatalogError(
       'invalid_input',
