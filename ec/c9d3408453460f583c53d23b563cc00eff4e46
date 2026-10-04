@@ -1,0 +1,26 @@
+tests/model-security.test.ts
+  s_cbc50056780f56::t_f9025f35e11faf 86-90,97-102
+  s_cbc50056780f56::t_d92ca53caee7cd 1-85,91-96,103-119
+.env.example
+  s_cbc50056780f56::t_e4b1b3882e79fb 3-8
+src/mastra/models/endpoint-policy.ts
+  s_cbc50056780f56::t_6e75c12340c571 1-127
+src/mastra/models/crypto.ts
+  s_cbc50056780f56::t_b508debb767f4a 1-89
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ecc9d3408453460f583c53d23b563cc00eff4e46",
+  "prompts": {},
+  "sessions": {
+    "s_cbc50056780f56": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b5c00d31-cc44-4bd1-b302-b82b2a96dcdb",
+        "model": "composer-2.5"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
