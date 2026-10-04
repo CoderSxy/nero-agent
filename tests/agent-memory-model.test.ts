@@ -8,7 +8,6 @@ import { memoryForRequest } from '../src/mastra/agents/memory-model';
 import {
   chatModelRefContextKey,
   memoryModelRefContextKey,
-  trustedUserContextKey,
 } from '../src/mastra/models/resolver';
 import { createModel, updateModel } from '../src/mastra/models/service';
 import type { ModelInput } from '../src/mastra/models/types';
@@ -16,6 +15,8 @@ import type { ModelInput } from '../src/mastra/models/types';
 const FIXTURE_ORIGIN = 'https://models.example.test';
 const FIXTURE_KEY = 'sk-test-1234';
 const ROTATED_KEY = 'sk-test-5678';
+const MASTRA_USER_KEY = 'mastra__user';
+const FORGED_TRUSTED_USER_KEY = 'nero-agent.trusted-user';
 
 function configureEnv() {
   process.env.MODEL_CONFIG_ENCRYPTION_KEY ||= randomBytes(32).toString('base64');
@@ -87,7 +88,7 @@ test('agent memory resolves observation, reflection and title models from the au
     const memoryId = memoryModel.ref.slice('private:'.length);
 
     const selected = contextOf({
-      [trustedUserContextKey]: userA,
+      [MASTRA_USER_KEY]: userA,
       [chatModelRefContextKey]: chatModel.ref,
       [memoryModelRefContextKey]: memoryModel.ref,
     });
@@ -109,7 +110,7 @@ test('agent memory resolves observation, reflection and title models from the au
 
     // Without a memory ref the chat selection is reused.
     const chatOnly = await memoryForRequest({
-      requestContext: contextOf({ [trustedUserContextKey]: userA, [chatModelRefContextKey]: chatModel.ref }),
+      requestContext: contextOf({ [MASTRA_USER_KEY]: userA, [chatModelRefContextKey]: chatModel.ref }),
     });
     assert.deepEqual(memoryModels(chatOnly).observation, configOf('chat-a'));
 
@@ -117,9 +118,21 @@ test('agent memory resolves observation, reflection and title models from the au
     assertNoModels(await memoryForRequest({
       requestContext: contextOf({
         user: userB,
-        [trustedUserContextKey]: userA,
+        [MASTRA_USER_KEY]: userA,
         [memoryModelRefContextKey]: foreign.ref,
       }),
+    }));
+
+    // A client-supplied custom identity key is ignored in favour of mastra__user.
+    assertNoModels(await memoryForRequest({
+      requestContext: contextOf({
+        [MASTRA_USER_KEY]: userA,
+        [FORGED_TRUSTED_USER_KEY]: userB,
+        [memoryModelRefContextKey]: foreign.ref,
+      }),
+    }));
+    assertNoModels(await memoryForRequest({
+      requestContext: contextOf({ [FORGED_TRUSTED_USER_KEY]: userB, [memoryModelRefContextKey]: foreign.ref }),
     }));
 
     // No trusted identity means no model and no provider credentials at all.

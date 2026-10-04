@@ -9,10 +9,10 @@ import { ModelCatalogError, parseModelRef, toModelRef, type ModelRef } from './t
 
 export const chatModelRefContextKey = 'nero-agent.chat-model-ref';
 export const memoryModelRefContextKey = 'nero-agent.memory-model-ref';
-/** Server-only identity slot. Never read the client-writable `user` key. */
-export const trustedUserContextKey = 'nero-agent.trusted-user';
-
-/** Reserved by @mastra/server: clients cannot populate it, auth middleware sets it. */
+/**
+ * Reserved by @mastra/server: clients cannot populate it, auth middleware sets it after
+ * token validation. It is the only identity source; never read `user` or custom keys.
+ */
 const MASTRA_USER_KEY = 'mastra__user';
 
 export type ModelPurpose = 'chat' | 'memory';
@@ -26,7 +26,7 @@ function isAuthUser(value: unknown): value is AuthUser {
 }
 
 export function trustedUserFrom(requestContext: RequestContext): AuthUser {
-  const user = requestContext.get(trustedUserContextKey) ?? requestContext.get(MASTRA_USER_KEY);
+  const user = requestContext.get(MASTRA_USER_KEY);
   if (!isAuthUser(user)) {
     throw new ModelCatalogError('forbidden', 'Authentication is required to use a model');
   }
@@ -39,7 +39,7 @@ export async function resolveModel(ref: ModelRef, user: AuthUser): Promise<OpenA
   await assertAllowedEndpoint(url);
   return {
     id: `${record.providerId}/${record.modelId}`,
-    url: record.baseUrl,
+    url: url.toString(),
     apiKey: decryptApiKey(record.apiKeyCiphertext),
     api: record.apiMode,
   };

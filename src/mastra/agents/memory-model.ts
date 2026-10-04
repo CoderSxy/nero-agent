@@ -3,6 +3,7 @@ import { Memory } from '@mastra/memory';
 import type { OpenAICompatibleConfig } from '@mastra/core/llm';
 import type { RequestContext } from '@mastra/core/request-context';
 import { resolveSelectedModel } from '../models/resolver';
+import { ModelCatalogError } from '../models/types';
 
 const MAX_CACHED_MEMORIES = 200;
 const memoryInstances = new Map<string, Memory>();
@@ -38,7 +39,12 @@ export async function memoryForRequest({ requestContext }: { requestContext: Req
   try {
     const { config } = await resolveSelectedModel(requestContext, 'memory');
     return memoryFor(config);
-  } catch {
+  } catch (error) {
+    const code = error instanceof ModelCatalogError ? error.code : undefined;
+    console.warn('memory model unavailable; using model-less memory', {
+      error: error instanceof Error ? error.name : 'unknown',
+      ...(code ? { code } : {}),
+    });
     return modellessMemory;
   }
 }

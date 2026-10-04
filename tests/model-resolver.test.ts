@@ -10,13 +10,14 @@ import {
   memoryModelRefContextKey,
   resolveModel,
   resolveSelectedModel,
-  trustedUserContextKey,
 } from '../src/mastra/models/resolver';
 import { createModel } from '../src/mastra/models/service';
 import { ModelCatalogError, type ModelInput, type ModelRef } from '../src/mastra/models/types';
 
 const FIXTURE_ORIGIN = 'https://models.example.test';
 const FIXTURE_KEY = 'sk-test-1234';
+const MASTRA_USER_KEY = 'mastra__user';
+const FORGED_TRUSTED_USER_KEY = 'nero-agent.trusted-user';
 
 // Mirrors the reserved set in @mastra/server: a client may populate any other
 // RequestContext key through the request body or the requestContext query param.
@@ -53,7 +54,7 @@ async function requestContextFor(clientContext: Record<string, unknown>, token: 
   }
   const user = await getUserByToken(token);
   assert.ok(user, 'fixture token should authenticate');
-  requestContext.set(trustedUserContextKey, user);
+  requestContext.set(MASTRA_USER_KEY, user);
   requestContext.set('user', user);
   return requestContext;
 }
@@ -142,26 +143,49 @@ test('model resolver binds chat and memory models to the authenticated catalog',
     }, tokenA);
     await assertCode(resolveSelectedModel(forged, 'chat'), 'not_found');
 
-    // Even if the forged value survives the merge, the trusted identity decides.
+    // Even if the forged value survives the merge, the reserved identity decides.
     const divergent = contextOf({
       user: userB,
-      [trustedUserContextKey]: userA,
+      [MASTRA_USER_KEY]: userA,
       [chatModelRefContextKey]: privateB.ref,
     });
     await assertCode(resolveSelectedModel(divergent, 'chat'), 'not_found');
     assert.deepEqual(
       (await resolveSelectedModel(contextOf({
         user: userB,
-        [trustedUserContextKey]: userA,
+        [MASTRA_USER_KEY]: userA,
         [chatModelRefContextKey]: privateA.ref,
       }), 'chat')).config,
       configOf('priv-a'),
     );
 
+    // A client-supplied custom identity key is ignored: resolution stays bound to mastra__user.
+    await assertCode(
+      resolveSelectedModel(contextOf({
+        [MASTRA_USER_KEY]: userA,
+        [FORGED_TRUSTED_USER_KEY]: userB,
+        [chatModelRefContextKey]: privateB.ref,
+      }), 'chat'),
+      'not_found',
+    );
+    assert.deepEqual(
+      (await resolveSelectedModel(contextOf({
+        [MASTRA_USER_KEY]: userA,
+        [FORGED_TRUSTED_USER_KEY]: userB,
+        [chatModelRefContextKey]: privateA.ref,
+      }), 'chat')).config,
+      configOf('priv-a'),
+    );
+    // Custom identity keys never authenticate on their own.
+    await assertCode(
+      resolveSelectedModel(contextOf({ [FORGED_TRUSTED_USER_KEY]: userB, [chatModelRefContextKey]: privateB.ref }), 'chat'),
+      'forbidden',
+    );
+
     // Unauthenticated and malformed selections fail closed.
     await assertCode(resolveSelectedModel(contextOf({ user: userA }), 'chat'), 'forbidden');
     await assertCode(
-      resolveSelectedModel(contextOf({ [trustedUserContextKey]: userA, [chatModelRefContextKey]: 'deepseek/deepseek-v4-flash' }), 'chat'),
+      resolveSelectedModel(contextOf({ [MASTRA_USER_KEY]: userA, [chatModelRefContextKey]: 'deepseek/deepseek-v4-flash' }), 'chat'),
       'invalid_input',
     );
 
