@@ -1,0 +1,22 @@
+docs/superpowers/plans/2026-10-04-model-catalog.md
+  s_3d983ba8986d3d::t_3820befe56544e 46,116,153
+  s_3d983ba8986d3d::t_e59ae1924bfc3b 1-45,47-64,66-75,77-86,88-97,99-108,110-115,117,119,121-130,132-141,143-152,154-155
+  s_3d983ba8986d3d::t_5ccb546c926eb2 65,76,87,98,109,120,131,142
+  s_3d983ba8986d3d::t_29348e21fafdfd 118,156
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "4e0f0b80c9bf768ef908911ef7316c39599ffb03",
+  "prompts": {},
+  "sessions": {
+    "s_3d983ba8986d3d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fcef-2d5c-7aa1-86a6-f20603b3190d",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
