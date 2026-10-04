@@ -1,0 +1,53 @@
+web/src/agent/client.ts
+  s_b08122cd4f4864::t_0caff064ed722e 6-7,9,13-18
+  s_b08122cd4f4864::t_0db424d8e60dfe 19
+web/src/agent/model-settings.ts
+  s_b08122cd4f4864::t_d87b8d92615e02 2,5-6,10-14,16-17,20-25,28-33,36-38,40-41,43-50,62,64,68,70-71
+web/src/agent/AgentPage.tsx
+  s_b08122cd4f4864::t_8b3041f02ff022 1,11-12,22-24,38-40,45-61,69-70,75-76,82,84,87,94-95,100-102,104,111-112,117-118,122
+web/src/agent/model-settings.test.ts
+  s_b08122cd4f4864::t_c409755454f7e0 1-6,8-14,16-28,30-34,36,38,40-51,53-63,65-80,82-83,86-92
+web/src/agent/use-thread-list.test.tsx
+  s_b08122cd4f4864::t_f6cb1b00533ec5 17-20
+web/src/agent/ModelSettingsMenu.test.tsx
+  s_b08122cd4f4864::t_f6cb1b00533ec5 1,4,6,8-15,17-18,23,27-31,36-37,41-47
+  s_b08122cd4f4864::t_4ac45649f0a497 48
+web/src/agent/AgentComposer.tsx
+  s_b08122cd4f4864::t_733a369a1000a7 3-4,7,11,14
+web/src/agent/ConfigPanel.tsx
+  s_b08122cd4f4864::t_298bcc3a4396c3 13
+web/src/agent/AgentChat.test.tsx
+  s_b08122cd4f4864::t_5dd3a132a1d111 7-8
+  s_b08122cd4f4864::t_9ba7c3399c99fa 9,24,34,37,43-62,67
+web/src/agent/ModelSettingsMenu.tsx
+  s_b08122cd4f4864::t_57cd0512053866 2-3,7-26,28
+  s_b08122cd4f4864::t_9f966e983a0c81 33-40,45-46,48-49
+web/src/agent/AgentChat.tsx
+  s_b08122cd4f4864::t_733a369a1000a7 8,10,12,19-20,23,28,31,67-68
+  s_b08122cd4f4864::t_e99ab36dc1f76a 21-22
+web/src/agent/AgentPage.test.tsx
+  s_b08122cd4f4864::t_0dc211f4cf3e91 64
+  s_b08122cd4f4864::t_a0aed3a77c13fb 6-7,11-15,19,22,26-33,37-39,53,55-56,58,60,62-63,65-85
+web/src/agent/ThreadSidebar.test.tsx
+  s_b08122cd4f4864::t_f6cb1b00533ec5 10
+web/src/agent/model-catalog-client.ts
+  s_b08122cd4f4864::t_fd48675db3c5c4 1-27
+web/src/agent/ThreadSidebar.tsx
+  s_b08122cd4f4864::t_57cd0512053866 3-4,9,13,33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "aed66d2accc29b63d624d2b246dbcac609d92be0",
+  "prompts": {},
+  "sessions": {
+    "s_b08122cd4f4864": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d094d38a-ebee-465a-b143-1584da6e7379",
+        "model": "claude-sonnet-5-5-high"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
