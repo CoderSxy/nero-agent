@@ -1,0 +1,23 @@
+migrations/002_model_catalog.sql
+  s_5d5149d1d189ca::t_b43f459d21b5d7 1-49
+src/mastra/models/types.ts
+  s_5d5149d1d189ca::t_1bf2289940a67a 1-66
+tests/model-schema.test.ts
+  s_5d5149d1d189ca::t_127a0da0b73e3a 1-84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f0c57c545c11016ac3e8fe36a1a01521e158db9b",
+  "prompts": {},
+  "sessions": {
+    "s_5d5149d1d189ca": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f242be1c-8a7e-4037-bb5e-ee4fbb681c58",
+        "model": "composer-2.5"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
