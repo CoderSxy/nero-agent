@@ -1,0 +1,31 @@
+tests/studio-zh.test.ts
+  s_8aedf40dbaa079::t_29a1e8f747819e 3-4,25-64
+src/mastra/studio-zh.ts
+  s_8aedf40dbaa079::t_91d971357b238a 140
+  s_8aedf40dbaa079::t_4eec89bf0bc792 94-107
+  s_8aedf40dbaa079::t_6877d7c3af9f08 128-129
+src/mastra/models/admin-page.ts
+  s_8aedf40dbaa079::t_f7fa0072cc9337 334
+  s_8aedf40dbaa079::t_6867061091ce05 1-333,335-345
+tests/model-admin-page.test.ts
+  s_8aedf40dbaa079::t_6ceb20e531c8a6 1-176
+src/mastra/index.ts
+  s_8aedf40dbaa079::t_6247a4360f81df 17
+  s_8aedf40dbaa079::t_5b2a2303c640ab 26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "92e2087d469f9eabc8399b65dda1282c9936a966",
+  "prompts": {},
+  "sessions": {
+    "s_8aedf40dbaa079": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1b71d3c5-4d13-43da-ab1a-ae629207a956",
+        "model": "claude-sonnet-5-5-high"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
