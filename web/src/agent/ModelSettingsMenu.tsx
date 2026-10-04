@@ -1,31 +1,52 @@
 import { useState } from 'react';
-import type { ModelProvider, ModelSettings } from './model-settings';
-import { providerModelIds } from './model-settings';
+import type { ModelRef, SafeModel } from './model-catalog-client';
+import type { ModelSettings } from './model-settings';
 
 export type Theme = 'light' | 'dark';
 
-export function ModelSettingsMenu({ models, providers, theme, onModelsChange, onThemeChange, disabled = false,
+function ModelSelect({ id, label, value, catalog, disabled, onChange }: {
+  id: string; label: string; value?: ModelRef; catalog: SafeModel[]; disabled: boolean;
+  onChange: (ref: ModelRef) => void;
+}) {
+  const available = value !== undefined && catalog.some(model => model.ref === value);
+  const groups = [['public', '公共模型'], ['private', '我的模型']] as const;
+  return <select id={id} aria-label={label} value={available ? value : ''} disabled={disabled}
+    onChange={event => onChange(event.target.value as ModelRef)}>
+    {!available && <option value="" disabled>模型不可用，请重新选择</option>}
+    {groups.map(([scope, title]) => {
+      const items = catalog.filter(model => model.scope === scope);
+      return items.length > 0 && <optgroup label={title} key={scope}>
+        {items.map(model => <option value={model.ref} key={model.ref}>
+          {model.displayName} · {model.providerId}/{model.modelId}</option>)}
+      </optgroup>;
+    })}
+  </select>;
+}
+
+export function ModelSettingsMenu({ models, catalog, theme, onModelsChange, onThemeChange, disabled = false,
   error }: {
-  models: ModelSettings; providers: ModelProvider[]; theme: Theme;
+  models: Partial<ModelSettings>; catalog: SafeModel[]; theme: Theme;
   onModelsChange: (models: ModelSettings) => void; onThemeChange: (theme: Theme) => void;
   disabled?: boolean; error?: string | null;
 }) {
   const [open, setOpen] = useState(false);
-  const connected = providerModelIds(providers);
-  const options = [...new Set([...connected, models.chatModel, models.memoryModel].filter(Boolean))];
+  const [pending, setPending] = useState<Partial<ModelSettings>>({});
+  const choose = (field: keyof ModelSettings) => (ref: ModelRef) => {
+    const next = { ...models, ...pending, [field]: ref };
+    if (next.chatModel && next.memoryModel) {
+      setPending({});
+      onModelsChange({ chatModel: next.chatModel, memoryModel: next.memoryModel });
+    } else setPending(next);
+  };
   return <div className="settings-footer">
     {open && <div className="settings-popover" role="dialog" aria-label="设置">
       <div className="settings-heading">模型配置</div>
       <label htmlFor="chat-model">会话模型</label>
-      <select id="chat-model" aria-label="会话模型" value={models.chatModel} disabled={disabled}
-        onChange={event => onModelsChange({ ...models, chatModel: event.target.value })}>
-        {options.map(id => <option value={id} key={id}>{id}{connected.includes(id) ? '' : ' · 未连接'}</option>)}
-      </select>
+      <ModelSelect id="chat-model" label="会话模型" value={pending.chatModel ?? models.chatModel} catalog={catalog}
+        disabled={disabled} onChange={choose('chatModel')} />
       <label htmlFor="memory-model">记忆模型</label>
-      <select id="memory-model" aria-label="记忆模型" value={models.memoryModel} disabled={disabled}
-        onChange={event => onModelsChange({ ...models, memoryModel: event.target.value })}>
-        {options.map(id => <option value={id} key={id}>{id}{connected.includes(id) ? '' : ' · 未连接'}</option>)}
-      </select>
+      <ModelSelect id="memory-model" label="记忆模型" value={pending.memoryModel ?? models.memoryModel} catalog={catalog}
+        disabled={disabled} onChange={choose('memoryModel')} />
       <p className="settings-help">修改后从下一条消息开始生效。</p>
       {error && <p className="error" role="alert">{error}</p>}
       <div className="settings-divider" />

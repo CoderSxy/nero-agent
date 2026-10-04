@@ -14,7 +14,10 @@ describe('thread list hook', () => {
     createMemoryThread.mockResolvedValue({ id: 'new', resourceId: 'agent' });
     const { result } = renderHook(() => useThreadList('agent'));
     await waitFor(() => expect(result.current.loading).toBe(false));
-    const models = { chatModel: 'deepseek/deepseek-v4-flash', memoryModel: 'deepseek/deepseek-v4-pro' };
+    const models = {
+      chatModel: 'public:11111111-1111-4111-8111-111111111111' as const,
+      memoryModel: 'private:22222222-2222-4222-8222-222222222222' as const,
+    };
     expect(await result.current.createThread(models)).toEqual({ id: 'new', resourceId: 'agent' });
     expect(createMemoryThread).toHaveBeenCalledWith(expect.objectContaining({ agentId: 'agent', resourceId: 'agent',
       metadata: { neroAgentModels: models },

@@ -1,48 +1,53 @@
 import { RequestContext } from '@mastra/core/request-context';
+import type { ModelRef, SafeModel } from './model-catalog-client';
 
 export interface ModelSettings {
-  chatModel: string;
-  memoryModel: string;
-}
-
-export interface ModelProvider {
-  id: string;
-  name: string;
-  connected: boolean;
-  models: string[];
-  envVar: string | string[];
+  chatModel: ModelRef;
+  memoryModel: ModelRef;
 }
 
 const metadataKey = 'neroAgentModels';
-export const memoryModelContextKey = 'nero-agent.memory-model';
+export const chatModelRefContextKey = 'nero-agent.chat-model-ref';
+export const memoryModelRefContextKey = 'nero-agent.memory-model-ref';
 
-export function providerModelIds(providers: ModelProvider[]): string[] {
-  return providers.filter(provider => provider.connected).flatMap(provider =>
-    provider.models.map(model => model.includes('/') ? model : `${provider.id}/${model}`));
+const refPattern = /^(public|private):[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const legacyPattern = /^[^/\s:]+\/\S+$/;
+
+export function isModelRef(value: unknown): value is ModelRef {
+  return typeof value === 'string' && refPattern.test(value);
 }
 
-export function getDefaultModels(agentModel: string, memoryModel: string | undefined,
-  providers: ModelProvider[]): ModelSettings {
-  const available = providerModelIds(providers);
-  const chatModel = available.includes(agentModel) ? agentModel
-    : memoryModel && available.includes(memoryModel) ? memoryModel
-      : available[0] || agentModel;
-  return { chatModel, memoryModel: memoryModel && available.includes(memoryModel) ? memoryModel : chatModel };
+export function getDefaultModels(catalog: SafeModel[]): ModelSettings | null {
+  const enabled = catalog.filter(model => model.enabled !== false);
+  const publicModels = enabled.filter(model => model.scope === 'public');
+  const choice = publicModels.find(model => model.isDefault) ?? publicModels[0]
+    ?? enabled.find(model => model.scope === 'private');
+  return choice ? { chatModel: choice.ref, memoryModel: choice.ref } : null;
 }
 
-function validModel(value: unknown): value is string {
-  return typeof value === 'string' && /^[a-z][\w-]*\/[a-z\d][\w.\-]*$/i.test(value);
+function resolveSaved(value: unknown, catalog: SafeModel[]): ModelRef | null {
+  if (isModelRef(value)) return catalog.some(model => model.ref === value) ? value : null;
+  if (typeof value !== 'string' || !legacyPattern.test(value)) return null;
+  const matches = catalog.filter(model => model.scope === 'public'
+    && `${model.providerId}/${model.modelId}` === value);
+  return matches.length === 1 ? matches[0].ref : null;
 }
 
-export function readThreadModels(metadata: unknown): Partial<ModelSettings> {
-  if (!metadata || typeof metadata !== 'object') return {};
+export function readThreadModels(metadata: unknown, catalog: SafeModel[]):
+  { settings: Partial<ModelSettings>; invalid: boolean } {
+  if (!metadata || typeof metadata !== 'object') return { settings: {}, invalid: false };
   const saved = (metadata as Record<string, unknown>)[metadataKey];
-  if (!saved || typeof saved !== 'object') return {};
+  if (saved === undefined || saved === null) return { settings: {}, invalid: false };
+  if (typeof saved !== 'object') return { settings: {}, invalid: true };
   const record = saved as Record<string, unknown>;
-  return {
-    ...(validModel(record.chatModel) ? { chatModel: record.chatModel } : {}),
-    ...(validModel(record.memoryModel) ? { memoryModel: record.memoryModel } : {}),
-  };
+  const settings: Partial<ModelSettings> = {};
+  let invalid = false;
+  for (const field of ['chatModel', 'memoryModel'] as const) {
+    if (record[field] === undefined) continue;
+    const ref = resolveSaved(record[field], catalog);
+    if (ref) settings[field] = ref; else invalid = true;
+  }
+  return { settings, invalid };
 }
 
 export function withThreadModels(metadata: unknown, settings: ModelSettings): Record<string, unknown> {
@@ -54,14 +59,15 @@ export function withThreadModels(metadata: unknown, settings: ModelSettings): Re
 export async function saveThreadModels(thread: {
   get: () => Promise<{ resourceId: string; metadata?: unknown }>;
   update: (params: { metadata: Record<string, unknown> }) => Promise<unknown>;
-}, settings: ModelSettings): Promise<void> {
+}, settings: ModelSettings, resourceId: string): Promise<void> {
   const current = await thread.get();
-  if (current.resourceId !== 'agent') throw new Error('会话不存在或无权访问');
+  if (current.resourceId !== resourceId) throw new Error('会话不存在或无权访问');
   await thread.update({ metadata: withThreadModels(current.metadata, settings) });
 }
 
-export function createMemoryRequestContext(memoryModel: string): RequestContext {
+export function createModelRequestContext(settings: ModelSettings): RequestContext {
   const context = new RequestContext();
-  context.set(memoryModelContextKey, memoryModel);
+  context.set(chatModelRefContextKey, settings.chatModel);
+  context.set(memoryModelRefContextKey, settings.memoryModel);
   return context;
 }

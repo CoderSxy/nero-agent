@@ -4,6 +4,9 @@ import { AgentChat } from './AgentChat';
 
 const sendMessage = vi.fn();
 const cancelRun = vi.fn();
+const chatRef = 'public:11111111-1111-4111-8111-111111111111' as const;
+const memoryRef = 'private:22222222-2222-4222-8222-222222222222' as const;
+const models = { chatModel: chatRef, memoryModel: memoryRef };
 let mockMessages: Array<{ id: string; role: string; content: { format: number; parts: Array<{ type: string; text: string }> } }> =
   [{ id: 'partial', role: 'assistant', content: { format: 2, parts: [{ type: 'text', text: '部分回复' }] } }];
 vi.mock('@mastra/react', () => ({ useChat: () => ({
@@ -18,8 +21,7 @@ describe('Agent conversation', () => {
     mockMessages = [];
     sendMessage.mockResolvedValue(undefined);
     const { container } = render(<AgentChat threadId="new-thread" resourceId="agent" initialMessages={[]}
-      onMessageSent={vi.fn()} models={{ chatModel: 'deepseek/deepseek-v4-flash',
-        memoryModel: 'deepseek/deepseek-v4-flash' }} />);
+      onMessageSent={vi.fn()} models={models} />);
     const shell = container.querySelector('[data-slot="chat-shell"]');
     const input = screen.getByRole('textbox', { name: '发送消息' });
     expect(shell?.classList.contains('chat-shell--empty')).toBe(true);
@@ -29,23 +31,40 @@ describe('Agent conversation', () => {
     await waitFor(() => expect(shell?.classList.contains('chat-shell--empty')).toBe(false));
     expect(screen.getByRole('textbox', { name: '发送消息' })).toBe(input);
   });
-  it('sends in stream mode with the scoped thread', async () => {
+  it('sends in stream mode with refs in context and no model option', async () => {
     sendMessage.mockResolvedValue(undefined);
     render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]} onMessageSent={vi.fn()}
-      models={{ chatModel: 'deepseek/deepseek-v4-pro', memoryModel: 'deepseek/deepseek-v4-flash' }} />);
+      models={models} />);
     fireEvent.change(screen.getByRole('textbox', { name: '发送消息' }), { target: { value: '你好' } });
     fireEvent.click(screen.getByRole('button', { name: '发送' }));
     await waitFor(() => expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({
       message: '你好', mode: 'stream', threadId: 'thread-1', onChunk: expect.any(Function),
-      model: 'deepseek/deepseek-v4-pro',
     })));
-    expect(sendMessage.mock.calls[0][0].requestContext.get('nero-agent.memory-model'))
-      .toBe('deepseek/deepseek-v4-flash');
+    const options = sendMessage.mock.calls[0][0];
+    expect('model' in options).toBe(false);
+    expect(options.requestContext.get('nero-agent.chat-model-ref')).toBe(chatRef);
+    expect(options.requestContext.get('nero-agent.memory-model-ref')).toBe(memoryRef);
+  });
+  it('blocks sending and explains why when the thread models are unusable', () => {
+    render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]} onMessageSent={vi.fn()}
+      models={models} sendBlockedReason="当前模型已不可用，请重新选择" />);
+    fireEvent.change(screen.getByRole('textbox', { name: '发送消息' }), { target: { value: '你好' } });
+    expect((screen.getByRole('button', { name: '发送' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.submit(screen.getByRole('textbox', { name: '发送消息' }).closest('form')!);
+    expect(sendMessage).not.toHaveBeenCalled();
+    expect(screen.getByText('当前模型已不可用，请重新选择')).toBeTruthy();
+  });
+  it('does not send when no models are selected', () => {
+    render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]} onMessageSent={vi.fn()}
+      models={null} />);
+    fireEvent.change(screen.getByRole('textbox', { name: '发送消息' }), { target: { value: '你好' } });
+    expect((screen.getByRole('button', { name: '发送' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(sendMessage).not.toHaveBeenCalled();
   });
   it('keeps partial text visible when the stream fails', async () => {
     sendMessage.mockRejectedValue(new Error('stream disconnected'));
     render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]} onMessageSent={vi.fn()}
-      models={{ chatModel: 'deepseek/deepseek-v4-flash', memoryModel: 'deepseek/deepseek-v4-flash' }} />);
+      models={models} />);
     fireEvent.change(screen.getByRole('textbox', { name: '发送消息' }), { target: { value: '继续' } });
     fireEvent.click(screen.getByRole('button', { name: '发送' }));
     expect(await screen.findByRole('alert')).toHaveProperty('textContent', '回复未完成：stream disconnected');

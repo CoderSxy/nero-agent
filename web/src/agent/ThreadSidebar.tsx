@@ -1,15 +1,16 @@
 import { ThreadList, ThreadListEmpty, ThreadListItem, ThreadListItems, ThreadListNewItem } from '@mastra/playground-ui/components/ThreadList';
 import type { Thread } from './thread-scope';
-import type { ModelProvider, ModelSettings } from './model-settings';
+import type { SafeModel } from './model-catalog-client';
+import type { ModelSettings } from './model-settings';
 import { ModelSettingsMenu, type Theme } from './ModelSettingsMenu';
 import type { CurrentUser } from '../App';
 
 export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSelect,
-  models, providers, theme, onModelsChange, onThemeChange, settingsError, settingsSaving, canCreate = true,
+  models, catalog, theme, onModelsChange, onThemeChange, settingsError, settingsSaving, canCreate = true,
   user, onLogout }: {
   threads: Thread[]; currentId?: string; loading: boolean; error: string | null;
   onNew: () => void; onSelect: (id: string) => void;
-  models: ModelSettings; providers: ModelProvider[]; theme: Theme;
+  models: Partial<ModelSettings>; catalog: SafeModel[]; theme: Theme;
   onModelsChange: (models: ModelSettings) => void; onThemeChange: (theme: Theme) => void;
   settingsError?: string | null; settingsSaving?: boolean;
   canCreate?: boolean;
@@ -29,7 +30,7 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
     {loading && <p className="muted sidebar-note">加载会话中…</p>}
     {error && <p role="alert" className="error sidebar-note">{error}</p>}
     </div>
-    <ModelSettingsMenu models={models} providers={providers} theme={theme}
+    <ModelSettingsMenu models={models} catalog={catalog} theme={theme}
       onModelsChange={onModelsChange} onThemeChange={onThemeChange}
       error={settingsError} disabled={settingsSaving} />
     {user && <div className="account-footer"><span title={user.email}>{user.displayName}</span>

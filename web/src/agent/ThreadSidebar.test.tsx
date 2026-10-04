@@ -7,8 +7,7 @@ afterEach(cleanup);
 it('keeps the logo and settings outside the scrolling conversation list', () => {
   const { container } = render(<ThreadSidebar threads={[]} loading={false} error={null}
     onNew={vi.fn()} onSelect={vi.fn()}
-    models={{ chatModel: 'deepseek/deepseek-v4-flash', memoryModel: 'deepseek/deepseek-v4-flash' }}
-    providers={[]} theme="dark" onModelsChange={vi.fn()} onThemeChange={vi.fn()} />);
+    models={{}} catalog={[]} theme="dark" onModelsChange={vi.fn()} onThemeChange={vi.fn()} />);
   const scroll = container.querySelector('.thread-scroll');
   expect(scroll).toBeTruthy();
   expect(scroll?.contains(container.querySelector('.brand'))).toBe(false);

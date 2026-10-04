@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { GetAgentResponse, GetMemoryConfigResponse } from '@mastra/client-js';
 import { SectionCard } from '@mastra/playground-ui/components/SectionCard';
-import type { ModelSettings } from './model-settings';
 
 function display(value: unknown) {
   if (value == null || value === '') return '未提供';
@@ -11,7 +10,7 @@ function display(value: unknown) {
 }
 
 export function ConfigPanel({ agent, memory, models, loading, error }: {
-  agent: GetAgentResponse | null; memory?: GetMemoryConfigResponse | null; models?: ModelSettings;
+  agent: GetAgentResponse | null; memory?: GetMemoryConfigResponse | null; models?: { chatModel: string; memoryModel: string };
   loading: boolean; error: string | null;
 }) {
   const [open, setOpen] = useState<Record<string, boolean>>({ overview: true, tools: true });
