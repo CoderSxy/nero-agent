@@ -1,0 +1,21 @@
+docs/superpowers/specs/2026-10-04-model-catalog-design.md
+  s_3d983ba8986d3d::t_3b6c69b2f3b13c 3-5
+  s_3d983ba8986d3d::t_60788a7b97a9bc 40,66,84,88,104
+  s_3d983ba8986d3d::t_a7359ddc618a45 1-2,6-39,41-65,67-83,85-87,89-103,105-128
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "45d4232b1f4a7c6a1715b1aa30e87bea47b196bc",
+  "prompts": {},
+  "sessions": {
+    "s_3d983ba8986d3d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fcef-2d5c-7aa1-86a6-f20603b3190d",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
