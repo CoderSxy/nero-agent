@@ -1,0 +1,26 @@
+tests/model-routes.test.ts
+  s_c020bd185adf5c::t_c7f6573a10fb60 1-233
+src/mastra/models/routes.ts
+  s_c020bd185adf5c::t_b9e9eb65bf2a39 126
+  s_c020bd185adf5c::t_0116f698375704 1-118,120-125,127-140
+  s_c020bd185adf5c::t_becb5851bc9106 119
+src/mastra/index.ts
+  s_c020bd185adf5c::t_bf782bb8e35c25 25
+  s_c020bd185adf5c::t_358b74fdf211b9 16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "2bef16a309e6d770f6df109e2fff90b235c9d4af",
+  "prompts": {},
+  "sessions": {
+    "s_c020bd185adf5c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "41f16b43-f181-458d-99d0-bb8d97a3f532",
+        "model": "claude-sonnet-5-5-high"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
