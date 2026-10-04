@@ -5,6 +5,7 @@ import { askUserTool, webFetchTool } from '@mastra/core/tools';
 import { LocalFilesystem, LocalSandbox, WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace';
 import { memoryForRequest } from './memory-model';
 import { startScheduleTool, stopScheduleTool } from '../tools/schedule-tools';
+import { resolveSelectedModel } from '../models/resolver';
 import { tavilySearchTool } from '../tools/tavily-search-tool';
 import type { AuthUser } from '../auth/service';
 
@@ -52,7 +53,7 @@ export const agent = new Agent({
 
 修改本地文件后，在回复末尾附上使用 ${pathToFileURL(`${workspacePath}/`).href} 的纯文本 URL；不要使用 Markdown 链接、localhost、/workspace、相对路径或静态文件服务器。
 `,
-  model: 'openai/gpt-5.6-terra',
+  model: async ({ requestContext }) => (await resolveSelectedModel(requestContext, 'chat')).config,
   defaultOptions: {
     maxSteps: 100,
     autoResumeSuspendedTools: true,
