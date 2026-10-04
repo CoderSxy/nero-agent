@@ -1,0 +1,24 @@
+tests/model-catalog-db.test.ts
+  s_43afba19f5bf0b::t_8540a895a7c3e1 1-144,150-176
+  s_43afba19f5bf0b::t_c89700eab05c9b 145-149
+src/mastra/models/service.ts
+  s_43afba19f5bf0b::t_d6393fc04a2438 1-300
+src/mastra/models/repository.ts
+  s_43afba19f5bf0b::t_af38e46d31076d 1-261
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "dbb864c8b444b126c4029634f5c76579db28408a",
+  "prompts": {},
+  "sessions": {
+    "s_43afba19f5bf0b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "bda69473-cc48-4b36-9b8c-e3e985e100b1",
+        "model": "claude-sonnet-5-5-high"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
