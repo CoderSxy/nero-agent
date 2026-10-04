@@ -1,0 +1,19 @@
+web/vite.config.ts
+  s_8d48b68f33405b::t_854c4974f79c26 7-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c37b5f669c003462f7b9ae691bf6a3af273cd938",
+  "prompts": {},
+  "sessions": {
+    "s_8d48b68f33405b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "27696e54-6cba-4e96-abe4-c181c55d0d6c",
+        "model": "composer-2.5-fast"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
