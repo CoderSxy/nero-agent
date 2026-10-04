@@ -1,0 +1,119 @@
+import assert from 'node:assert/strict';
+import { randomBytes } from 'node:crypto';
+import test from 'node:test';
+import {
+  decryptApiKey,
+  encryptApiKey,
+  keyHint,
+} from '../src/mastra/models/crypto';
+import {
+  assertAllowedEndpoint,
+  normalizeModelEndpoint,
+} from '../src/mastra/models/endpoint-policy';
+
+const TEST_KEY = randomBytes(32).toString('base64');
+const OTHER_KEY = randomBytes(32).toString('base64');
+const ALLOWED_ORIGINS = 'https://api.openai.com,https://api.anthropic.com';
+
+function withEnv<T>(vars: Record<string, string | undefined>, fn: () => T): T {
+  const previous = new Map<string, string | undefined>();
+  for (const [name, value] of Object.entries(vars)) {
+    previous.set(name, process.env[name]);
+    if (value === undefined) delete process.env[name];
+    else process.env[name] = value;
+  }
+  try {
+    return fn();
+  } finally {
+    for (const [name, value] of previous) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  }
+}
+
+async function withEnvAsync<T>(
+  vars: Record<string, string | undefined>,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const previous = new Map<string, string | undefined>();
+  for (const [name, value] of Object.entries(vars)) {
+    previous.set(name, process.env[name]);
+    if (value === undefined) delete process.env[name];
+    else process.env[name] = value;
+  }
+  try {
+    return await fn();
+  } finally {
+    for (const [name, value] of previous) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  }
+}
+
+test('model key encryption is authenticated', () => {
+  withEnv({ MODEL_CONFIG_ENCRYPTION_KEY: TEST_KEY }, () => {
+    const plain = 'sk-test-1234';
+    const encrypted = encryptApiKey(plain);
+    assert.equal(decryptApiKey(encrypted), plain);
+    assert.notEqual(encryptApiKey(plain), encrypted);
+
+    const tampered = encrypted.slice(0, -1) + (encrypted.endsWith('A') ? 'B' : 'A');
+    assert.throws(() => decryptApiKey(tampered));
+
+    withEnv({ MODEL_CONFIG_ENCRYPTION_KEY: OTHER_KEY }, () => {
+      assert.throws(() => decryptApiKey(encrypted));
+    });
+
+    assert.equal(keyHint('sk-test-1234'), '1234');
+    assert.equal(keyHint('ab'), 'ab');
+    assert.equal(keyHint(''), '');
+  });
+});
+
+test('model key encryption fails closed without valid key', () => {
+  assert.throws(() => encryptApiKey('sk-test'), /MODEL_CONFIG_ENCRYPTION_KEY/);
+  withEnv({ MODEL_CONFIG_ENCRYPTION_KEY: 'too-short' }, () => {
+    assert.throws(() => encryptApiKey('sk-test'), /MODEL_CONFIG_ENCRYPTION_KEY/);
+  });
+});
+
+test('endpoint policy rejects unsafe URLs', async () => {
+  await withEnvAsync({ MODEL_ENDPOINT_ALLOWLIST: ALLOWED_ORIGINS }, async () => {
+    const rejectNormalize = (raw: string) =>
+      assert.throws(() => normalizeModelEndpoint(raw));
+    const rejectPolicy = async (raw: string) => {
+      await assert.rejects(async () => {
+        const url = normalizeModelEndpoint(raw);
+        await assertAllowedEndpoint(url);
+      });
+    };
+
+    rejectNormalize('http://api.openai.com/v1');
+    rejectNormalize('https://user:pass@api.openai.com/v1');
+    rejectNormalize('https://api.openai.com/v1#fragment');
+
+    await rejectPolicy('https://127.0.0.1/v1');
+    await rejectPolicy('https://localhost/v1');
+    await rejectPolicy('https://10.0.0.1/v1');
+    await rejectPolicy('https://192.168.1.1/v1');
+    await rejectPolicy('https://169.254.169.254/latest/meta-data');
+    await rejectPolicy('https://evil.example.com/v1');
+  });
+});
+
+test('endpoint policy accepts allowlisted HTTPS origins', async () => {
+  await withEnvAsync({ MODEL_ENDPOINT_ALLOWLIST: ALLOWED_ORIGINS }, async () => {
+    const url = normalizeModelEndpoint('https://api.openai.com/v1/');
+    assert.equal(url.origin, 'https://api.openai.com');
+    await assertAllowedEndpoint(url);
+  });
+});
+
+test('endpoint policy rejects when allowlist is missing', async () => {
+  await withEnvAsync({ MODEL_ENDPOINT_ALLOWLIST: undefined }, async () => {
+    const url = normalizeModelEndpoint('https://api.openai.com/v1');
+    await assert.rejects(() => assertAllowedEndpoint(url), /MODEL_ENDPOINT_ALLOWLIST/);
+  });
+});
