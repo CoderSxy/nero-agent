@@ -1,0 +1,50 @@
+web/src/agent/ModelSettingsMenu.test.tsx
+  s_08a453bd4066e6::t_dbaec8e4142713 22-26,28-42
+web/src/agent/PrivateModelMenu.test.tsx
+  s_08a453bd4066e6::t_1555a286c9fd49 1-123
+web/src/styles.css
+  s_08a453bd4066e6::t_c44ddf243accb3 38-54
+web/src/agent/ThreadSidebar.tsx
+  s_08a453bd4066e6::t_19a7e88d2ab092 15
+  s_08a453bd4066e6::t_f63033e659951e 9-10
+  s_08a453bd4066e6::t_eb2add68c88eb9 36
+web/src/agent/AgentPage.test.tsx
+  s_08a453bd4066e6::t_bc08883152ee1d 23-33
+  s_08a453bd4066e6::t_3fedb3fffbdb60 1
+  s_08a453bd4066e6::t_72d92415a61568 98-162
+  s_08a453bd4066e6::t_1cd5fb09c5fe11 8
+web/src/agent/PrivateModelMenu.tsx
+  s_08a453bd4066e6::t_0caf9b61ca7c75 83
+  s_08a453bd4066e6::t_600e3ddd04cdf0 141
+  s_08a453bd4066e6::t_0e9dd90fc1e095 132
+  s_08a453bd4066e6::t_3c334b988231c7 1-82,84-131,133-140,142-149
+web/src/agent/ModelSettingsMenu.tsx
+  s_08a453bd4066e6::t_0dedc99a41f757 27-28,31,35
+  s_08a453bd4066e6::t_5727e137648152 47-50
+  s_08a453bd4066e6::t_774cacc837cbc8 36
+  s_08a453bd4066e6::t_d2276dcd102ed8 59,61
+  s_08a453bd4066e6::t_d5344eec9d34a9 4
+  s_08a453bd4066e6::t_86c8a2d80982e6 37
+web/src/agent/AgentPage.tsx
+  s_08a453bd4066e6::t_fa2f52d2595e55 108-111
+  s_08a453bd4066e6::t_767d8a9c1ecc91 116
+  s_08a453bd4066e6::t_3bfd1c6762a703 57
+web/src/agent/model-catalog-client.ts
+  s_08a453bd4066e6::t_422cc0cb68657f 21-68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cf93fbd08988ccbc946e6b556840cba4a04a9f63",
+  "prompts": {},
+  "sessions": {
+    "s_08a453bd4066e6": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "15c7cf82-7900-4a67-a8e5-1e41998065b6",
+        "model": "claude-sonnet-5-5-high"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
