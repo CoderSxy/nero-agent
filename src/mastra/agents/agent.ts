@@ -1,8 +1,7 @@
-import { pathToFileURL } from 'node:url';
 import { Agent } from '@mastra/core/agent';
 import { TaskSignalProvider } from '@mastra/core/signals';
 import { askUserTool, webFetchTool } from '@mastra/core/tools';
-import { LocalFilesystem, LocalSandbox, WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace';
+import { LocalFilesystem, LocalSandbox, Workspace } from '@mastra/core/workspace';
 import { memoryForRequest } from './memory-model';
 import { startScheduleTool, stopScheduleTool } from '../tools/schedule-tools';
 import type { RequestContext } from '@mastra/core/request-context';
@@ -11,6 +10,8 @@ import { createTransportModel } from '../models/transport';
 import { tavilySearchTool } from '../tools/tavily-search-tool';
 import { isWorkspaceResolverEnabled } from '../workspace/config';
 import { resolveUserFilesystem } from '../workspace/resolver';
+import { disabledNativeFilesystemTools, isUserFilesEnabled } from '../files/policy';
+import { userFileTools } from '../files/tools';
 
 const workspacePath = 'workspace';
 
@@ -23,23 +24,14 @@ const workspace = new Workspace({
   sandbox: new LocalSandbox({
     workingDirectory: workspacePath,
   }),
-  tools: {
-    [WORKSPACE_TOOLS.FILESYSTEM.WRITE_FILE]: {
-      requireReadBeforeWrite: true,
-    },
-    [WORKSPACE_TOOLS.FILESYSTEM.EDIT_FILE]: {
-      requireReadBeforeWrite: true,
-    },
-    [WORKSPACE_TOOLS.FILESYSTEM.DELETE]: {
-      requireApproval: true,
-    },
-  },
+  tools: disabledNativeFilesystemTools,
 });
 
 const userWorkspace = new Workspace({
   id: 'user-workspace',
   name: '用户工作区',
   filesystem: resolveUserFilesystem,
+  tools: disabledNativeFilesystemTools,
 });
 
 function isAdmin(requestContext: RequestContext): boolean {
@@ -68,7 +60,7 @@ export const agent = new Agent({
 
 用户打招呼或没有提出具体任务时，可以简要介绍这些示例。需求不明确时，提出简短的问题。
 
-修改本地文件后，在回复末尾附上使用 ${pathToFileURL(`${workspacePath}/`).href} 的纯文本 URL；不要使用 Markdown 链接、localhost、/workspace、相对路径或静态文件服务器。
+修改本地文件后，在回复中给出应用内路径 /api/user-files/<threadId>/<相对路径>，不要输出宿主 file: URL、localhost 或磁盘绝对路径。
 `,
   model: async ({ requestContext }) => createTransportModel((await resolveSelectedModel(requestContext, 'chat')).config),
   defaultOptions: {
@@ -81,7 +73,10 @@ export const agent = new Agent({
     return isWorkspaceResolverEnabled() ? userWorkspace : workspace;
   },
   tools: ({ requestContext }) => {
-    const common = { ask_user: askUserTool, web_fetch: webFetchTool, web_search: tavilySearchTool };
+    const common = {
+      ask_user: askUserTool, web_fetch: webFetchTool, web_search: tavilySearchTool,
+      ...(isUserFilesEnabled() ? userFileTools : {}),
+    };
     if (isAdmin(requestContext)) return {
       ...common, start_schedule: startScheduleTool, stop_schedule: stopScheduleTool,
     };

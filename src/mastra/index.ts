@@ -14,7 +14,8 @@ import { tavilySearchTool } from './tools/tavily-search-tool';
 import { studioChineseMiddleware } from './studio-zh';
 import { agentModelLockMiddleware } from './agent-model-lock';
 import { authorizeThreadRoute } from './auth/authorization';
-import { authRoutes } from './auth/routes';
+import { fileRoutes } from './files/routes';
+import { userFileTools } from './files/tools';
 import { modelRoutes } from './models/routes';
 import { modelAdminRoutes } from './models/admin-page';
 import { authContextFromUser, resourceIdFor } from './auth/auth-context';
@@ -28,7 +29,7 @@ export const mastra = new Mastra({
   studio: { auth: studioAuth },
   server: {
     middleware: [agentModelLockMiddleware, authorizeThreadRoute, studioChineseMiddleware],
-    apiRoutes: [...authRoutes, ...modelRoutes, ...modelAdminRoutes],
+    apiRoutes: [...authRoutes, ...modelRoutes, ...modelAdminRoutes, ...fileRoutes],
     auth: {
       authenticateToken: async token => getUserByToken(token),
       mapUserToResourceId: user => resourceIdFor(authContextFromUser(user)),
@@ -38,7 +39,7 @@ export const mastra = new Mastra({
     externals: ['@duckdb/node-bindings'],
   },
   agents: { agent },
-  tools: { startScheduleTool, stopScheduleTool, tavilySearchTool },
+  tools: { startScheduleTool, stopScheduleTool, tavilySearchTool, ...userFileTools },
   storage: new MastraCompositeStore({
     id: 'composite-storage',
     default: new PostgresStore({

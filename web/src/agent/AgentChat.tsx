@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { MastraDBMessage } from '@mastra/core/agent/message-list';
 import { useChat } from '@mastra/react';
 import { ChatShell } from '@mastra/playground-ui/components/ChatShell';
-import { AGENT_ID } from './client';
+import { AGENT_ID, uploadUserFile, userFileUrl } from './client';
 import { AgentComposer } from './AgentComposer';
 import { MessageList } from './MessageList';
 import { createModelRequestContext, type ModelSettings } from './model-settings';
@@ -20,6 +20,7 @@ export function AgentChat({ threadId, resourceId, initialMessages, onMessageSent
   const [error, setError] = useState<string | null>(null);
   const [failedDecisions, setFailedDecisions] = useState<Set<string>>(new Set());
   const [pendingApprovalIds, setPendingApprovalIds] = useState<Set<string>>(new Set());
+  const [fileLinks, setFileLinks] = useState<Array<{ path: string; href: string }>>([]);
   const chatModel = models?.chatModel;
   const memoryModel = models?.memoryModel;
   const requestContext = useMemo(() => chatModel && memoryModel
@@ -74,6 +75,19 @@ export function AgentChat({ threadId, resourceId, initialMessages, onMessageSent
       catalog={catalog} modelRef={modelRef ?? models?.chatModel} onModelChange={onModelChange} modelDisabled={modelDisabled}
       isRunning={chat.isRunning || chat.isAwaitingToolApproval} onSend={() => void send()}
       onStop={() => { chat.cancelRun(); setError('已停止'); }} />
+      <label className="file-upload">上传到当前会话
+        <input type="file" onChange={event => {
+          const file = event.target.files?.[0];
+          event.target.value = '';
+          if (!file) return;
+          void uploadUserFile(threadId, file.name, file).then(result => {
+            setFileLinks(current => [...current, { path: result.path, href: userFileUrl(threadId, result.path) }]);
+            setError(null);
+          }).catch(cause => setError(cause instanceof Error ? cause.message : '上传失败'));
+        }} />
+      </label>
+      {fileLinks.length > 0 && <ul className="file-links">{fileLinks.map(file =>
+        <li key={file.href}><a href={file.href} download={file.path}>{file.path}</a></li>)}</ul>}
     </ChatShell.Column></ChatShell.Dock>
   </ChatShell>;
 }

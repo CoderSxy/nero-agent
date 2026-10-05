@@ -84,9 +84,9 @@
 
 **Interfaces:** `FileService.read/write/list/delete(auth, threadId, relativePath, ...)`；`POST /api/user-files/upload`、`GET /api/user-files/:threadId/*`、`GET /api/user-files/:threadId`（list）、`DELETE /api/user-files/:threadId/*`。每个路由先 `assertThreadOwned`，路径是相对 thread root；允许 user shared 文件的独立路由需显式定义，不让 `..` 兼任。下载返回流与安全响应头；上传先写 temp、校验大小、原子提交。禁用 Mastra 自动文件读写、编辑、复制、删除、list 工具，注册全部经 `FileService` 的受控文件工具并在 `src/mastra/index.ts` 注册。Agent 指令改为返回应用内认证文件路径，不输出宿主 `file:` URL。
 
-- [ ] 写测试：匿名 401、B 读 A 404/403、伪造身份无效、非法路径拒绝、文件下载内容与 header 正确、上传中断无残片；原生文件工具不能绕过 `FileService`。
-- [ ] 跑目标测试确认失败；实现服务和路由并在 index 注册，前端增加上传/下载入口或至少提供可用文件链接。
-- [ ] 跑目标测试、`npm test`、`npm run build`。数据库变化：无；兼容风险：旧管理员 `file:` URL 不再生成；回滚：关新文件 API、恢复旧提示词，但不删除用户文件。
+- [x] 写测试：匿名 401、B 读 A 404/403、伪造身份无效、非法路径拒绝、文件下载内容与 header 正确、上传中断无残片；原生文件工具不能绕过 `FileService`。
+- [x] 跑目标测试确认失败；实现服务和路由并在 index 注册，前端增加上传/下载入口或至少提供可用文件链接。
+- [x] 跑目标测试、`npm test`、`npm run build`。数据库变化：无；兼容风险：旧管理员 `file:` URL 不再生成；回滚：关新文件 API、恢复旧提示词，但不删除用户文件。
 
 ## Phase 3：Thread 工作目录
 
