@@ -35,6 +35,8 @@
     "@mastra/memory": "1.32.1",
     "@mastra/observability": "1.18.1",
     "@mastra/pg": "^1.28.0",
+    "@types/dockerode": "^3.3.44",
+    "dockerode": "^4.0.9",
     "ipaddr.js": "^2.5.0",
     "pg": "^8.23.0",
     "undici": "^7.30.0",
