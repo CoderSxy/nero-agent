@@ -149,6 +149,67 @@ test('authorizeThreadRoute allows the owner and skips routes without a threadId'
   assert.equal(create.nextCalled, true);
 });
 
+test('authorizeThreadRoute calls a Hono query method with its request receiver', async () => {
+  const request = {
+    method: 'GET',
+    path: '/auth/me',
+    raw: new Request('http://localhost/auth/me'),
+    query(this: { raw: Request }, key: string) {
+      return new URL(this.raw.url).searchParams.get(key) ?? undefined;
+    },
+  };
+  let reached = false;
+  await authorizeThreadRoute.handler({
+    req: request,
+    get: () => undefined,
+  }, async () => { reached = true; });
+  assert.equal(reached, true);
+});
+
+test('thread authorization validates bearer before Mastra attaches requestContext', async () => {
+  const raw = new Request(`http://localhost/api/memory/threads/${THREAD_A}`, {
+    headers: { authorization: 'Bearer valid-token' },
+  });
+  let reached = false;
+  await authorizeThreadRoute.handler({
+    req: { method: 'GET', path: `/api/memory/threads/${THREAD_A}`, raw, query: {} },
+    get: () => undefined,
+  }, async () => { reached = true; }, lookup([{ id: THREAD_A, resourceId: USER_A }]),
+  async token => token === 'valid-token' ? user(USER_A) : null);
+  assert.equal(reached, true);
+});
+
+test('thread authorization validates bearer when requestContext has no user yet', async () => {
+  const requestContext = new RequestContext();
+  const raw = new Request(`http://localhost/api/memory/threads/${THREAD_A}`, {
+    headers: { authorization: 'Bearer valid-token' },
+  });
+  let reached = false;
+  await authorizeThreadRoute.handler({
+    req: { method: 'GET', path: `/api/memory/threads/${THREAD_A}`, raw, query: {} },
+    get: (key: string) => key === 'requestContext' ? requestContext : undefined,
+  }, async () => { reached = true; }, lookup([{ id: THREAD_A, resourceId: USER_A }]),
+  async token => token === 'valid-token' ? user(USER_A) : null);
+  assert.equal(reached, true);
+  assert.equal(requestContext.get(MASTRA_USER_KEY)?.id, USER_A);
+});
+
+test('thread authorization rejects an invalid bearer when requestContext has no user', async () => {
+  const requestContext = new RequestContext();
+  const raw = new Request(`http://localhost/api/memory/threads/${THREAD_A}`, {
+    headers: { authorization: 'Bearer invalid-token' },
+  });
+  let reached = false;
+  const result = await authorizeThreadRoute.handler({
+    req: { method: 'GET', path: `/api/memory/threads/${THREAD_A}`, raw, query: {} },
+    get: (key: string) => key === 'requestContext' ? requestContext : undefined,
+  }, async () => { reached = true; }, lookup([{ id: THREAD_A, resourceId: USER_A }]),
+  async () => null);
+  assert.equal(reached, false);
+  assert.equal(result?.status, 401);
+  assert.equal(requestContext.get(MASTRA_USER_KEY), undefined);
+});
+
 const LIVE = process.env.MASTRA_HTTP_BASE ?? 'http://127.0.0.1:4111';
 
 async function liveAvailable() {

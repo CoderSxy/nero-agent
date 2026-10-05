@@ -47,3 +47,29 @@ export class SandboxCleaner {
     return report;
   }
 }
+
+type CleanupTimer = { unref(): void; close(): void };
+
+export function startSandboxCleanup(
+  cleaner: Pick<SandboxCleaner, 'runOnce'>,
+  options: {
+    schedule?: (callback: () => void) => CleanupTimer;
+    now?: () => number;
+    onError?: (error: unknown) => void;
+  } = {},
+): () => void {
+  let running = false;
+  const schedule = options.schedule ?? ((callback: () => void) => {
+    const interval = setInterval(callback, 60_000);
+    return { unref: () => interval.unref(), close: () => clearInterval(interval) };
+  });
+  const timer = schedule(() => {
+    if (running) return;
+    running = true;
+    void cleaner.runOnce((options.now ?? Date.now)())
+      .catch(error => (options.onError ?? console.error)(error))
+      .finally(() => { running = false; });
+  });
+  timer.unref();
+  return () => timer.close();
+}

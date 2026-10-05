@@ -1,25 +1,24 @@
-import { trustedAuth } from './auth-context';
+import { authContextFromUser, trustedAuth, type AuthContext } from './auth-context';
 import { assertThreadOwned, ThreadGuardError, type ThreadLookup } from './thread-guard';
+import { getUserByToken, type AuthUser } from './service';
+import type { Context, Next } from 'hono';
+import { RequestContext } from '@mastra/core/request-context';
 
 type GuardRequest = {
   method: string;
   path: string;
-  query?: Record<string, string>;
+  query?: Record<string, string> | ((key?: string) => string | Record<string, string> | undefined);
   raw?: Request;
 };
 
-type GuardContext = {
-  req: GuardRequest;
-  get(key: string): unknown;
-  json(body: unknown, status?: number): Response;
-};
+type GuardContext = Context;
 
 function queryOf(req: GuardRequest): Record<string, string> {
-  const query = req.query as unknown;
-  if (typeof query === 'function') {
-    const threadId = (query as (key: string) => unknown)('threadId');
+  if (typeof req.query === 'function') {
+    const threadId = req.query('threadId');
     return typeof threadId === 'string' && threadId ? { threadId } : {};
   }
+  const query = req.query;
   if (query && typeof query === 'object') return query as Record<string, string>;
   const url = req.raw ? new URL(req.raw.url) : undefined;
   if (!url) return {};
@@ -47,7 +46,6 @@ export function extractThreadId(
 }
 
 function respond(context: GuardContext, body: unknown, status: number): Response {
-  if (typeof context.json === 'function') return context.json(body, status);
   return Response.json(body, { status });
 }
 
@@ -60,12 +58,11 @@ async function readBody(request?: Request): Promise<unknown> {
   }
 }
 
-async function lookupFromContext(context: GuardContext): Promise<ThreadLookup> {
+async function lookupFromContext(context: GuardContext, requestContext: RequestContext): Promise<ThreadLookup> {
   const mastra = context.get('mastra') as {
     getAgent(id: string): { getMemory(args: { requestContext: unknown }): Promise<ThreadLookup> };
   } | undefined;
-  const requestContext = context.get('requestContext');
-  if (!mastra || !requestContext) {
+  if (!mastra) {
     throw new ThreadGuardError(401, 'Authentication is required');
   }
   const memory = await mastra.getAgent('agent').getMemory({ requestContext });
@@ -76,12 +73,13 @@ export const authorizeThreadRoute = {
   path: '*',
   handler: async (
     context: GuardContext,
-    next: () => Promise<void>,
+    next: Next,
     lookup?: ThreadLookup,
+    authenticate: (token: string) => Promise<AuthUser | null> = getUserByToken,
   ): Promise<Response | void> => {
     const method = context.req.method;
     const path = context.req.path;
-    const query = queryOf(context.req);
+    const query = queryOf(context.req as GuardRequest);
     const body = await readBody(context.req.raw);
     const threadId = extractThreadId(method, path, query, body);
     if (!threadId) {
@@ -89,10 +87,26 @@ export const authorizeThreadRoute = {
       return;
     }
     try {
-      const requestContext = context.get('requestContext') as Parameters<typeof trustedAuth>[0] | undefined;
+      let requestContext = context.get('requestContext') as RequestContext | undefined;
+      let auth: AuthContext | undefined;
+      if (requestContext) {
+        try {
+          auth = trustedAuth(requestContext);
+        } catch (error) {
+          if (!(error instanceof Error && error.message === 'Authentication is required')) throw error;
+        }
+      }
+      if (!auth) {
+        const token = context.req.raw?.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1];
+        if (!token) throw new ThreadGuardError(401, 'Authentication is required');
+        const user = await authenticate(token);
+        if (!user) throw new ThreadGuardError(401, 'Authentication is required');
+        auth = authContextFromUser(user);
+        requestContext ??= new RequestContext();
+        requestContext.set('mastra__user', user);
+      }
       if (!requestContext) throw new ThreadGuardError(401, 'Authentication is required');
-      const auth = trustedAuth(requestContext);
-      await assertThreadOwned(auth, threadId, lookup ?? await lookupFromContext(context));
+      await assertThreadOwned(auth, threadId, lookup ?? await lookupFromContext(context, requestContext));
       await next();
     } catch (error) {
       if (error instanceof ThreadGuardError) {

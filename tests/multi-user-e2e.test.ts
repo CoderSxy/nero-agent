@@ -30,6 +30,8 @@ function lookup() {
 test('two users with two threads cannot read each other files or run as another identity', async () => {
   process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'e2e-ws-'));
   process.env.SANDBOX_COMMANDS_ENABLED = 'true';
+  process.env.SANDBOX_FILE_WRITE_ENABLED = 'true';
+  process.env.WORKSPACE_HOST_QUOTA_VERIFIED = 'true';
   process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = String(500 * 1024 * 1024);
   const service = new FileService(lookup());
   const authA = authContextFromUser(user(USER_A));

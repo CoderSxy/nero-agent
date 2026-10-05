@@ -4,7 +4,7 @@ import { mkdtemp, readFile, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { FakeSandboxProvider } from '../src/mastra/sandbox/fake-provider';
-import { SandboxCleaner } from '../src/mastra/sandbox/cleaner';
+import { SandboxCleaner, startSandboxCleanup } from '../src/mastra/sandbox/cleaner';
 import { SandboxRegistry } from '../src/mastra/sandbox/registry';
 import { sandboxIdFor } from '../src/mastra/sandbox/types';
 
@@ -46,4 +46,20 @@ test('cleaner stops idle sandboxes, removes long-stopped ones, and never deletes
   assert.equal(await readFile(keep, 'utf8'), 'keep');
   await provider.ensureRunning(owner, join(process.env.WORKSPACE_ROOT, 'users', USER, 'workspace'));
   assert.equal((await provider.inspect(owner)).status, 'running');
+});
+
+test('cleanup scheduler invokes the sweep and can be stopped', async () => {
+  let tick: (() => void) | undefined;
+  let stopped = false;
+  const calls: number[] = [];
+  const cleaner = { runOnce: async (now: number) => { calls.push(now); return { stopped: [], removed: [], skipped: [] }; } };
+  const stop = startSandboxCleanup(cleaner, {
+    schedule: callback => { tick = callback; return { unref() {}, close() { stopped = true; } }; },
+    now: () => 123,
+  });
+  tick?.();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(calls, [123]);
+  stop();
+  assert.equal(stopped, true);
 });

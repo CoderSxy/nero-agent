@@ -70,12 +70,12 @@ npm run dev
 
 认证文件 API（`USER_FILES_ENABLED=true`）提供：
 
-- `POST /api/user-files/upload`（multipart：`threadId`、`path`、`file`）
-- `GET /api/user-files/:threadId` 列出当前会话文件
-- `GET /api/user-files/:threadId/*` 下载
-- `DELETE /api/user-files/:threadId/*` 删除
+- `POST /user-files/upload`（multipart：`threadId`、`path`、`file`）
+- `GET /user-files/:threadId` 列出当前会话文件
+- `GET /user-files/:threadId/*` 下载
+- `DELETE /user-files/:threadId/*` 删除
 
-路径相对该用户的 `threads/<threadId>`，服务端校验线程归属。独立页面可在对话区上传并下载。智能体应返回 `/api/user-files/...` 路径，不再生成宿主 `file:` URL。启用前先运行 `npm run db:migrate` 创建 `app_workspaces`。`execute_command` 需 `SANDBOX_COMMANDS_ENABLED=true`；Docker 实现还需 `SANDBOX_PROVIDER=docker` 与 digest 固定的 `SANDBOX_IMAGE`。宿主项目配额未实测前保持 `SANDBOX_FILE_WRITE_ENABLED=false`。部署说明见 [ECS 工作区与沙箱发布](docs/deployment/workspace-sandbox-ecs.md)。基线审计见 [工作区沙箱审计](docs/architecture/workspace-sandbox-audit.md)。
+路径相对该用户的 `threads/<threadId>`，服务端校验线程归属。独立页面可在对话区上传并下载。智能体应返回 `/user-files/...` 路径，不再生成宿主 `file:` URL。启用前先运行 `npm run db:migrate` 创建 `app_workspaces`。`execute_command` 需 `SANDBOX_COMMANDS_ENABLED=true`；Docker 实现还需 `SANDBOX_PROVIDER=docker` 与 digest 固定的 `SANDBOX_IMAGE`。宿主项目配额未实测前保持 `SANDBOX_FILE_WRITE_ENABLED=false`。部署说明见 [ECS 工作区与沙箱发布](docs/deployment/workspace-sandbox-ecs.md)。基线审计见 [工作区沙箱审计](docs/architecture/workspace-sandbox-audit.md)。
 
 PostgreSQL 保存用户、角色、权限、登录会话，以及 Mastra 的会话记忆等数据。`app_permissions` 与 `app_role_permissions` 目前只建表，细粒度权限数据留待后续迭代。开发环境的可观测性仍使用 DuckDB；正式部署时应按流量改为 PostgreSQL 或 ClickHouse。定时任务会持续消耗模型用量，直到暂停。
 

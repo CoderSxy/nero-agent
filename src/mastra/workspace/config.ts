@@ -10,6 +10,12 @@ export function sandboxCommandTimeoutMs(): number {
   return Number(process.env.SANDBOX_COMMAND_TIMEOUT_MS ?? 120_000);
 }
 
+export function sandboxMaxConcurrent(): number {
+  const value = Number(process.env.SANDBOX_MAX_CONCURRENT ?? 2);
+  if (!Number.isInteger(value) || value < 1) throw new Error('SANDBOX_MAX_CONCURRENT must be a positive integer');
+  return value;
+}
+
 export function defaultQuotaBytes(): number {
   return Number(process.env.WORKSPACE_DEFAULT_QUOTA_BYTES ?? 500 * 1024 * 1024);
 }

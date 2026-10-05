@@ -80,3 +80,39 @@ test('a resumed run uses the same key and does not overlap the first run', async
   });
   assert.equal(max, 1);
 });
+
+test('cancelling while waiting for a global slot releases the thread for its next task', async () => {
+  const queue = new ExecutionQueue(1);
+  let release!: () => void;
+  const active = queue.run('u', 'other', () => new Promise<void>(resolve => { release = resolve; }));
+  await delay(5);
+  const controller = new AbortController();
+  const cancelled = queue.run('u', 'thread', async () => 'unexpected', controller.signal);
+  await delay(5);
+  controller.abort();
+  await assert.rejects(cancelled, /cancelled/);
+  release();
+  await active;
+  const next = await Promise.race([
+    queue.run('u', 'thread', async () => 'ran'),
+    delay(100).then(() => 'stuck'),
+  ]);
+  assert.equal(next, 'ran');
+});
+
+test('busy status includes queued work and clears after cancellation', async () => {
+  const queue = new ExecutionQueue(1);
+  let release!: () => void;
+  const active = queue.run('a', 'one', () => new Promise<void>(resolve => { release = resolve; }));
+  await delay(5);
+  const controller = new AbortController();
+  const queued = queue.run('b', 'two', async () => undefined, controller.signal);
+  assert.equal(queue.isUserBusy('a'), true);
+  assert.equal(queue.isUserBusy('b'), true);
+  controller.abort();
+  await assert.rejects(queued);
+  assert.equal(queue.isUserBusy('b'), false);
+  release();
+  await active;
+  assert.equal(queue.isUserBusy('a'), false);
+});

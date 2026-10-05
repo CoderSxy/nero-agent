@@ -2,6 +2,7 @@ import type { ThreadLookup } from '../auth/thread-guard';
 import { assertThreadOwned } from '../auth/thread-guard';
 import { isSandboxCommandsEnabled, sandboxCommandTimeoutMs } from '../workspace/config';
 import { ensureThreadDirectory, ensureUserWorkspace } from '../workspace/manager';
+import { assertHostQuotaReady } from '../workspace/disk-protection';
 import { commandQueue } from './execution-queue';
 import { commandAuditSummary } from './audit';
 import type { SandboxProvider } from './provider';
@@ -21,6 +22,7 @@ export class SandboxManager {
     if (!isSandboxCommandsEnabled()) {
       throw new Error('Sandbox commands are disabled');
     }
+    assertHostQuotaReady();
     if (!request.threadId) {
       throw new Error('threadId is required');
     }
@@ -28,11 +30,11 @@ export class SandboxManager {
     const { containerPath } = await ensureThreadDirectory(request.auth, request.threadId, this.lookup);
     const root = await ensureUserWorkspace(request.auth);
     const owner = this.ownerFor(request.auth.userId);
-    await this.provider.ensureRunning(owner, root);
     return commandQueue.run(
       request.auth.userId,
       request.threadId,
       async () => {
+        await this.provider.ensureRunning(owner, root);
         const started = Date.now();
         const result = await this.provider.execute(owner, request.command, request.args, {
           cwd: containerPath,

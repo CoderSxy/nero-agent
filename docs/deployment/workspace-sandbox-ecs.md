@@ -13,7 +13,7 @@
 
 1. 备份 PostgreSQL 与现有 `workspace/`。
 2. `npm run db:migrate`（含 `app_workspaces`、`app_sandbox_instances`）。
-3. 运行 `node scripts/check-workspace-quota.mjs`；失败则不要打开写入开关。
+3. 给空的探测目录配置与工作区相同的宿主 project quota，设置 `WORKSPACE_QUOTA_PROBE_DIR` 和 `WORKSPACE_QUOTA_PROBE_LIMIT_BYTES`，运行 `node scripts/check-workspace-quota.mjs`。脚本会写入直到配额拒绝，确认宿主文件系统仍有余量，再删除探测文件。失败则不要设置 `WORKSPACE_HOST_QUOTA_VERIFIED=true`，也不要打开写入开关。
 4. 构建 `sandbox/Dockerfile` 并写入 digest 到 `SANDBOX_IMAGE`。
 5. 仅管理员灰度文件 API，再评估 Docker 命令。
 6. 回滚：关闭 feature flag，停止带 `nero.sandbox=1` 标签的容器，保留表和 `/data/mastra/users`。

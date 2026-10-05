@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { MastraDBMessage } from '@mastra/core/agent/message-list';
 import { useChat } from '@mastra/react';
 import { ChatShell } from '@mastra/playground-ui/components/ChatShell';
-import { AGENT_ID, uploadUserFile, userFileUrl } from './client';
+import { AGENT_ID, fetchUserFile, uploadUserFile } from './client';
 import { AgentComposer } from './AgentComposer';
 import { MessageList } from './MessageList';
 import { createModelRequestContext, type ModelSettings } from './model-settings';
@@ -20,7 +20,7 @@ export function AgentChat({ threadId, resourceId, initialMessages, onMessageSent
   const [error, setError] = useState<string | null>(null);
   const [failedDecisions, setFailedDecisions] = useState<Set<string>>(new Set());
   const [pendingApprovalIds, setPendingApprovalIds] = useState<Set<string>>(new Set());
-  const [fileLinks, setFileLinks] = useState<Array<{ path: string; href: string }>>([]);
+  const [fileLinks, setFileLinks] = useState<string[]>([]);
   const chatModel = models?.chatModel;
   const memoryModel = models?.memoryModel;
   const requestContext = useMemo(() => chatModel && memoryModel
@@ -81,13 +81,22 @@ export function AgentChat({ threadId, resourceId, initialMessages, onMessageSent
           event.target.value = '';
           if (!file) return;
           void uploadUserFile(threadId, file.name, file).then(result => {
-            setFileLinks(current => [...current, { path: result.path, href: userFileUrl(threadId, result.path) }]);
+            setFileLinks(current => [...current, result.path]);
             setError(null);
           }).catch(cause => setError(cause instanceof Error ? cause.message : '上传失败'));
         }} />
       </label>
-      {fileLinks.length > 0 && <ul className="file-links">{fileLinks.map(file =>
-        <li key={file.href}><a href={file.href} download={file.path}>{file.path}</a></li>)}</ul>}
+      {fileLinks.length > 0 && <ul className="file-links">{fileLinks.map(path =>
+        <li key={path}><button type="button" onClick={() => {
+          void fetchUserFile(threadId, path).then(blob => {
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = path.split('/').at(-1) ?? 'download';
+            anchor.click();
+            window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+          }).catch(cause => setError(cause instanceof Error ? cause.message : '下载失败'));
+        }}>{path}</button></li>)}</ul>}
     </ChatShell.Column></ChatShell.Dock>
   </ChatShell>;
 }

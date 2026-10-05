@@ -35,6 +35,8 @@ function lookup() {
 test('tool userId and cwd arguments cannot change owner or thread cwd', async () => {
   process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'sbx-cwd-'));
   process.env.SANDBOX_COMMANDS_ENABLED = 'true';
+  process.env.SANDBOX_FILE_WRITE_ENABLED = 'true';
+  process.env.WORKSPACE_HOST_QUOTA_VERIFIED = 'true';
   const provider = new FakeSandboxProvider();
   const manager = new SandboxManager(provider, lookup());
   const forged = {
@@ -95,6 +97,8 @@ test('native command tools are disabled and omitted from the agent tool list', (
 test('WorkspaceSandbox adapter routes executeCommand through the manager', async () => {
   process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'sbx-adapter-'));
   process.env.SANDBOX_COMMANDS_ENABLED = 'true';
+  process.env.SANDBOX_FILE_WRITE_ENABLED = 'true';
+  process.env.WORKSPACE_HOST_QUOTA_VERIFIED = 'true';
   const provider = new FakeSandboxProvider();
   const manager = new SandboxManager(provider, lookup());
   const sandbox: ManagedWorkspaceSandbox = new ManagedWorkspaceSandbox(manager, {
@@ -104,4 +108,16 @@ test('WorkspaceSandbox adapter routes executeCommand through the manager', async
   const result = await sandbox.executeCommand('ls', ['-1'], { cwd: '/etc' });
   assert.equal(result.exitCode, 0);
   assert.equal(provider.lastOptions?.cwd, `/workspace/threads/${THREAD}`);
+});
+
+test('command execution rejects a missing host quota gate before creating a sandbox', async () => {
+  process.env.SANDBOX_COMMANDS_ENABLED = 'true';
+  delete process.env.WORKSPACE_HOST_QUOTA_VERIFIED;
+  delete process.env.SANDBOX_FILE_WRITE_ENABLED;
+  const provider = new FakeSandboxProvider();
+  const manager = new SandboxManager(provider, lookup());
+  await assert.rejects(() => manager.execute({
+    auth: authContextFromUser(user(USER_A)), threadId: THREAD, command: 'echo', args: ['x'],
+  }), /配额|写入/);
+  assert.equal(provider.ensureRunningCalls, 0);
 });

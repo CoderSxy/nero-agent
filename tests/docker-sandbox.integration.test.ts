@@ -14,6 +14,7 @@ import { sandboxIdFor } from '../src/mastra/sandbox/types';
 
 const USER_A = '11111111-1111-4111-8111-111111111111';
 const USER_B = '22222222-2222-4222-8222-222222222222';
+const USER_C = '33333333-3333-4333-8333-333333333333';
 const THREAD = 'thread-docker';
 const DIGEST_IMAGE = 'mastra-agent-sandbox:1.0@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
@@ -45,7 +46,10 @@ class MemoryDockerEngine implements DockerEngine {
     return { id };
   }
 
-  async start(): Promise<void> {}
+  async start(id: string): Promise<void> {
+    const item = this.created.find(row => row.Id === id);
+    if (item) item.State = { Running: true, Status: 'running' };
+  }
 
   async inspect(id: string) {
     return this.created.find(item => item.Id === id) ?? null;
@@ -92,6 +96,8 @@ test('A cannot see B workspace mounts, docker socket, or a network', async () =>
 test('ordinary chat does not create a container; first execute creates and later reuses', async () => {
   process.env.SANDBOX_IMAGE = DIGEST_IMAGE;
   process.env.SANDBOX_COMMANDS_ENABLED = 'true';
+  process.env.SANDBOX_FILE_WRITE_ENABLED = 'true';
+  process.env.WORKSPACE_HOST_QUOTA_VERIFIED = 'true';
   process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'dock-reuse-'));
   const engine = new MemoryDockerEngine();
   const registry = new SandboxRegistry();
@@ -139,6 +145,36 @@ test('process restart reconciles labels and remove keeps workspace files', async
   assert.equal(engine.created.length, 0);
   const { readFile } = await import('node:fs/promises');
   assert.equal(await readFile(keep, 'utf8'), 'keep');
+});
+
+test('stopped user container is started again without creating a second container', async () => {
+  process.env.SANDBOX_IMAGE = DIGEST_IMAGE;
+  process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'dock-stopped-'));
+  const engine = new MemoryDockerEngine();
+  const provider = new DockerSandboxProvider(engine, new SandboxRegistry());
+  const owner = { userId: USER_A, sandboxId: sandboxIdFor(USER_A) };
+  const root = `${process.env.WORKSPACE_ROOT}/users/${USER_A}/workspace`;
+  await provider.ensureRunning(owner, root);
+  await provider.stop(owner);
+  await provider.ensureRunning(owner, root);
+  assert.equal(engine.created.length, 1);
+  assert.equal((await provider.inspect(owner)).status, 'running');
+});
+
+test('a third running user sandbox is rejected when the configured limit is two', async () => {
+  process.env.SANDBOX_IMAGE = DIGEST_IMAGE;
+  process.env.SANDBOX_MAX_CONCURRENT = '2';
+  process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'dock-limit-'));
+  const engine = new MemoryDockerEngine();
+  const provider = new DockerSandboxProvider(engine, new SandboxRegistry());
+  const root = (id: string) => `${process.env.WORKSPACE_ROOT}/users/${id}/workspace`;
+  await provider.ensureRunning({ userId: USER_A, sandboxId: sandboxIdFor(USER_A) }, root(USER_A));
+  await provider.ensureRunning({ userId: USER_B, sandboxId: sandboxIdFor(USER_B) }, root(USER_B));
+  await assert.rejects(
+    provider.ensureRunning({ userId: USER_C, sandboxId: sandboxIdFor(USER_C) }, root(USER_C)),
+    /limit/i,
+  );
+  assert.equal(engine.created.length, 2);
 });
 
 test('real docker isolation is skipped unless SANDBOX_DOCKER_INTEGRATION=true', async t => {

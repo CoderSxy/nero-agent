@@ -6,7 +6,7 @@ import { FilePathError, isUserFilesEnabled } from './policy';
 import { FileService, FileServiceError } from './service';
 
 function filePathFromRequest(c: Context, threadId: string): string {
-  const prefix = `/api/user-files/${threadId}/`;
+  const prefix = `/user-files/${threadId}/`;
   const path = c.req.path.startsWith(prefix) ? c.req.path.slice(prefix.length) : (c.req.param('*') ?? '');
   try {
     return decodeURIComponent(path);
@@ -50,7 +50,7 @@ function guarded(lookup: ThreadLookup | undefined, run: (c: Context, service: Fi
 
 export function createFileRoutes(lookup?: ThreadLookup) {
   return [
-    registerApiRoute('/api/user-files/upload', {
+    registerApiRoute('/user-files/upload', {
       method: 'POST',
       handler: guarded(lookup, async (c, service) => {
         const auth = trustedAuth(c.get('requestContext'));
@@ -64,7 +64,7 @@ export function createFileRoutes(lookup?: ThreadLookup) {
         return c.json({ path: path || file.name }, 201);
       }),
     }),
-    registerApiRoute('/api/user-files/:threadId', {
+    registerApiRoute('/user-files/:threadId', {
       method: 'GET',
       handler: guarded(lookup, async (c, service) => {
         const auth = trustedAuth(c.get('requestContext'));
@@ -72,7 +72,7 @@ export function createFileRoutes(lookup?: ThreadLookup) {
         return c.json({ files });
       }),
     }),
-    registerApiRoute('/api/user-files/:threadId/*', {
+    registerApiRoute('/user-files/:threadId/*', {
       method: 'GET',
       handler: guarded(lookup, async (c, service) => {
         const auth = trustedAuth(c.get('requestContext'));
@@ -89,7 +89,7 @@ export function createFileRoutes(lookup?: ThreadLookup) {
         });
       }),
     }),
-    registerApiRoute('/api/user-files/:threadId/*', {
+    registerApiRoute('/user-files/:threadId/*', {
       method: 'DELETE',
       handler: guarded(lookup, async (c, service) => {
         const auth = trustedAuth(c.get('requestContext'));

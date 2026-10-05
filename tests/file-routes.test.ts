@@ -66,8 +66,8 @@ async function withRoot<T>(run: (app: Hono) => Promise<T>): Promise<T> {
 
 test('anonymous file API requests are 401', async () => {
   await withRoot(async app => {
-    assert.equal((await app.request(`/api/user-files/${THREAD_A}`)).status, 401);
-    assert.equal((await app.request(`/api/user-files/upload`, { method: 'POST' })).status, 401);
+    assert.equal((await app.request(`/user-files/${THREAD_A}`)).status, 401);
+    assert.equal((await app.request(`/user-files/upload`, { method: 'POST' })).status, 401);
   });
 });
 
@@ -75,11 +75,11 @@ test('user B cannot read user A files and forged identity is ignored', async () 
   await withRoot(async app => {
     const service = new FileService(lookup());
     await service.write(authContextFromUser(user(USER_A)), THREAD_A, 'note.txt', Buffer.from('secret'));
-    const denied = await app.request(`/api/user-files/${THREAD_A}/note.txt`, {
+    const denied = await app.request(`/user-files/${THREAD_A}/note.txt`, {
       headers: { authorization: 'Bearer b' },
     });
     assert.ok(denied.status === 403 || denied.status === 404);
-    const forged = await app.request(`/api/user-files/${THREAD_A}/note.txt`, {
+    const forged = await app.request(`/user-files/${THREAD_A}/note.txt`, {
       headers: { authorization: 'Bearer forged' },
     });
     assert.equal(forged.status, 401);
@@ -92,7 +92,7 @@ test('illegal relative paths are rejected', async () => {
     form.set('threadId', THREAD_A);
     form.set('path', '../secret.txt');
     form.set('file', new File(['x'], 'secret.txt'));
-    const response = await app.request('/api/user-files/upload', {
+    const response = await app.request('/user-files/upload', {
       method: 'POST',
       headers: { authorization: 'Bearer a' },
       body: form,
@@ -105,14 +105,14 @@ test('download returns the file bytes and safe headers', async () => {
   await withRoot(async app => {
     const service = new FileService(lookup());
     await service.write(authContextFromUser(user(USER_A)), THREAD_A, 'out/hello.txt', Buffer.from('hello'));
-    const response = await app.request(`/api/user-files/${THREAD_A}/out/hello.txt`, {
+    const response = await app.request(`/user-files/${THREAD_A}/out/hello.txt`, {
       headers: { authorization: 'Bearer a' },
     });
     assert.equal(response.status, 200);
     assert.equal(await response.text(), 'hello');
     assert.match(response.headers.get('content-disposition') ?? '', /hello\.txt/);
     assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
-    const listed = await app.request(`/api/user-files/${THREAD_A}`, {
+    const listed = await app.request(`/user-files/${THREAD_A}`, {
       headers: { authorization: 'Bearer a' },
     });
     assert.equal(listed.status, 200);
@@ -147,4 +147,10 @@ test('native workspace filesystem tools are disabled and file tools go through F
   assert.ok(userFileTools.write_file);
   assert.ok(userFileTools.list_files);
   assert.ok(userFileTools.delete_file);
+});
+
+test('custom file routes stay outside Mastra reserved api prefix', () => {
+  for (const route of createFileRoutes(lookup())) {
+    assert.ok(!route.path.startsWith('/api/'), route.path);
+  }
 });

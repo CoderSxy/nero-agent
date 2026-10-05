@@ -19,7 +19,13 @@ export function apiFetch(path: string, init: RequestInit = {}): Promise<Response
 }
 
 export function userFileUrl(threadId: string, relativePath: string): string {
-  return `/api/user-files/${threadId}/${relativePath.split('/').map(encodeURIComponent).join('/')}`;
+  return `/user-files/${threadId}/${relativePath.split('/').map(encodeURIComponent).join('/')}`;
+}
+
+export async function fetchUserFile(threadId: string, relativePath: string): Promise<Blob> {
+  const response = await apiFetch(userFileUrl(threadId, relativePath));
+  if (!response.ok) throw new Error('下载失败或无权访问该文件');
+  return response.blob();
 }
 
 export async function uploadUserFile(threadId: string, relativePath: string, file: File): Promise<{ path: string }> {
@@ -27,7 +33,7 @@ export async function uploadUserFile(threadId: string, relativePath: string, fil
   body.set('threadId', threadId);
   body.set('path', relativePath);
   body.set('file', file);
-  const response = await apiFetch('/api/user-files/upload', { method: 'POST', body });
+  const response = await apiFetch('/user-files/upload', { method: 'POST', body });
   if (!response.ok) throw new Error((await response.json().catch(() => ({ error: '上传失败' })) as { error?: string }).error ?? '上传失败');
   return response.json() as Promise<{ path: string }>;
 }

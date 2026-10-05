@@ -70,7 +70,7 @@ export function validateDockerCreateConfig(options: DockerCreateOptions, workspa
   if (options.HostConfig?.ReadonlyRootfs !== true) throw new Error('Sandbox root filesystem must be read-only');
   if (options.HostConfig?.NetworkMode !== 'none') throw new Error('Sandbox network must be none');
   if (options.HostConfig?.Privileged) throw new Error('Sandbox must not be privileged');
-  if (options.HostConfig?.PidMode === 'host' || options.HostConfig?.NetworkMode === 'host') {
+  if (options.HostConfig?.PidMode === 'host') {
     throw new Error('Sandbox must not use host PID or host network');
   }
   if (!options.HostConfig?.CapDrop?.includes('ALL')) throw new Error('Sandbox must drop all capabilities');

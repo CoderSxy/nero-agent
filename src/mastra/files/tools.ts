@@ -2,6 +2,8 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { trustedAuth } from '../auth/auth-context';
 import type { ThreadLookup } from '../auth/thread-guard';
+import type { Mastra } from '@mastra/core/mastra';
+import type { RequestContext } from '@mastra/core/request-context';
 import { FileService } from './service';
 
 const pathInput = z.object({
@@ -9,10 +11,14 @@ const pathInput = z.object({
   path: z.string().min(1),
 });
 
-function serviceFrom(context: { mastra?: { getAgent(id: string): { getMemory(args: { requestContext: unknown }): Promise<ThreadLookup> } }; requestContext?: unknown }) {
+function serviceFrom(context: { mastra?: unknown; requestContext?: unknown }) {
   if (!context.mastra || !context.requestContext) throw new Error('Authentication is required');
-  return context.mastra.getAgent('agent').getMemory({ requestContext: context.requestContext })
-    .then(memory => new FileService(memory));
+  return (context.mastra as Mastra).getAgent('agent')
+    .getMemory({ requestContext: context.requestContext as RequestContext })
+    .then(memory => {
+      if (!memory) throw new Error('Agent memory is unavailable');
+      return new FileService(memory as ThreadLookup);
+    });
 }
 
 export const userFileTools = {
@@ -35,7 +41,7 @@ export const userFileTools = {
       const auth = trustedAuth(context.requestContext);
       const service = await serviceFrom(context);
       await service.write(auth, input.threadId, input.path, Buffer.from(input.content));
-      return { path: `/api/user-files/${input.threadId}/${input.path}` };
+      return { path: `/user-files/${input.threadId}/${input.path}` };
     },
   }),
   list_files: createTool({

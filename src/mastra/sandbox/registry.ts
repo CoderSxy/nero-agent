@@ -12,6 +12,15 @@ export type SandboxRecord = {
 export class SandboxRegistry {
   private readonly memory = new Map<string, SandboxRecord>();
 
+  async listOwners(): Promise<SandboxOwner[]> {
+    if (process.env.DATABASE_URL) {
+      const { getPool } = await import('../auth/db');
+      const result = await getPool().query('SELECT user_id, sandbox_id FROM app_sandbox_instances');
+      return result.rows.map(row => ({ userId: row.user_id, sandboxId: row.sandbox_id }));
+    }
+    return [...this.memory.values()].map(row => ({ userId: row.userId, sandboxId: row.sandboxId }));
+  }
+
   async getByUser(userId: string): Promise<SandboxRecord | undefined> {
     if (process.env.DATABASE_URL) {
       const { getPool } = await import('../auth/db');

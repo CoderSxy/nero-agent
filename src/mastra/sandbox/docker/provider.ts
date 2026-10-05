@@ -3,11 +3,13 @@ import type { DockerEngine } from './client';
 import type { SandboxProvider } from '../provider';
 import type { SandboxRegistry } from '../registry';
 import type { SandboxCommandResult, SandboxExecuteOptions, SandboxInspect, SandboxOwner } from '../types';
+import { sandboxMaxConcurrent } from '../../workspace/config';
 
 const USER_LABEL = 'nero.sandbox.user';
 
 export class DockerSandboxProvider implements SandboxProvider {
   private readonly locks = new Map<string, Promise<void>>();
+  private provisionTail: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly engine: DockerEngine,
@@ -15,10 +17,18 @@ export class DockerSandboxProvider implements SandboxProvider {
   ) {}
 
   async ensureRunning(owner: SandboxOwner, workspaceRoot: string): Promise<SandboxInspect> {
-    return this.withLock(owner.userId, async () => {
+    return this.withProvisionLock(() => this.withLock(owner.userId, async () => {
       const existing = await this.reconcile(owner, workspaceRoot);
       if (existing?.status === 'running' && existing.containerId) {
         await this.registry.upsert({ ...existing, lastActiveAt: Date.now() });
+        return { sandboxId: owner.sandboxId, status: 'running', workspaceRoot };
+      }
+      const running = (await this.engine.findLabeled('nero.sandbox', '1'))
+        .filter(container => container.State.Running).length;
+      if (running >= sandboxMaxConcurrent()) throw new Error('Running sandbox limit reached');
+      if (existing?.status === 'stopped' && existing.containerId) {
+        await this.engine.start(existing.containerId);
+        await this.registry.upsert({ ...existing, status: 'running', lastActiveAt: Date.now() });
         return { sandboxId: owner.sandboxId, status: 'running', workspaceRoot };
       }
       const options = dockerSandboxCreateOptions(workspaceRoot, {
@@ -37,7 +47,7 @@ export class DockerSandboxProvider implements SandboxProvider {
         lastActiveAt: Date.now(),
       });
       return { sandboxId: owner.sandboxId, status: 'running', workspaceRoot };
-    });
+    }));
   }
 
   async execute(
@@ -52,18 +62,20 @@ export class DockerSandboxProvider implements SandboxProvider {
   }
 
   async stop(owner: SandboxOwner): Promise<void> {
-    const record = await this.registry.getByUser(owner.userId);
-    if (!record?.containerId) return;
-    await this.engine.stop(record.containerId);
-    await this.registry.upsert({ ...record, status: 'stopped', lastActiveAt: Date.now() });
+    await this.withLock(owner.userId, async () => {
+      const record = await this.registry.getByUser(owner.userId);
+      if (!record?.containerId) return;
+      await this.engine.stop(record.containerId);
+      await this.registry.upsert({ ...record, status: 'stopped', lastActiveAt: Date.now() });
+    });
   }
 
   async remove(owner: SandboxOwner): Promise<void> {
-    const record = await this.registry.getByUser(owner.userId);
-    if (record?.containerId) {
-      await this.engine.remove(record.containerId, true);
-    }
-    await this.registry.clearContainer(owner, 'missing');
+    await this.withLock(owner.userId, async () => {
+      const record = await this.registry.getByUser(owner.userId);
+      if (record?.containerId) await this.engine.remove(record.containerId, true);
+      await this.registry.clearContainer(owner, 'missing');
+    });
   }
 
   async inspect(owner: SandboxOwner): Promise<SandboxInspect> {
@@ -84,7 +96,7 @@ export class DockerSandboxProvider implements SandboxProvider {
         throw new Error('Sandbox container label does not match owner');
       }
       const bind = info.HostConfig?.Binds?.[0] ?? `${info.Mounts?.[0]?.Source}:${info.Mounts?.[0]?.Destination}:rw`;
-      if (workspaceRoot && bind && !bind.startsWith(`${workspaceRoot}:/workspace`)) {
+      if (workspaceRoot && bind !== `${workspaceRoot}:/workspace:rw`) {
         throw new Error('Sandbox container mount does not match workspace');
       }
       return { ...record, status: info.State.Running ? 'running' as const : 'stopped' as const };
@@ -110,13 +122,27 @@ export class DockerSandboxProvider implements SandboxProvider {
     const current = new Promise<void>(resolve => {
       release = resolve;
     });
-    this.locks.set(userId, previous.then(() => current));
+    const tail = previous.then(() => current);
+    this.locks.set(userId, tail);
     await previous;
     try {
       return await task();
     } finally {
       release();
-      if (this.locks.get(userId) === current) this.locks.delete(userId);
+      if (this.locks.get(userId) === tail) this.locks.delete(userId);
+    }
+  }
+
+  private async withProvisionLock<T>(task: () => Promise<T>): Promise<T> {
+    const previous = this.provisionTail;
+    let release!: () => void;
+    const current = new Promise<void>(resolve => { release = resolve; });
+    this.provisionTail = previous.then(() => current);
+    await previous;
+    try {
+      return await task();
+    } finally {
+      release();
     }
   }
 }

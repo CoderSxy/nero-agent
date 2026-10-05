@@ -1,5 +1,6 @@
 import type { DockerCreateOptions } from './config';
 import type { SandboxCommandResult, SandboxExecuteOptions } from '../types';
+import type Docker from 'dockerode';
 
 export type DockerInspect = {
   Id: string;
@@ -19,9 +20,9 @@ export interface DockerEngine {
   remove(id: string, force?: boolean): Promise<void>;
 }
 
-export async function createDockerodeEngine(): Promise<DockerEngine> {
-  const { default: Docker } = await import('dockerode');
-  const docker = new Docker();
+export async function createDockerodeEngine(dockerInstance?: Docker): Promise<DockerEngine> {
+  const { default: DockerConstructor } = await import('dockerode');
+  const docker = dockerInstance ?? new DockerConstructor();
   return {
     async create(options) {
       const container = await docker.createContainer(options);
@@ -45,6 +46,7 @@ export async function createDockerodeEngine(): Promise<DockerEngine> {
     },
     async exec(id, command, args, options) {
       const container = docker.getContainer(id);
+      if (options.abortSignal?.aborted) throw new Error('Sandbox command aborted');
       const exec = await container.exec({
         Cmd: [command, ...args],
         WorkingDir: options.cwd,
@@ -57,19 +59,46 @@ export async function createDockerodeEngine(): Promise<DockerEngine> {
       const stderr: Buffer[] = [];
       await new Promise<void>((resolve, reject) => {
         container.modem.demuxStream(stream, collect(stdout), collect(stderr));
-        const timer = setTimeout(() => {
-          stream.destroy();
-          reject(Object.assign(new Error('Sandbox command timed out'), { timedOut: true }));
-        }, options.timeoutMs);
-        options.abortSignal?.addEventListener('abort', () => {
-          stream.destroy();
-          reject(Object.assign(new Error('Sandbox command aborted'), { aborted: true }));
-        });
-        stream.on('end', () => {
+        let settled = false;
+        const cleanup = () => {
           clearTimeout(timer);
+          options.abortSignal?.removeEventListener('abort', onAbort);
+        };
+        const terminate = async (error: Error) => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          stream.destroy();
+          try {
+            await container.stop({ t: 0 });
+          } catch (stopError) {
+            try {
+              await container.kill();
+            } catch (killError) {
+              reject(new AggregateError([stopError, killError], 'Unable to terminate sandbox container'));
+              return;
+            }
+          }
+          reject(error);
+        };
+        const onAbort = () => { void terminate(new Error('Sandbox command aborted')); };
+        const timer = setTimeout(() => {
+          void terminate(new Error('Sandbox command timed out'));
+        }, options.timeoutMs);
+        options.abortSignal?.addEventListener('abort', onAbort, { once: true });
+        if (options.abortSignal?.aborted) onAbort();
+        stream.on('end', () => {
+          if (settled) return;
+          settled = true;
+          cleanup();
           resolve();
         });
-        stream.on('error', reject);
+        stream.on('error', error => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          reject(error);
+        });
       });
       const inspect = await exec.inspect();
       return {
@@ -92,9 +121,14 @@ export async function createDockerodeEngine(): Promise<DockerEngine> {
 }
 
 function collect(chunks: Buffer[]) {
+  const maxBytes = 1024 * 1024;
+  let total = 0;
   return {
     write(chunk: Buffer) {
-      chunks.push(Buffer.from(chunk));
+      if (total >= maxBytes) return;
+      const kept = Buffer.from(chunk).subarray(0, maxBytes - total);
+      chunks.push(kept);
+      total += kept.byteLength;
     },
   };
 }

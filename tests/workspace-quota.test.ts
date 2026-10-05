@@ -7,7 +7,7 @@ import { authContextFromUser } from '../src/mastra/auth/auth-context';
 import type { AuthUser } from '../src/mastra/auth/service';
 import { FileService } from '../src/mastra/files/service';
 import { QuotaExceededError, WorkspaceQuota } from '../src/mastra/workspace/quota';
-import { assertHostQuotaReady, assertWritable, DiskProtectionError } from '../src/mastra/workspace/disk-protection';
+import { assertHostQuotaReady, assertHostWritable, assertWritable, DiskProtectionError } from '../src/mastra/workspace/disk-protection';
 
 const USER_A = 'aaaaaaaa-1111-4111-8111-111111111111';
 const USER_B = 'bbbbbbbb-2222-4222-8222-222222222222';
@@ -58,4 +58,22 @@ test('FileService write over remaining quota fails', async () => {
   });
   await service.write(authContextFromUser(user(USER_C)), 't', 'a.txt', Buffer.alloc(40));
   await assert.rejects(() => service.write(authContextFromUser(user(USER_C)), 't', 'b.txt', Buffer.alloc(40)));
+});
+
+test('deleting a file releases its workspace quota', async () => {
+  process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'quota-delete-'));
+  process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = '100';
+  const id = 'eeeeeeee-5555-4555-8555-555555555555';
+  const auth = authContextFromUser(user(id));
+  const service = new FileService({ getThreadById: async () => ({ id: 't', resourceId: id }) });
+  await service.write(auth, 't', 'a.txt', Buffer.alloc(80));
+  await service.delete(auth, 't', 'a.txt');
+  await service.write(auth, 't', 'b.txt', Buffer.alloc(80));
+});
+
+test('host disk protection checks filesystem usage independently of user quota', async () => {
+  process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'quota-host-'));
+  process.env.WORKSPACE_DISK_BLOCK_RATIO = '0';
+  await assert.rejects(() => assertHostWritable(1), DiskProtectionError);
+  process.env.WORKSPACE_DISK_BLOCK_RATIO = '0.9';
 });

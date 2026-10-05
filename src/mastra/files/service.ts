@@ -7,7 +7,7 @@ import { ensureThreadDirectory } from '../workspace/manager';
 import { assertContained, workspaceBase } from '../workspace/path';
 import { FilePathError, maxFileSizeBytes, relativeFilePath } from './policy';
 import { workspaceQuota } from '../workspace/quota';
-import { assertWritable } from '../workspace/disk-protection';
+import { assertHostWritable } from '../workspace/disk-protection';
 
 export class FileServiceError extends Error {
   constructor(readonly status: 400 | 401 | 403 | 404, message: string) {
@@ -40,9 +40,8 @@ export class FileService {
     options: { signal?: AbortSignal } = {},
   ) {
     if (data.byteLength > maxFileSizeBytes()) throw new FileServiceError(400, '文件过大');
-    const usage = await workspaceQuota.usage(auth.userId);
-    assertWritable(data.byteLength, usage.quotaBytes === 0 ? 1 : usage.usedBytes / usage.quotaBytes);
     const { hostPath } = await this.resolveOwnedPath(auth, threadId, relativePath, { create: true });
+    await assertHostWritable(data.byteLength);
     let replacing = 0;
     try {
       replacing = (await stat(hostPath)).size;
@@ -86,7 +85,13 @@ export class FileService {
   async delete(auth: AuthContext, threadId: string, relativePath: string) {
     const { hostPath } = await this.resolveOwnedPath(auth, threadId, relativePath);
     try {
+      const entries: FileListEntry[] = [];
+      const target = await stat(hostPath);
+      if (target.isDirectory()) await this.walk(hostPath, hostPath, entries);
+      else if (target.isFile()) entries.push({ path: relativePath, type: 'file', size: target.size });
       await rm(hostPath, { recursive: true, force: false });
+      const files = entries.filter(entry => entry.type === 'file');
+      await workspaceQuota.release(auth.userId, files.reduce((sum, entry) => sum + entry.size, 0), files.length);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new FileServiceError(404, '文件不存在');
       throw error;

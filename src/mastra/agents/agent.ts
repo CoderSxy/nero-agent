@@ -1,4 +1,4 @@
-import { Agent } from '@mastra/core/agent';
+import { Agent, type ToolsInput } from '@mastra/core/agent';
 import { TaskSignalProvider } from '@mastra/core/signals';
 import { askUserTool, webFetchTool } from '@mastra/core/tools';
 import { LocalFilesystem, LocalSandbox, Workspace } from '@mastra/core/workspace';
@@ -62,7 +62,7 @@ export const agent = new Agent({
 
 用户打招呼或没有提出具体任务时，可以简要介绍这些示例。需求不明确时，提出简短的问题。
 
-修改本地文件后，在回复中给出应用内路径 /api/user-files/<threadId>/<相对路径>，不要输出宿主 file: URL、localhost 或磁盘绝对路径。
+修改本地文件后，在回复中给出应用内路径 /user-files/<threadId>/<相对路径>，不要输出宿主 file: URL、localhost 或磁盘绝对路径。
 `,
   model: async ({ requestContext }) => createTransportModel((await resolveSelectedModel(requestContext, 'chat')).config),
   defaultOptions: {
@@ -78,7 +78,7 @@ export const agent = new Agent({
   signals: [new TaskSignalProvider()],
 });
 
-function resolveAgentTools(requestContext: RequestContext) {
+function resolveAgentTools(requestContext: RequestContext): ToolsInput {
   const common = {
     ask_user: askUserTool,
     web_fetch: webFetchTool,
@@ -87,9 +87,9 @@ function resolveAgentTools(requestContext: RequestContext) {
     ...sandboxTools(),
   };
   if (isAdmin(requestContext)) {
-    return { ...common, start_schedule: startScheduleTool, stop_schedule: stopScheduleTool };
+    return { ...common, start_schedule: startScheduleTool, stop_schedule: stopScheduleTool } as ToolsInput;
   }
-  return common;
+  return common as ToolsInput;
 }
 
 export function listAgentToolIds(requestContext: RequestContext): string[] {
