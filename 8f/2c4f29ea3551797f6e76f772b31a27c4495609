@@ -1,0 +1,56 @@
+README.md
+  s_a1b01612612464::t_8b746cf56ee53a 71-79
+.env.example
+  s_a1b01612612464::t_82c38e5be04ce1 20-22
+src/mastra/index.ts
+  s_a1b01612612464::t_4b3fab510b7c53 32
+  s_a1b01612612464::t_cbacb86b3e64a9 42
+  s_a1b01612612464::t_a36fd3b5974cab 17-18
+web/src/agent/client.ts
+  s_a1b01612612464::t_de9bcc9bba981e 20-33
+web/src/agent/AgentChat.tsx
+  s_a1b01612612464::t_0684fdb0c5f291 23
+  s_a1b01612612464::t_334ab3dad9aa0e 78-90
+  s_a1b01612612464::t_2860f60a281ff6 5
+src/mastra/files/tools.ts
+  s_a1b01612612464::t_745cc92f5f2688 1-62
+docs/superpowers/plans/2026-10-05-user-workspace-docker-sandbox.md
+  s_a1b01612612464::t_f820a062ca62bd 87-89
+src/mastra/files/policy.ts
+  s_a1b01612612464::t_6e0a3efd33ac33 1-36
+src/mastra/files/service.ts
+  s_a1b01612612464::t_2d3fab7bec8ee8 71-76
+  s_a1b01612612464::t_21b195eccc3c33 24-30
+  s_a1b01612612464::t_42aca66294f2ac 1-23,31-70,77-95,97,100-132
+  s_a1b01612612464::t_ad8bd08f9e2630 96,98-99
+src/mastra/agents/agent.ts
+  s_a1b01612612464::t_61eeabd743f54d 34
+  s_a1b01612612464::t_0174caea52bf16 27
+  s_a1b01612612464::t_0d249a04c1b849 76-79
+  s_a1b01612612464::t_62ebd007bf4ffa 4
+  s_a1b01612612464::t_5e4eda160196d4 13-14
+  s_a1b01612612464::t_a35dcd88eadad1 63
+web/src/styles.css
+  s_a1b01612612464::t_ac65d12c276d56 100-102
+src/mastra/files/routes.ts
+  s_a1b01612612464::t_d92870fd8cd8ff 1-104
+tests/file-routes.test.ts
+  s_a1b01612612464::t_5a4b698d9dad26 1-90,97,99-150
+  s_a1b01612612464::t_0b90cf766e3d78 91-96,98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8f2c4f29ea3551797f6e76f772b31a27c4495609",
+  "prompts": {},
+  "sessions": {
+    "s_a1b01612612464": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86979b0c-3078-4460-98d5-c90bbcd05730",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
