@@ -1,0 +1,21 @@
+src/mastra/sandbox/cleaner.ts
+  s_a1b01612612464::t_0e02cd4aeb75f6 1-49
+tests/sandbox-cleaner.test.ts
+  s_a1b01612612464::t_0ba6fdc658fa58 1-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7249ac7f389bcb4d9e1a7160daae8d22b1f32a24",
+  "prompts": {},
+  "sessions": {
+    "s_a1b01612612464": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86979b0c-3078-4460-98d5-c90bbcd05730",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
