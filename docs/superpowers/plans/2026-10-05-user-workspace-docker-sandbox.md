@@ -73,10 +73,10 @@
 
 **Interfaces:** `workspaceRoot(userId: string): string`、`threadRoot(userId: string, threadId: string): string`、`ensureUserWorkspace(auth): Promise<string>`、`resolveUserFilesystem({requestContext}): Promise<LocalFilesystem>`。`WorkspaceStorage` 适配当前 Mastra `WorkspaceFilesystem` 的 read/write/list/stat/remove 能力，只保留业务确需方法；`LocalFilesystem({ basePath: root, contained: true })`，`allowedPaths=[]`。真实文件访问经路径策略；`Workspace` 可以是一个动态 resolver 实例，不能用静态共享 basePath。
 
-- [ ] 写测试：用户 A/B 根目录不同；`../`、绝对路径、symlink、伪造 UUID、含 `/` 或 `.` 段的 threadId、创建时父目录 symlink 替换均拒绝；同一用户重复调用幂等。
-- [ ] 跑目标测试确认失败；实现配置校验、路径解析、目录创建、数据库唯一 `user_id` 与查询约束。
-- [ ] 将 Agent workspace resolver 接到可信身份，先在 feature flag 下仅管理员测试，暂不开放原生命令工具。保留旧 `workspace/` 为只读备份待迁移。
-- [ ] 跑目标测试、`npm test`、`npm run build`。数据库变化：`app_workspaces`；兼容风险：管理员旧文件不在新目录；回滚：关功能开关、恢复旧 Workspace 配置，表保留不删。
+- [x] 写测试：用户 A/B 根目录不同；`../`、绝对路径、symlink、伪造 UUID、含 `/` 或 `.` 段的 threadId、创建时父目录 symlink 替换均拒绝；同一用户重复调用幂等。
+- [x] 跑目标测试确认失败；实现配置校验、路径解析、目录创建、数据库唯一 `user_id` 与查询约束。
+- [x] 将 Agent workspace resolver 接到可信身份，先在 feature flag 下仅管理员测试，暂不开放原生命令工具。保留旧 `workspace/` 为只读备份待迁移。
+- [x] 跑目标测试、`npm test`、`npm run build`。数据库变化：`app_workspaces`；兼容风险：管理员旧文件不在新目录；回滚：关功能开关、恢复旧 Workspace 配置，表保留不删。
 
 ### Task 4：认证文件 API 与文件服务
 

@@ -9,6 +9,8 @@ import type { RequestContext } from '@mastra/core/request-context';
 import { resolveSelectedModel, trustedUserFrom } from '../models/resolver';
 import { createTransportModel } from '../models/transport';
 import { tavilySearchTool } from '../tools/tavily-search-tool';
+import { isWorkspaceResolverEnabled } from '../workspace/config';
+import { resolveUserFilesystem } from '../workspace/resolver';
 
 const workspacePath = 'workspace';
 
@@ -32,6 +34,12 @@ const workspace = new Workspace({
       requireApproval: true,
     },
   },
+});
+
+const userWorkspace = new Workspace({
+  id: 'user-workspace',
+  name: '用户工作区',
+  filesystem: resolveUserFilesystem,
 });
 
 function isAdmin(requestContext: RequestContext): boolean {
@@ -68,7 +76,10 @@ export const agent = new Agent({
     autoResumeSuspendedTools: true,
   },
   memory: memoryForRequest,
-  workspace: ({ requestContext }) => (isAdmin(requestContext) ? workspace : undefined),
+  workspace: ({ requestContext }) => {
+    if (!isAdmin(requestContext)) return undefined;
+    return isWorkspaceResolverEnabled() ? userWorkspace : workspace;
+  },
   tools: ({ requestContext }) => {
     const common = { ask_user: askUserTool, web_fetch: webFetchTool, web_search: tavilySearchTool };
     if (isAdmin(requestContext)) return {
