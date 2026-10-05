@@ -1,0 +1,42 @@
+src/mastra/auth/authorization.ts
+  s_a1b01612612464::t_b278f7bb408f5e 18-23
+  s_a1b01612612464::t_22ae780d62ab51 99,102
+  s_a1b01612612464::t_e8888886c5695a 101,103
+  s_a1b01612612464::t_65fc057c19c946 49-53
+  s_a1b01612612464::t_911cc82dc854c0 1-17,24-48,54-98,100,104-107
+src/mastra/auth/thread-guard.ts
+  s_a1b01612612464::t_929af1a207b1d9 1-33
+web/src/agent/use-thread-list.ts
+  s_a1b01612612464::t_0d5e99cf7bce8d 7
+src/mastra/agents/memory-model.ts
+  s_a1b01612612464::t_9707bdd910bb32 23,26-27
+  s_a1b01612612464::t_9ad1e54a08109b 24
+web/src/agent/thread-scope.ts
+  s_a1b01612612464::t_98ee98b76e055b 7-8
+docs/superpowers/plans/2026-10-05-user-workspace-docker-sandbox.md
+  s_a1b01612612464::t_b48d1c411a50d6 63-66
+tests/thread-ownership.test.ts
+  s_a1b01612612464::t_6c177ac9fef603 1-216
+tests/memory-isolation.test.ts
+  s_a1b01612612464::t_72c758cdb6790c 55-57
+  s_a1b01612612464::t_5ce912340aa752 1-54,58-62
+src/mastra/index.ts
+  s_a1b01612612464::t_b56e3fc2de6e91 16
+  s_a1b01612612464::t_12218e4bf2c462 30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5350e8a383c7331e4025e4fda6e5f43aa37d4831",
+  "prompts": {},
+  "sessions": {
+    "s_a1b01612612464": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86979b0c-3078-4460-98d5-c90bbcd05730",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
