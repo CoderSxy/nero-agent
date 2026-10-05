@@ -10,8 +10,10 @@ import { createTransportModel } from '../models/transport';
 import { tavilySearchTool } from '../tools/tavily-search-tool';
 import { isWorkspaceResolverEnabled } from '../workspace/config';
 import { resolveUserFilesystem } from '../workspace/resolver';
-import { disabledNativeFilesystemTools, isUserFilesEnabled } from '../files/policy';
+import { isUserFilesEnabled } from '../files/policy';
 import { userFileTools } from '../files/tools';
+import { disabledNativeWorkspaceTools } from '../sandbox/native-tools';
+import { sandboxTools } from '../sandbox/tool';
 
 const workspacePath = 'workspace';
 
@@ -24,14 +26,14 @@ const workspace = new Workspace({
   sandbox: new LocalSandbox({
     workingDirectory: workspacePath,
   }),
-  tools: disabledNativeFilesystemTools,
+  tools: disabledNativeWorkspaceTools,
 });
 
 const userWorkspace = new Workspace({
   id: 'user-workspace',
   name: '用户工作区',
   filesystem: resolveUserFilesystem,
-  tools: disabledNativeFilesystemTools,
+  tools: disabledNativeWorkspaceTools,
 });
 
 function isAdmin(requestContext: RequestContext): boolean {
@@ -72,15 +74,24 @@ export const agent = new Agent({
     if (!isAdmin(requestContext)) return undefined;
     return isWorkspaceResolverEnabled() ? userWorkspace : workspace;
   },
-  tools: ({ requestContext }) => {
-    const common = {
-      ask_user: askUserTool, web_fetch: webFetchTool, web_search: tavilySearchTool,
-      ...(isUserFilesEnabled() ? userFileTools : {}),
-    };
-    if (isAdmin(requestContext)) return {
-      ...common, start_schedule: startScheduleTool, stop_schedule: stopScheduleTool,
-    };
-    return common;
-  },
+  tools: ({ requestContext }) => resolveAgentTools(requestContext),
   signals: [new TaskSignalProvider()],
 });
+
+function resolveAgentTools(requestContext: RequestContext) {
+  const common = {
+    ask_user: askUserTool,
+    web_fetch: webFetchTool,
+    web_search: tavilySearchTool,
+    ...(isUserFilesEnabled() ? userFileTools : {}),
+    ...sandboxTools(),
+  };
+  if (isAdmin(requestContext)) {
+    return { ...common, start_schedule: startScheduleTool, stop_schedule: stopScheduleTool };
+  }
+  return common;
+}
+
+export function listAgentToolIds(requestContext: RequestContext): string[] {
+  return Object.keys(resolveAgentTools(requestContext));
+}

@@ -108,9 +108,9 @@
 
 **Interfaces:** `SandboxOwner={ userId:string; sandboxId:string }`; `ExecutionRequest={ auth:AuthContext; threadId:string; command:string; args:string[]; abortSignal?:AbortSignal }`; `SandboxProvider.ensureRunning(owner, workspaceRoot)` / `.execute(owner, command, args, {cwd,timeoutMs,abortSignal})` / `.stop` / `.remove` / `.inspect`。`SandboxManager.execute(request)` 必须自己调用 `assertThreadOwned`、覆盖 cwd 与 timeout，不接受 Tool 参数中的 userId/cwd。先用 fake provider 验证；用当前 `WorkspaceSandbox` 类型定义编译 adapter。禁用 Mastra 自动命令、后台 spawn、包安装入口或证明都经过同一 manager。
 
-- [ ] 写测试：任意 Tool 参数 userId/cwd 不改变身份与 thread cwd；无 threadId 拒绝；普通聊天不调用 provider；原生命令工具不出现在可用工具清单。
-- [ ] 跑目标测试确认失败；实现接口和 manager；注册自定义受控工具，默认 feature flag 关闭。
-- [ ] 跑目标测试、`npm test`、`npm run build`。数据库变化：无；兼容风险：管理员旧 LocalSandbox 命令消失；回滚：关闭新工具，管理员仅聊天，不能重新打开不安全生产命令。
+- [x] 写测试：任意 Tool 参数 userId/cwd 不改变身份与 thread cwd；无 threadId 拒绝；普通聊天不调用 provider；原生命令工具不出现在可用工具清单。
+- [x] 跑目标测试确认失败；实现接口和 manager；注册自定义受控工具，默认 feature flag 关闭。
+- [x] 跑目标测试、`npm test`、`npm run build`。数据库变化：无；兼容风险：管理员旧 LocalSandbox 命令消失；回滚：关闭新工具，管理员仅聊天，不能重新打开不安全生产命令。
 
 ## Phase 5：Docker Sandbox
 

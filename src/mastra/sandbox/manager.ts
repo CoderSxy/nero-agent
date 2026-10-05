@@ -1,0 +1,36 @@
+import type { ThreadLookup } from '../auth/thread-guard';
+import { assertThreadOwned } from '../auth/thread-guard';
+import { isSandboxCommandsEnabled, sandboxCommandTimeoutMs } from '../workspace/config';
+import { ensureThreadDirectory, ensureUserWorkspace } from '../workspace/manager';
+import type { SandboxProvider } from './provider';
+import { sandboxIdFor, type ExecutionRequest, type SandboxCommandResult, type SandboxOwner } from './types';
+
+export class SandboxManager {
+  constructor(
+    private readonly provider: SandboxProvider,
+    private readonly lookup: ThreadLookup,
+  ) {}
+
+  ownerFor(userId: string): SandboxOwner {
+    return { userId, sandboxId: sandboxIdFor(userId) };
+  }
+
+  async execute(request: ExecutionRequest): Promise<SandboxCommandResult> {
+    if (!isSandboxCommandsEnabled()) {
+      throw new Error('Sandbox commands are disabled');
+    }
+    if (!request.threadId) {
+      throw new Error('threadId is required');
+    }
+    await assertThreadOwned(request.auth, request.threadId, this.lookup);
+    const { containerPath } = await ensureThreadDirectory(request.auth, request.threadId, this.lookup);
+    const root = await ensureUserWorkspace(request.auth);
+    const owner = this.ownerFor(request.auth.userId);
+    await this.provider.ensureRunning(owner, root);
+    return this.provider.execute(owner, request.command, request.args, {
+      cwd: containerPath,
+      timeoutMs: sandboxCommandTimeoutMs(),
+      abortSignal: request.abortSignal,
+    });
+  }
+}

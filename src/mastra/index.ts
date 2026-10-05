@@ -9,6 +9,8 @@ import {
   SensitiveDataFilter,
 } from '@mastra/observability';
 import { agent } from './agents/agent';
+import { authRoutes } from './auth/routes';
+import { executeCommandTool } from './sandbox/tool';
 import { startScheduleTool, stopScheduleTool } from './tools/schedule-tools';
 import { tavilySearchTool } from './tools/tavily-search-tool';
 import { studioChineseMiddleware } from './studio-zh';
@@ -39,7 +41,7 @@ export const mastra = new Mastra({
     externals: ['@duckdb/node-bindings'],
   },
   agents: { agent },
-  tools: { startScheduleTool, stopScheduleTool, tavilySearchTool, ...userFileTools },
+  tools: { startScheduleTool, stopScheduleTool, tavilySearchTool, executeCommandTool, ...userFileTools },
   storage: new MastraCompositeStore({
     id: 'composite-storage',
     default: new PostgresStore({
