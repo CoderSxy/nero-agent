@@ -1,0 +1,30 @@
+docs/deployment/workspace-sandbox-ecs.md
+  s_a1b01612612464::t_c1c24431109b5a 1-21
+scripts/migrate-admin-workspace.mjs
+  s_a1b01612612464::t_0524c7e852d7da 1-18
+compose.yaml
+  s_a1b01612612464::t_a9e081e02658cb 1-2
+docs/superpowers/plans/2026-10-05-user-workspace-docker-sandbox.md
+  s_a1b01612612464::t_5c5c59cf2b0723 160-162
+  s_a1b01612612464::t_21d4472554af57 148-149
+  s_a1b01612612464::t_8a6f277d0d3377 136-138
+  s_a1b01612612464::t_bb365f0bb8e8ff 123-126
+  s_a1b01612612464::t_ce62937a633519 181
+  s_a1b01612612464::t_fa07938740a4e0 170-173
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bbbff103c16f59c5515d0db855fadcc520f802d5",
+  "prompts": {},
+  "sessions": {
+    "s_a1b01612612464": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86979b0c-3078-4460-98d5-c90bbcd05730",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
