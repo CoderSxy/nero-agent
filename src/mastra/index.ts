@@ -16,6 +16,7 @@ import { agentModelLockMiddleware } from './agent-model-lock';
 import { authRoutes } from './auth/routes';
 import { modelRoutes } from './models/routes';
 import { modelAdminRoutes } from './models/admin-page';
+import { authContextFromUser, resourceIdFor } from './auth/auth-context';
 import { getUserByToken } from './auth/service';
 import { studioAuth } from './auth/studio';
 
@@ -29,7 +30,7 @@ export const mastra = new Mastra({
     apiRoutes: [...authRoutes, ...modelRoutes, ...modelAdminRoutes],
     auth: {
       authenticateToken: async token => getUserByToken(token),
-      mapUserToResourceId: user => user.id,
+      mapUserToResourceId: user => resourceIdFor(authContextFromUser(user)),
     },
   },
   bundler: {

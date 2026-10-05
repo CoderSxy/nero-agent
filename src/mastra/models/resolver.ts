@@ -1,5 +1,6 @@
 import type { OpenAICompatibleConfig } from '@mastra/core/llm';
 import type { RequestContext } from '@mastra/core/request-context';
+import { trustedUser } from '../auth/auth-context';
 import type { AuthUser } from '../auth/service';
 import { decryptApiKey } from './crypto';
 import { assertAllowedEndpoint, normalizeModelEndpoint } from './endpoint-policy';
@@ -9,28 +10,16 @@ import { ModelCatalogError, parseModelRef, toModelRef, type ModelRef } from './t
 
 export const chatModelRefContextKey = 'nero-agent.chat-model-ref';
 export const memoryModelRefContextKey = 'nero-agent.memory-model-ref';
-/**
- * Reserved by @mastra/server: clients cannot populate it, auth middleware sets it after
- * token validation. It is the only identity source; never read `user` or custom keys.
- */
-const MASTRA_USER_KEY = 'mastra__user';
-
 export type ModelPurpose = 'chat' | 'memory';
 
 export type SelectedModel = { ref: ModelRef; config: OpenAICompatibleConfig };
 
-function isAuthUser(value: unknown): value is AuthUser {
-  if (!value || typeof value !== 'object') return false;
-  const candidate = value as Partial<AuthUser>;
-  return typeof candidate.id === 'string' && candidate.id.length > 0 && Array.isArray(candidate.roles);
-}
-
 export function trustedUserFrom(requestContext: RequestContext): AuthUser {
-  const user = requestContext.get(MASTRA_USER_KEY);
-  if (!isAuthUser(user)) {
+  try {
+    return trustedUser(requestContext);
+  } catch {
     throw new ModelCatalogError('forbidden', 'Authentication is required to use a model');
   }
-  return user;
 }
 
 export async function resolveModel(ref: ModelRef, user: AuthUser): Promise<OpenAICompatibleConfig> {

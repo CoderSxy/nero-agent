@@ -1,4 +1,5 @@
 import type { MastraAuthConfig } from '@mastra/core/server';
+import { authContextFromUser, resourceIdFor } from './auth-context';
 import { getUserByToken, login, logout, type AuthUser } from './service';
 
 type Session = { token: string; user: AuthUser };
@@ -62,7 +63,7 @@ export function createStudioAuth(auth: AuthFunctions) {
     destroySession: (token: string) => auth.logout(token),
     getClearSessionHeaders: () => ({ 'Set-Cookie':
       `${cookieName}=; Path=/api; HttpOnly; SameSite=Lax; Max-Age=0` }),
-    mapUserToResourceId: (user: AuthUser) => user.id,
+    mapUserToResourceId: (user: AuthUser) => resourceIdFor(authContextFromUser(user)),
   };
 }
 

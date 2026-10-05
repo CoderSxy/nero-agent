@@ -49,10 +49,10 @@
 
 **Interfaces:** `trustedAuth(requestContext: RequestContext): AuthContext`，`AuthContext = { userId: string; roles: AppRole[]; tenantId?: string }`；从 `mastra__user` 取已认证 `AuthUser`，校验 UUID，禁止自定义 requestContext 的 `userId`。`resourceIdFor(auth): string` 返回 `auth.userId`。模型 resolver 复用此函数，不引入第二套身份判断。
 
-- [ ] 写测试：缺少/伪造身份拒绝；带合法 `mastra__user` 返回真实 UUID；客户端自定义 key 无效。
-- [ ] 跑 `node --import tsx --test tests/auth-context.test.ts` 确认先失败。
-- [ ] 实现接口与 index 注册调整，保持现有登录、模型选择行为。
-- [ ] 跑目标测试、`npm test`、`npm run build`。数据库变化：无。兼容风险：非 UUID 历史身份要先审计；回滚：关闭新入口并恢复上一提交。
+- [x] 写测试：缺少/伪造身份拒绝；带合法 `mastra__user` 返回真实 UUID；客户端自定义 key 无效。
+- [x] 跑 `node --import tsx --test tests/auth-context.test.ts` 确认先失败。
+- [x] 实现接口与 index 注册调整，保持现有登录、模型选择行为。
+- [x] 跑目标测试、`npm test`、`npm run build`。数据库变化：无。兼容风险：非 UUID 历史身份要先审计；回滚：关闭新入口并恢复上一提交。
 
 ### Task 2：服务端线程归属和记忆范围
 
