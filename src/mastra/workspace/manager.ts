@@ -2,7 +2,7 @@ import { mkdir, lstat, realpath } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { AuthContext } from '../auth/auth-context';
 import { assertThreadOwned, type ThreadLookup } from '../auth/thread-guard';
-import { DEFAULT_QUOTA_BYTES } from './config';
+import { defaultQuotaBytes } from './config';
 import { assertContained, containerThreadPath, threadRoot, workspaceBase, workspaceRoot } from './path';
 
 export { threadRoot, workspaceRoot } from './path';
@@ -59,6 +59,6 @@ async function recordWorkspace(auth: AuthContext, root: string): Promise<void> {
     `INSERT INTO app_workspaces (user_id, workspace_id, root_path, quota_bytes)
      VALUES ($1, $2, $3, $4)
      ON CONFLICT (user_id) DO UPDATE SET root_path = EXCLUDED.root_path, updated_at = now()`,
-    [auth.userId, `ws_${auth.userId}`, root, DEFAULT_QUOTA_BYTES],
+    [auth.userId, `ws_${auth.userId}`, root, defaultQuotaBytes()],
   );
 }

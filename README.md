@@ -62,20 +62,20 @@ npm run dev
 - 制作一个日本樱花节活动页面。
 - 查询 SPCX 股价，并设置定时提醒。
 
-`web_search` 使用 Tavily 搜索，`web_fetch` 用于读取已知网址。普通用户目前只使用聊天和网络工具；工作区文件、命令、定时任务仅对管理员开放，后续需完成用户独立工作区和沙箱后再向普通用户开放。管理员修改文件或运行命令前会请求批准。
+`web_search` 使用 Tavily 搜索，`web_fetch` 用于读取已知网址。普通用户默认仍只有聊天和网络工具。用户文件 API、每用户工作区和 `execute_command` 均有独立开关，默认关闭。管理员修改文件或运行命令前会请求批准。
 
 ## 工作区与存储
 
-管理员的本地文件工具只在 `workspace/` 内操作。开发模式下，该目录位于 `src/mastra/public/workspace/`。命令也从这里启动，但 `LocalSandbox` 默认不提供操作系统级隔离；生产环境应限制 Studio 入口，仅由可信管理员使用命令能力。用户独立工作区与 Docker 沙箱改造前的入口、身份与探针基线见 [工作区沙箱审计](docs/architecture/workspace-sandbox-audit.md)。
+每用户工作区根目录为 `$WORKSPACE_ROOT/users/<UUID>/workspace`（默认 `WORKSPACE_ROOT=/data/mastra`），线程文件在 `threads/<threadId>/{input,output,tmp}`。`WORKSPACE_RESOLVER_ENABLED=true` 时，管理员 Workspace 使用该用户目录上的 `LocalFilesystem({ contained: true })`。Mastra 原生命令与文件系统工具已关闭；受控文件工具走 `FileService`。
 
-认证文件 API（默认关闭，设置 `USER_FILES_ENABLED=true`）提供：
+认证文件 API（`USER_FILES_ENABLED=true`）提供：
 
 - `POST /api/user-files/upload`（multipart：`threadId`、`path`、`file`）
 - `GET /api/user-files/:threadId` 列出当前会话文件
 - `GET /api/user-files/:threadId/*` 下载
 - `DELETE /api/user-files/:threadId/*` 删除
 
-路径相对该用户的 `threads/<threadId>`，服务端校验线程归属。独立页面可在对话区上传并下载。智能体应返回 `/api/user-files/...` 路径，不再生成宿主 `file:` URL。启用前先运行 `npm run db:migrate` 创建 `app_workspaces`。
+路径相对该用户的 `threads/<threadId>`，服务端校验线程归属。独立页面可在对话区上传并下载。智能体应返回 `/api/user-files/...` 路径，不再生成宿主 `file:` URL。启用前先运行 `npm run db:migrate` 创建 `app_workspaces`。`execute_command` 需 `SANDBOX_COMMANDS_ENABLED=true`；Docker 实现还需 `SANDBOX_PROVIDER=docker` 与 digest 固定的 `SANDBOX_IMAGE`。宿主项目配额未实测前保持 `SANDBOX_FILE_WRITE_ENABLED=false`。部署说明见 [ECS 工作区与沙箱发布](docs/deployment/workspace-sandbox-ecs.md)。基线审计见 [工作区沙箱审计](docs/architecture/workspace-sandbox-audit.md)。
 
 PostgreSQL 保存用户、角色、权限、登录会话，以及 Mastra 的会话记忆等数据。`app_permissions` 与 `app_role_permissions` 目前只建表，细粒度权限数据留待后续迭代。开发环境的可观测性仍使用 DuckDB；正式部署时应按流量改为 PostgreSQL 或 ClickHouse。定时任务会持续消耗模型用量，直到暂停。
 

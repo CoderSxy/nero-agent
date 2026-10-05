@@ -6,6 +6,8 @@ import type { ThreadLookup } from '../auth/thread-guard';
 import { ensureThreadDirectory } from '../workspace/manager';
 import { assertContained, workspaceBase } from '../workspace/path';
 import { FilePathError, maxFileSizeBytes, relativeFilePath } from './policy';
+import { workspaceQuota } from '../workspace/quota';
+import { assertWritable } from '../workspace/disk-protection';
 
 export class FileServiceError extends Error {
   constructor(readonly status: 400 | 401 | 403 | 404, message: string) {
@@ -38,8 +40,20 @@ export class FileService {
     options: { signal?: AbortSignal } = {},
   ) {
     if (data.byteLength > maxFileSizeBytes()) throw new FileServiceError(400, '文件过大');
+    const usage = await workspaceQuota.usage(auth.userId);
+    assertWritable(data.byteLength, usage.quotaBytes === 0 ? 1 : usage.usedBytes / usage.quotaBytes);
     const { hostPath } = await this.resolveOwnedPath(auth, threadId, relativePath, { create: true });
-    if (options.signal?.aborted) throw new FileServiceError(400, '上传已中断');
+    let replacing = 0;
+    try {
+      replacing = (await stat(hostPath)).size;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    }
+    await workspaceQuota.reserve(auth.userId, data.byteLength, replacing > 0 ? 0 : 1);
+    if (options.signal?.aborted) {
+      await workspaceQuota.release(auth.userId, data.byteLength, replacing > 0 ? 0 : 1);
+      throw new FileServiceError(400, '上传已中断');
+    }
     const tempPath = join(workspaceBase(), 'temp', randomUUID());
     await mkdir(dirname(tempPath), { recursive: true });
     try {
@@ -53,8 +67,11 @@ export class FileService {
       if (options.signal?.aborted) throw new FileServiceError(400, '上传已中断');
       await mkdir(dirname(hostPath), { recursive: true });
       await rename(tempPath, hostPath);
+      if (replacing > 0) await workspaceQuota.release(auth.userId, replacing, 0);
+      await workspaceQuota.commit();
     } catch (error) {
       await unlink(tempPath).catch(() => undefined);
+      await workspaceQuota.release(auth.userId, data.byteLength, replacing > 0 ? 0 : 1).catch(() => undefined);
       throw error;
     }
   }
