@@ -1,12 +1,14 @@
 import { mkdir, lstat, realpath } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { AuthContext } from '../auth/auth-context';
+import { assertThreadOwned, type ThreadLookup } from '../auth/thread-guard';
 import { DEFAULT_QUOTA_BYTES } from './config';
-import { assertContained, workspaceBase, workspaceRoot } from './path';
+import { assertContained, containerThreadPath, threadRoot, workspaceBase, workspaceRoot } from './path';
 
 export { threadRoot, workspaceRoot } from './path';
 
 const WORKSPACE_SUBDIRS = ['shared', 'uploads', 'projects', 'threads'];
+const THREAD_SUBDIRS = ['input', 'output', 'tmp'];
 
 export async function ensureUserWorkspace(auth: AuthContext): Promise<string> {
   const base = workspaceBase();
@@ -20,6 +22,21 @@ export async function ensureUserWorkspace(auth: AuthContext): Promise<string> {
   }
   await recordWorkspace(auth, root);
   return root;
+}
+
+export async function ensureThreadDirectory(
+  auth: AuthContext,
+  threadId: string,
+  lookup: ThreadLookup,
+): Promise<{ hostPath: string; containerPath: string }> {
+  await assertThreadOwned(auth, threadId, lookup);
+  await ensureUserWorkspace(auth);
+  const hostPath = threadRoot(auth.userId, threadId);
+  await mkdirContained(hostPath, workspaceBase());
+  for (const dir of THREAD_SUBDIRS) {
+    await mkdirContained(join(hostPath, dir), workspaceBase());
+  }
+  return { hostPath, containerPath: containerThreadPath(threadId) };
 }
 
 async function mkdirContained(path: string, base: string): Promise<void> {

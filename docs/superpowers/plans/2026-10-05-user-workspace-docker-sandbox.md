@@ -96,9 +96,9 @@
 
 **Interfaces:** `ensureThreadDirectory(auth, threadId): Promise<{ hostPath: string; containerPath: string }>` 在所有权校验后创建 `input/output/tmp`；容器路径固定 `/workspace/threads/<threadId>`。Thread 删除不删除目录。
 
-- [ ] 写测试：同用户两个 Thread 写同名 `analysis.py` 不相互覆盖；删 Thread 后文件仍保留；不允许传别人的 threadId。
-- [ ] 跑目标测试确认失败；实现目录与 FileService 默认 scope。
-- [ ] 跑目标测试、`npm test`、`npm run build`。数据库变化：无；兼容风险：已有文件在 workspace 根目录需迁移；回滚：保留新目录，关闭相关入口。
+- [x] 写测试：同用户两个 Thread 写同名 `analysis.py` 不相互覆盖；删 Thread 后文件仍保留；不允许传别人的 threadId。
+- [x] 跑目标测试确认失败；实现目录与 FileService 默认 scope。
+- [x] 跑目标测试、`npm test`、`npm run build`。数据库变化：无；兼容风险：已有文件在 workspace 根目录需迁移；回滚：保留新目录，关闭相关入口。
 
 ## Phase 4：Provider 抽象
 

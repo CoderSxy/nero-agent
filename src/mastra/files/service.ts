@@ -2,9 +2,9 @@ import { mkdir, open, readFile, readdir, realpath, rename, rm, stat, unlink } fr
 import { dirname, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { AuthContext } from '../auth/auth-context';
-import { assertThreadOwned, type ThreadLookup } from '../auth/thread-guard';
-import { ensureUserWorkspace } from '../workspace/manager';
-import { assertContained, threadRoot, workspaceBase } from '../workspace/path';
+import type { ThreadLookup } from '../auth/thread-guard';
+import { ensureThreadDirectory } from '../workspace/manager';
+import { assertContained, workspaceBase } from '../workspace/path';
 import { FilePathError, maxFileSizeBytes, relativeFilePath } from './policy';
 
 export class FileServiceError extends Error {
@@ -77,13 +77,8 @@ export class FileService {
   }
 
   private async ensureThreadRoot(auth: AuthContext, threadId: string) {
-    await assertThreadOwned(auth, threadId, this.lookup);
-    await ensureUserWorkspace(auth);
-    const root = threadRoot(auth.userId, threadId);
-    await mkdir(join(root, 'input'), { recursive: true });
-    await mkdir(join(root, 'output'), { recursive: true });
-    await mkdir(join(root, 'tmp'), { recursive: true });
-    return root;
+    const { hostPath } = await ensureThreadDirectory(auth, threadId, this.lookup);
+    return hostPath;
   }
 
   private async resolveOwnedPath(
