@@ -1,0 +1,43 @@
+src/mastra/sandbox/docker/config.ts
+  s_a1b01612612464::t_dbd8d2a7e8cf76 1-97
+src/mastra/sandbox/docker/provider.ts
+  s_a1b01612612464::t_d49db145cb586c 1-122
+sandbox/Dockerfile
+  s_a1b01612612464::t_2f48c70fbe22f5 1-10
+src/mastra/sandbox/docker/client.ts
+  s_a1b01612612464::t_251b31943af8c5 1-100
+migrations/004_sandbox_instances.sql
+  s_a1b01612612464::t_4e7fb935d1cef2 1-16
+package.json
+  s_a1b01612612464::t_c2df59dd0184e1 38-39
+src/mastra/sandbox/factory.ts
+  s_a1b01612612464::t_4ed03c0491a35e 1-17
+tests/docker-sandbox.integration.test.ts
+  s_a1b01612612464::t_02db7953929798 1-151
+tests/docker-config.test.ts
+  s_a1b01612612464::t_6b658a6f14b820 36
+  s_a1b01612612464::t_1f630c444aca95 1-13,15-35,37-48
+  s_a1b01612612464::t_6972fcd4ca8d22 14
+.env.example
+  s_a1b01612612464::t_0fb9a99e138336 26-31
+src/mastra/sandbox/registry.ts
+  s_a1b01612612464::t_b8b84d5d4ae7c5 1-72
+package-lock.json
+  s_a1b01612612464::t_a469d940d76e93 20-21,667-672,1295-1343,1433-1442,1957-2013,2613-2633,2704-2727,2829-2837,3017-3074,3170-3178,3300-3305,3443-3456,3599-3675,4065-4070,4770-4775,4782-4787,5744-5749,5769-5775,6293-6315,6864-6869,6885-6901,7036-7077,7206-7211
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bed9844bba854205bcd9b6df8c15eb9e20d4daa1",
+  "prompts": {},
+  "sessions": {
+    "s_a1b01612612464": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86979b0c-3078-4460-98d5-c90bbcd05730",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
