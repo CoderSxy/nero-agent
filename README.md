@@ -18,7 +18,7 @@ npm run db:local:setup
 npm run dev
 ```
 
-用户页面打开 [http://localhost:5173/agent/new](http://localhost:5173/agent/new)；原 Mastra Studio 保留在 [http://localhost:4111](http://localhost:4111)。Studio 界面常用文案由项目中间件汉化；尚未实现的 Workflows 导航入口已隐藏。Mastra Studio 是依赖包提供的界面，升级 Mastra 后可能需要补充或调整 [汉化映射](src/mastra/studio-zh.ts)。
+用户页面打开 [http://localhost:5173/agent/new](http://localhost:5173/agent/new)；Mastra Studio 位于 [http://localhost:4111](http://localhost:4111)，使用与用户页面相同的邮箱和密码登录，仅管理员账号可进入。Studio 登录不开放注册，通过仅供 Studio 使用的 HttpOnly 会话 Cookie 保持登录；普通用户仍可登录 5173 页面。Studio 界面常用文案由项目中间件汉化；尚未实现的 Workflows 导航入口已隐藏。Mastra Studio 是依赖包提供的界面，升级 Mastra 后可能需要补充或调整 [汉化映射](src/mastra/studio-zh.ts)。
 
 用户页面需要登录。首次开发环境已创建管理员和普通用户测试账号，凭据只保存在 Git 忽略的 `.local-accounts` 文件中。新环境可通过 `NERO_USER_PASSWORD` 环境变量运行 `npm run user:create -- <邮箱> <显示名> <admin|user>` 创建首位管理员；之后管理员可调用 `POST /auth/users` 创建用户。当前不开放自助注册。登录会话在浏览器当前标签页保存，退出登录会撤销服务端会话。
 
@@ -38,7 +38,7 @@ npm run dev
 | 环境变量 | 说明 |
 | --- | --- |
 | `MODEL_CONFIG_ENCRYPTION_KEY` | 必填。32 字节密钥的 Base64 编码，例如 `openssl rand -base64 32`。数据库备份不含该密钥；密钥丢失后已保存的模型 Key 无法解密，需重新录入。本版不提供密钥轮换。 |
-| `MODEL_ENDPOINT_ALLOWLIST` | 必填。逗号分隔的 HTTPS 源（origin），例如 `https://api.deepseek.com,https://api.openai.com`。模型的 Base URL 必须落在其中；环回、内网、链路本地和云元数据地址始终被拒绝。 |
+| `MODEL_ENDPOINT_ALLOWLIST` | 必填。逗号分隔的 HTTPS 源（origin），例如 `https://api.deepseek.com,https://api.openai.com`。唯一可用的 HTTP 例外是完整 Base URL `http://101.37.135.116:7864/v1`，也必须逐字加入此列表；其他 HTTP 地址仍被拒绝。环回、内网、链路本地和云元数据地址始终被拒绝。HTTP 连接中的 API Key 和请求内容不受传输加密保护。 |
 
 ### 迁移与首次启用
 

@@ -6,11 +6,13 @@ const BLOCKED_HOSTNAMES = new Set([
   'metadata',
   'metadata.google.internal',
 ]);
+const APPROVED_HTTP_BASE_URL = 'http://101.37.135.116:7864/v1';
 
 let cachedAllowlistValue: string | undefined;
 let cachedAllowlistOrigins: Set<string> | undefined;
 
 function parseAllowlistEntry(entry: string): string {
+  if (entry === APPROVED_HTTP_BASE_URL) return entry;
   let url: URL;
   try {
     url = new URL(entry);
@@ -55,7 +57,7 @@ function parseAllowlist(): Set<string> {
   if (!raw || !raw.trim()) {
     throw new ModelCatalogError(
       'invalid_input',
-      'MODEL_ENDPOINT_ALLOWLIST is required and must list approved HTTPS origins',
+      'MODEL_ENDPOINT_ALLOWLIST is required and must list approved model endpoints',
     );
   }
   if (cachedAllowlistValue === raw && cachedAllowlistOrigins) return cachedAllowlistOrigins;
@@ -67,7 +69,7 @@ function parseAllowlist(): Set<string> {
   if (entries.length === 0) {
     throw new ModelCatalogError(
       'invalid_input',
-      'MODEL_ENDPOINT_ALLOWLIST is required and must list approved HTTPS origins',
+      'MODEL_ENDPOINT_ALLOWLIST is required and must list approved model endpoints',
     );
   }
 
@@ -142,9 +144,6 @@ export function normalizeModelEndpoint(raw: string): URL {
     throw new ModelCatalogError('invalid_input', 'Model endpoint URL is invalid');
   }
 
-  if (url.protocol !== 'https:') {
-    throw new ModelCatalogError('invalid_input', 'Model endpoint must use HTTPS');
-  }
   if (url.username || url.password) {
     throw new ModelCatalogError('invalid_input', 'Model endpoint URL must not include credentials');
   }
@@ -157,14 +156,19 @@ export function normalizeModelEndpoint(raw: string): URL {
     url.pathname = url.pathname.replace(/\/+$/, '');
   }
 
+  if (url.protocol !== 'https:' && url.toString() !== APPROVED_HTTP_BASE_URL) {
+    throw new ModelCatalogError('invalid_input', 'Model endpoint must use HTTPS');
+  }
+
   assertBlockedHostname(url.hostname);
   return url;
 }
 
 export async function assertAllowedEndpoint(url: URL): Promise<void> {
   const allowlist = parseAllowlist();
-  if (!allowlist.has(url.origin)) {
-    throw new ModelCatalogError('invalid_input', 'Model endpoint origin is not in the approved allowlist');
+  const entry = url.protocol === 'http:' ? url.toString() : url.origin;
+  if (!allowlist.has(entry)) {
+    throw new ModelCatalogError('invalid_input', 'Model endpoint is not in the approved allowlist');
   }
 
   assertBlockedHostname(url.hostname);

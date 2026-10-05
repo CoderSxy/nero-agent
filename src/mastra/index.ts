@@ -17,11 +17,13 @@ import { authRoutes } from './auth/routes';
 import { modelRoutes } from './models/routes';
 import { modelAdminRoutes } from './models/admin-page';
 import { getUserByToken } from './auth/service';
+import { studioAuth } from './auth/studio';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error('DATABASE_URL 未配置，请先运行 npm run db:local:setup');
 
 export const mastra = new Mastra({
+  studio: { auth: studioAuth },
   server: {
     middleware: [agentModelLockMiddleware, studioChineseMiddleware],
     apiRoutes: [...authRoutes, ...modelRoutes, ...modelAdminRoutes],

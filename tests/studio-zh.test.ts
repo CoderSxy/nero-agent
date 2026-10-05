@@ -39,6 +39,25 @@ test('Studio HTML gets exactly one /model-admin link; non-Studio HTML is untouch
   assert.equal(countLinks(fragment), 0);
 });
 
+test('Studio uses the page origin for API requests so login cookies stay on the same host', () => {
+  const html = localizeStudioHtml(STUDIO_HTML);
+  const dom = new JSDOM(html, { url: 'http://localhost:4111/', runScripts: 'dangerously', pretendToBeVisual: true });
+  assert.equal((dom.window as Window & { MASTRA_AUTO_DETECT_URL?: string }).MASTRA_AUTO_DETECT_URL, 'true');
+});
+
+test('Studio replaces an older saved API host with the current 4111 page origin', () => {
+  const dom = new JSDOM(localizeStudioHtml(STUDIO_HTML), {
+    url: 'http://127.0.0.1:4111/', runScripts: 'dangerously', pretendToBeVisual: true,
+    beforeParse(window) {
+      window.localStorage.setItem('mastra-studio-config', JSON.stringify({
+        baseUrl: 'http://localhost:4111', apiPrefix: '/api', headers: {},
+      }));
+    },
+  });
+  const config = JSON.parse(dom.window.localStorage.getItem('mastra-studio-config') || '{}');
+  assert.equal(config.baseUrl, 'http://127.0.0.1:4111');
+});
+
 async function renderStudio(path: string) {
   const dom = new JSDOM(localizeStudioHtml(STUDIO_HTML), {
     url: `http://localhost:4111${path}`,

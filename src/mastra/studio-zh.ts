@@ -126,7 +126,21 @@ export function studioChineseClient() {
 }
 
 // esbuild's keepNames helper may be emitted into toString() output under tsx; shim it for the browser.
-const injection = `<script>window.__name=window.__name||function(t){return t};var __name=window.__name;(${studioChineseClient.toString()})();</script>`;
+function studioSameOriginClient() {
+  if (location.port !== '4111') return;
+  (window as Window & { MASTRA_AUTO_DETECT_URL?: string }).MASTRA_AUTO_DETECT_URL = 'true';
+  try {
+    const key = 'mastra-studio-config';
+    const stored = localStorage.getItem(key);
+    if (!stored) return;
+    const config = JSON.parse(stored);
+    if (!config || typeof config !== 'object' || config.baseUrl === location.origin) return;
+    config.baseUrl = location.origin;
+    localStorage.setItem(key, JSON.stringify(config));
+  } catch { /* A missing or malformed saved config should not block Studio. */ }
+}
+
+const injection = `<script>window.__name=window.__name||function(t){return t};var __name=window.__name;(${studioSameOriginClient.toString()})();(${studioChineseClient.toString()})();</script>`;
 
 export function localizeStudioHtml(html: string): string {
   return html.replace('</head>', `${injection}</head>`);
