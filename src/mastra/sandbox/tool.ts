@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { trustedAuth } from '../auth/auth-context';
 import type { ThreadLookup } from '../auth/thread-guard';
 import { isSandboxCommandsEnabled } from '../workspace/config';
-import { FakeSandboxProvider } from './fake-provider';
+import { sandboxProvider } from './factory';
 import { SandboxManager } from './manager';
 
 const commandInput = z.object({
@@ -28,7 +28,7 @@ export function createExecuteCommandTool(managerFactory?: (lookup: ThreadLookup)
     execute: async (input, context) => {
       const auth = trustedAuth(context.requestContext);
       const lookup = await memoryLookup(context);
-      const manager = managerFactory?.(lookup) ?? new SandboxManager(new FakeSandboxProvider(), lookup);
+      const manager = managerFactory?.(lookup) ?? new SandboxManager(await sandboxProvider(), lookup);
       const result = await manager.execute({
         auth,
         threadId: input.threadId,

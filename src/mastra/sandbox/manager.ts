@@ -2,6 +2,8 @@ import type { ThreadLookup } from '../auth/thread-guard';
 import { assertThreadOwned } from '../auth/thread-guard';
 import { isSandboxCommandsEnabled, sandboxCommandTimeoutMs } from '../workspace/config';
 import { ensureThreadDirectory, ensureUserWorkspace } from '../workspace/manager';
+import { commandQueue } from './execution-queue';
+import { commandAuditSummary } from './audit';
 import type { SandboxProvider } from './provider';
 import { sandboxIdFor, type ExecutionRequest, type SandboxCommandResult, type SandboxOwner } from './types';
 
@@ -27,10 +29,29 @@ export class SandboxManager {
     const root = await ensureUserWorkspace(request.auth);
     const owner = this.ownerFor(request.auth.userId);
     await this.provider.ensureRunning(owner, root);
-    return this.provider.execute(owner, request.command, request.args, {
-      cwd: containerPath,
-      timeoutMs: sandboxCommandTimeoutMs(),
-      abortSignal: request.abortSignal,
-    });
+    return commandQueue.run(
+      request.auth.userId,
+      request.threadId,
+      async () => {
+        const started = Date.now();
+        const result = await this.provider.execute(owner, request.command, request.args, {
+          cwd: containerPath,
+          timeoutMs: sandboxCommandTimeoutMs(),
+          abortSignal: request.abortSignal,
+        });
+        commandAuditSummary({
+          userId: request.auth.userId,
+          threadId: request.threadId,
+          sandboxId: owner.sandboxId,
+          command: request.command,
+          cwd: containerPath,
+          exitCode: result.exitCode,
+          timedOut: result.timedOut,
+          durationMs: Date.now() - started,
+        });
+        return result;
+      },
+      request.abortSignal,
+    );
   }
 }
