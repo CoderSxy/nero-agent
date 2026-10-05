@@ -1,0 +1,33 @@
+src/mastra/index.ts
+  s_a1b01612612464::t_7e0dd56ddd3f27 33
+  s_a1b01612612464::t_429074fa4ae6e4 19
+docs/superpowers/plans/2026-10-05-user-workspace-docker-sandbox.md
+  s_a1b01612612464::t_12020418ad5171 52-55
+tests/auth-context.test.ts
+  s_a1b01612612464::t_d4480896714ef9 1-74
+src/mastra/auth/auth-context.ts
+  s_a1b01612612464::t_4c58ebe42abe69 17-20,22-25,33
+  s_a1b01612612464::t_01b69d8e3c8f6b 1-16,21,26-32,34-42
+src/mastra/auth/studio.ts
+  s_a1b01612612464::t_f660fedf9cf200 2
+  s_a1b01612612464::t_7e97d5ccd45ae4 66
+src/mastra/models/resolver.ts
+  s_a1b01612612464::t_7f66235625a1f0 18-20
+  s_a1b01612612464::t_212f1f5e643273 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7b974c6988e6c519a4f6ead249a7cf36ad639c1e",
+  "prompts": {},
+  "sessions": {
+    "s_a1b01612612464": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86979b0c-3078-4460-98d5-c90bbcd05730",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
