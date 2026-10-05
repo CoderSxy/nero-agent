@@ -1,0 +1,29 @@
+docs/superpowers/plans/2026-10-05-user-workspace-docker-sandbox.md
+  s_a1b01612612464::t_6425fed47c18a6 99-101
+src/mastra/workspace/manager.ts
+  s_a1b01612612464::t_5a833fd32533b1 4,6,11
+  s_a1b01612612464::t_647b034f9749d3 27-32,34-41
+  s_a1b01612612464::t_a7be6f23f7303d 33
+tests/thread-directory.test.ts
+  s_a1b01612612464::t_368776f397fe24 1-58
+src/mastra/files/service.ts
+  s_a1b01612612464::t_9e60ae6ea4ee87 80-81
+  s_a1b01612612464::t_1bfda993464c6a 6
+  s_a1b01612612464::t_81cd00daf11a88 5,7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f893a2ee3be457dc258815ada15f8d2d52bf8a78",
+  "prompts": {},
+  "sessions": {
+    "s_a1b01612612464": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86979b0c-3078-4460-98d5-c90bbcd05730",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
