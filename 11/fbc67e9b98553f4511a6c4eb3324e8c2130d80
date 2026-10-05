@@ -1,0 +1,44 @@
+tests/workspace-path.test.ts
+  s_a1b01612612464::t_4c9c8ae842333a 1-33
+src/mastra/workspace/path.ts
+  s_a1b01612612464::t_1c4e43ddc5937b 28
+  s_a1b01612612464::t_1ff07ffbb6c2be 1
+  s_a1b01612612464::t_28fa3ec4dcb4b0 2-27,29-47
+src/mastra/workspace/manager.ts
+  s_a1b01612612464::t_0da621fc10041a 5,12,14-17,19,25,34-35
+  s_a1b01612612464::t_ab7a1349667fcd 1-4,6-11,13,18,20-24,26-33,36-47
+src/mastra/agents/agent.ts
+  s_a1b01612612464::t_47545666bc3eba 12-13
+  s_a1b01612612464::t_62086c65fb113e 39-44
+  s_a1b01612612464::t_3c977326829989 79-82
+src/mastra/workspace/resolver.ts
+  s_a1b01612612464::t_c16110174c7bc1 1-14
+migrations/003_workspace_sandbox.sql
+  s_a1b01612612464::t_2b1fb66560f210 1-13
+.env.example
+  s_a1b01612612464::t_f20a5b5ea58ac1 15-19
+src/mastra/workspace/config.ts
+  s_a1b01612612464::t_ce408d70a7e83d 1-5
+docs/superpowers/plans/2026-10-05-user-workspace-docker-sandbox.md
+  s_a1b01612612464::t_2cfeef2533bf0f 76-79
+src/mastra/workspace/storage.ts
+  s_a1b01612612464::t_d57647cba51dd1 1-31
+tests/workspace-isolation.test.ts
+  s_a1b01612612464::t_d018f992a9cb0c 1-53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "11fbc67e9b98553f4511a6c4eb3324e8c2130d80",
+  "prompts": {},
+  "sessions": {
+    "s_a1b01612612464": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86979b0c-3078-4460-98d5-c90bbcd05730",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
