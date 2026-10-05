@@ -1,0 +1,122 @@
+src/mastra/sandbox/docker/config.ts
+  s_4f31887e3fd113::t_b7c2939a4ee967 73
+src/mastra/sandbox/execution-queue.ts
+  s_4f31887e3fd113::t_f65a47ff0aeda0 3,10,21,30-32,36-37
+  s_4f31887e3fd113::t_c575a8fc805a0b 17-19,22-23,27,29
+  s_4f31887e3fd113::t_a7b5a56db3841f 38-39
+tests/file-routes.test.ts
+  s_4f31887e3fd113::t_5019166e847e93 69-70,78,82,95,108,115
+  s_4f31887e3fd113::t_e2f93980dfa800 151-156
+tests/docker-client.test.ts
+  s_4f31887e3fd113::t_b9e6a76be71cac 1-12,14-24
+  s_4f31887e3fd113::t_9b4e24d6a2ac2f 13
+src/mastra/sandbox/cleaner.ts
+  s_4f31887e3fd113::t_f65a47ff0aeda0 50-75
+.env.example
+  s_4f31887e3fd113::t_658297931de7e1 20,26-27,31-33
+scripts/check-workspace-quota.mjs
+  s_4f31887e3fd113::t_931f382a6c3246 9
+  s_4f31887e3fd113::t_658297931de7e1 2-8,10,13-28,30-46
+  s_4f31887e3fd113::t_968b119bc777b5 29
+web/vite.config.ts
+  s_4f31887e3fd113::t_6be139ce624e76 12
+tests/thread-ownership.test.ts
+  s_4f31887e3fd113::t_b0c99577d0bb9f 182-196
+  s_4f31887e3fd113::t_6af464e20e80f8 197-212
+  s_4f31887e3fd113::t_4218e242d2d9f3 152-168
+  s_4f31887e3fd113::t_4ffd7b9d17b3bd 169-181
+tests/multi-user-e2e.test.ts
+  s_4f31887e3fd113::t_e0c0171cc028a0 33-34
+web/src/agent/client.ts
+  s_4f31887e3fd113::t_6be139ce624e76 25-28
+  s_4f31887e3fd113::t_c575a8fc805a0b 22,36
+  s_4f31887e3fd113::t_b8db0aee46a3ac 23-24
+src/mastra/files/service.ts
+  s_4f31887e3fd113::t_f65a47ff0aeda0 10,44,88-91,93-94
+docs/deployment/workspace-sandbox-ecs.md
+  s_4f31887e3fd113::t_658297931de7e1 16
+src/mastra/sandbox/docker/client.ts
+  s_4f31887e3fd113::t_e5a3a5f4e8f90e 3,23-25,49,62-70,72-86,88-89,91-93,96-101,124-125,128-131
+src/mastra/workspace/disk-protection.ts
+  s_4f31887e3fd113::t_f65a47ff0aeda0 2-3,22-26
+  s_4f31887e3fd113::t_ea31f7da1e1206 27-28
+web/src/agent/client.test.ts
+  s_4f31887e3fd113::t_9d1b37bfee32f7 1-19
+src/mastra/auth/authorization.ts
+  s_4f31887e3fd113::t_c69151534cf84c 17-18,21
+  s_4f31887e3fd113::t_b7c2939a4ee967 4,10,14,76,82
+  s_4f31887e3fd113::t_9a56df4075dbb1 1,91,93-99,105
+  s_4f31887e3fd113::t_fb6ae2e69385e7 3,5,61,65,78,90,92,100-104,106-107,109
+tests/sandbox-cleaner.test.ts
+  s_4f31887e3fd113::t_b021d62cb76929 7,50-64
+  s_4f31887e3fd113::t_b5a6552dd1df90 65
+tests/workspace-quota.test.ts
+  s_4f31887e3fd113::t_b021d62cb76929 10,62-79
+README.md
+  s_4f31887e3fd113::t_c575a8fc805a0b 73-76,78
+src/mastra/workspace/config.ts
+  s_4f31887e3fd113::t_3510482385c154 13-18
+.gitignore
+  s_a1b01612612464::t_1dd80a07e749c0 18
+src/mastra/sandbox/factory.ts
+  s_4f31887e3fd113::t_f65a47ff0aeda0 5-6,18,21
+  s_4f31887e3fd113::t_f23440b23d42a5 9,13-17,19-20,22-28
+web/src/agent/AgentChat.tsx
+  s_4f31887e3fd113::t_6be139ce624e76 5,23,84,89-96,98-99
+  s_4f31887e3fd113::t_931f382a6c3246 97
+src/mastra/sandbox/registry.ts
+  s_4f31887e3fd113::t_f65a47ff0aeda0 15-23
+tests/docker-sandbox.integration.test.ts
+  s_4f31887e3fd113::t_ea9b73b3d4b5be 49-52
+  s_4f31887e3fd113::t_e0c0171cc028a0 99-100
+  s_4f31887e3fd113::t_e2f93980dfa800 150-161,178-179
+  s_4f31887e3fd113::t_e236b8630cac30 17,162-177
+src/mastra/agents/agent.ts
+  s_4f31887e3fd113::t_b7c2939a4ee967 1,81,90,92
+  s_4f31887e3fd113::t_c575a8fc805a0b 65
+src/mastra/sandbox/tool.ts
+  s_4f31887e3fd113::t_915a86c9829197 5-6,17,19-22
+  s_4f31887e3fd113::t_ad65da2058ce58 49-53
+tests/sandbox-manager.test.ts
+  s_4f31887e3fd113::t_eab10a2aef317a 38-39,100-101,112-122
+  s_4f31887e3fd113::t_8f18913a3f0797 123
+src/mastra/sandbox/docker/provider.ts
+  s_4f31887e3fd113::t_3510482385c154 6,12,20,26-33,50,99,125-140
+  s_4f31887e3fd113::t_f65a47ff0aeda0 65-70,74-78
+src/mastra/sandbox/manager.ts
+  s_4f31887e3fd113::t_ad65da2058ce58 5,25,37
+docs/superpowers/plans/2026-10-05-user-workspace-docker-sandbox.md
+  s_4f31887e3fd113::t_031efb4ce601e2 85
+tests/execution-queue.test.ts
+  s_4f31887e3fd113::t_e2f93980dfa800 83-101
+  s_4f31887e3fd113::t_931f382a6c3246 102-118
+src/mastra/files/routes.ts
+  s_4f31887e3fd113::t_c575a8fc805a0b 9,53,67,75,92
+src/mastra/files/tools.ts
+  s_4f31887e3fd113::t_915a86c9829197 5-6,14,16-21
+  s_4f31887e3fd113::t_c575a8fc805a0b 44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1b61f05e479818e4d6aa14ac7e43596404a5cae4",
+  "prompts": {},
+  "sessions": {
+    "s_4f31887e3fd113": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a109d3-c08d-7972-9ab4-95bc718e7bc5",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_a1b01612612464": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86979b0c-3078-4460-98d5-c90bbcd05730",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
