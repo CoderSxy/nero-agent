@@ -1,0 +1,50 @@
+tests/studio-zh.test.ts
+  s_1cd611edbad394::t_422466bb1ad5b2 45
+  s_1cd611edbad394::t_fa33c004132fa5 42-43,46-47
+  s_1cd611edbad394::t_b8b12dafa5e02a 44,50
+  s_1cd611edbad394::t_84908d1592678f 48-49,51-60
+tests/model-security.test.ts
+  s_1cd611edbad394::t_14f977422da083 62-65,156-164
+  s_1cd611edbad394::t_4fe4d9850cd023 137-155,165-167
+src/mastra/studio-zh.ts
+  s_1cd611edbad394::t_422466bb1ad5b2 131
+  s_1cd611edbad394::t_42e43ea8cb3cca 129-130,132-143
+tests/studio-auth.test.ts
+  s_1cd611edbad394::t_1def3bc01f6c8c 3,5,50-62,64-73
+  s_1cd611edbad394::t_38ff2a2b8b909c 8-9
+  s_1cd611edbad394::t_368fbcd22c5996 1-2,4,7,10-22,24-32,46-47,49
+  s_1cd611edbad394::t_dbc7180badbefc 6,63
+  s_1cd611edbad394::t_5ff2e18598edbc 23,33-37,43-45,48
+  s_1cd611edbad394::t_0e1772deaaa5d0 38-42
+src/mastra/auth/studio.ts
+  s_1cd611edbad394::t_38ff2a2b8b909c 2-9,11,29-41,43-48,53,57,60,65-69
+  s_1cd611edbad394::t_903a5da61ca04f 1,15-18
+  s_1cd611edbad394::t_9860592600d65f 55,59
+  s_1cd611edbad394::t_656081858ed367 10,12-14,19-28,42,49-52,54,56,58,61-64
+src/mastra/models/endpoint-policy.ts
+  s_1cd611edbad394::t_d6fa76fff09c9e 9,15,159-162,169-170
+  s_1cd611edbad394::t_aa32576616e699 60,72,171
+.env.example
+  s_1cd611edbad394::t_35eacdd71e0d90 10-13
+README.md
+  s_1cd611edbad394::t_35eacdd71e0d90 41
+  s_1cd611edbad394::t_3e8cb5c8048fa9 21
+src/mastra/index.ts
+  s_1cd611edbad394::t_38ff2a2b8b909c 20,26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "909c01a9de64d83ec56461e352dffde480e5cb2b",
+  "prompts": {},
+  "sessions": {
+    "s_1cd611edbad394": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a10703-ff43-7511-94d6-8aa34252c10a",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
