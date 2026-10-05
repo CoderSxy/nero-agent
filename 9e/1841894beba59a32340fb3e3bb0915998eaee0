@@ -1,0 +1,21 @@
+tests/multi-user-e2e.test.ts
+  s_a1b01612612464::t_4867700f0a7dee 1-52
+tests/docker-limits.integration.test.ts
+  s_a1b01612612464::t_98dde26c0e0b95 1-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9e1841894beba59a32340fb3e3bb0915998eaee0",
+  "prompts": {},
+  "sessions": {
+    "s_a1b01612612464": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86979b0c-3078-4460-98d5-c90bbcd05730",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
