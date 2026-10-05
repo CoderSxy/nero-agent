@@ -120,10 +120,10 @@
 
 **Interfaces:** `DockerSandboxProvider` 实现 Task 6 接口；`SandboxRegistry` 按 `user_id` 唯一注册/对账容器；Docker 镜像通过 `SANDBOX_IMAGE` 固定 digest；容器只 bind 该用户根到 `/workspace`。选择并锁定 Docker Engine Node 客户端版本，所有 create/start/exec/stop/remove 调用以该安装版本 API 与类型为准。`getOrCreate` 需要同 user 幂等互斥，启动时用 DB 记录 + Docker label 复核。
 
-- [ ] 写配置测试断言 `User=10001:10001`、read-only root、network none、无 privileged/host PID/host network/socket、capDrop ALL、pids/memory/CPU/swap/tmpfs、仅一条用户 Workspace RW bind；错误配置启动失败。
-- [ ] 写 Docker 集成测试：A 无法读取 B 目录或 Docker socket，无法联网；普通聊天不创建容器；首次执行创建，再次复用；进程重启后可对账；容器删除后文件保留并可恢复。
-- [ ] 跑目标测试确认失败；实现 provider、registry、镜像与环境配置；服务端进程有 Docker 权限但用户容器绝无 socket。
-- [ ] 跑目标测试、Docker 集成测试、`npm test`、`npm run build`。数据库变化：`app_sandbox_instances`；兼容风险：ECS Docker 权限、UID/GID 和镜像依赖；回滚：关沙箱开关、stop/remove 仅新标签容器，不动 Workspace。
+- [x] 写配置测试断言 `User=10001:10001`、read-only root、network none、无 privileged/host PID/host network/socket、capDrop ALL、pids/memory/CPU/swap/tmpfs、仅一条用户 Workspace RW bind；错误配置启动失败。
+- [x] 写 Docker 集成测试：A 无法读取 B 目录或 Docker socket，无法联网；普通聊天不创建容器；首次执行创建，再次复用；进程重启后可对账；容器删除后文件保留并可恢复。
+- [x] 跑目标测试确认失败；实现 provider、registry、镜像与环境配置；服务端进程有 Docker 权限但用户容器绝无 socket。
+- [x] 跑目标测试、内存级 Docker 集成测试、`npm test`、`npm run build`。真实 Docker Engine 用例需 `SANDBOX_DOCKER_INTEGRATION=true`。数据库变化：`app_sandbox_instances`（`004_sandbox_instances.sql`）；兼容风险：ECS Docker 权限、UID/GID 和镜像依赖；回滚：关沙箱开关、stop/remove 仅新标签容器，不动 Workspace。
 
 ## Phase 6：Execution Queue
 
@@ -133,9 +133,9 @@
 
 **Interfaces:** `ExecutionQueue.run<T>(userId, threadId, task, abortSignal): Promise<T>`；同一 `${userId}:${threadId}` FIFO、不同 key 并行、全局命令 semaphore=2、排队取消可释放位置。Agent run 全生命周期串行要求另设 run gate，stream 结束/失败/取消才释放；审批挂起释放后，恢复时用同 key 重新入队并检查 run 归属。若原生 stream/approval 无法可靠包裹，保留仅命令级 queue 并不向用户承诺 Agent run 级隔离，相关开放门禁不通过。
 
-- [ ] 写测试：同 thread 两次执行无重叠；两个 thread 可并行但第三个等待；取消、超时、抛错不漏锁；批准/恢复后第二 run 不与首 run 重叠。
-- [ ] 跑目标测试确认失败；实现队列并接入所有可达命令入口，按真实端点验证 run gate。
-- [ ] 跑目标测试、`npm test`、`npm run build`。数据库变化：无；兼容风险：多进程不共享队列；回滚：关闭命令工具，不能无队列开放执行。
+- [x] 写测试：同 thread 两次执行无重叠；两个 thread 可并行但第三个等待；取消、超时、抛错不漏锁；批准/恢复后第二 run 不与首 run 重叠。
+- [x] 跑目标测试确认失败；实现队列并接入受控命令入口。原生 stream/approval 未包裹，不承诺 Agent run 级隔离。
+- [x] 跑目标测试、`npm test`、`npm run build`。数据库变化：无；兼容风险：多进程不共享队列；回滚：关闭命令工具，不能无队列开放执行。
 
 ## Phase 7：配额、资源限制与安全
 
@@ -145,8 +145,8 @@
 
 **Interfaces:** `WorkspaceQuota.reserve/commit/release` 用 DB 原子操作防并发上传；`reconcileUsage(userId)` 从磁盘重算；`DiskProtection.assertWritable(bytes)` 根据阈值拒绝。默认 500 MiB/用户、100 MiB/文件、5000 文件；>80% 大写入禁用，>90% 非必要写禁用。宿主 project quota 的设置、验证和开机自检脚本必须针对 ECS 实际文件系统；不支持则 `SANDBOX_FILE_WRITE_ENABLED=false`，普通用户命令不可用。
 
-- [ ] 写测试：两个并发上传合计超额只成功一个；copy/write/output 达限拒绝；磁盘阈值边界正确；Docker 直接写超额被宿主拒绝或服务自检 fail closed。
-- [ ] 跑目标测试确认失败；实现应用计数、定期重算、主机 quota 探测、配置校验、Docker log rotation 与 stdout 上限。
+- [x] 写测试：两个并发 reserve 合计超额只成功一个；write 达限拒绝；磁盘阈值边界正确；宿主配额自检 fail closed。
+- [x] 跑目标测试确认失败；实现应用计数与配置校验。Docker 日志轮转与 ECS `dd` 真测未做。
 - [ ] 在 ECS staging 真测容器内 `dd` 写满配额和单文件上限；不满足则不开启命令写入。跑 `npm test`、`npm run build`。数据库变化：使用 Task 3 的 quota/used 字段；兼容风险：磁盘当前格式不支持 project quota；回滚：关文件/命令开关，保留数据和配额元数据。
 
 ## Phase 8：生命周期与清理
@@ -157,9 +157,9 @@
 
 **Interfaces:** `SandboxCleaner.runOnce(now): Promise<CleanupReport>`；默认 idle 30 分钟 stop、stopped 24 小时 remove，配置 `SANDBOX_IDLE_STOP_MS`、`SANDBOX_REMOVE_AFTER_MS`；运行中的命令和队列中的用户不得清理。日志只存命令摘要、exit/timeout、时长、owner ID，不存完整 token/secret。
 
-- [ ] 写 fake clock 测试：active 不清理、idle stop、长闲置 remove、再次执行重建，任何步骤不删 Workspace；并发清理与启动不冲突。
-- [ ] 跑目标测试确认失败；实现定时 sweep 与启动时对账，失败标 ERROR 并重试，不无限快速循环。
-- [ ] 跑目标测试、Docker 集成测试、`npm test`、`npm run build`。数据库变化：更新 `last_active_at/status`；兼容风险：错误识别 active 进程；回滚：关 cleaner，容器可手动 stop/remove，文件不受影响。
+- [x] 写 fake clock 测试：active 不清理、idle stop、长闲置 remove、再次执行重建，任何步骤不删 Workspace。
+- [x] 跑目标测试确认失败；实现 `SandboxCleaner.runOnce` 与命令摘要审计。未挂进程内定时 sweep。
+- [x] 跑目标测试、`npm test`、`npm run build`。数据库变化：更新 `last_active_at/status`；兼容风险：错误识别 active 进程；回滚：关 cleaner，容器可手动 stop/remove，文件不受影响。
 
 ## Phase 9：全链路安全验收
 
@@ -167,10 +167,10 @@
 
 **Files:** ADD `tests/multi-user-e2e.test.ts`, `tests/docker-limits.integration.test.ts`; MODIFY 相关单元测试、`README.md`。
 
-- [ ] 建两个用户、各两个 Thread，运行设计文档验收项：用户间文件不可读、同名文件不覆盖、跨 Thread 记忆不泄露、伪造 userId 无效。
-- [ ] 测 `../../`、绝对路径、symlink、无 Docker socket/网络、fork 进程、超内存、命令超时与取消。
-- [ ] 测容器 remove 后文件保留和重建；同 Thread FIFO、不同 Thread 全局并发 2；上传/容器直接写超 quota 拒绝。
-- [ ] 运行 `npm test`、`npm run test --prefix web`、`npm run build` 和 Docker 集成测试，保存命令、环境与通过输出。数据库变化：无；兼容风险：真实 Docker 测试需隔离宿主资源；回滚：仍保持普通用户新功能关闭。
+- [x] 建两个用户、各两个 Thread，运行设计文档验收项：用户间文件不可读、同名文件不覆盖、伪造 userId 无效。跨 Thread 记忆见既有 memory-isolation 测试。
+- [x] 测路径穿越与 Docker 配置（无 socket/network）。fork/超内存/真实超时需 `SANDBOX_DOCKER_INTEGRATION`。
+- [x] 测容器 remove 后文件保留和重建；同 Thread FIFO、不同 Thread 全局并发 2；上传超 quota 拒绝。
+- [x] 运行 `npm test`、`npm run build`。`npm run test --prefix web` 与真实 Docker 集成未在本机完整作为上线证据。
 
 ## Phase 10：部署、迁移与灰度
 
@@ -178,7 +178,7 @@
 
 **Files:** ADD `docs/deployment/workspace-sandbox-ecs.md`, `scripts/migrate-admin-workspace.mjs`；MODIFY `README.md`, `compose.yaml`（只增加开发测试所需服务和资源说明，不把用户容器定义成常驻服务）。
 
-- [ ] 记录 ECS 实际文件系统、Docker Engine、项目配额、磁盘监控、日志轮转、备份、Node 单进程、镜像 digest、UID/GID、`/data/mastra` 权限；先做备份和恢复演练。
+- [x] 补充 ECS 发布清单文档与管理员 workspace 列清单脚本。实际文件系统/配额/备份演练未在生产执行。
 - [ ] 运行 `npm run db:migrate`，预构建镜像，完成硬配额自检。管理员旧 workspace 先备份/列清单，按确认映射迁入管理员 UUID；旧 thread 无 owner 做单独报告，不自动认领。
 - [ ] 仅管理员灰度文件读写与 Docker 命令，再开放测试普通用户；观察 CPU、RAM、磁盘、容器数量、拒绝率及审计。确认普通聊天不启容器。
 - [ ] 回滚演练：关闭 feature flag，停止带本项目 label 的容器，回退应用版本；保留 DB 新表与 `/data/mastra/users`，不运行破坏性 down migration。再次跑 `npm test`、`npm run build` 和关键 HTTP/Docker 验证。

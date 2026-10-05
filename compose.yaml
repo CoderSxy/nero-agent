@@ -1,3 +1,5 @@
+# Local PostgreSQL only. User sandbox containers are created on demand by the
+# Mastra process and must not be declared as long-running Compose services.
 services:
   postgres:
     image: postgres:16
