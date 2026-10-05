@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AGENT_ID, client } from './client';
-import { listScopedThreads, type Thread } from './thread-scope';
+import { deleteScopedThread, listScopedThreads, renameScopedThread, type Thread } from './thread-scope';
 import { withThreadModels, type ModelSettings } from './model-settings';
 
 export function useThreadList(resourceId: string) {
@@ -19,5 +19,15 @@ export function useThreadList(resourceId: string) {
     await refresh();
     return thread;
   }, [refresh, resourceId]);
-  return { threads, loading, error, refresh, createThread };
+  const deleteThread = useCallback(async (threadId: string) => {
+    await deleteScopedThread(threadId, resourceId);
+    setThreads(current => current.filter(thread => thread.id !== threadId));
+    await refresh();
+  }, [refresh, resourceId]);
+  const renameThread = useCallback(async (threadId: string, title: string) => {
+    await renameScopedThread(threadId, resourceId, title);
+    setThreads(current => current.map(thread => thread.id === threadId ? { ...thread, title: title.trim() } : thread));
+    await refresh();
+  }, [refresh, resourceId]);
+  return { threads, loading, error, refresh, createThread, deleteThread, renameThread };
 }

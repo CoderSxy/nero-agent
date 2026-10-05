@@ -59,6 +59,8 @@ test('modelRoutes registers every method and path from the API contract', () => 
     'PATCH /model-catalog/public/:id',
     'POST /model-catalog/private',
     'POST /model-catalog/public',
+    'POST /model-catalog/public/sync/apply',
+    'POST /model-catalog/public/sync/preview',
   ]);
 });
 

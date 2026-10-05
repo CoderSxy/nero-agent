@@ -3,9 +3,13 @@ import test from 'node:test';
 import { agentModelLockMiddleware, isAgentModelOverrideRequest } from '../src/mastra/agent-model-lock';
 import { redactSecrets } from '../src/mastra/models/redact';
 
-async function run(method: string, path: string) {
+async function run(method: string, path: string, body?: unknown) {
   let nextCalled = false;
-  const result = await agentModelLockMiddleware.handler({ req: { method, path } }, async () => {
+  const raw = new Request(`http://localhost${path}`, {
+    method,
+    ...(body === undefined ? {} : { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }),
+  });
+  const result = await agentModelLockMiddleware.handler({ req: { method, path, raw } }, async () => {
     nextCalled = true;
   });
   return { nextCalled, result };
@@ -31,6 +35,26 @@ test('mutating agent model routes are rejected with 403 JSON', async () => {
     const body = (await result.json()) as { error?: string };
     assert.equal(typeof body.error, 'string');
   }
+});
+
+test('execution requests cannot override catalog models', async () => {
+  for (const path of ['/api/agents/agent/generate', '/api/agents/agent/stream', '/api/agents/agent/stream/vnext', '/api/agents/agent/resume-stream']) {
+    for (const body of [
+      { messages: 'hi', model: 'other/model' },
+      { messages: 'hi', structuredOutput: { schema: {}, model: 'other/model' } },
+    ]) {
+      const { nextCalled, result } = await run('POST', path, body);
+      assert.equal(nextCalled, false, path);
+      assert.equal(result?.status, 403);
+    }
+  }
+  assert.equal((await run('POST', '/api/agents/agent/stream', { messages: 'hi' })).nextCalled, true);
+  const idleMessage = await run('POST', '/api/agents/agent/send-message', {
+    message: 'hi', resourceId: 'r', threadId: 't',
+    ifIdle: { streamOptions: { model: 'other/model' } },
+  });
+  assert.equal(idleMessage.nextCalled, false);
+  assert.equal(idleMessage.result?.status, 403);
 });
 
 test('read requests and unrelated agent routes pass through', async () => {

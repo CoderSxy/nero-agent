@@ -24,7 +24,7 @@ npm run dev
 
 若本地已有旧 LibSQL 会话，可在创建管理员并启动 Mastra 后执行 `npm run db:import:libsql -- <旧数据库路径> <管理员邮箱>`。导入脚本把旧会话、消息、观测记忆和线程状态归到指定管理员，重复执行不会复制已有记录；原 LibSQL 文件不会删除。
 
-独立页面直接复用 `@mastra/playground-ui` 的会话、消息、Composer、工具批准和卡片组件，并使用 `@mastra/react` 的 `useChat` 管理流式回复。左侧底部的「设置」菜单可以为当前会话选择会话模型和记忆模型，也可以切换浅色、深色主题。模型选择保存在会话元数据中，刷新后仍然有效；主题选择保存在当前浏览器中。可选模型全部来自服务端模型目录（`GET /model-catalog`），不再读取环境变量或供应商连接状态；新会话默认使用公共默认模型，其次第一个启用的公共模型，再其次本人第一个启用的私有模型。模型菜单里的选择从下一条消息开始生效。构建前端使用 `npm run build:web`，构建全部使用 `npm run build`。
+独立页面使用 `@mastra/playground-ui` 的会话、消息、Composer、工具批准和卡片组件，并使用 `@mastra/react` 的 `useChat` 管理流式回复。Composer 左下角提供可搜索的模型列表，按公共模型和个人模型分组；模型选择保存在会话元数据中，刷新后仍然有效。新会话使用公共默认模型，管理员必须配置一个启用的公共默认模型。主题选择保存在当前浏览器中。可选模型全部来自服务端模型目录（`GET /model-catalog`）。构建前端使用 `npm run build:web`，构建全部使用 `npm run build`。
 
 ## 模型目录
 
@@ -38,7 +38,7 @@ npm run dev
 | 环境变量 | 说明 |
 | --- | --- |
 | `MODEL_CONFIG_ENCRYPTION_KEY` | 必填。32 字节密钥的 Base64 编码，例如 `openssl rand -base64 32`。数据库备份不含该密钥；密钥丢失后已保存的模型 Key 无法解密，需重新录入。本版不提供密钥轮换。 |
-| `MODEL_ENDPOINT_ALLOWLIST` | 必填。逗号分隔的 HTTPS 源（origin），例如 `https://api.deepseek.com,https://api.openai.com`。唯一可用的 HTTP 例外是完整 Base URL `http://101.37.135.116:7864/v1`，也必须逐字加入此列表；其他 HTTP 地址仍被拒绝。环回、内网、链路本地和云元数据地址始终被拒绝。HTTP 连接中的 API Key 和请求内容不受传输加密保护。 |
+| `MODEL_ENDPOINT_ALLOWLIST` | 必填。逗号分隔的 HTTPS 源（origin），例如 `https://api.deepseek.com,https://api.openai.com`。唯一可用的 HTTP 例外是完整 Base URL `http://101.37.135.116:7864/v1`，也必须逐字加入此列表；其他 HTTP 地址仍被拒绝。模型请求限制在所选 Base URL 下，拒绝重定向；建立连接时检查全部 DNS 解析结果，拒绝环回、内网、链路本地和云元数据地址。HTTP 连接中的 API Key 和请求内容不受传输加密保护。 |
 
 ### 迁移与首次启用
 
@@ -49,6 +49,7 @@ npm run dev
 ### 管理入口
 
 - 公共模型：[http://localhost:4111/model-admin](http://localhost:4111/model-admin)，也可从 Studio「设置」中的「公共模型管理」进入。该页面需要管理员用 `/auth/login` 单独登录一次，令牌只保存在当前标签页。
+- WorkBuddy 国内版模型同步：先在公共模型管理中手动配置一个 Base URL 为 `http://101.37.135.116:7864/v1`、带有效网关 API Key 的公共模型，并将该完整 URL 加入 `MODEL_ENDPOINT_ALLOWLIST`。再到 WorkBuddy「设置 → 访问令牌」创建只读管理 API Token（`wbt_` 开头），在同步区临时输入。预览和确认分别读取 `GET /api/model-catalog?realm=cn&force=false`，仅使用模型中心国内版目录，管理员可勾选新增模型并修改显示名称。管理 Token 只在当前页面内存中保留至同步完成，不写入数据库或浏览器存储；新模型复用已配置模型的加密网关 Key。已有及仅本地存在的模型不会被覆盖或删除。当前同步地址固定为 HTTP，管理 Token 传输未经 TLS 保护；公网使用前需把同步端点及允许列表一同改为 HTTPS 地址。
 - 私有模型：独立页面左下角「设置 → API Key 管理」，可添加、编辑、替换 Key、停用和删除本人模型。编辑时留空 Key 表示保留原 Key。
 
 ### 旧会话

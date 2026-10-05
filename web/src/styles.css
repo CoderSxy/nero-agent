@@ -22,6 +22,22 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .brand span { font-weight: 400; color: var(--muted-foreground); }
 .thread-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 0 12px; }
 .sidebar-note { padding: 8px 14px; }
+.thread-select span { display: block; min-width: 0; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.thread-more { opacity: 0; transition: opacity .15s; }
+.thread-row:hover .thread-more, .thread-row:focus-within .thread-more, .thread-more[aria-expanded='true'] { opacity: 1; }
+.thread-menu { position: fixed; z-index: 40; min-width: 140px; padding: 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--popover); box-shadow: 0 12px 32px #0004; }
+.thread-menu button { width: 100%; padding: 8px 10px; border-radius: 7px; color: var(--foreground); font-size: 12px; text-align: left; }
+.thread-menu button.danger { color: var(--destructive); }
+.thread-menu button:hover { background: var(--card); }
+.thread-confirm-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: #0008; }
+.thread-confirm { width: min(100%, 360px); padding: 20px; border: 1px solid var(--border); border-radius: 14px; background: var(--popover); box-shadow: 0 18px 40px #0005; }
+.thread-confirm h2 { margin: 0 0 10px; font-size: 17px; font-weight: 600; }
+.thread-confirm p { margin: 0 0 18px; font-size: 13px; }
+.thread-confirm label { display: block; margin-bottom: 6px; font-size: 12px; }
+.thread-confirm input { width: 100%; margin-bottom: 16px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 13px; }
+.thread-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.thread-confirm-actions button { padding: 7px 12px; border: 1px solid var(--border); border-radius: 8px; }
+.thread-confirm-actions .danger { background: var(--destructive); color: var(--background); }
 .settings-footer { flex: none; position: relative; padding: 12px; border-top: 1px solid var(--border); background: var(--sidebar); }
 .settings-trigger { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border-radius: 9px; text-align: left; color: var(--foreground); }
 .settings-trigger:hover, .settings-trigger[aria-expanded='true'] { background: var(--card); }
@@ -65,7 +81,25 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .chat-title { padding: 18px 30px; font-weight: 600; }
 .message-list { padding: 28px 0 80px; display: flex; flex-direction: column; gap: 24px; }
 .agent-composer { margin-bottom: 24px; }
-.agent-composer button { padding: 5px 14px; border-radius: 8px; background: var(--card); }
+.composer-model-trigger { display: flex; align-items: center; gap: 7px; max-width: min(65%, 240px); min-width: 0; height: 34px; padding: 3px 9px 3px 5px; border-radius: 9px; color: var(--foreground); font-size: 12px; }
+.composer-model-trigger:hover, .composer-model-trigger[aria-expanded='true'] { background: var(--card); }
+.composer-model-trigger:focus-visible, .composer-send-button:focus-visible { outline: 2px solid var(--foreground); outline-offset: 2px; }
+.composer-model-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.composer-model-avatar { display: grid; place-items: center; width: 22px; height: 22px; flex: none; border-radius: 7px; background: var(--card); color: var(--foreground); font-size: 11px; font-weight: 700; }
+.composer-model-popup { position: fixed; z-index: 45; max-height: min(380px, 70vh); overflow: hidden; border: 1px solid var(--border); border-radius: 13px; background: var(--popover); box-shadow: 0 14px 40px #0005; }
+.composer-model-search { display: flex; align-items: center; gap: 8px; margin: 9px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 8px; color: var(--muted-foreground); }
+.composer-model-search input { width: 100%; min-width: 0; outline: none; background: transparent; color: var(--foreground); font-size: 12px; }
+.composer-model-options { max-height: min(318px, calc(70vh - 62px)); overflow-y: auto; padding: 2px 7px 8px; }
+.composer-model-group-label { padding: 9px 8px 5px; color: var(--muted-foreground); font-size: 11px; font-weight: 600; }
+.composer-model-option { display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0; padding: 8px; border-radius: 8px; text-align: left; }
+.composer-model-option:hover, .composer-model-option[aria-selected='true'] { background: var(--card); }
+.composer-model-detail { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.composer-model-detail strong, .composer-model-detail small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.composer-model-detail strong { font-size: 12px; font-weight: 600; }
+.composer-model-detail small { color: var(--muted-foreground); font-size: 11px; }
+.composer-model-default { padding: 2px 6px; border-radius: 5px; background: var(--card); color: var(--muted-foreground); font-size: 10px; }
+.composer-model-empty { padding: 14px 8px; color: var(--muted-foreground); font-size: 12px; }
+.agent-composer .composer-send-button { display: grid; place-items: center; width: 34px; height: 34px; flex: none; padding: 0; border-radius: 50%; background: var(--foreground); color: var(--background); }
 .empty-chat { height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
 .empty-chat h1 { font-size: 26px; font-weight: 600; }
 .empty-chat p, .muted { color: var(--muted-foreground); }

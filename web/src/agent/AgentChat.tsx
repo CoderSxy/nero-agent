@@ -6,10 +6,14 @@ import { AGENT_ID } from './client';
 import { AgentComposer } from './AgentComposer';
 import { MessageList } from './MessageList';
 import { createModelRequestContext, type ModelSettings } from './model-settings';
+import type { ModelRef, SafeModel } from './model-catalog-client';
 
-export function AgentChat({ threadId, resourceId, initialMessages, onMessageSent, models, sendBlockedReason }: {
+export function AgentChat({ threadId, resourceId, initialMessages, onMessageSent, models, catalog = [],
+  onModelChange, modelRef, modelDisabled = false, modelError, sendBlockedReason }: {
   threadId: string; resourceId: string; initialMessages: MastraDBMessage[]; onMessageSent: () => void;
-  models: ModelSettings | null; sendBlockedReason?: string | null;
+  models: ModelSettings | null; catalog?: SafeModel[]; modelRef?: ModelRef;
+  onModelChange?: (ref: ModelRef) => void; modelDisabled?: boolean; modelError?: string | null;
+  sendBlockedReason?: string | null;
 }) {
   const [draft, setDraft] = useState('');
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -25,7 +29,7 @@ export function AgentChat({ threadId, resourceId, initialMessages, onMessageSent
   const isEmpty = !hasSubmitted && initialMessages.length === 0 && chat.messages.length === 0;
   async function send() {
     const message = draft.trim();
-    if (!message || blockedReason || chat.isRunning || chat.isAwaitingToolApproval) return;
+    if (!message || blockedReason || modelDisabled || chat.isRunning || chat.isAwaitingToolApproval) return;
     setHasSubmitted(true); setDraft(''); setError(null);
     try { await chat.sendMessage({ message, mode: 'stream', threadId,
       requestContext,
@@ -65,7 +69,9 @@ export function AgentChat({ threadId, resourceId, initialMessages, onMessageSent
         <h1>有什么可以帮你？</h1>
       </div>
       {blockedReason && <p className="notice" role="status">{blockedReason}</p>}
-      <AgentComposer draft={draft} sendDisabled={Boolean(blockedReason)} onDraftChange={setDraft}
+      {modelError && <p className="error" role="alert">{modelError}</p>}
+      <AgentComposer draft={draft} sendDisabled={Boolean(blockedReason) || modelDisabled} onDraftChange={setDraft}
+      catalog={catalog} modelRef={modelRef ?? models?.chatModel} onModelChange={onModelChange} modelDisabled={modelDisabled}
       isRunning={chat.isRunning || chat.isAwaitingToolApproval} onSend={() => void send()}
       onStop={() => { chat.cancelRun(); setError('已停止'); }} />
     </ChatShell.Column></ChatShell.Dock>

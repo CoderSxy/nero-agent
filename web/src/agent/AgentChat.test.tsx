@@ -1,12 +1,18 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AgentChat } from './AgentChat';
+import type { SafeModel } from './model-catalog-client';
 
 const sendMessage = vi.fn();
 const cancelRun = vi.fn();
 const chatRef = 'public:11111111-1111-4111-8111-111111111111' as const;
 const memoryRef = 'private:22222222-2222-4222-8222-222222222222' as const;
 const models = { chatModel: chatRef, memoryModel: memoryRef };
+const catalog = [chatRef, memoryRef].map((ref, index) => ({ ref,
+  scope: index === 0 ? 'public' : 'private', displayName: index === 0 ? '默认模型' : '个人模型',
+  providerId: 'test', modelId: `m${index}`, baseUrl: 'https://example.test', apiMode: 'chat',
+  enabled: true, hasApiKey: true, keyHint: '1234',
+})) as SafeModel[];
 let mockMessages: Array<{ id: string; role: string; content: { format: number; parts: Array<{ type: string; text: string }> } }> =
   [{ id: 'partial', role: 'assistant', content: { format: 2, parts: [{ type: 'text', text: '部分回复' }] } }];
 vi.mock('@mastra/react', () => ({ useChat: () => ({
@@ -17,6 +23,22 @@ afterEach(() => { cleanup(); vi.clearAllMocks(); mockMessages =
   [{ id: 'partial', role: 'assistant', content: { format: 2, parts: [{ type: 'text', text: '部分回复' }] } }]; });
 
 describe('Agent conversation', () => {
+  it('shows the selected model in composer and forwards changes', () => {
+    const change = vi.fn();
+    render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]} onMessageSent={vi.fn()}
+      models={models} catalog={catalog} onModelChange={change} />);
+    const select = screen.getByRole('combobox', { name: '模型' });
+    expect(select.textContent).toContain('默认模型');
+    fireEvent.click(select);
+    fireEvent.click(screen.getByRole('option', { name: /个人模型/ }));
+    expect(change).toHaveBeenCalledWith(memoryRef);
+  });
+  it('waits for a model change to save before allowing a send', () => {
+    render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]} onMessageSent={vi.fn()}
+      models={models} catalog={catalog} modelDisabled />);
+    fireEvent.change(screen.getByRole('textbox', { name: '发送消息' }), { target: { value: '你好' } });
+    expect((screen.getByRole('button', { name: '发送' }) as HTMLButtonElement).disabled).toBe(true);
+  });
   it('centers the composer until the first message is submitted, then docks the same input', async () => {
     mockMessages = [];
     sendMessage.mockResolvedValue(undefined);

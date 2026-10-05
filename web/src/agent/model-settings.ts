@@ -18,10 +18,7 @@ export function isModelRef(value: unknown): value is ModelRef {
 }
 
 export function getDefaultModels(catalog: SafeModel[]): ModelSettings | null {
-  const enabled = catalog.filter(model => model.enabled !== false);
-  const publicModels = enabled.filter(model => model.scope === 'public');
-  const choice = publicModels.find(model => model.isDefault) ?? publicModels[0]
-    ?? enabled.find(model => model.scope === 'private');
+  const choice = catalog.find(model => model.scope === 'public' && model.isDefault && model.enabled !== false);
   return choice ? { chatModel: choice.ref, memoryModel: choice.ref } : null;
 }
 

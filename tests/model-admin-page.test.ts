@@ -174,3 +174,38 @@ test('login stores the token per tab and loads the list; edit submits a PATCH wi
   assert.equal(JSON.parse(patch.body!).displayName, '新名称');
   assert.equal('apiKey' in JSON.parse(patch.body!), false);
 });
+
+test('domestic catalog sync previews differences and submits only selected edited new models', async () => {
+  const { calls, doc, dom } = await openPage(call => {
+    if (call.url.endsWith('/sync/preview')) return response(200, {
+      source: '已有网关模型',
+      incoming: [
+        { modelId: 'glm-5.2', displayName: 'GLM 5.2', status: 'new' },
+        { modelId: 'kimi-k2.7', displayName: 'Kimi', status: 'new' },
+        { modelId: 'old', displayName: '已有模型', status: 'existing' },
+      ],
+      missing: [{ modelId: 'local', displayName: '本地模型' }],
+    });
+    if (call.url.endsWith('/sync/apply')) return response(200, { created: 1 });
+    return response(200, { models: [PUBLIC_MODEL] });
+  }, 'admin-token');
+  const managementInput = doc.querySelector('input[aria-label="模型中心只读管理 API Token"]') as HTMLInputElement;
+  managementInput.value = 'wbt_readonly_example_token_123456789';
+  managementInput.dispatchEvent(new dom.window.Event('input'));
+  (doc.querySelector('[data-action="preview-sync"]') as HTMLElement).click();
+  await flush();
+  assert.ok(calls.some(call => call.url === '/model-catalog/public/sync/preview'
+    && call.method === 'POST' && call.headers.Authorization === 'Bearer admin-token'
+    && JSON.parse(call.body!).managementToken === 'wbt_readonly_example_token_123456789'));
+  const rows = doc.querySelectorAll('.sync-row[data-new]');
+  assert.equal(rows.length, 2);
+  assert.equal((rows[0].querySelector('input[type=checkbox]') as HTMLInputElement).checked, false);
+  (rows[0].querySelector('input[type=checkbox]') as HTMLInputElement).checked = true;
+  (rows[0].querySelector('input[type=text]') as HTMLInputElement).value = '新 GLM';
+  (rows[1].querySelector('input[type=checkbox]') as HTMLInputElement).checked = false;
+  (doc.querySelector('[data-action="apply-sync"]') as HTMLElement).click();
+  await flush();
+  const applied = calls.find(call => call.url === '/model-catalog/public/sync/apply');
+  assert.deepEqual(JSON.parse(applied!.body!), { items: [{ modelId: 'glm-5.2', displayName: '新 GLM' }], managementToken: 'wbt_readonly_example_token_123456789' });
+  assert.match(doc.body.textContent ?? '', /已同步 1 个公共模型/);
+});

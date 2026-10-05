@@ -37,21 +37,26 @@ function contextOf(entries: Record<string, unknown>) {
 function memoryModels(memory: Awaited<ReturnType<typeof memoryForRequest>>) {
   const config = memory.getMergedThreadConfig();
   const observational = typeof config.observationalMemory === 'object' ? config.observationalMemory : undefined;
+  const summary = (model: unknown) => {
+    if (!model || typeof model !== 'object') return undefined;
+    const resolved = model as { provider: string; modelId: string; specificationVersion: string; config: { headers: () => Record<string, string> } };
+    return {
+      provider: resolved.provider,
+      modelId: resolved.modelId,
+      version: resolved.specificationVersion,
+      authorization: resolved.config.headers().authorization,
+    };
+  };
   return {
-    observation: observational?.observation?.model,
-    reflection: observational?.reflection?.model,
-    title: typeof config.generateTitle === 'object' ? config.generateTitle.model : undefined,
+    observation: summary(observational?.observation?.model),
+    reflection: summary(observational?.reflection?.model),
+    title: summary(typeof config.generateTitle === 'object' ? config.generateTitle.model : undefined),
     enabled: observational !== undefined && config.observationalMemory !== false,
   };
 }
 
-/** A memory that could not resolve an authorized model must not reach any provider. */
-function assertNoModels(memory: Awaited<ReturnType<typeof memoryForRequest>>) {
-  const models = memoryModels(memory);
-  assert.equal(models.observation, undefined);
-  assert.equal(models.reflection, undefined);
-  assert.equal(models.title, undefined);
-  assert.equal(memory.getMergedThreadConfig().generateTitle, false);
+async function assertModelUnavailable(requestContext: RequestContext) {
+  await assert.rejects(memoryForRequest({ requestContext }));
 }
 
 test('agent memory resolves observation, reflection and title models from the authorized catalog',
@@ -70,10 +75,10 @@ test('agent memory resolves observation, reflection and title models from the au
     ...overrides,
   });
   const configOf = (name: string, apiKey = FIXTURE_KEY) => ({
-    id: `prov-${suffix}/model-${name}`,
-    url: `${FIXTURE_ORIGIN}/v1`,
-    apiKey,
-    api: 'chat',
+    provider: `prov-${suffix}.chat`,
+    modelId: `model-${name}`,
+    version: 'v3',
+    authorization: `Bearer ${apiKey}`,
   });
   let admin: AuthUser | undefined;
 
@@ -115,32 +120,26 @@ test('agent memory resolves observation, reflection and title models from the au
     assert.deepEqual(memoryModels(chatOnly).observation, configOf('chat-a'));
 
     // A forged identity cannot pull another user's model into memory.
-    assertNoModels(await memoryForRequest({
-      requestContext: contextOf({
+    await assertModelUnavailable(contextOf({
         user: userB,
         [MASTRA_USER_KEY]: userA,
         [memoryModelRefContextKey]: foreign.ref,
-      }),
     }));
 
     // A client-supplied custom identity key is ignored in favour of mastra__user.
-    assertNoModels(await memoryForRequest({
-      requestContext: contextOf({
+    await assertModelUnavailable(contextOf({
         [MASTRA_USER_KEY]: userA,
         [FORGED_TRUSTED_USER_KEY]: userB,
         [memoryModelRefContextKey]: foreign.ref,
-      }),
     }));
-    assertNoModels(await memoryForRequest({
-      requestContext: contextOf({ [FORGED_TRUSTED_USER_KEY]: userB, [memoryModelRefContextKey]: foreign.ref }),
-    }));
+    await assertModelUnavailable(contextOf({ [FORGED_TRUSTED_USER_KEY]: userB, [memoryModelRefContextKey]: foreign.ref }));
 
     // No trusted identity means no model and no provider credentials at all.
-    assertNoModels(await memoryForRequest({ requestContext: contextOf({ user: userA }) }));
+    await assertModelUnavailable(contextOf({ user: userA }));
 
     // A selected record that becomes unusable is never swapped for another model.
     await updateModel('private', memoryId, userA, { enabled: false });
-    assertNoModels(await memoryForRequest({ requestContext: selected }));
+    await assertModelUnavailable(selected);
   } finally {
     if (userIds.length) await pool.query('DELETE FROM app_users WHERE id = ANY($1::uuid[])', [userIds]);
     await pool.end();

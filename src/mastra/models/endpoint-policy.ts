@@ -173,6 +173,6 @@ export async function assertAllowedEndpoint(url: URL): Promise<void> {
 
   assertBlockedHostname(url.hostname);
 
-  // Redirects to other origins are blocked by restricting outbound calls to
-  // approved origins only; model transport must not follow cross-origin redirects.
+  // The provider fetch in transport.ts pins requests to this base URL, rejects
+  // redirects, and checks every DNS answer when the connection is opened.
 }

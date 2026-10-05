@@ -34,11 +34,15 @@ test('model catalog tables enforce ownership and default uniqueness',
     });
     createdUserIds.push(user.id);
 
+    const hasExistingDefault = (await pool.query(
+      'SELECT 1 FROM app_public_models WHERE is_default LIMIT 1',
+    )).rowCount !== 0;
+
     const publicInsert = await pool.query(
       `INSERT INTO app_public_models (
         display_name, provider_id, model_id, base_url, api_key_ciphertext, is_default
       ) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-      ['Public Default', 'openai', 'gpt-4o-mini', 'https://api.openai.com/v1', FAKE_CIPHERTEXT, true],
+      ['Public Default', 'openai', 'gpt-4o-mini', 'https://api.openai.com/v1', FAKE_CIPHERTEXT, !hasExistingDefault],
     );
     createdPublicIds.push(publicInsert.rows[0].id);
 

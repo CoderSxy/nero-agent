@@ -57,10 +57,17 @@ test('searchTavily requests Tavily basic search and normalizes results', async (
 });
 
 test('searchTavily reports a missing API key before requesting Tavily', async () => {
-  await assert.rejects(
-    () => searchTavily({ query: 'Mastra' }, { apiKey: undefined }),
-    /TAVILY_API_KEY is required/,
-  );
+  const previous = process.env.TAVILY_API_KEY;
+  delete process.env.TAVILY_API_KEY;
+  try {
+    await assert.rejects(
+      () => searchTavily({ query: 'Mastra' }, { apiKey: undefined }),
+      /TAVILY_API_KEY is required/,
+    );
+  } finally {
+    if (previous === undefined) delete process.env.TAVILY_API_KEY;
+    else process.env.TAVILY_API_KEY = previous;
+  }
 });
 
 test('searchTavily returns a clear error for a Tavily failure', async () => {

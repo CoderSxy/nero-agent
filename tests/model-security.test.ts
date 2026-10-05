@@ -76,7 +76,9 @@ test('model key encryption is authenticated', () => {
 });
 
 test('model key encryption fails closed without valid key', () => {
-  assert.throws(() => encryptApiKey('sk-test'), /MODEL_CONFIG_ENCRYPTION_KEY/);
+  withEnv({ MODEL_CONFIG_ENCRYPTION_KEY: undefined }, () => {
+    assert.throws(() => encryptApiKey('sk-test'), /MODEL_CONFIG_ENCRYPTION_KEY/);
+  });
   withEnv({ MODEL_CONFIG_ENCRYPTION_KEY: 'too-short' }, () => {
     assert.throws(() => encryptApiKey('sk-test'), /MODEL_CONFIG_ENCRYPTION_KEY/);
   });

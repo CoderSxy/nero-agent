@@ -7,6 +7,7 @@ import { memoryForRequest } from './memory-model';
 import { startScheduleTool, stopScheduleTool } from '../tools/schedule-tools';
 import type { RequestContext } from '@mastra/core/request-context';
 import { resolveSelectedModel, trustedUserFrom } from '../models/resolver';
+import { createTransportModel } from '../models/transport';
 import { tavilySearchTool } from '../tools/tavily-search-tool';
 
 const workspacePath = 'workspace';
@@ -61,7 +62,7 @@ export const agent = new Agent({
 
 修改本地文件后，在回复末尾附上使用 ${pathToFileURL(`${workspacePath}/`).href} 的纯文本 URL；不要使用 Markdown 链接、localhost、/workspace、相对路径或静态文件服务器。
 `,
-  model: async ({ requestContext }) => (await resolveSelectedModel(requestContext, 'chat')).config,
+  model: async ({ requestContext }) => createTransportModel((await resolveSelectedModel(requestContext, 'chat')).config),
   defaultOptions: {
     maxSteps: 100,
     autoResumeSuspendedTools: true,

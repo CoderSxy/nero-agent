@@ -4,11 +4,11 @@ import type { GetAgentResponse, GetMemoryConfigResponse } from '@mastra/client-j
 import type { MastraDBMessage } from '@mastra/core/agent/message-list';
 import { AGENT_ID, client } from './client';
 import { useThreadList } from './use-thread-list';
-import { loadScopedThread } from './thread-scope';
+import { loadScopedThread, neighborAfterDeletion } from './thread-scope';
 import { ThreadSidebar } from './ThreadSidebar';
 import { AgentChat } from './AgentChat';
 import { ConfigPanel } from './ConfigPanel';
-import { getSelectableModels, type SafeModel } from './model-catalog-client';
+import { getSelectableModels, type ModelRef, type SafeModel } from './model-catalog-client';
 import { getDefaultModels, readThreadModels, saveThreadModels, withThreadModels,
   type ModelSettings } from './model-settings';
 import type { Theme } from './ModelSettingsMenu';
@@ -51,10 +51,11 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
     : { ...defaults, ...Object.fromEntries(Object.entries(draftModels).filter(([, ref]) => available.has(ref))) };
   const selected = completeModels(models);
   const newThreadModels = selected ?? defaults;
-  const canCreate = Boolean(catalog && newThreadModels);
+  const canCreate = Boolean(catalog && defaults && newThreadModels);
   const sendBlockedReason = !catalog ? (catalogError ?? '模型列表加载中…')
-    : !selected && catalog.length === 0 ? '请先配置可用模型'
-      : !selected ? '该会话使用的模型已不可用，请在「设置」中重新选择模型' : null;
+    : selected ? null
+      : threadRead?.invalid ? '该会话使用的模型已不可用，请重新选择模型'
+        : !defaults ? '请先配置公共默认模型' : '请重新选择模型';
   const names = new Map((catalog ?? []).map(model => [model.ref, model.displayName]));
   const configModels = selected
     ? { chatModel: names.get(selected.chatModel) ?? selected.chatModel,
@@ -91,7 +92,7 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
     return () => { active = false; };
   }, [threadId, navigate, user.id]);
   async function create() {
-    if (!canCreate || !newThreadModels) { setNotice(catalog ? '请先配置可用模型' : '模型列表尚未加载，请稍后重试'); return; }
+    if (!canCreate || !newThreadModels) { setNotice(catalog ? '请先配置公共默认模型' : '模型列表尚未加载，请稍后重试'); return; }
     try { const thread = await list.createThread(newThreadModels); setNotice(null); navigate(`/agent/${thread.id}`); }
     catch (cause) { setNotice(cause instanceof Error ? cause.message : '新建会话失败'); }
   }
@@ -108,20 +109,27 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
       setSettingsError(cause instanceof Error ? cause.message : '保存模型配置失败'); }
     finally { setSettingsSaving(false); }
   }
-  async function refreshCatalog() {
-    try { setCatalog(await getSelectableModels()); setCatalogError(null); }
-    catch (cause) { setCatalogError(cause instanceof Error ? cause.message : '刷新模型列表失败'); }
+  function selectComposerModel(ref: ModelRef) {
+    void changeModels({ chatModel: ref, memoryModel: ref });
+  }
+  async function deleteThread(id: string) {
+    const nextId = neighborAfterDeletion(list.threads, id);
+    await list.deleteThread(id);
+    setNotice(null);
+    navigate(nextId ? `/agent/${nextId}` : '/agent/new', { replace: true });
   }
   return <main className="agent-layout">
     <ThreadSidebar threads={list.threads} currentId={threadId} loading={list.loading} error={list.error}
-      onNew={() => void create()} onSelect={id => navigate(`/agent/${id}`)}
-      models={models} catalog={catalog ?? []} theme={theme} onModelsChange={next => void changeModels(next)}
-      onThemeChange={setTheme} onCatalogChange={refreshCatalog} settingsError={settingsError ?? catalogError} settingsSaving={settingsSaving}
+      onNew={() => void create()} onSelect={id => navigate(`/agent/${id}`)} onDelete={deleteThread}
+      onRename={list.renameThread}
+      theme={theme} onThemeChange={setTheme}
       canCreate={canCreate} user={user} onLogout={onLogout} />
     <section className="agent-center">
       {notice && <div role="alert" className="notice">{notice}</div>}
       {loadingThread ? <div className="empty-chat">加载会话中…</div> : threadId && !notice ?
         <AgentChat key={threadId} threadId={threadId} resourceId={user.id} initialMessages={messages} models={selected}
+          catalog={catalog ?? []} modelRef={selected?.chatModel} onModelChange={selectComposerModel}
+          modelDisabled={settingsSaving} modelError={settingsError}
           sendBlockedReason={sendBlockedReason} onMessageSent={() => void list.refresh()} /> :
         <div className="empty-chat"><h1>智能体</h1><p>开始一段新对话</p><button type="button"
           disabled={!canCreate} onClick={() => void create()}>新建会话</button></div>}

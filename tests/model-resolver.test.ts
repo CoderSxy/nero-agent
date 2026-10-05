@@ -11,7 +11,7 @@ import {
   resolveModel,
   resolveSelectedModel,
 } from '../src/mastra/models/resolver';
-import { createModel } from '../src/mastra/models/service';
+import { createModel, updateModel } from '../src/mastra/models/service';
 import { ModelCatalogError, type ModelInput, type ModelRef } from '../src/mastra/models/types';
 
 const FIXTURE_ORIGIN = 'https://models.example.test';
@@ -199,9 +199,8 @@ test('model resolver binds chat and memory models to the authenticated catalog',
       configOf('priv-a'),
     );
 
-    const enabledPublic = (await pool.query<{ id: string }>(
-      'SELECT id FROM app_public_models WHERE enabled')).rows.map((row) => row.id);
-    await pool.query('UPDATE app_public_models SET enabled = false WHERE id = ANY($1::uuid[])', [enabledPublic]);
+    // Disable only this test's default; other users' public models stay untouched.
+    await updateModel('public', publicIds[0], admin, { enabled: false });
     try {
       await assert.rejects(resolveSelectedModel(noRef, 'chat'), (error: unknown) => {
         assert.ok(error instanceof ModelCatalogError);
@@ -215,14 +214,15 @@ test('model resolver binds chat and memory models to the authenticated catalog',
         configOf('priv-a'),
       );
     } finally {
-      await pool.query('UPDATE app_public_models SET enabled = true WHERE id = ANY($1::uuid[])', [enabledPublic]);
+      await updateModel('public', publicIds[0], admin, { enabled: true, isDefault: true });
     }
 
     // The registered agent resolves its model through the same path.
     const agentModel = await agent.getModel({
       requestContext: await requestContextFor({ [chatModelRefContextKey]: privateA.ref }, tokenA),
     });
-    assert.equal(agentModel.provider, `prov-${suffix}`);
+    assert.equal(agentModel.specificationVersion, 'v3');
+    assert.equal(agentModel.provider, `prov-${suffix}.chat`);
     assert.equal(agentModel.modelId, 'model-priv-a');
 
     await assert.rejects(agent.getModel({

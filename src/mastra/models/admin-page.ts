@@ -33,6 +33,11 @@ td.actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .muted { opacity: .7; font-size: 12px; }
 .login { max-width: 360px; margin: 64px auto; }
 .login form { display: flex; flex-direction: column; gap: 12px; }
+.sync-list { display: grid; gap: 8px; margin: 12px 0; max-height: 360px; overflow-y: auto; }
+.sync-row { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(150px, 1fr); align-items: center; gap: 10px; padding: 8px; border: 1px solid #d9dde3; border-radius: 8px; font-size: 12px; }
+.sync-row input[type=text] { width: 100%; min-width: 0; }
+.sync-row code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 600px) { .sync-row { grid-template-columns: auto minmax(0, 1fr); } .sync-row input[type=text] { grid-column: 2; } }
 `;
 
 const SCRIPT = `
@@ -41,7 +46,7 @@ const SCRIPT = `
   var TOKEN_KEY = 'model-admin-token';
   var API = '/model-catalog/public';
   var root = document.getElementById('app');
-  var state = { models: [], editing: null, keyFor: null, confirmDelete: null, notice: null };
+  var state = { models: [], editing: null, keyFor: null, confirmDelete: null, notice: null, syncPreview: null, syncBusy: false, managementToken: '' };
 
   function el(tag, attrs, children) {
     var node = document.createElement(tag);
@@ -86,7 +91,8 @@ const SCRIPT = `
   }
 
   function resetState() {
-    state.models = []; state.editing = null; state.keyFor = null; state.confirmDelete = null; state.notice = null;
+    state.models = []; state.editing = null; state.keyFor = null; state.confirmDelete = null;
+    state.notice = null; state.syncPreview = null; state.syncBusy = false; state.managementToken = '';
   }
 
   function fail(error) {
@@ -121,7 +127,7 @@ const SCRIPT = `
 
   function mutate(method, path, body, message) {
     return request(method, path, body).then(function () {
-      state.editing = null; state.keyFor = null; state.confirmDelete = null;
+      state.editing = null; state.keyFor = null; state.confirmDelete = null; state.syncPreview = null;
       state.notice = { error: false, text: message };
       return load();
     }, fail);
@@ -283,6 +289,89 @@ const SCRIPT = `
     return rows;
   }
 
+  function previewSync() {
+    if (state.syncBusy) return;
+    if (!state.managementToken.trim()) { state.notice = { error: true, text: '请填写模型中心只读管理 API Token。' }; renderAdmin(); return; }
+    state.syncBusy = true;
+    state.syncPreview = null;
+    renderAdmin();
+    request('POST', API + '/sync/preview', { managementToken: state.managementToken.trim() }).then(function (preview) {
+      state.syncPreview = preview;
+      state.syncBusy = false;
+      state.notice = null;
+      renderAdmin();
+    }, function (error) { state.syncBusy = false; fail(error); });
+  }
+
+  function applySync() {
+    if (state.syncBusy || !state.syncPreview) return;
+    var items = Array.from(document.querySelectorAll('.sync-row[data-new]')).filter(function (row) {
+      return row.querySelector('input[type=checkbox]').checked;
+    }).map(function (row) {
+      return { modelId: row.getAttribute('data-model-id'), displayName: row.querySelector('input[type=text]').value.trim() };
+    });
+    if (!items.length) {
+      state.notice = { error: true, text: '请至少选择一个新增模型。' };
+      renderAdmin();
+      return;
+    }
+    if (items.some(function (item) { return !item.displayName; })) {
+      state.notice = { error: true, text: '模型显示名称不能为空。' };
+      renderAdmin();
+      return;
+    }
+    state.syncBusy = true;
+    var button = document.querySelector('[data-action=apply-sync]');
+    if (button) button.disabled = true;
+    request('POST', API + '/sync/apply', { items: items, managementToken: state.managementToken.trim() }).then(function (result) {
+      state.syncPreview = null;
+      state.managementToken = '';
+      state.syncBusy = false;
+      state.notice = { error: false, text: '已同步 ' + result.created + ' 个公共模型。' };
+      load();
+    }, function (error) { state.syncBusy = false; fail(error); });
+  }
+
+  function syncSection() {
+    var preview = state.syncPreview;
+    var nodes = [el('h2', { text: '同步 WorkBuddy 国内版模型' }),
+      el('p', { class: 'muted', text: '读取模型中心的国内版目录，与页面显示范围一致。请在 WorkBuddy「设置 → 访问令牌」创建只读管理 Token；Token 仅用于本次预览和确认，不会保存。已有配置和仅本地存在的模型不会更改。' }),
+      el('p', { class: 'muted', text: '当前 WorkBuddy 地址使用 HTTP，管理 Token 在传输过程中未加密。建议仅使用可随时吊销的短期只读 Token。' }),
+      el('input', { type: 'password', autocomplete: 'off', placeholder: '只读管理 API Token（wbt_…）', 'aria-label': '模型中心只读管理 API Token', value: state.managementToken,
+        oninput: function (event) { state.managementToken = event.target.value; state.syncPreview = null; } }),
+      el('button', { type: 'button', 'data-action': 'preview-sync', disabled: state.syncBusy, onclick: previewSync,
+        text: state.syncBusy ? '正在查询…' : '查询模型并预览差异' })];
+    if (preview) {
+      var fresh = preview.incoming.filter(function (item) { return item.status === 'new'; });
+      var existing = preview.incoming.filter(function (item) { return item.status === 'existing'; });
+      nodes.push(el('p', { class: 'muted', text: '来源：' + preview.source + ' · 新增 ' + fresh.length + ' · 已存在 ' + existing.length + ' · 仅本地存在 ' + preview.missing.length }));
+      var rows = fresh.map(function (item) {
+        return el('div', { class: 'sync-row', 'data-new': true, 'data-model-id': item.modelId }, [
+          el('input', { type: 'checkbox', 'aria-label': '同步 ' + item.modelId }),
+          el('code', { text: item.modelId }),
+          el('input', { type: 'text', value: item.displayName, maxlength: '100', 'aria-label': item.modelId + ' 显示名称' }),
+        ]);
+      });
+      existing.forEach(function (item) { rows.push(el('div', { class: 'sync-row' }, [
+        el('span', { class: 'badge ok', text: '已有' }), el('code', { text: item.modelId }), el('span', { text: item.displayName }),
+      ])); });
+      preview.missing.forEach(function (item) { rows.push(el('div', { class: 'sync-row' }, [
+        el('span', { class: 'badge', text: '本地' }), el('code', { text: item.modelId }), el('span', { text: item.displayName }),
+      ])); });
+      if (fresh.length) nodes.push(el('label', { class: 'check' }, [
+        el('input', { type: 'checkbox', onchange: function (event) {
+          rows.filter(function (row) { return row.hasAttribute('data-new'); }).forEach(function (row) {
+            row.querySelector('input[type=checkbox]').checked = event.target.checked;
+          });
+        } }), '全选新增模型',
+      ]));
+      nodes.push(el('div', { class: 'sync-list' }, rows));
+      if (fresh.length) nodes.push(el('button', { type: 'button', class: 'primary', 'data-action': 'apply-sync',
+        disabled: state.syncBusy, onclick: applySync, text: '确认同步所选模型' }));
+    }
+    return el('section', { class: 'card' }, nodes);
+  }
+
   function renderAdmin() {
     var header = el('header', { class: 'bar' }, [
       el('h1', { text: '公共模型管理' }),
@@ -293,6 +382,7 @@ const SCRIPT = `
     ]);
     var nodes = [header];
     if (state.notice) nodes.push(el('div', { class: 'notice' + (state.notice.error ? ' error' : ''), role: state.notice.error ? 'alert' : 'status', text: state.notice.text }));
+    nodes.push(syncSection());
     nodes.push(createForm());
     var body = el('tbody', {});
     state.models.forEach(function (model) { modelRows(model).forEach(function (row) { body.appendChild(row); }); });

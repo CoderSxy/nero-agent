@@ -27,10 +27,10 @@ describe('catalog-based model settings', () => {
   it('picks the default public model before any other entry', () => {
     expect(getDefaultModels(catalog)).toEqual({ chatModel: publicDefault.ref, memoryModel: publicDefault.ref });
   });
-  it('falls back to the first public model, then the first private model, then null', () => {
-    expect(getDefaultModels([privateFirst, publicPlain])).toEqual({
-      chatModel: publicPlain.ref, memoryModel: publicPlain.ref });
-    expect(getDefaultModels([privateFirst])).toEqual({ chatModel: privateFirst.ref, memoryModel: privateFirst.ref });
+  it('requires an enabled public default instead of silently using another model', () => {
+    expect(getDefaultModels([privateFirst, publicPlain])).toBeNull();
+    expect(getDefaultModels([privateFirst])).toBeNull();
+    expect(getDefaultModels([model('public', ids.c, { isDefault: true, enabled: false })])).toBeNull();
     expect(getDefaultModels([])).toBeNull();
   });
   it('preserves unrelated thread metadata and reads saved refs', () => {

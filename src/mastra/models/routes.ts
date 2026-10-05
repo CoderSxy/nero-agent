@@ -9,6 +9,7 @@ import {
   updateModel,
 } from './service';
 import { ModelCatalogError, type ModelInput, type ModelScope } from './types';
+import { applyGatewaySync, previewGatewaySync } from './gateway-sync';
 
 const MAX_BODY_BYTES = 16 * 1024;
 
@@ -134,6 +135,14 @@ export const modelRoutes = [
   registerApiRoute('/model-catalog', {
     method: 'GET',
     handler: guarded(async (c, user) => c.json({ models: await listSelectableModels(user) })),
+  }),
+  registerApiRoute('/model-catalog/public/sync/preview', {
+    method: 'POST',
+    handler: guarded(async (c, user) => c.json(await previewGatewaySync(user, await readJsonObject(c)))),
+  }),
+  registerApiRoute('/model-catalog/public/sync/apply', {
+    method: 'POST',
+    handler: guarded(async (c, user) => c.json(await applyGatewaySync(user, await readJsonObject(c)))),
   }),
   ...scopedRoutes('private'),
   ...scopedRoutes('public'),
