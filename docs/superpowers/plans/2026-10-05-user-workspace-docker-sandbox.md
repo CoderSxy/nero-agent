@@ -60,10 +60,10 @@
 
 **Interfaces:** `assertThreadOwned(auth: AuthContext, threadId: string): Promise<OwnedThread>`，使用 Mastra Memory 当前 storage API 读取线程并要求 `thread.resourceId === auth.userId`；`authorizeThreadRoute` 在原生端点之前执行或以受控路由替代。允许服务端派生 resourceId，不信任 body/query。Memory 配置显式 `observationalMemory.scope='thread'`、`retrieval.scope='thread'`；`semanticRecall` 继续关闭，`workingMemory` 暂不启用。
 
-- [ ] 写真实 HTTP 负面测试：A 不能 get/list/update/delete B 线程、读 B 消息、向 B stream、批准/恢复 B run；伪造 body/query `resourceId` 无效；无归属线程拒绝。用审计所得实际路径，不猜路由。
-- [ ] 写 Memory 双线程测试：A 线程记入测试值，B 线程不能从观察/检索接口直接得到；检查配置确实是 thread scope。
-- [ ] 运行目标测试确认失败；实现服务端 gate，若 Mastra 原生路由无法可靠拦截，则逐个关闭后新增受控路由，前端切换到受控路由。
-- [ ] 跑目标测试、`npm test`、`npm run build`。数据库变化：默认无；如审计证明必须建映射，先加 `app_thread_owners` 且为旧线程生成明确迁移报告。兼容风险：旧空 `resourceId` 线程会不可见；回滚：保留旧数据，恢复路由开关/上一版本，绝不自动认领。
+- [x] 写真实 HTTP 负面测试：A 不能 get/list/update/delete B 线程、读 B 消息、向 B stream、批准/恢复 B run；伪造 body/query `resourceId` 无效；无归属线程拒绝。用审计所得实际路径，不猜路由。
+- [x] 写 Memory 双线程测试：A 线程记入测试值，B 线程不能从观察/检索接口直接得到；检查配置确实是 thread scope。
+- [x] 运行目标测试确认失败；实现服务端 gate，若 Mastra 原生路由无法可靠拦截，则逐个关闭后新增受控路由，前端切换到受控路由。
+- [x] 跑目标测试、`npm test`、`npm run build`。数据库变化：默认无；如审计证明必须建映射，先加 `app_thread_owners` 且为旧线程生成明确迁移报告。兼容风险：旧空 `resourceId` 线程会不可见；回滚：保留旧数据，恢复路由开关/上一版本，绝不自动认领。
 
 ## Phase 2：用户 Workspace 与路径
 

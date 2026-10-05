@@ -20,7 +20,11 @@ function memoryFor(config: OpenAICompatibleConfig): Memory {
     const model = createTransportModel(config);
     memory = new Memory({ options: {
       generateTitle: { model },
+      semanticRecall: false,
+      workingMemory: { enabled: false },
       observationalMemory: {
+        scope: 'thread',
+        retrieval: { scope: 'thread' },
         observation: { model },
         reflection: { model },
       },

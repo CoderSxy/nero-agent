@@ -4,6 +4,7 @@ import { deleteScopedThread, listScopedThreads, renameScopedThread, type Thread 
 import { withThreadModels, type ModelSettings } from './model-settings';
 
 export function useThreadList(resourceId: string) {
+  // resourceId is the authenticated user UUID from /auth/me, not a client-chosen owner.
   const [threads, setThreads] = useState<Thread[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

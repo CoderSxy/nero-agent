@@ -4,6 +4,8 @@ import { AGENT_ID, client } from './client';
 
 export type Thread = ListMemoryThreadsResponse['threads'][number];
 
+/** resourceId must be the signed-in user id. The server ignores a forged owner. */
+
 export function neighborAfterDeletion(threads: Pick<Thread, 'id'>[], deletedId: string): string | null {
   const index = threads.findIndex(thread => thread.id === deletedId);
   if (index < 0) return null;
