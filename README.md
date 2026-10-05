@@ -66,7 +66,7 @@ npm run dev
 
 ## 工作区与存储
 
-管理员的本地文件工具只在 `workspace/` 内操作。开发模式下，该目录位于 `src/mastra/public/workspace/`。命令也从这里启动，但 `LocalSandbox` 默认不提供操作系统级隔离；生产环境应限制 Studio 入口，仅由可信管理员使用命令能力。
+管理员的本地文件工具只在 `workspace/` 内操作。开发模式下，该目录位于 `src/mastra/public/workspace/`。命令也从这里启动，但 `LocalSandbox` 默认不提供操作系统级隔离；生产环境应限制 Studio 入口，仅由可信管理员使用命令能力。用户独立工作区与 Docker 沙箱改造前的入口、身份与探针基线见 [工作区沙箱审计](docs/architecture/workspace-sandbox-audit.md)。
 
 PostgreSQL 保存用户、角色、权限、登录会话，以及 Mastra 的会话记忆等数据。`app_permissions` 与 `app_role_permissions` 目前只建表，细粒度权限数据留待后续迭代。开发环境的可观测性仍使用 DuckDB；正式部署时应按流量改为 PostgreSQL 或 ClickHouse。定时任务会持续消耗模型用量，直到暂停。
 
