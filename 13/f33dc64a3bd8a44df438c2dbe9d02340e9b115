@@ -1,0 +1,28 @@
+src/mastra/files/workspace-editor.ts
+  s_e99936c994c5e0::t_44c1ed508b69b3 5-6,50,73-89
+web/src/agent/RightPanelDock.test.tsx
+  s_e99936c994c5e0::t_dd91a09d939f15 31-38
+tests/workspace-editor.test.ts
+  s_e99936c994c5e0::t_6390a64ffe7c59 8,42-61
+  s_e99936c994c5e0::t_0789aba8c7cb9c 62
+src/mastra/files/routes.ts
+  s_e99936c994c5e0::t_44c1ed508b69b3 186-188
+web/vite.config.ts
+  s_e99936c994c5e0::t_ce7ace4b9034f0 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "13f33dc64a3bd8a44df438c2dbe9d02340e9b115",
+  "prompts": {},
+  "sessions": {
+    "s_e99936c994c5e0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1116a-f6bb-73b2-82b3-bb0f577dcabf",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
