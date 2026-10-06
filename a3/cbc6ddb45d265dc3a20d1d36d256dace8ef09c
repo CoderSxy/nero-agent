@@ -1,0 +1,20 @@
+docs/superpowers/plans/2026-10-06-agent-right-panels-file-preview.md
+  s_e99936c994c5e0::t_ee75306095b919 1-40,42-68,70-80,82-94,96-113
+  s_e99936c994c5e0::t_0dfee38c36a95e 41,69,81,95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a3cbc6ddb45d265dc3a20d1d36d256dace8ef09c",
+  "prompts": {},
+  "sessions": {
+    "s_e99936c994c5e0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1116a-f6bb-73b2-82b3-bb0f577dcabf",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
