@@ -1,0 +1,32 @@
+web/src/agent/AgentPage.test.tsx
+  s_e99936c994c5e0::t_28f74f7f4824a7 90-92,101-103
+  s_e99936c994c5e0::t_68c55d797df2dd 98,104
+web/src/agent/ConfigPanel.test.tsx
+  s_e99936c994c5e0::t_68c55d797df2dd 32,34,36-37
+web/src/agent/AgentPage.tsx
+  s_e99936c994c5e0::t_fc7ae00e8b5840 12,161-164
+web/src/agent/WorkspaceFileTree.test.tsx
+  s_e99936c994c5e0::t_7c7db421682a21 1-49
+web/src/styles.css
+  s_e99936c994c5e0::t_68c55d797df2dd 118-128
+web/src/agent/WorkspaceFileTree.tsx
+  s_e99936c994c5e0::t_fc7ae00e8b5840 1-4,6-7,9-10,13-14,17-25,27-52,54-58,60-76
+web/src/agent/ConfigPanel.tsx
+  s_e99936c994c5e0::t_fc7ae00e8b5840 12,14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "08408904d4706583bd2e726fc2fe8cb7d0d07fb4",
+  "prompts": {},
+  "sessions": {
+    "s_e99936c994c5e0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1116a-f6bb-73b2-82b3-bb0f577dcabf",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
