@@ -8,6 +8,7 @@ import { loadScopedThread, neighborAfterDeletion } from './thread-scope';
 import { ThreadSidebar } from './ThreadSidebar';
 import { AgentChat } from './AgentChat';
 import { ConfigPanel } from './ConfigPanel';
+import { RightPanelDock } from './RightPanelDock';
 import { getSelectableModels, type ModelRef, type SafeModel } from './model-catalog-client';
 import { getDefaultModels, readThreadModels, saveThreadModels, withThreadModels,
   type ModelSettings } from './model-settings';
@@ -155,7 +156,8 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
         <div className="empty-chat"><h1>智能体</h1><p>开始一段新对话</p><button type="button"
           disabled={!canCreate} onClick={() => void create()}>新建会话</button></div>}
     </section>
-    <ConfigPanel agent={agent} memory={memory} loading={configLoading} error={configError}
-      models={configModels} threadId={threadId} filesRefreshVersion={filesRefreshVersion} />
+    <RightPanelDock config={<ConfigPanel agent={agent} memory={memory} loading={configLoading} error={configError}
+      models={configModels} threadId={threadId} filesRefreshVersion={filesRefreshVersion} />}
+      files={<aside className="config-panel" aria-label="文件管理">文件管理</aside>} />
   </main>;
 }
