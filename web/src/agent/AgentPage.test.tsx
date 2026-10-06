@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentPage } from './AgentPage';
+import type { PendingUserMessage } from './pending-user-message';
 
 const flash = 'public:11111111-1111-4111-8111-111111111111';
 const pro = 'public:22222222-2222-4222-8222-222222222222';
@@ -12,6 +13,9 @@ const listMessages = vi.fn();
 const getSelectableModels = vi.fn();
 const createThread = vi.fn();
 const deleteThread = vi.fn();
+const previewFirstMessageTitle = vi.fn();
+const confirmFirstMessageTitle = vi.fn();
+const discardFirstMessageTitle = vi.fn();
 let threadItems: Array<{ id: string; title: string; resourceId: string; updatedAt: string }> = [];
 const listAgentsModelProviders = vi.fn();
 const model = (ref: string, modelId: string, extra = {}) => ({ ref, scope: 'public', displayName: modelId,
@@ -23,17 +27,31 @@ vi.mock('./client', () => ({ AGENT_ID: 'agent', client: {
   getMemoryConfig: () => Promise.resolve({ config: { observationalMemory: { observationModel: 'deepseek/deepseek-v4-flash' } } }),
   listAgentsModelProviders: () => listAgentsModelProviders(),
   getMemoryThread: () => ({ get, listMessages, update }),
+}, listUserFiles: async (threadId: string) => {
+  const response = await fetch(`/user-files/${threadId}`);
+  return (await response.json() as { files: unknown[] }).files;
+}, listWorkspaceFiles: async () => {
+  const response = await fetch('/current-workspace/files');
+  return (await response.json() as { files: unknown[] }).files;
 } }));
 vi.mock('./model-catalog-client', () => ({ getSelectableModels: () => getSelectableModels() }));
 vi.mock('./use-thread-list', () => ({ useThreadList: () => ({
   threads: threadItems, loading: false, error: null, refresh: vi.fn(), createThread, deleteThread,
+  previewFirstMessageTitle, confirmFirstMessageTitle, discardFirstMessageTitle,
 }) }));
-vi.mock('./AgentChat', () => ({ AgentChat: ({ models, sendBlockedReason, catalog, modelRef, onModelChange, modelError }: {
+vi.mock('./AgentChat', () => ({ AgentChat: ({ models, sendBlockedReason, catalog, modelRef, onModelChange,
+  modelError, pendingUserMessages, onMessageSubmitted, onFilesChanged }: {
   models: { chatModel: string; memoryModel: string } | null; sendBlockedReason?: string | null;
   catalog?: Array<{ ref: string; displayName: string }>; modelRef?: string; onModelChange?: (ref: string) => void;
-  modelError?: string | null;
+  modelError?: string | null; pendingUserMessages?: PendingUserMessage[];
+  onMessageSubmitted?: (message: PendingUserMessage) => void;
+  onFilesChanged?: () => void;
 }) => <div data-testid="models">{models ? `${models.chatModel}|${models.memoryModel}` : 'none'}
   <span data-testid="blocked">{sendBlockedReason ?? ''}</span>
+  <span data-testid="pending">{pendingUserMessages?.map(message => message.text).join('|')}</span>
+  <button type="button" onClick={() => onMessageSubmitted?.({ id: 'local', text: '刚发送的消息',
+    createdAt: new Date(), occurrence: 1 })}>模拟发送</button>
+  <button type="button" onClick={() => onFilesChanged?.()}>模拟文件生成</button>
   {modelError && <span role="alert">{modelError}</span>}
   <select aria-label="模型" value={modelRef ?? ''} onChange={event => onModelChange?.(event.target.value)}>
     <option value="">选择模型</option>
@@ -52,19 +70,59 @@ beforeEach(() => {
   threadWith({ chatModel: flash, memoryModel: flash });
   listMessages.mockResolvedValue({ messages: [], hasMore: false });
   update.mockResolvedValue({});
+  confirmFirstMessageTitle.mockResolvedValue(undefined);
 });
-afterEach(() => { cleanup(); vi.clearAllMocks(); document.documentElement.classList.remove('light'); });
+afterEach(() => { cleanup(); vi.clearAllMocks(); vi.unstubAllGlobals();
+  document.documentElement.classList.remove('light'); });
 
 function renderPage(path = '/agent/thread-1') {
   return render(<MemoryRouter initialEntries={[path]}><Routes>
-    <Route path="/agent/new" element={<AgentPage user={{ id: 'agent', email: 'test@example.com',
-      displayName: 'Test', roles: ['user'] }} onLogout={vi.fn()} />} />
     <Route path="/agent/:threadId" element={<AgentPage user={{ id: 'agent', email: 'test@example.com',
       displayName: 'Test', roles: ['user'] }} onLogout={vi.fn()} />} />
   </Routes></MemoryRouter>);
 }
 
 describe('Agent page model selection', () => {
+  it('updates the workspace file list after the conversation creates a file', async () => {
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ files: [] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ files: [
+        { path: 'threads/thread-1/output/result.md', type: 'file', size: 5 },
+      ] }), { status: 200 }));
+    vi.stubGlobal('fetch', fetch);
+    renderPage();
+    await screen.findByTestId('models');
+    fireEvent.click(screen.getByRole('button', { name: '展开工作区' }));
+    await screen.findByText('暂无文件');
+    fireEvent.click(screen.getByRole('button', { name: '模拟文件生成' }));
+    expect(await screen.findByRole('button', { name: '下载 threads/thread-1/output/result.md' })).toBeTruthy();
+  });
+  it('keeps a just-submitted bubble across history navigation while history is stale', async () => {
+    threadItems = [
+      { id: 'thread-1', title: '第一条', resourceId: 'agent', updatedAt: '2026-10-05' },
+      { id: 'thread-2', title: '第二条', resourceId: 'agent', updatedAt: '2026-10-04' },
+    ];
+    renderPage();
+    await screen.findByTestId('models');
+    fireEvent.click(screen.getByRole('button', { name: '模拟发送' }));
+    expect(previewFirstMessageTitle).toHaveBeenCalledWith('thread-1', '刚发送的消息');
+    expect(screen.getByTestId('pending').textContent).toBe('刚发送的消息');
+    fireEvent.click(screen.getByRole('button', { name: '第二条' }));
+    await waitFor(() => expect(screen.getByTestId('pending').textContent).toBe(''));
+    fireEvent.click(screen.getByRole('button', { name: '第一条' }));
+    await waitFor(() => expect(screen.getByTestId('pending').textContent).toBe('刚发送的消息'));
+  });
+  it('keeps the submitted bubble when navigating through a new conversation', async () => {
+    threadItems = [{ id: 'thread-1', title: '第一条', resourceId: 'agent', updatedAt: '2026-10-05' }];
+    createThread.mockResolvedValue({ id: 'thread-2' });
+    renderPage();
+    await screen.findByTestId('models');
+    fireEvent.click(screen.getByRole('button', { name: '模拟发送' }));
+    fireEvent.click(screen.getByRole('button', { name: '＋ 新建会话' }));
+    await waitFor(() => expect(createThread).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('button', { name: '第一条' }));
+    await waitFor(() => expect(screen.getByTestId('pending').textContent).toBe('刚发送的消息'));
+  });
   it('navigates to the next visible conversation after a confirmed delete', async () => {
     threadItems = [
       { id: 'thread-1', title: '第一条', resourceId: 'agent', updatedAt: '2026-10-05' },

@@ -68,7 +68,6 @@ export function App() {
   return <MastraReactProvider baseUrl="" apiPrefix="/api"
     headers={{ Authorization: `Bearer ${token}` }}>
     <Routes>
-      <Route path="/agent/new" element={<AgentPage user={user} onLogout={onLogout} />} />
       <Route path="/agent/:threadId" element={<AgentPage user={user} onLogout={onLogout} />} />
       <Route path="*" element={<Navigate to="/agent/new" replace />} />
     </Routes>

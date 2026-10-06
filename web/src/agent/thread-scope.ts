@@ -29,6 +29,49 @@ export async function renameScopedThread(threadId: string, resourceId: string, t
     metadata: { ...current.metadata, neroAgentTitleSource: 'manual' } });
 }
 
+export function promptTitle(text: string): string {
+  return text.trim().replace(/\s+/g, ' ').slice(0, 32);
+}
+
+export async function setInitialThreadTitle(threadId: string, resourceId: string, text: string): Promise<void> {
+  const title = promptTitle(text);
+  if (!title) return;
+  const thread = client.getMemoryThread({ threadId, agentId: AGENT_ID });
+  const current = await thread.get();
+  if (current.resourceId !== resourceId) throw new Error('会话不存在或无权访问');
+  if (current.metadata?.neroAgentTitleSource === 'manual' ||
+    (current.title?.trim() && current.title !== '新会话')) return;
+  await thread.update({ title });
+}
+
+function firstUserText(message: MastraDBMessage): string | null {
+  const signalType = message.content?.metadata?.signal;
+  const userSignal = message.role === 'signal' && (message.type === 'user' || message.type === 'user-message' ||
+    (typeof signalType === 'object' && signalType !== null && 'type' in signalType &&
+      (signalType.type === 'user' || signalType.type === 'user-message')));
+  if (message.role !== 'user' && !userSignal) return null;
+  const content = message.content;
+  const text = typeof content === 'string' ? content : content?.parts?.find(part => part.type === 'text')?.text;
+  return text?.trim() || null;
+}
+
+async function firstPromptTitle(threadId: string, resourceId: string): Promise<string | null> {
+  const memoryThread = client.getMemoryThread({ threadId, agentId: AGENT_ID });
+  let page = 0;
+  let hasMore = true;
+  while (hasMore) {
+    const result = await memoryThread.listMessages({ agentId: AGENT_ID, resourceId, page, perPage: 100,
+      orderBy: { field: 'createdAt', direction: 'ASC' }, filter: { roles: ['user', 'signal'] } });
+    for (const message of result.messages as MastraDBMessage[]) {
+      const text = firstUserText(message);
+      if (text) return promptTitle(text);
+    }
+    hasMore = !!result.hasMore && result.messages.length > 0;
+    page += 1;
+  }
+  return null;
+}
+
 export async function listScopedThreads(resourceId: string): Promise<Thread[]> {
   const allThreads: Thread[] = [];
   let page = 0;
@@ -45,12 +88,7 @@ export async function listScopedThreads(resourceId: string): Promise<Thread[]> {
     if (thread.title?.trim() && thread.title !== '新会话') return thread;
     if (thread.metadata?.neroAgentTitleSource === 'manual') return thread;
     try {
-      const result = await client.getMemoryThread({ threadId: thread.id, agentId: AGENT_ID })
-        .listMessages({ agentId: AGENT_ID, resourceId, perPage: 1,
-          orderBy: { field: 'createdAt', direction: 'ASC' }, filter: { roles: ['user'] } });
-      const content = (result.messages as MastraDBMessage[]).find(message => message.role === 'user')?.content;
-      const firstText = typeof content === 'string' ? content : content?.parts?.find(part => part.type === 'text')?.text;
-      const title = firstText?.trim().replace(/\s+/g, ' ').slice(0, 32);
+      const title = await firstPromptTitle(thread.id, resourceId);
       if (!title) return { ...thread, title: thread.title?.trim() || '新会话' };
       const memoryThread = client.getMemoryThread({ threadId: thread.id, agentId: AGENT_ID });
       const current = await memoryThread.get();

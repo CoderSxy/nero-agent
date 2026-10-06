@@ -1,9 +1,12 @@
 import { registerApiRoute } from '@mastra/core/server';
 import type { Context } from 'hono';
+import type { RequestContext } from '@mastra/core/request-context';
+import { LocalFilesystem, type WorkspaceFilesystem } from '@mastra/core/workspace';
 import { trustedAuth } from '../auth/auth-context';
 import { ThreadGuardError, type ThreadLookup } from '../auth/thread-guard';
-import { FilePathError, isUserFilesEnabled } from './policy';
+import { FilePathError, isUserFilesEnabled, relativeFilePath } from './policy';
 import { FileService, FileServiceError } from './service';
+import { ensureUserWorkspace } from '../workspace/manager';
 
 function filePathFromRequest(c: Context, threadId: string): string {
   const prefix = `/user-files/${threadId}/`;
@@ -21,6 +24,9 @@ function respond(c: Context, error: unknown) {
   }
   if (error instanceof Error && /Authentication is required/i.test(error.message)) {
     return c.json({ error: error.message }, 401);
+  }
+  if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+    return c.json({ error: '文件不存在' }, 404);
   }
   return c.json({ error: '服务器内部错误' }, 500);
 }
@@ -102,3 +108,62 @@ export function createFileRoutes(lookup?: ThreadLookup) {
 }
 
 export const fileRoutes = createFileRoutes();
+
+async function currentWorkspace(c: Context): Promise<{ id: string; filesystem: WorkspaceFilesystem }> {
+  const auth = trustedAuth(c.get('requestContext'));
+  const source = c.req.query('source');
+  if (source && source !== 'agent') throw new FilePathError('工作区来源无效');
+  if (!source) {
+    const root = await ensureUserWorkspace(auth);
+    return { id: `ws_${auth.userId}`, filesystem: new LocalFilesystem({ basePath: root, contained: true }) };
+  }
+  if (!auth.roles.includes('admin')) throw new FileServiceError(403, '无权访问工作区');
+  const mastra = c.get('mastra') as {
+    getAgent(id: string): { getWorkspace(args: { requestContext: RequestContext }):
+      Promise<{ id: string; filesystem?: WorkspaceFilesystem } | undefined> };
+  } | undefined;
+  const requestContext = c.get('requestContext') as RequestContext | undefined;
+  if (!mastra || !requestContext) throw new FileServiceError(401, 'Authentication is required');
+  const workspace = await mastra.getAgent('agent').getWorkspace({ requestContext });
+  if (!workspace?.filesystem) throw new FileServiceError(404, '当前用户没有可浏览的工作区');
+  return { id: workspace.id, filesystem: workspace.filesystem };
+}
+
+export function createCurrentWorkspaceFileRoutes() {
+  return [
+    registerApiRoute('/current-workspace/files', {
+      method: 'GET',
+      handler: async c => {
+        try {
+          const workspace = await currentWorkspace(c);
+          const entries = await workspace.filesystem.readdir('.', { recursive: true });
+          return c.json({ workspaceId: workspace.id, files: entries.filter(entry => !entry.isSymlink)
+            .map(entry => ({ path: entry.name, type: entry.type, size: entry.size ?? 0 })) });
+        } catch (error) { return respond(c, error); }
+      },
+    }),
+    registerApiRoute('/current-workspace/files/*', {
+      method: 'GET',
+      handler: async c => {
+        try {
+          const workspace = await currentWorkspace(c);
+          const prefix = '/current-workspace/files/';
+          const raw = c.req.path.startsWith(prefix) ? c.req.path.slice(prefix.length) : c.req.param('*') ?? '';
+          let path: string;
+          try { path = relativeFilePath(decodeURIComponent(raw)); }
+          catch { throw new FilePathError(); }
+          const data = await workspace.filesystem.readFile(path);
+          const name = path.split('/').at(-1) ?? 'download';
+          return new Response(typeof data === 'string' ? data : new Uint8Array(data), { status: 200, headers: {
+            'content-type': 'application/octet-stream',
+            'content-disposition': `attachment; filename="${name.replace(/["\r\n]/g, '')}"`,
+            'x-content-type-options': 'nosniff',
+            'cache-control': 'no-store',
+          } });
+        } catch (error) { return respond(c, error); }
+      },
+    }),
+  ];
+}
+
+export const currentWorkspaceFileRoutes = createCurrentWorkspaceFileRoutes();

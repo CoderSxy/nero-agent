@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MastraDBMessage } from '@mastra/core/agent/message-list';
 import { useChat } from '@mastra/react';
 import { ChatShell } from '@mastra/playground-ui/components/ChatShell';
@@ -7,13 +7,20 @@ import { AgentComposer } from './AgentComposer';
 import { MessageList } from './MessageList';
 import { createModelRequestContext, type ModelSettings } from './model-settings';
 import type { ModelRef, SafeModel } from './model-catalog-client';
+import { nextPendingUserMessage, withPendingUserMessages, type PendingUserMessage } from './pending-user-message';
 
 export function AgentChat({ threadId, resourceId, initialMessages, onMessageSent, models, catalog = [],
-  onModelChange, modelRef, modelDisabled = false, modelError, sendBlockedReason }: {
-  threadId: string; resourceId: string; initialMessages: MastraDBMessage[]; onMessageSent: () => void;
+  onModelChange, modelRef, modelDisabled = false, modelError, sendBlockedReason,
+  pendingUserMessages = [], onMessageSubmitted, onMessageFailed, onFilesChanged }: {
+  threadId: string; resourceId: string; initialMessages: MastraDBMessage[];
+  onMessageSent: (message: PendingUserMessage) => void;
   models: ModelSettings | null; catalog?: SafeModel[]; modelRef?: ModelRef;
   onModelChange?: (ref: ModelRef) => void; modelDisabled?: boolean; modelError?: string | null;
   sendBlockedReason?: string | null;
+  pendingUserMessages?: PendingUserMessage[];
+  onMessageSubmitted?: (message: PendingUserMessage) => void;
+  onMessageFailed?: (message: PendingUserMessage) => void;
+  onFilesChanged?: () => void;
 }) {
   const [draft, setDraft] = useState('');
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -26,22 +33,32 @@ export function AgentChat({ threadId, resourceId, initialMessages, onMessageSent
   const requestContext = useMemo(() => chatModel && memoryModel
     ? createModelRequestContext({ chatModel, memoryModel }) : undefined, [chatModel, memoryModel]);
   const blockedReason = sendBlockedReason ?? (models ? null : '请先配置可用模型');
-  const chat = useChat({ agentId: AGENT_ID, resourceId, threadId, initialMessages, requestContext });
-  const isEmpty = !hasSubmitted && initialMessages.length === 0 && chat.messages.length === 0;
+  const chat = useChat({ agentId: AGENT_ID, resourceId, threadId, initialMessages, requestContext,
+    enableThreadSignals: true });
+  const wasRunning = useRef(chat.isRunning);
+  useEffect(() => {
+    if (wasRunning.current && !chat.isRunning) onFilesChanged?.();
+    wasRunning.current = chat.isRunning;
+  }, [chat.isRunning, onFilesChanged]);
+  const visibleMessages = withPendingUserMessages(chat.messages, pendingUserMessages);
+  const isEmpty = !hasSubmitted && initialMessages.length === 0 && visibleMessages.length === 0;
   async function send() {
     const message = draft.trim();
     if (!message || blockedReason || modelDisabled || chat.isRunning || chat.isAwaitingToolApproval) return;
+    const pending = nextPendingUserMessage(message, chat.messages, pendingUserMessages);
+    onMessageSubmitted?.(pending);
     setHasSubmitted(true); setDraft(''); setError(null);
     try { await chat.sendMessage({ message, mode: 'stream', threadId,
       requestContext,
       onChunk: async chunk => {
-        if (chunk.type === 'tool-call-approval' || chunk.type === 'tool-call-suspended') {
+        if (chunk.type === 'tool-call-approval') {
           const id = chunk.payload?.toolCallId;
           if (typeof id === 'string') setPendingApprovalIds(value => new Set(value).add(id));
         }
       },
-    }); onMessageSent(); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : '请求失败'); }
+    }); onMessageSent(pending); }
+    catch (cause) { onMessageFailed?.(pending);
+      setError(cause instanceof Error ? cause.message : '请求失败'); }
   }
   async function approve(id: string) {
     try { await chat.approveToolCall(id); setError(null);
@@ -55,14 +72,18 @@ export function AgentChat({ threadId, resourceId, initialMessages, onMessageSent
       setFailedDecisions(value => { const next = new Set(value); next.delete(id); return next; }); }
     catch (cause) { setFailedDecisions(value => new Set(value).add(id)); setError(cause instanceof Error ? cause.message : '拒绝失败'); throw cause; }
   }
+  async function answer(id: string, value: string | string[]) {
+    try { await chat.approveToolCall(id, value); setError(null); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : '提交回答失败'); throw cause; }
+  }
   const visibleApprovals = Object.fromEntries(Object.entries(chat.toolCallApprovals)
     .filter(([id]) => !failedDecisions.has(id)));
   return <ChatShell className={`chat-shell ${isEmpty ? 'chat-shell--empty' : 'chat-shell--active'}`}>
     <ChatShell.Bar><div className="chat-title">智能体对话</div></ChatShell.Bar>
     <ChatShell.Stage><ChatShell.Viewport><ChatShell.Content><ChatShell.Column>
-      <MessageList messages={chat.messages} isRunning={chat.isRunning} error={error}
+      <MessageList messages={visibleMessages} isRunning={chat.isRunning} error={error}
         approvals={visibleApprovals} pendingApprovalIds={pendingApprovalIds}
-        awaitingApproval={chat.isAwaitingToolApproval} onApprove={approve} onDecline={decline} />
+        onApprove={approve} onDecline={decline} onAnswer={answer} />
     </ChatShell.Column></ChatShell.Content></ChatShell.Viewport></ChatShell.Stage>
     <ChatShell.Dock><ChatShell.Column>
       <div className="chat-welcome" aria-hidden={!isEmpty}>
@@ -82,6 +103,7 @@ export function AgentChat({ threadId, resourceId, initialMessages, onMessageSent
           if (!file) return;
           void uploadUserFile(threadId, file.name, file).then(result => {
             setFileLinks(current => [...current, result.path]);
+            onFilesChanged?.();
             setError(null);
           }).catch(cause => setError(cause instanceof Error ? cause.message : '上传失败'));
         }} />

@@ -13,6 +13,7 @@ import { getDefaultModels, readThreadModels, saveThreadModels, withThreadModels,
   type ModelSettings } from './model-settings';
 import type { Theme } from './ModelSettingsMenu';
 import type { CurrentUser } from '../App';
+import type { PendingUserMessage } from './pending-user-message';
 
 function initialTheme(): Theme {
   try { return localStorage.getItem('nero-agent-theme') === 'light' ? 'light' : 'dark'; }
@@ -25,10 +26,13 @@ function completeModels(models: Partial<ModelSettings>): ModelSettings | null {
 }
 
 export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () => void }) {
-  const { threadId } = useParams();
+  const { threadId: routeThreadId } = useParams();
+  const threadId = routeThreadId === 'new' ? undefined : routeThreadId;
   const navigate = useNavigate();
   const list = useThreadList(user.id);
   const [messages, setMessages] = useState<MastraDBMessage[]>([]);
+  const [pendingByThread, setPendingByThread] = useState<Record<string, PendingUserMessage[]>>({});
+  const [filesRefreshVersion, setFilesRefreshVersion] = useState(0);
   const [loadingThread, setLoadingThread] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [agent, setAgent] = useState<GetAgentResponse | null>(null);
@@ -115,6 +119,7 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
   async function deleteThread(id: string) {
     const nextId = neighborAfterDeletion(list.threads, id);
     await list.deleteThread(id);
+    setPendingByThread(current => { const next = { ...current }; delete next[id]; return next; });
     setNotice(null);
     navigate(nextId ? `/agent/${nextId}` : '/agent/new', { replace: true });
   }
@@ -130,10 +135,27 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
         <AgentChat key={threadId} threadId={threadId} resourceId={user.id} initialMessages={messages} models={selected}
           catalog={catalog ?? []} modelRef={selected?.chatModel} onModelChange={selectComposerModel}
           modelDisabled={settingsSaving} modelError={settingsError}
-          sendBlockedReason={sendBlockedReason} onMessageSent={() => void list.refresh()} /> :
+          sendBlockedReason={sendBlockedReason} onMessageSent={message => {
+            void list.confirmFirstMessageTitle(threadId, message.text).catch(() => void list.refresh());
+            void list.refresh();
+            setFilesRefreshVersion(value => value + 1);
+          }}
+          onFilesChanged={() => setFilesRefreshVersion(value => value + 1)}
+          pendingUserMessages={pendingByThread[threadId] ?? []}
+          onMessageSubmitted={message => {
+            list.previewFirstMessageTitle(threadId, message.text);
+            setPendingByThread(current => ({ ...current,
+              [threadId]: [...(current[threadId] ?? []), message] }));
+          }}
+          onMessageFailed={message => {
+            list.discardFirstMessageTitle(threadId, message.text);
+            setPendingByThread(current => ({ ...current,
+              [threadId]: (current[threadId] ?? []).filter(item => item.id !== message.id) }));
+          }} /> :
         <div className="empty-chat"><h1>智能体</h1><p>开始一段新对话</p><button type="button"
           disabled={!canCreate} onClick={() => void create()}>新建会话</button></div>}
     </section>
-    <ConfigPanel agent={agent} memory={memory} loading={configLoading} error={configError} models={configModels} />
+    <ConfigPanel agent={agent} memory={memory} loading={configLoading} error={configError}
+      models={configModels} threadId={threadId} filesRefreshVersion={filesRefreshVersion} />
   </main>;
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { GetAgentResponse, GetMemoryConfigResponse } from '@mastra/client-js';
 import { SectionCard } from '@mastra/playground-ui/components/SectionCard';
+import { ThreadFiles } from './ThreadFiles';
 
 function display(value: unknown) {
   if (value == null || value === '') return '未提供';
@@ -9,9 +10,9 @@ function display(value: unknown) {
   return JSON.stringify(value, null, 2);
 }
 
-export function ConfigPanel({ agent, memory, models, loading, error }: {
+export function ConfigPanel({ agent, memory, models, loading, error, threadId, filesRefreshVersion }: {
   agent: GetAgentResponse | null; memory?: GetMemoryConfigResponse | null; models?: { chatModel: string; memoryModel: string };
-  loading: boolean; error: string | null;
+  loading: boolean; error: string | null; threadId?: string; filesRefreshVersion?: number;
 }) {
   const [open, setOpen] = useState<Record<string, boolean>>({ overview: true, tools: true });
   const memoryConfig = memory?.config;
@@ -32,9 +33,12 @@ export function ConfigPanel({ agent, memory, models, loading, error }: {
       </dl>)}
       {section('tools', '工具', <div>{Object.keys(agent.tools ?? {}).length ? Object.keys(agent.tools).map(name =>
         <div className="config-item" key={name}>{name}</div>) : '未提供'}</div>)}
-      {(agent.workspaceId || agent.workspaceTools?.length) && section('workspace', '工作区', <div>
-        {agent.workspaceId && <p>{agent.workspaceId}</p>}
+      {section('workspace', '工作区', <div>
+        {agent.workspaceId && <p className="muted">Agent 配置：{agent.workspaceId}</p>}
         {agent.workspaceTools?.map(name => <div className="config-item" key={name}>{name}</div>)}
+        {agent.workspaceId && agent.workspaceId !== 'user-workspace'
+          ? <ThreadFiles source="agent" workspaceId={agent.workspaceId} refreshVersion={filesRefreshVersion} />
+          : <ThreadFiles key={threadId ?? 'new'} refreshVersion={filesRefreshVersion} />}
       </div>)}
       {memoryConfig && section('memory', '记忆', <dl>
         {models?.memoryModel && <><dt>记忆模型</dt><dd>{models.memoryModel}</dd></>}

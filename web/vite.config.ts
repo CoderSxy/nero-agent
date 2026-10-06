@@ -10,6 +10,7 @@ export default defineConfig({
       '/auth': 'http://127.0.0.1:4111',
       '/model-catalog': 'http://127.0.0.1:4111',
       '/user-files': 'http://127.0.0.1:4111',
+      '/current-workspace': 'http://127.0.0.1:4111',
     },
   },
   test: { environment: 'jsdom', restoreMocks: true, server: { deps: { inline: ['@mastra/playground-ui'] } } },

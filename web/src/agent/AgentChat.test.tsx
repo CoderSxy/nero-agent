@@ -1,10 +1,15 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AgentChat } from './AgentChat';
 import type { SafeModel } from './model-catalog-client';
+import type { PendingUserMessage } from './pending-user-message';
 
 const sendMessage = vi.fn();
 const cancelRun = vi.fn();
+const approveToolCall = vi.fn();
+let chatOptions: { enableThreadSignals?: boolean } | undefined;
+let mockRunning = false;
 const chatRef = 'public:11111111-1111-4111-8111-111111111111' as const;
 const memoryRef = 'private:22222222-2222-4222-8222-222222222222' as const;
 const models = { chatModel: chatRef, memoryModel: memoryRef };
@@ -15,14 +20,69 @@ const catalog = [chatRef, memoryRef].map((ref, index) => ({ ref,
 })) as SafeModel[];
 let mockMessages: Array<{ id: string; role: string; content: { format: number; parts: Array<{ type: string; text: string }> } }> =
   [{ id: 'partial', role: 'assistant', content: { format: 2, parts: [{ type: 'text', text: '部分回复' }] } }];
-vi.mock('@mastra/react', () => ({ useChat: () => ({
-  messages: mockMessages,
-  isRunning: false, sendMessage, cancelRun, toolCallApprovals: {}, approveToolCall: vi.fn(), declineToolCall: vi.fn(),
-}) }));
-afterEach(() => { cleanup(); vi.clearAllMocks(); mockMessages =
+vi.mock('@mastra/react', () => ({ useChat: (options: { enableThreadSignals?: boolean }) => {
+  chatOptions = options;
+  return {
+    messages: mockMessages,
+    isRunning: mockRunning, sendMessage, cancelRun, toolCallApprovals: {}, approveToolCall, declineToolCall: vi.fn(),
+  };
+} }));
+afterEach(() => { cleanup(); vi.clearAllMocks(); vi.unstubAllGlobals(); mockRunning = false; mockMessages =
   [{ id: 'partial', role: 'assistant', content: { format: 2, parts: [{ type: 'text', text: '部分回复' }] } }]; });
 
 describe('Agent conversation', () => {
+  it('notifies the workspace file list when a run finishes', () => {
+    const changed = vi.fn();
+    mockRunning = true;
+    const { rerender } = render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}
+      onMessageSent={vi.fn()} onFilesChanged={changed} models={models} />);
+    mockRunning = false;
+    rerender(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}
+      onMessageSent={vi.fn()} onFilesChanged={changed} models={models} />);
+    expect(changed).toHaveBeenCalledTimes(1);
+  });
+  it('resumes ask_user with the selected option instead of a bare approval', async () => {
+    vi.stubGlobal('PointerEvent', MouseEvent);
+    approveToolCall.mockResolvedValue(undefined);
+    mockMessages = [{ id: 'question', role: 'assistant', content: { format: 2,
+      metadata: { mode: 'stream', suspendedTools: { ask_user: { toolCallId: 'ask-1', suspendPayload: {
+        question: '选择语言', selectionMode: 'single_select', options: [{ label: 'Python' }, { label: 'JavaScript' }],
+      } } } },
+      parts: [{ type: 'tool-invocation', toolInvocation: { state: 'call', toolCallId: 'ask-1',
+        toolName: 'ask_user', args: { question: '选择语言' } } }],
+    } } as never];
+    try {
+      render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]} onMessageSent={vi.fn()}
+        models={models} />);
+      fireEvent.click(screen.getByRole('radio', { name: 'Python' }));
+      await waitFor(() => expect(approveToolCall).toHaveBeenCalledWith('ask-1', 'Python'));
+    } finally { vi.unstubAllGlobals(); }
+  });
+  it('keeps a submitted user bubble when the chat unmounts before history catches up', async () => {
+    mockMessages = [];
+    sendMessage.mockResolvedValue(undefined);
+    function SwitchingChat() {
+      const [visible, setVisible] = useState(true);
+      const [pending, setPending] = useState<PendingUserMessage[]>([]);
+      return <><button type="button" onClick={() => setVisible(value => !value)}>切换会话</button>
+        {visible && <AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}
+          onMessageSent={vi.fn()} models={models} pendingUserMessages={pending}
+          onMessageSubmitted={message => setPending(current => [...current, message])} />}
+      </>;
+    }
+    render(<SwitchingChat />);
+    fireEvent.change(screen.getByRole('textbox', { name: '发送消息' }), { target: { value: '待保留的提问' } });
+    fireEvent.click(screen.getByRole('button', { name: '发送' }));
+    await waitFor(() => expect(sendMessage).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('button', { name: '切换会话' }));
+    fireEvent.click(screen.getByRole('button', { name: '切换会话' }));
+    expect(screen.getByText('待保留的提问')).toBeTruthy();
+  });
+  it('subscribes to the thread so a running reply can be observed after navigation', () => {
+    render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]} onMessageSent={vi.fn()}
+      models={models} />);
+    expect(chatOptions?.enableThreadSignals).toBe(true);
+  });
   it('shows the selected model in composer and forwards changes', () => {
     const change = vi.fn();
     render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]} onMessageSent={vi.fn()}

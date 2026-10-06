@@ -16,7 +16,7 @@ import { tavilySearchTool } from './tools/tavily-search-tool';
 import { studioChineseMiddleware } from './studio-zh';
 import { agentModelLockMiddleware } from './agent-model-lock';
 import { authorizeThreadRoute } from './auth/authorization';
-import { fileRoutes } from './files/routes';
+import { currentWorkspaceFileRoutes, fileRoutes } from './files/routes';
 import { userFileTools } from './files/tools';
 import { modelRoutes } from './models/routes';
 import { modelAdminRoutes } from './models/admin-page';
@@ -31,7 +31,8 @@ export const mastra = new Mastra({
   studio: { auth: studioAuth },
   server: {
     middleware: [agentModelLockMiddleware, authorizeThreadRoute, studioChineseMiddleware],
-    apiRoutes: [...authRoutes, ...modelRoutes, ...modelAdminRoutes, ...fileRoutes],
+    apiRoutes: [...authRoutes, ...modelRoutes, ...modelAdminRoutes, ...fileRoutes,
+      ...currentWorkspaceFileRoutes],
     auth: {
       authenticateToken: async token => getUserByToken(token),
       mapUserToResourceId: user => resourceIdFor(authContextFromUser(user)),

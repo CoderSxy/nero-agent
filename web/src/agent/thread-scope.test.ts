@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { listScopedThreads, loadScopedThread, neighborAfterDeletion, deleteScopedThread, renameScopedThread } from './thread-scope';
+import { listScopedThreads, loadScopedThread, neighborAfterDeletion, deleteScopedThread, renameScopedThread,
+  setInitialThreadTitle } from './thread-scope';
 
 const listMemoryThreads = vi.fn();
 const get = vi.fn();
@@ -49,6 +50,33 @@ describe('Studio thread scope', () => {
     expect((await listScopedThreads('agent'))[0].title).toBe('帮我规划这周的工作');
     expect(update).toHaveBeenCalledWith({ title: '帮我规划这周的工作' });
   });
+  it('uses the first user thread signal as the title', async () => {
+    listMemoryThreads.mockResolvedValue({ threads: [{ id: 'mine', title: '新会话', resourceId: 'agent', updatedAt: '2026-10-06' }] });
+    get.mockResolvedValue({ id: 'mine', title: '新会话', resourceId: 'agent', metadata: {} });
+    listMessages.mockResolvedValue({ messages: [
+      { role: 'signal', type: 'notification', content: { format: 2, parts: [{ type: 'text', text: '系统通知' }] } },
+      { role: 'signal', type: 'user', content: { format: 2, parts: [
+        { type: 'text', text: '帮我写一份排序算法面试题' },
+      ], metadata: { signal: { type: 'user', tagName: 'user' } } } },
+    ], hasMore: false });
+    update.mockResolvedValue({ id: 'mine', title: '帮我写一份排序算法面试题', resourceId: 'agent' });
+    expect((await listScopedThreads('agent'))[0].title).toBe('帮我写一份排序算法面试题');
+    expect(listMessages).toHaveBeenCalledWith(expect.objectContaining({ filter: { roles: ['user', 'signal'] } }));
+    expect(update).toHaveBeenCalledWith({ title: '帮我写一份排序算法面试题' });
+  });
+
+  it('continues past non-user signals to find the earliest user prompt', async () => {
+    listMemoryThreads.mockResolvedValue({ threads: [{ id: 'mine', title: '新会话', resourceId: 'agent', updatedAt: '2026-10-06' }] });
+    get.mockResolvedValue({ id: 'mine', title: '新会话', resourceId: 'agent', metadata: {} });
+    listMessages.mockResolvedValueOnce({ messages: [{ role: 'signal', type: 'notification',
+      content: { format: 2, parts: [{ type: 'text', text: '系统通知' }] } }], hasMore: true })
+      .mockResolvedValueOnce({ messages: [{ role: 'signal', type: 'user-message',
+        content: { format: 2, parts: [{ type: 'text', text: '第一个问题' }],
+          metadata: { signal: { type: 'user-message', tagName: 'user' } } } }], hasMore: false });
+    update.mockResolvedValue({ id: 'mine', title: '第一个问题', resourceId: 'agent' });
+    expect((await listScopedThreads('agent'))[0].title).toBe('第一个问题');
+    expect(listMessages).toHaveBeenNthCalledWith(2, expect.objectContaining({ page: 1 }));
+  });
   it('preserves a manually renamed conversation when refreshing the list', async () => {
     listMemoryThreads.mockResolvedValue({ threads: [{ id: 'mine', title: '新会话', resourceId: 'agent', updatedAt: '2026-10-05', metadata: { neroAgentTitleSource: 'manual' } }] });
     expect((await listScopedThreads('agent'))[0].title).toBe('新会话');
@@ -61,6 +89,15 @@ describe('Studio thread scope', () => {
     expect(update).not.toHaveBeenCalled();
     await renameScopedThread('mine', 'agent', '  我的会话  ');
     expect(update).toHaveBeenCalledWith({ title: '我的会话', metadata: { other: 'keep', neroAgentTitleSource: 'manual' } });
+  });
+  it('sets the first prompt title immediately while preserving later manual titles', async () => {
+    get.mockResolvedValueOnce({ id: 'mine', resourceId: 'agent', title: '新会话', metadata: {} })
+      .mockResolvedValueOnce({ id: 'mine', resourceId: 'agent', title: '手动标题',
+        metadata: { neroAgentTitleSource: 'manual' } });
+    await setInitialThreadTitle('mine', 'agent', '  第一条   问题  ');
+    expect(update).toHaveBeenCalledWith({ title: '第一条 问题' });
+    await setInitialThreadTitle('mine', 'agent', '第二条问题');
+    expect(update).toHaveBeenCalledTimes(1);
   });
   it('rejects a thread owned by another resource before loading messages', async () => {
     get.mockResolvedValue({ id: 'other', resourceId: 'local-user' });

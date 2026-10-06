@@ -115,6 +115,14 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .config-sections dd { margin: 0; overflow-wrap: anywhere; }
 .config-sections pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
 .config-item { padding: 4px 0; overflow-wrap: anywhere; }
+.thread-files { margin-top: 14px; font-size: 12px; }
+.thread-files-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.thread-files-heading button { padding: 3px 6px; color: var(--muted-foreground); }
+.thread-files-heading button:hover, .thread-files li button:hover { color: var(--foreground); text-decoration: underline; }
+.thread-files p { margin: 8px 0 0; }
+.thread-files ul { max-height: 320px; overflow-y: auto; margin: 8px 0 0; padding: 0; list-style: none; }
+.thread-files li { padding: 4px 0; overflow-wrap: anywhere; }
+.thread-files li button { max-width: 100%; text-align: left; overflow-wrap: anywhere; }
 .tool-row { max-width: 100%; }
 .tool-row pre { white-space: pre-wrap; }
 .run-status { color: var(--muted-foreground); }
