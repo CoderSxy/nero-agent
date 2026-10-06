@@ -87,15 +87,21 @@ describe('Agent page model selection', () => {
     const fetch = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ files: [] }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ files: [
+        { path: 'threads', type: 'directory', size: 0 },
+        { path: 'threads/thread-1', type: 'directory', size: 0 },
+        { path: 'threads/thread-1/output', type: 'directory', size: 0 },
         { path: 'threads/thread-1/output/result.md', type: 'file', size: 5 },
       ] }), { status: 200 }));
     vi.stubGlobal('fetch', fetch);
     renderPage();
     await screen.findByTestId('models');
-    fireEvent.click(screen.getByRole('button', { name: '展开工作区' }));
+    fireEvent.click(screen.getByRole('button', { name: '打开文件管理面板' }));
     await screen.findByText('暂无文件');
     fireEvent.click(screen.getByRole('button', { name: '模拟文件生成' }));
-    expect(await screen.findByRole('button', { name: '下载 threads/thread-1/output/result.md' })).toBeTruthy();
+    fireEvent.click(await screen.findByRole('button', { name: '展开 threads' }));
+    fireEvent.click(screen.getByRole('button', { name: '展开 threads/thread-1' }));
+    fireEvent.click(screen.getByRole('button', { name: '展开 threads/thread-1/output' }));
+    expect(await screen.findByRole('button', { name: '打开 threads/thread-1/output/result.md' })).toBeTruthy();
   });
   it('keeps a just-submitted bubble across history navigation while history is stale', async () => {
     threadItems = [

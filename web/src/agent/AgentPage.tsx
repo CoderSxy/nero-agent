@@ -9,6 +9,7 @@ import { ThreadSidebar } from './ThreadSidebar';
 import { AgentChat } from './AgentChat';
 import { ConfigPanel } from './ConfigPanel';
 import { RightPanelDock } from './RightPanelDock';
+import { WorkspaceFileTree } from './WorkspaceFileTree';
 import { getSelectableModels, type ModelRef, type SafeModel } from './model-catalog-client';
 import { getDefaultModels, readThreadModels, saveThreadModels, withThreadModels,
   type ModelSettings } from './model-settings';
@@ -157,7 +158,9 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
           disabled={!canCreate} onClick={() => void create()}>新建会话</button></div>}
     </section>
     <RightPanelDock config={<ConfigPanel agent={agent} memory={memory} loading={configLoading} error={configError}
-      models={configModels} threadId={threadId} filesRefreshVersion={filesRefreshVersion} />}
-      files={<aside className="config-panel" aria-label="文件管理">文件管理</aside>} />
+      models={configModels} />}
+      files={<WorkspaceFileTree source={agent?.workspaceId && agent.workspaceId !== 'user-workspace' ? 'agent' : 'personal'}
+        workspaceId={agent?.workspaceId && agent.workspaceId !== 'user-workspace' ? agent.workspaceId : undefined}
+        refreshVersion={filesRefreshVersion} onOpenFile={() => {}} />} />
   </main>;
 }
