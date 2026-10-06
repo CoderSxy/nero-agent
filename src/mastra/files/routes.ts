@@ -183,7 +183,9 @@ export function createCurrentWorkspaceFileRoutes() {
           let text: string;
           try { text = new TextDecoder('utf-8', { fatal: true }).decode(body); }
           catch { throw new WorkspaceEditError(400, '文件包含无效 UTF-8 文本'); }
-          const etag = await saveWorkspaceText(workspace.filesystem, path, text, c.req.header('if-match') ?? '');
+          const auth = trustedAuth(c.get('requestContext'));
+          const etag = await saveWorkspaceText(workspace.filesystem, path, text, c.req.header('if-match') ?? '',
+            c.req.query('source') === 'agent' ? undefined : auth.userId);
           return c.json({ ok: true }, 200, { etag, 'cache-control': 'no-store' });
         } catch (error) { return respond(c, error); }
       },

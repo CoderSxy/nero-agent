@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { LocalFilesystem } from '@mastra/core/workspace';
 import { readWorkspaceVersion, saveWorkspaceText, WorkspaceEditError } from '../src/mastra/files/workspace-editor';
+import { workspaceQuota } from '../src/mastra/workspace/quota';
 
 async function fixture(content = 'before') {
   const root = await mkdtemp(join(tmpdir(), 'workspace-editor-'));
@@ -37,4 +38,25 @@ test('rejects missing, binary, invalid and oversized text without creating or ch
     (error: unknown) => error instanceof WorkspaceEditError && error.status === 400);
   await assert.rejects(() => saveWorkspaceText(filesystem, 'note.md', 'x'.repeat(10 * 1024 * 1024 + 1), etag),
     (error: unknown) => error instanceof WorkspaceEditError && error.status === 413);
+});
+
+test('a larger edit respects the user workspace quota', async () => {
+  const { path, filesystem } = await fixture();
+  const userId = '33333333-3333-4333-8333-333333333333';
+  const previousRoot = process.env.WORKSPACE_ROOT;
+  const previousQuota = process.env.WORKSPACE_DEFAULT_QUOTA_BYTES;
+  process.env.WORKSPACE_ROOT = filesystem.basePath;
+  process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = '8';
+  try {
+    await workspaceQuota.reconcileUsage(userId, 6, 1);
+    await assert.rejects(() => saveWorkspaceText(filesystem, 'note.md', 'much longer',
+      readWorkspaceVersion(Buffer.from('before')), userId),
+    (error: unknown) => error instanceof WorkspaceEditError && error.status === 413);
+    assert.equal(await readFile(path, 'utf8'), 'before');
+  } finally {
+    if (previousRoot === undefined) delete process.env.WORKSPACE_ROOT;
+    else process.env.WORKSPACE_ROOT = previousRoot;
+    if (previousQuota === undefined) delete process.env.WORKSPACE_DEFAULT_QUOTA_BYTES;
+    else process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = previousQuota;
+  }
 });

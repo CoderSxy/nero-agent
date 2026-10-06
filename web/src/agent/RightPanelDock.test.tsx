@@ -28,4 +28,12 @@ describe('right panel dock', () => {
     expect(screen.queryByText('配置内容')).toBeNull();
     expect(screen.getByRole('button', { name: '收起文件管理面板' }).getAttribute('aria-expanded')).toBe('true');
   });
+
+  it('does not reopen during the exit when a closed panel is followed by another click', async () => {
+    dock();
+    fireEvent.click(screen.getByRole('button', { name: '收起 Config 面板' }));
+    fireEvent.click(screen.getByRole('button', { name: '打开文件管理面板' }));
+    expect(screen.queryByText('文件内容')).toBeNull();
+    await waitFor(() => expect(screen.getByText('文件内容')).toBeTruthy());
+  });
 });

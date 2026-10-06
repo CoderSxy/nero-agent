@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  optimizeDeps: { exclude: ['emf-converter'] },
   build: { rollupOptions: { external: ['emf-converter'] } },
   server: {
     proxy: {

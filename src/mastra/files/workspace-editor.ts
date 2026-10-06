@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto';
 import { lstat, realpath } from 'node:fs/promises';
 import { join, relative, resolve, sep } from 'node:path';
 import type { WorkspaceFilesystem } from '@mastra/core/workspace';
+import { workspaceQuota, QuotaExceededError } from '../workspace/quota';
+import { assertHostWritable, DiskProtectionError } from '../workspace/disk-protection';
 
 const MAX_EDIT_BYTES = 10 * 1024 * 1024;
 const pending = new Map<string, Promise<unknown>>();
@@ -45,7 +47,7 @@ async function assertExistingRegularFile(filesystem: WorkspaceFilesystem, path: 
 }
 
 export async function saveWorkspaceText(
-  filesystem: WorkspaceFilesystem, path: string, text: string, expectedEtag: string,
+  filesystem: WorkspaceFilesystem, path: string, text: string, expectedEtag: string, userId?: string,
 ): Promise<string> {
   if (!/^"[a-f0-9]{64}"$/.test(expectedEtag)) throw new WorkspaceEditError(400, '缺少有效的文件版本');
   if (text.includes('\0')) throw new WorkspaceEditError(400, '文件包含无效文本');
@@ -68,7 +70,23 @@ export async function saveWorkspaceText(
     if (current.length > MAX_EDIT_BYTES) throw new WorkspaceEditError(413, '文件超过在线编辑上限');
     if (!isWorkspaceText(current)) throw new WorkspaceEditError(409, '该文件不支持文本编辑');
     if (readWorkspaceVersion(current) !== expectedEtag) throw new WorkspaceEditError(412, '文件已被其他操作修改，请重新打开');
-    await filesystem.writeFile(path, next);
+    const growth = Math.max(0, next.length - current.length);
+    if (userId) {
+      try {
+        await assertHostWritable(growth);
+        if (growth) await workspaceQuota.reserve(userId, growth, 0);
+      } catch (error) {
+        if (error instanceof QuotaExceededError) throw new WorkspaceEditError(413, error.message);
+        if (error instanceof DiskProtectionError) throw new WorkspaceEditError(409, error.message);
+        throw error;
+      }
+    }
+    try { await filesystem.writeFile(path, next); }
+    catch (error) {
+      if (userId && growth) await workspaceQuota.release(userId, growth, 0);
+      throw error;
+    }
+    if (userId && next.length < current.length) await workspaceQuota.release(userId, current.length - next.length, 0);
     return readWorkspaceVersion(next);
   });
   pending.set(key, operation);
