@@ -1,0 +1,19 @@
+docs/superpowers/specs/2026-10-06-agent-right-panels-file-preview-design.md
+  s_e99936c994c5e0::t_c7f033957aa564 1-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "584c67f48cce49d98205e40c2dfda6e08ad0db03",
+  "prompts": {},
+  "sessions": {
+    "s_e99936c994c5e0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1116a-f6bb-73b2-82b3-bb0f577dcabf",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
