@@ -7,6 +7,7 @@ import { ThreadGuardError, type ThreadLookup } from '../auth/thread-guard';
 import { FilePathError, isUserFilesEnabled, relativeFilePath } from './policy';
 import { FileService, FileServiceError } from './service';
 import { ensureUserWorkspace } from '../workspace/manager';
+import { readWorkspaceVersion, saveWorkspaceText, WorkspaceEditError } from './workspace-editor';
 
 function filePathFromRequest(c: Context, threadId: string): string {
   const prefix = `/user-files/${threadId}/`;
@@ -19,7 +20,8 @@ function filePathFromRequest(c: Context, threadId: string): string {
 }
 
 function respond(c: Context, error: unknown) {
-  if (error instanceof FilePathError || error instanceof FileServiceError || error instanceof ThreadGuardError) {
+  if (error instanceof FilePathError || error instanceof FileServiceError || error instanceof ThreadGuardError ||
+    error instanceof WorkspaceEditError) {
     return c.json({ error: error.message }, error.status);
   }
   if (error instanceof Error && /Authentication is required/i.test(error.message)) {
@@ -130,6 +132,12 @@ async function currentWorkspace(c: Context): Promise<{ id: string; filesystem: W
 }
 
 export function createCurrentWorkspaceFileRoutes() {
+  function workspacePath(c: Context): string {
+    const prefix = '/current-workspace/files/';
+    const raw = c.req.path.startsWith(prefix) ? c.req.path.slice(prefix.length) : c.req.param('*') ?? '';
+    try { return relativeFilePath(decodeURIComponent(raw)); }
+    catch { throw new FilePathError(); }
+  }
   return [
     registerApiRoute('/current-workspace/files', {
       method: 'GET',
@@ -147,19 +155,36 @@ export function createCurrentWorkspaceFileRoutes() {
       handler: async c => {
         try {
           const workspace = await currentWorkspace(c);
-          const prefix = '/current-workspace/files/';
-          const raw = c.req.path.startsWith(prefix) ? c.req.path.slice(prefix.length) : c.req.param('*') ?? '';
-          let path: string;
-          try { path = relativeFilePath(decodeURIComponent(raw)); }
-          catch { throw new FilePathError(); }
+          const path = workspacePath(c);
           const data = await workspace.filesystem.readFile(path);
+          const bytes = typeof data === 'string' ? Buffer.from(data) : new Uint8Array(data);
           const name = path.split('/').at(-1) ?? 'download';
-          return new Response(typeof data === 'string' ? data : new Uint8Array(data), { status: 200, headers: {
+          return new Response(bytes, { status: 200, headers: {
             'content-type': 'application/octet-stream',
             'content-disposition': `attachment; filename="${name.replace(/["\r\n]/g, '')}"`,
             'x-content-type-options': 'nosniff',
             'cache-control': 'no-store',
+            etag: readWorkspaceVersion(bytes),
           } });
+        } catch (error) { return respond(c, error); }
+      },
+    }),
+    registerApiRoute('/current-workspace/files/*', {
+      method: 'PUT',
+      handler: async c => {
+        try {
+          const workspace = await currentWorkspace(c);
+          const path = workspacePath(c);
+          const contentType = c.req.header('content-type') ?? '';
+          if (!/^text\/plain(?:\s*;\s*charset=utf-8)?$/i.test(contentType))
+            throw new WorkspaceEditError(400, '只接受 UTF-8 文本');
+          const body = new Uint8Array(await c.req.arrayBuffer());
+          if (body.length > 10 * 1024 * 1024) throw new WorkspaceEditError(413, '文件超过在线编辑上限');
+          let text: string;
+          try { text = new TextDecoder('utf-8', { fatal: true }).decode(body); }
+          catch { throw new WorkspaceEditError(400, '文件包含无效 UTF-8 文本'); }
+          const etag = await saveWorkspaceText(workspace.filesystem, path, text, c.req.header('if-match') ?? '');
+          return c.json({ ok: true }, 200, { etag, 'cache-control': 'no-store' });
         } catch (error) { return respond(c, error); }
       },
     }),

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Hono } from 'hono';
@@ -96,4 +96,43 @@ test('workspace browsing rejects anonymous, non-admin and traversal requests', a
     { headers: { authorization: 'Bearer admin' } })).status, 400);
   assert.equal((await app.request('/current-workspace/files/missing.md',
     { headers: { authorization: 'Bearer user' } })).status, 404);
+});
+
+test('conditional save edits only the owned workspace and returns a new ETag', async () => {
+  const app = await appWithWorkspace();
+  const headers = { authorization: 'Bearer user' };
+  const path = '/current-workspace/files/projects/own.md';
+  const original = await app.request(path, { headers });
+  const etag = original.headers.get('etag');
+  assert.ok(etag);
+  const saved = await app.request(path, { method: 'PUT', headers: {
+    ...headers, 'content-type': 'text/plain; charset=utf-8', 'if-match': etag,
+  }, body: '# Changed' });
+  assert.equal(saved.status, 200);
+  assert.notEqual(saved.headers.get('etag'), etag);
+  assert.equal(await (await app.request(path, { headers })).text(), '# Changed');
+  const stale = await app.request(path, { method: 'PUT', headers: {
+    ...headers, 'content-type': 'text/plain; charset=utf-8', 'if-match': etag,
+  }, body: '# Stale' });
+  assert.equal(stale.status, 412);
+  assert.equal(await (await app.request(path, { headers })).text(), '# Changed');
+});
+
+test('save enforces Agent admin access and blocks traversal and symlinks', async () => {
+  const app = await appWithWorkspace();
+  const headers = { 'content-type': 'text/plain; charset=utf-8', 'if-match': '"old"' };
+  assert.equal((await app.request('/current-workspace/files/output/result.md?source=agent',
+    { method: 'PUT', headers: { ...headers, authorization: 'Bearer user' }, body: 'x' })).status, 403);
+  assert.equal((await app.request('/current-workspace/files/projects/own.md',
+    { method: 'PUT', headers, body: 'x' })).status, 401);
+  assert.equal((await app.request('/current-workspace/files/%2e%2e%2foutside',
+    { method: 'PUT', headers: { ...headers, authorization: 'Bearer user' }, body: 'x' })).status, 400);
+  const outside = join(process.env.WORKSPACE_ROOT!, 'outside.txt');
+  await writeFile(outside, 'outside');
+  const root = join(process.env.WORKSPACE_ROOT!, 'users', USER_ID, 'workspace');
+  await symlink(outside, join(root, 'link.txt'));
+  const linked = await app.request('/current-workspace/files/link.txt', { method: 'PUT',
+    headers: { ...headers, authorization: 'Bearer user' }, body: 'x' });
+  assert.notEqual(linked.status, 200);
+  assert.equal(await readFile(outside, 'utf8'), 'outside');
 });

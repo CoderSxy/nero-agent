@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { mkdtemp, writeFile, readFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { LocalFilesystem } from '@mastra/core/workspace';
+import { readWorkspaceVersion, saveWorkspaceText, WorkspaceEditError } from '../src/mastra/files/workspace-editor';
+
+async function fixture(content = 'before') {
+  const root = await mkdtemp(join(tmpdir(), 'workspace-editor-'));
+  const path = join(root, 'note.md');
+  await writeFile(path, content);
+  return { path, filesystem: new LocalFilesystem({ basePath: root, contained: true }) };
+}
+
+test('saves an existing text file only when its ETag matches', async () => {
+  const { path, filesystem } = await fixture();
+  const etag = readWorkspaceVersion(Buffer.from('before'));
+  const next = await saveWorkspaceText(filesystem, 'note.md', 'after', etag);
+  assert.equal(await readFile(path, 'utf8'), 'after');
+  assert.equal(next, readWorkspaceVersion(Buffer.from('after')));
+  await assert.rejects(() => saveWorkspaceText(filesystem, 'note.md', 'stale', etag),
+    (error: unknown) => error instanceof WorkspaceEditError && error.status === 412);
+  assert.equal(await readFile(path, 'utf8'), 'after');
+});
+
+test('rejects missing, binary, invalid and oversized text without creating or changing files', async () => {
+  const { filesystem } = await fixture();
+  const etag = readWorkspaceVersion(Buffer.from('before'));
+  await assert.rejects(() => saveWorkspaceText(filesystem, 'missing.md', 'new', etag),
+    (error: unknown) => error instanceof WorkspaceEditError && error.status === 404);
+  await filesystem.writeFile('binary.bin', Buffer.from([0, 1, 2]));
+  await assert.rejects(() => saveWorkspaceText(filesystem, 'binary.bin', 'text',
+    readWorkspaceVersion(Buffer.from([0, 1, 2]))),
+    (error: unknown) => error instanceof WorkspaceEditError && error.status === 409);
+  await assert.rejects(() => saveWorkspaceText(filesystem, 'note.md', 'bad\0text', etag),
+    (error: unknown) => error instanceof WorkspaceEditError && error.status === 400);
+  await assert.rejects(() => saveWorkspaceText(filesystem, 'note.md', 'x'.repeat(10 * 1024 * 1024 + 1), etag),
+    (error: unknown) => error instanceof WorkspaceEditError && error.status === 413);
+});
