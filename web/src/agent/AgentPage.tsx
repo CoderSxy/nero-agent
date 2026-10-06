@@ -10,6 +10,7 @@ import { AgentChat } from './AgentChat';
 import { ConfigPanel } from './ConfigPanel';
 import { RightPanelDock } from './RightPanelDock';
 import { WorkspaceFileTree } from './WorkspaceFileTree';
+import { WorkspaceFileOverlay } from './WorkspaceFileOverlay';
 import { getSelectableModels, type ModelRef, type SafeModel } from './model-catalog-client';
 import { getDefaultModels, readThreadModels, saveThreadModels, withThreadModels,
   type ModelSettings } from './model-settings';
@@ -35,6 +36,7 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
   const [messages, setMessages] = useState<MastraDBMessage[]>([]);
   const [pendingByThread, setPendingByThread] = useState<Record<string, PendingUserMessage[]>>({});
   const [filesRefreshVersion, setFilesRefreshVersion] = useState(0);
+  const [fileRequest, setFileRequest] = useState<{ path: string; id: number } | null>(null);
   const [loadingThread, setLoadingThread] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [agent, setAgent] = useState<GetAgentResponse | null>(null);
@@ -66,6 +68,7 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
   const configModels = selected
     ? { chatModel: names.get(selected.chatModel) ?? selected.chatModel,
       memoryModel: names.get(selected.memoryModel) ?? selected.memoryModel } : undefined;
+  const workspaceSource = agent?.workspaceId && agent.workspaceId !== 'user-workspace' ? 'agent' : 'personal';
   useEffect(() => {
     document.documentElement.classList.toggle('light', theme === 'light');
     try { localStorage.setItem('nero-agent-theme', theme); } catch { /* Storage may be disabled. */ }
@@ -156,11 +159,13 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
           }} /> :
         <div className="empty-chat"><h1>智能体</h1><p>开始一段新对话</p><button type="button"
           disabled={!canCreate} onClick={() => void create()}>新建会话</button></div>}
+      {fileRequest && <WorkspaceFileOverlay request={fileRequest} source={workspaceSource}
+        onClosed={() => setFileRequest(null)} onSaved={() => setFilesRefreshVersion(value => value + 1)} />}
     </section>
     <RightPanelDock config={<ConfigPanel agent={agent} memory={memory} loading={configLoading} error={configError}
       models={configModels} />}
-      files={<WorkspaceFileTree source={agent?.workspaceId && agent.workspaceId !== 'user-workspace' ? 'agent' : 'personal'}
-        workspaceId={agent?.workspaceId && agent.workspaceId !== 'user-workspace' ? agent.workspaceId : undefined}
-        refreshVersion={filesRefreshVersion} onOpenFile={() => {}} />} />
+      files={<WorkspaceFileTree source={workspaceSource}
+        workspaceId={workspaceSource === 'agent' ? agent?.workspaceId : undefined}
+        refreshVersion={filesRefreshVersion} onOpenFile={path => setFileRequest(current => ({ path, id: (current?.id ?? 0) + 1 }))} />} />
   </main>;
 }

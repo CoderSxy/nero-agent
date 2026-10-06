@@ -8,17 +8,26 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@aiden0z/pptx-renderer": "^1.3.0",
     "@mastra/client-js": "1.50.0",
     "@mastra/core": "1.71.0",
     "@mastra/playground-ui": "59.0.0",
     "@mastra/react": "1.6.3",
+    "@monaco-editor/react": "^4.7.0",
+    "@open-file-viewer/core": "^0.1.44",
+    "@open-file-viewer/react": "^0.1.44",
     "@tailwindcss/vite": "4.3.3",
     "@tanstack/react-query": "5.104.0",
     "lucide-react": "1.48.0",
+    "monaco-editor": "^0.52.2",
     "motion": "^13.1.0",
+    "pdfjs-dist": "^5.4.296",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "react-markdown": "^10.1.0",
+    "react-pdf": "^10.5.0",
     "react-router-dom": "7.6.2",
+    "remark-gfm": "^4.0.1",
     "tailwindcss": "4.3.3"
   },
   "devDependencies": {

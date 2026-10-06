@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: { rollupOptions: { external: ['emf-converter'] } },
   server: {
     proxy: {
       '/api': 'http://127.0.0.1:4111',

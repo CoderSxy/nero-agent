@@ -76,6 +76,45 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .private-form input:not([type='checkbox']) { width: 100%; min-width: 0; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 12px; }
 .private-check { display: flex; align-items: center; gap: 6px; }
 .agent-center { min-width: 0; position: relative; }
+.workspace-file-overlay { position: absolute; z-index: 4; inset: 0; display: flex; flex-direction: column; min-width: 0; background: var(--background); }
+.workspace-overlay-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 64px; padding: 10px 20px; border-bottom: 1px solid var(--border); }
+.workspace-overlay-header > div:first-child { display: flex; flex-direction: column; min-width: 0; }
+.workspace-overlay-header strong, .workspace-overlay-header small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workspace-overlay-header small { color: var(--muted-foreground); font-size: 11px; }
+.workspace-overlay-actions { display: flex; align-items: center; gap: 5px; flex: none; }
+.workspace-overlay-actions button { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; }
+.workspace-overlay-actions button:hover { background: var(--card); }
+.workspace-unsaved { color: var(--muted-foreground); font-size: 11px; }
+.workspace-overlay-error { margin: 8px 16px; padding: 8px; border-radius: 7px; background: color-mix(in srgb, var(--destructive) 10%, var(--background)); color: var(--destructive); font-size: 12px; }
+.workspace-overlay-body { flex: 1; min-height: 0; overflow: auto; }
+.workspace-overlay-body > p { padding: 20px; }
+.workspace-text-editor { display: flex; flex-direction: column; height: 100%; }
+.workspace-text-editor > :last-child { min-height: 0; flex: 1; }
+.workspace-preview-switch { display: flex; gap: 4px; padding: 7px 16px; border-bottom: 1px solid var(--border); }
+.workspace-preview-switch button { padding: 5px 10px; border-radius: 6px; font-size: 12px; }
+.workspace-preview-switch button[aria-pressed='true'] { background: var(--card); }
+.workspace-html-preview { width: 100%; height: 100%; border: 0; background: white; }
+.workspace-markdown-preview { overflow: auto; padding: 20px 30px; }
+.workspace-markdown-preview h1 { font-size: 25px; font-weight: 650; }
+.workspace-markdown-preview h2 { font-size: 20px; font-weight: 600; }
+.workspace-markdown-preview p, .workspace-markdown-preview ul, .workspace-markdown-preview ol { margin: 0 0 12px; line-height: 1.6; }
+.workspace-markdown-preview pre { overflow: auto; padding: 12px; border-radius: 8px; background: var(--card); }
+.workspace-markdown-preview code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.workspace-markdown-preview table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+.workspace-markdown-preview th, .workspace-markdown-preview td { border: 1px solid var(--border); padding: 6px 9px; text-align: left; }
+.workspace-image-preview { display: grid; place-items: center; min-height: 100%; padding: 20px; }
+.workspace-image-preview img { max-width: 100%; max-height: calc(100vh - 130px); object-fit: contain; }
+.workspace-pdf-preview, .workspace-pptx-preview { height: 100%; overflow: auto; padding: 12px; }
+.workspace-pdf-preview .react-pdf__Page { margin: 0 auto 12px; width: fit-content; }
+.workspace-preview-fallback { display: grid; place-content: center; justify-items: center; gap: 12px; height: 100%; }
+.workspace-preview-fallback button { padding: 7px 12px; border-radius: 7px; background: var(--foreground); color: var(--background); }
+.workspace-confirm-backdrop { position: absolute; z-index: 10; inset: 0; display: grid; place-items: center; background: #0007; }
+.workspace-confirm { width: min(92%, 420px); padding: 20px; border: 1px solid var(--border); border-radius: 12px; background: var(--popover); box-shadow: 0 16px 40px #0004; }
+.workspace-confirm h3 { margin: 0 0 8px; font-size: 17px; }
+.workspace-confirm p { margin: 0 0 20px; font-size: 13px; }
+.workspace-confirm > div { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 7px; }
+.workspace-confirm button { padding: 7px 10px; border: 1px solid var(--border); border-radius: 7px; font-size: 12px; }
+.workspace-confirm button:last-child { background: var(--foreground); color: var(--background); }
 .chat-shell { height: 100%; --chat-surface: var(--background); }
 .chat-shell::after { content: ''; flex: 0 1 0; transition: flex-grow 520ms cubic-bezier(.22, 1, .36, 1); }
 .chat-shell--empty::after { flex-grow: 1; }
