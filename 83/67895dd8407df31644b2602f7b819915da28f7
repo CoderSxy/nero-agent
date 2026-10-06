@@ -1,0 +1,26 @@
+tests/workspace-editor.test.ts
+  s_e99936c994c5e0::t_6feba8e59044eb 1-40
+tests/workspace-file-routes.test.ts
+  s_e99936c994c5e0::t_6feba8e59044eb 3,100-138
+src/mastra/files/workspace-editor.ts
+  s_e99936c994c5e0::t_ed6f3a1f2401d0 1-77
+src/mastra/files/routes.ts
+  s_e99936c994c5e0::t_ed6f3a1f2401d0 10,23-24,135-140,158,160,162,167,172-187
+  s_e99936c994c5e0::t_02b6d64981d457 188-190
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8367895dd8407df31644b2602f7b819915da28f7",
+  "prompts": {},
+  "sessions": {
+    "s_e99936c994c5e0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1116a-f6bb-73b2-82b3-bb0f577dcabf",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
