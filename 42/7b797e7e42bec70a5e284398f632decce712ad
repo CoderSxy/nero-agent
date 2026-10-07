@@ -1,0 +1,19 @@
+web/src/styles.css
+  s_e99936c994c5e0::t_0f87a9a9c9b01d 19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "427b797e7e42bec70a5e284398f632decce712ad",
+  "prompts": {},
+  "sessions": {
+    "s_e99936c994c5e0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1116a-f6bb-73b2-82b3-bb0f577dcabf",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
