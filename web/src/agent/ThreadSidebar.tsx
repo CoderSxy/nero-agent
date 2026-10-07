@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { CalendarDays, List, MoreHorizontal } from 'lucide-react';
+import { CalendarDays, List, MoreVertical } from 'lucide-react';
 import { ThreadList, ThreadListEmpty, ThreadListItems, ThreadListNewItem } from '@mastra/playground-ui/components/ThreadList';
 import type { Thread } from './thread-scope';
 import { ModelSettingsMenu, type Theme } from './ModelSettingsMenu';
@@ -91,7 +91,7 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
         });
         setMenuId(value => value === thread.id ? null : thread.id);
       }}>
-      <MoreHorizontal size={17} aria-hidden="true" />
+      <MoreVertical size={17} aria-hidden="true" />
     </button>
   </li>;
   return <aside className="agent-sidebar">
