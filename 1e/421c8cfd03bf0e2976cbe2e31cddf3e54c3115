@@ -1,0 +1,32 @@
+tests/workspace-file-routes.test.ts
+  s_e99936c994c5e0::t_f7eefa5d644ca9 122-140,143
+  s_e99936c994c5e0::t_60d04bfba19b74 11,144
+web/src/agent/WorkspaceFileOverlay.tsx
+  s_e99936c994c5e0::t_49b021e177593a 23,28,47,57,60-61,63,71,75,113-114,116-118
+web/src/agent/previews/ReadOnlyPreview.tsx
+  s_e99936c994c5e0::t_d56390a53c1547 27-39,43
+src/mastra/files/routes.ts
+  s_e99936c994c5e0::t_49b021e177593a 162-164,167
+web/src/agent/WorkspaceFileOverlay.test.tsx
+  s_e99936c994c5e0::t_83e0030acf3038 63-96
+tests/workspace-editor.test.ts
+  s_e99936c994c5e0::t_f7eefa5d644ca9 28-35
+src/mastra/files/workspace-editor.ts
+  s_e99936c994c5e0::t_49b021e177593a 64-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1e421c8cfd03bf0e2976cbe2e31cddf3e54c3115",
+  "prompts": {},
+  "sessions": {
+    "s_e99936c994c5e0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1116a-f6bb-73b2-82b3-bb0f577dcabf",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
