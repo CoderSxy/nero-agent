@@ -60,6 +60,40 @@ describe('workspace file overlay', () => {
     expect(saveWorkspaceFile).toHaveBeenCalledWith('note.txt', 'personal', 'draft', '"v1"');
   });
 
+  it('keeps edits made during a pending save unsaved', async () => {
+    let resolveSave!: (etag: string) => void;
+    saveWorkspaceFile.mockImplementationOnce(() => new Promise(resolve => { resolveSave = resolve; }));
+    const { onClosed } = overlay();
+    const editor = await screen.findByRole('textbox', { name: '文件内容' });
+    fireEvent.change(editor, { target: { value: 'submitted' } });
+    fireEvent.click(screen.getByRole('button', { name: '保存文件' }));
+    await waitFor(() => expect(saveWorkspaceFile).toHaveBeenCalledWith('note.txt', 'personal', 'submitted', '"v1"'));
+    fireEvent.change(editor, { target: { value: 'newer draft' } });
+    resolveSave('"v2"');
+    await waitFor(() => expect(screen.getByRole('button', { name: '保存文件' }).hasAttribute('disabled')).toBe(false));
+    expect(screen.getByText('未保存')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '关闭文件' }));
+    expect(screen.getByRole('dialog', { name: '未保存的修改' })).toBeTruthy();
+    expect(onClosed).not.toHaveBeenCalled();
+  });
+
+  it('continues to the latest file selected while saving a dirty file', async () => {
+    let resolveSave!: (etag: string) => void;
+    saveWorkspaceFile.mockImplementationOnce(() => new Promise(resolve => { resolveSave = resolve; }));
+    const onClosed = vi.fn(); const onSaved = vi.fn();
+    const { view } = overlay(onClosed, onSaved);
+    fireEvent.change(await screen.findByRole('textbox', { name: '文件内容' }), { target: { value: 'draft' } });
+    view.rerender(<WorkspaceFileOverlay request={{ path: 'other.md', id: 2 }} source="personal"
+      onClosed={onClosed} onSaved={onSaved} />);
+    fireEvent.click(screen.getByRole('button', { name: '保存并继续' }));
+    await waitFor(() => expect(saveWorkspaceFile).toHaveBeenCalledTimes(1));
+    view.rerender(<WorkspaceFileOverlay request={{ path: 'latest.md', id: 3 }} source="personal"
+      onClosed={onClosed} onSaved={onSaved} />);
+    resolveSave('"v2"');
+    await waitFor(() => expect(openWorkspaceFile).toHaveBeenCalledWith('latest.md', 'personal'));
+    expect(openWorkspaceFile).not.toHaveBeenCalledWith('other.md', 'personal');
+  });
+
   it('keeps a draft on save conflict and switches files only after the choice', async () => {
     saveWorkspaceFile.mockRejectedValue(new Error('文件已被修改'));
     const { view } = overlay();

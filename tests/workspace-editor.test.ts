@@ -25,6 +25,14 @@ test('saves an existing text file only when its ETag matches', async () => {
   assert.equal(await readFile(path, 'utf8'), 'after');
 });
 
+test('matches the raw UTF-8 bytes of existing non-ASCII text', async () => {
+  const { path, filesystem } = await fixture('中文 😀');
+  const etag = readWorkspaceVersion(Buffer.from('中文 😀'));
+  const next = await saveWorkspaceText(filesystem, 'note.md', '修改后 😀', etag);
+  assert.equal(await readFile(path, 'utf8'), '修改后 😀');
+  assert.equal(next, readWorkspaceVersion(Buffer.from('修改后 😀')));
+});
+
 test('rejects missing, binary, invalid and oversized text without creating or changing files', async () => {
   const { filesystem } = await fixture();
   const etag = readWorkspaceVersion(Buffer.from('before'));

@@ -20,10 +20,12 @@ export function WorkspaceFileOverlay({ request, source, onClosed, onSaved }: {
   const sequence = useRef(0);
   const currentFile = useRef<FileState | null>(null);
   const currentDraft = useRef('');
+  const pendingAction = useRef<Pending | null>(null);
   const dirty = Boolean(file && file.text !== undefined && file.text !== draft);
 
   function updateDraft(value: string) { currentDraft.current = value; setDraft(value); }
   function updateFile(value: FileState | null) { currentFile.current = value; setFile(value); }
+  function updatePending(value: Pending | null) { pendingAction.current = value; setPending(value); }
 
   async function load(path: string, selectedSource: WorkspaceSource) {
     const id = ++sequence.current;
@@ -42,7 +44,7 @@ export function WorkspaceFileOverlay({ request, source, onClosed, onSaved }: {
     const current = currentFile.current;
     if (current?.path === request.path && current.source === source) return;
     if (current && current.text !== undefined && current.text !== currentDraft.current) {
-      setPending({ type: 'switch', path: request.path, source });
+      updatePending({ type: 'switch', path: request.path, source });
       return;
     }
     void load(request.path, source);
@@ -52,12 +54,13 @@ export function WorkspaceFileOverlay({ request, source, onClosed, onSaved }: {
   async function save(): Promise<boolean> {
     const current = currentFile.current;
     if (!current || current.text === undefined || !current.etag || saving) return false;
+    const submitted = currentDraft.current;
     setSaving(true); setError(null);
     try {
-      const nextEtag = await saveWorkspaceFile(current.path, current.source, currentDraft.current, current.etag);
-      updateFile({ ...current, text: currentDraft.current, etag: nextEtag });
+      const nextEtag = await saveWorkspaceFile(current.path, current.source, submitted, current.etag);
+      updateFile({ ...current, text: submitted, etag: nextEtag });
       onSaved();
-      return true;
+      return currentDraft.current === submitted;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '保存文件失败');
       return false;
@@ -65,11 +68,11 @@ export function WorkspaceFileOverlay({ request, source, onClosed, onSaved }: {
   }
 
   function finish(choice: Pending) {
-    setPending(null);
+    updatePending(null);
     if (choice.type === 'close') onClosed();
     else void load(choice.path, choice.source);
   }
-  function close() { if (dirty) setPending({ type: 'close' }); else onClosed(); }
+  function close() { if (dirty) updatePending({ type: 'close' }); else onClosed(); }
   function download() {
     if (!file) return;
     const url = URL.createObjectURL(file.blob);
@@ -107,10 +110,12 @@ export function WorkspaceFileOverlay({ request, source, onClosed, onSaved }: {
       className="workspace-confirm">
       <h3>未保存的修改</h3><p>此文件已修改，是否保存？</p>
       <div>
-        <button type="button" disabled={saving} onClick={() => setPending(null)}>继续编辑</button>
-        <button type="button" disabled={saving} onClick={() => finish(pending)}>
+        <button type="button" disabled={saving} onClick={() => updatePending(null)}>继续编辑</button>
+        <button type="button" disabled={saving} onClick={() => finish(pendingAction.current ?? pending)}>
           {pending.type === 'close' ? '放弃修改并关闭' : '放弃修改并继续'}</button>
-        <button type="button" disabled={saving} onClick={() => void save().then(ok => { if (ok) finish(pending); })}>
+        <button type="button" disabled={saving} onClick={() => void save().then(ok => {
+          if (ok) finish(pendingAction.current ?? pending);
+        })}>
           {pending.type === 'close' ? '保存并关闭' : '保存并继续'}</button>
       </div>
     </div></div>}

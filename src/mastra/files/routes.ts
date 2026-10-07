@@ -159,9 +159,12 @@ export function createCurrentWorkspaceFileRoutes() {
           const data = await workspace.filesystem.readFile(path);
           const bytes = typeof data === 'string' ? Buffer.from(data) : new Uint8Array(data);
           const name = path.split('/').at(-1) ?? 'download';
+          const asciiName = name.replace(/[^\x20-\x7E]/g, '_').replace(/["\\]/g, '_');
+          const encodedName = encodeURIComponent(name).replace(/['()*]/g,
+            char => `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
           return new Response(bytes, { status: 200, headers: {
             'content-type': 'application/octet-stream',
-            'content-disposition': `attachment; filename="${name.replace(/["\r\n]/g, '')}"`,
+            'content-disposition': `attachment; filename="${asciiName}"; filename*=UTF-8''${encodedName}`,
             'x-content-type-options': 'nosniff',
             'cache-control': 'no-store',
             etag: readWorkspaceVersion(bytes),

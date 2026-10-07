@@ -8,6 +8,7 @@ import { RequestContext } from '@mastra/core/request-context';
 import { LocalFilesystem, Workspace } from '@mastra/core/workspace';
 import type { ApiRoute } from '@mastra/core/server';
 import * as fileRoutes from '../src/mastra/files/routes';
+import { readWorkspaceVersion } from '../src/mastra/files/workspace-editor';
 
 const ADMIN_ID = '11111111-1111-4111-8111-111111111111';
 const USER_ID = '22222222-2222-4222-8222-222222222222';
@@ -118,9 +119,29 @@ test('conditional save edits only the owned workspace and returns a new ETag', a
   assert.equal(await (await app.request(path, { headers })).text(), '# Changed');
 });
 
+test('reads and saves a Unicode filename and UTF-8 content', async () => {
+  const app = await appWithWorkspace();
+  const root = join(process.env.WORKSPACE_ROOT!, 'users', USER_ID, 'workspace', 'projects');
+  await writeFile(join(root, '中文.md'), '原文 😀');
+  const path = '/current-workspace/files/projects/%E4%B8%AD%E6%96%87.md';
+  const headers = { authorization: 'Bearer user' };
+  const original = await app.request(path, { headers });
+  assert.equal(original.status, 200);
+  assert.equal(await original.text(), '原文 😀');
+  assert.match(original.headers.get('content-disposition') ?? '', /filename\*=UTF-8''/);
+  const etag = original.headers.get('etag');
+  assert.ok(etag);
+  const saved = await app.request(path, { method: 'PUT', headers: {
+    ...headers, 'content-type': 'text/plain; charset=utf-8', 'if-match': etag,
+  }, body: '修改后 😀' });
+  assert.equal(saved.status, 200);
+  assert.equal(await readFile(join(root, '中文.md'), 'utf8'), '修改后 😀');
+});
+
 test('save enforces Agent admin access and blocks traversal and symlinks', async () => {
   const app = await appWithWorkspace();
-  const headers = { 'content-type': 'text/plain; charset=utf-8', 'if-match': '"old"' };
+  const headers = { 'content-type': 'text/plain; charset=utf-8',
+    'if-match': readWorkspaceVersion(Buffer.from('outside')) };
   assert.equal((await app.request('/current-workspace/files/output/result.md?source=agent',
     { method: 'PUT', headers: { ...headers, authorization: 'Bearer user' }, body: 'x' })).status, 403);
   assert.equal((await app.request('/current-workspace/files/projects/own.md',

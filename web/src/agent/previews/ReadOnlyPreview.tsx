@@ -24,11 +24,23 @@ function useBlobUrl(blob: Blob) {
 
 function PdfView({ url }: { url: string }) {
   const [pages, setPages] = useState(0);
-  return <div className="workspace-pdf-preview" aria-label="PDF 预览">
+  const container = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(() => Math.max(1, Math.min(window.innerWidth - 32, 850)));
+  useEffect(() => {
+    const target = container.current;
+    if (!target) return;
+    const measure = () => setWidth(Math.max(1, Math.min(target.clientWidth || window.innerWidth - 32, 850)));
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, []);
+  return <div ref={container} className="workspace-pdf-preview" aria-label="PDF 预览">
     <Document file={url} loading={<p>正在加载 PDF…</p>} error={<p>PDF 解析失败，请下载查看。</p>}
       onLoadSuccess={document => setPages(document.numPages)}>
       {Array.from({ length: pages }, (_, index) => <Page key={index + 1} pageNumber={index + 1}
-        width={Math.min(window.innerWidth - 400, 850)} renderTextLayer={false} renderAnnotationLayer={false} />)}
+        width={width} renderTextLayer={false} renderAnnotationLayer={false} />)}
     </Document>
   </div>;
 }

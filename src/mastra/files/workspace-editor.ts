@@ -61,8 +61,8 @@ export async function saveWorkspaceText(
     await assertExistingRegularFile(filesystem, path);
     let current: Uint8Array;
     try {
-      const read = await filesystem.readFile(path, { encoding: 'binary' });
-      current = typeof read === 'string' ? Buffer.from(read) : read;
+      const read = await filesystem.readFile(path);
+      current = typeof read === 'string' ? Buffer.from(read, 'utf8') : read;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new WorkspaceEditError(404, '文件不存在');
       throw error;
