@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 
 export type Theme = 'light' | 'dark';
 
@@ -20,7 +21,7 @@ export function ModelSettingsMenu({ theme, onThemeChange, user, onLogout }: {
     </div>}
     {user && <span className="settings-account" title={user.email}>{user.displayName}</span>}
     <button className="settings-trigger" type="button" aria-label="设置" aria-expanded={open} aria-haspopup="dialog"
-      onClick={() => setOpen(value => !value)}>设置 <span className="settings-chevron">{open ? '⌄' : '⌃'}</span></button>
+      onClick={() => setOpen(value => !value)}>设置 <ChevronDown className={`settings-chevron${open ? '' : ' is-closed'}`} size={14} aria-hidden="true" /></button>
     {confirmLogout && <div className="thread-confirm-backdrop"><div className="thread-confirm" role="alertdialog"
       aria-modal="true" aria-label="确认退出登录">
       <h2>退出登录</h2><p>确定退出当前账号吗？</p>

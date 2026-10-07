@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { MoreHorizontal } from 'lucide-react';
+import { CalendarDays, List, MoreHorizontal } from 'lucide-react';
 import { ThreadList, ThreadListEmpty, ThreadListItems, ThreadListNewItem } from '@mastra/playground-ui/components/ThreadList';
 import type { Thread } from './thread-scope';
 import { ModelSettingsMenu, type Theme } from './ModelSettingsMenu';
+import { formatThreadTime, groupThreadsByTime } from './thread-history';
 import type { CurrentUser } from '../App';
 
 export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSelect,
@@ -26,6 +27,7 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
   const [renameDraft, setRenameDraft] = useState('');
   const [renameError, setRenameError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [historyMode, setHistoryMode] = useState<'grouped' | 'flat'>('grouped');
   const cancelRef = useRef<HTMLButtonElement>(null);
   useEffect(() => { if (confirmId) cancelRef.current?.focus(); }, [confirmId]);
   useEffect(() => {
@@ -70,33 +72,48 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
     catch (cause) { setDeleteError(cause instanceof Error ? cause.message : '删除会话失败'); }
     finally { setDeleting(false); }
   }
+  const now = new Date();
+  const renderThread = (thread: Thread, showTime: boolean) => <li key={thread.id} className="thread-row group relative">
+    <button type="button" className="thread-select inline-flex h-control-md w-full min-w-0 cursor-pointer items-center justify-start rounded-xl border border-transparent bg-transparent px-3 pr-9 text-left text-label text-muted-foreground hover:text-foreground"
+      aria-current={currentId === thread.id ? 'page' : undefined}
+      onClick={() => { setMenuId(null); onSelect(thread.id); }}>
+      <span>{thread.title || '未命名会话'}</span>
+      {showTime && <small className="thread-time">{formatThreadTime(thread.updatedAt || thread.createdAt, now)}</small>}
+    </button>
+    <button type="button" className="thread-more absolute top-1/2 right-1 flex h-control-sm w-control-sm -translate-y-1/2 items-center justify-center rounded-full border border-transparent bg-transparent text-muted-foreground hover:bg-fill-subtle hover:text-foreground"
+      aria-label={`${thread.title || '未命名会话'} 的更多操作`}
+      aria-expanded={menuId === thread.id} aria-haspopup="menu"
+      onClick={event => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        setMenuPosition({
+          top: window.innerHeight - rect.bottom < 96 ? Math.max(4, rect.top - 88) : rect.bottom + 4,
+          left: Math.max(4, rect.right - 140),
+        });
+        setMenuId(value => value === thread.id ? null : thread.id);
+      }}>
+      <MoreHorizontal size={17} aria-hidden="true" />
+    </button>
+  </li>;
   return <aside className="agent-sidebar">
     <div className="brand">NERO <span>AGENT</span></div>
     <div className="thread-scroll" onScroll={() => setMenuId(null)}>
     <ThreadList aria-label="会话列表" embedded>
       <ThreadListNewItem render={<button type="button" className="new-thread-button" onClick={onNew}
         disabled={!canCreate} />}>新建会话</ThreadListNewItem>
+      <div className="thread-history-heading"><span>历史对话</span>
+        <button type="button" className="thread-history-toggle"
+          aria-label={historyMode === 'grouped' ? '切换为普通列表' : '切换为时间分组'}
+          title={historyMode === 'grouped' ? '切换为普通列表' : '切换为时间分组'}
+          onClick={() => setHistoryMode(mode => mode === 'grouped' ? 'flat' : 'grouped')}>
+          {historyMode === 'grouped' ? <List size={16} aria-hidden="true" /> : <CalendarDays size={16} aria-hidden="true" />}
+        </button>
+      </div>
       <ThreadListItems>
-        {threads.map(thread => <li key={thread.id} className="thread-row group relative">
-          <button type="button" className="thread-select inline-flex h-control-md w-full min-w-0 cursor-pointer items-center justify-start rounded-xl border border-transparent bg-transparent px-3 pr-9 text-left text-label text-muted-foreground hover:text-foreground"
-            aria-current={currentId === thread.id ? 'page' : undefined}
-            onClick={() => { setMenuId(null); onSelect(thread.id); }}>
-            <span>{thread.title || '未命名会话'}</span>
-          </button>
-          <button type="button" className="thread-more absolute top-1/2 right-1 flex h-control-sm w-control-sm -translate-y-1/2 items-center justify-center rounded-full border border-transparent bg-transparent text-muted-foreground hover:bg-fill-subtle hover:text-foreground"
-            aria-label={`${thread.title || '未命名会话'} 的更多操作`}
-            aria-expanded={menuId === thread.id} aria-haspopup="menu"
-            onClick={event => {
-              const rect = event.currentTarget.getBoundingClientRect();
-              setMenuPosition({
-                top: window.innerHeight - rect.bottom < 96 ? Math.max(4, rect.top - 88) : rect.bottom + 4,
-                left: Math.max(4, rect.right - 140),
-              });
-              setMenuId(value => value === thread.id ? null : thread.id);
-            }}>
-            <MoreHorizontal size={17} aria-hidden="true" />
-          </button>
-        </li>)}
+        {historyMode === 'flat' ? threads.map(thread => renderThread(thread, true))
+          : groupThreadsByTime(threads, now).map(group => <Fragment key={group.key}>
+            <li className="thread-group-heading">{group.label}</li>
+            {group.items.map(thread => renderThread(thread, false))}
+          </Fragment>)}
       </ThreadListItems>
       {!loading && threads.length === 0 && <ThreadListEmpty>暂无会话</ThreadListEmpty>}
     </ThreadList>

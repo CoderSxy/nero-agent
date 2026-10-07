@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, expect, it, vi } from 'vitest';
 import { ThreadSidebar } from './ThreadSidebar';
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.useRealTimers(); });
 
 it('keeps the logo and settings outside the scrolling conversation list', () => {
   const { container } = render(<ThreadSidebar threads={[]} loading={false} error={null}
@@ -23,6 +23,26 @@ it('shows a clean new-conversation action and marks the active thread', () => {
   expect(screen.queryByRole('button', { name: '＋ 新建会话' })).toBeNull();
   expect(screen.getByRole('button', { name: '当前会话' }).getAttribute('aria-current')).toBe('page');
   expect(screen.getByRole('button', { name: '其他会话' }).getAttribute('aria-current')).toBeNull();
+});
+
+it('starts grouped and switches between time groups and the ordinary list', () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date(2026, 9, 7, 12));
+  const threads = [
+    { id: 'a', title: '今天的会话', resourceId: 'agent', updatedAt: '2026-10-07T11:45:00' },
+    { id: 'b', title: '较早的会话', resourceId: 'agent', updatedAt: '2026-08-01T09:00:00' },
+  ] as never;
+  render(<ThreadSidebar threads={threads} currentId="a" loading={false} error={null}
+    onNew={vi.fn()} onSelect={vi.fn()} theme="dark" onThemeChange={vi.fn()} />);
+  expect(screen.getByText('今天')).toBeTruthy();
+  expect(screen.getByText('2026-08')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: '切换为普通列表' }));
+  expect(screen.queryByText('今天')).toBeNull();
+  expect(screen.queryByText('2026-08')).toBeNull();
+  expect(screen.getByText('15 分')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: '切换为时间分组' }));
+  expect(screen.getByText('今天')).toBeTruthy();
+  vi.useRealTimers();
 });
 
 it('shows a per-thread menu and requires confirmation before deletion', async () => {
