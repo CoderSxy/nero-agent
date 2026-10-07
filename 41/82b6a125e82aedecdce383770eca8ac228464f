@@ -1,0 +1,21 @@
+web/src/agent/ThreadSidebar.tsx
+  s_e99936c994c5e0::t_5731609edff793 3,94
+web/src/styles.css
+  s_e99936c994c5e0::t_5731609edff793 26-27,36-37,43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4182b6a125e82aedecdce383770eca8ac228464f",
+  "prompts": {},
+  "sessions": {
+    "s_e99936c994c5e0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1116a-f6bb-73b2-82b3-bb0f577dcabf",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
