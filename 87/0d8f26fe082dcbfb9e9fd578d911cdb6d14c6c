@@ -1,0 +1,31 @@
+web/src/agent/AgentPage.test.tsx
+  s_e99936c994c5e0::t_024ec6f1a26027 134
+web/src/agent/ModelSettingsMenu.test.tsx
+  s_e99936c994c5e0::t_dcc10873650195 23-38
+web/src/agent/ModelSettingsMenu.tsx
+  s_e99936c994c5e0::t_024ec6f1a26027 5,7,10,18-19,21,23-31
+web/src/agent/ThreadSidebar.test.tsx
+  s_e99936c994c5e0::t_dcc10873650195 17-27
+web/src/styles.css
+  s_e99936c994c5e0::t_5ac7c1352e565b 20,26,30-32,49-51,53,55-56
+  s_e99936c994c5e0::t_97372512c7e706 21
+  s_e99936c994c5e0::t_68ed787d441f9c 128-129
+web/src/agent/ThreadSidebar.tsx
+  s_e99936c994c5e0::t_024ec6f1a26027 77-78,81,141
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "870d8f26fe082dcbfb9e9fd578d911cdb6d14c6c",
+  "prompts": {},
+  "sessions": {
+    "s_e99936c994c5e0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1116a-f6bb-73b2-82b3-bb0f577dcabf",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
