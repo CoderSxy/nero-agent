@@ -74,10 +74,11 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
     <div className="brand">NERO <span>AGENT</span></div>
     <div className="thread-scroll" onScroll={() => setMenuId(null)}>
     <ThreadList aria-label="会话列表" embedded>
-      <ThreadListNewItem render={<button type="button" onClick={onNew} disabled={!canCreate} />}>＋ 新建会话</ThreadListNewItem>
+      <ThreadListNewItem render={<button type="button" className="new-thread-button" onClick={onNew}
+        disabled={!canCreate} />}>新建会话</ThreadListNewItem>
       <ThreadListItems>
         {threads.map(thread => <li key={thread.id} className="thread-row group relative">
-          <button type="button" className={`thread-select inline-flex h-control-md w-full min-w-0 cursor-pointer items-center justify-start rounded-xl border border-transparent bg-transparent px-3 pr-9 text-left text-label text-muted-foreground hover:bg-fill-subtle hover:text-foreground${currentId === thread.id ? ' bg-fill-hover text-foreground' : ''}`}
+          <button type="button" className="thread-select inline-flex h-control-md w-full min-w-0 cursor-pointer items-center justify-start rounded-xl border border-transparent bg-transparent px-3 pr-9 text-left text-label text-muted-foreground hover:text-foreground"
             aria-current={currentId === thread.id ? 'page' : undefined}
             onClick={() => { setMenuId(null); onSelect(thread.id); }}>
             <span>{thread.title || '未命名会话'}</span>
@@ -137,8 +138,6 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
         </div>
       </div>
     </div>}
-    <ModelSettingsMenu theme={theme} onThemeChange={onThemeChange} />
-    {user && <div className="account-footer"><span title={user.email}>{user.displayName}</span>
-      <button type="button" onClick={onLogout}>退出登录</button></div>}
+    <ModelSettingsMenu theme={theme} onThemeChange={onThemeChange} user={user} onLogout={onLogout} />
   </aside>;
 }

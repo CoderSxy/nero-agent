@@ -131,7 +131,7 @@ describe('Agent page model selection', () => {
     renderPage();
     await screen.findByTestId('models');
     fireEvent.click(screen.getByRole('button', { name: '模拟发送' }));
-    fireEvent.click(screen.getByRole('button', { name: '＋ 新建会话' }));
+    fireEvent.click(screen.getByRole('button', { name: '新建会话' }));
     await waitFor(() => expect(createThread).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('button', { name: '第一条' }));
     await waitFor(() => expect(screen.getByTestId('pending').textContent).toBe('刚发送的消息'));

@@ -14,6 +14,17 @@ it('keeps the logo and settings outside the scrolling conversation list', () => 
   expect(scroll?.contains(screen.getByRole('button', { name: '设置' }))).toBe(false);
 });
 
+it('shows a clean new-conversation action and marks the active thread', () => {
+  const threads = [{ id: 'a', title: '当前会话', resourceId: 'agent', updatedAt: '2026-10-05' },
+    { id: 'b', title: '其他会话', resourceId: 'agent', updatedAt: '2026-10-04' }] as never;
+  render(<ThreadSidebar threads={threads} currentId="a" loading={false} error={null}
+    onNew={vi.fn()} onSelect={vi.fn()} theme="dark" onThemeChange={vi.fn()} />);
+  expect(screen.getByRole('button', { name: '新建会话' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: '＋ 新建会话' })).toBeNull();
+  expect(screen.getByRole('button', { name: '当前会话' }).getAttribute('aria-current')).toBe('page');
+  expect(screen.getByRole('button', { name: '其他会话' }).getAttribute('aria-current')).toBeNull();
+});
+
 it('shows a per-thread menu and requires confirmation before deletion', async () => {
   const onDelete = vi.fn().mockResolvedValue(undefined);
   const threads = [{ id: 'a', title: '会话 A', resourceId: 'agent', updatedAt: '2026-10-05' }] as never;
