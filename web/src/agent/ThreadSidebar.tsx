@@ -74,7 +74,7 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
   }
   const now = new Date();
   const renderThread = (thread: Thread, showTime: boolean) => <li key={thread.id} className="thread-row group relative">
-    <button type="button" className="thread-select inline-flex h-control-md w-full min-w-0 cursor-pointer items-center justify-start rounded-xl border border-transparent bg-transparent px-3 pr-9 text-left text-label text-muted-foreground hover:text-foreground"
+    <button type="button" className="thread-select inline-flex h-control-md w-full min-w-0 cursor-pointer items-center justify-start rounded-xl border border-transparent bg-transparent px-3 text-left text-label text-muted-foreground hover:text-foreground"
       aria-current={currentId === thread.id ? 'page' : undefined}
       onClick={() => { setMenuId(null); onSelect(thread.id); }}>
       <span>{thread.title || '未命名会话'}</span>

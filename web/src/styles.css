@@ -29,15 +29,16 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .brand span { font-weight: 400; color: var(--muted-foreground); }
 .thread-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 0 12px; }
 .sidebar-note { padding: 8px 14px; }
-.thread-history-heading { display: flex; align-items: center; justify-content: space-between; min-height: 32px; padding: 2px 8px; color: var(--muted-foreground); font-size: 12px; font-weight: 600; }
+.thread-history-heading { display: flex; align-items: center; justify-content: space-between; min-height: 32px; padding: 2px 8px; color: color-mix(in srgb, var(--foreground) 76%, var(--sidebar)); font-size: 12px; font-weight: 700; letter-spacing: .02em; }
 .thread-history-toggle { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; color: var(--muted-foreground); opacity: 0; transition: opacity .16s, background-color .16s; }
 .thread-history-heading:hover .thread-history-toggle, .thread-history-toggle:focus-visible { opacity: 1; }
 .thread-history-toggle:hover { background: var(--card); color: var(--foreground); }
 .thread-group-heading { padding: 4px 8px; color: var(--thread-history-meta); font-size: 11px; font-weight: 500; line-height: 16px; list-style: none; }
 .thread-time { flex: none; padding-right: 2px; color: var(--thread-history-meta); font-size: 11px; font-weight: 500; }
-.new-thread-button { display: flex; justify-content: center; margin: 4px 0 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--foreground); font-weight: 600; box-shadow: 0 1px 3px #0001; }
+.new-thread-button { display: flex; justify-content: center; margin: 4px 0 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--foreground); font-weight: 600; box-shadow: 0 1px 3px #0001; }
 .new-thread-button:hover { background: color-mix(in srgb, var(--foreground) 8%, var(--card)); }
-.thread-select { min-height: 40px; padding-left: 8px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+.thread-select { min-height: 40px; padding-left: 8px; padding-right: 4px; border-radius: 8px; font-size: 13px; font-weight: 600; transition: padding-right .2s ease, background-color .2s ease; }
+.thread-row:hover .thread-select, .thread-row:focus-within .thread-select { padding-right: 32px; }
 .thread-select:hover, .thread-select[aria-current='page'] { background: color-mix(in srgb, var(--foreground) 10%, var(--sidebar)); color: var(--foreground); }
 .thread-select span { display: block; min-width: 0; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .thread-more { opacity: 0; transition: opacity .2s ease; }
