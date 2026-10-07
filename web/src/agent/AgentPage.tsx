@@ -137,7 +137,8 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
     <section className="agent-center">
       {notice && <div role="alert" className="notice">{notice}</div>}
       {loadingThread ? <div className="empty-chat">加载会话中…</div> : threadId && !notice ?
-        <AgentChat key={threadId} threadId={threadId} resourceId={user.id} initialMessages={messages} models={selected}
+        <AgentChat key={threadId} title={list.threads.find(thread => thread.id === threadId)?.title || '未命名会话'}
+          threadId={threadId} resourceId={user.id} initialMessages={messages} models={selected}
           catalog={catalog ?? []} modelRef={selected?.chatModel} onModelChange={selectComposerModel}
           modelDisabled={settingsSaving} modelError={settingsError}
           sendBlockedReason={sendBlockedReason} onMessageSent={message => {

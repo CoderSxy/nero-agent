@@ -8,6 +8,7 @@ import type { PendingUserMessage } from './pending-user-message';
 const sendMessage = vi.fn();
 const cancelRun = vi.fn();
 const approveToolCall = vi.fn();
+const uploadUserFile = vi.hoisted(() => vi.fn());
 let chatOptions: { enableThreadSignals?: boolean } | undefined;
 let mockRunning = false;
 const chatRef = 'public:11111111-1111-4111-8111-111111111111' as const;
@@ -27,6 +28,7 @@ vi.mock('@mastra/react', () => ({ useChat: (options: { enableThreadSignals?: boo
     isRunning: mockRunning, sendMessage, cancelRun, toolCallApprovals: {}, approveToolCall, declineToolCall: vi.fn(),
   };
 } }));
+vi.mock('./client', () => ({ AGENT_ID: 'agent', uploadUserFile, fetchUserFile: vi.fn() }));
 afterEach(() => { cleanup(); vi.clearAllMocks(); vi.unstubAllGlobals(); mockRunning = false; mockMessages =
   [{ id: 'partial', role: 'assistant', content: { format: 2, parts: [{ type: 'text', text: '部分回复' }] } }]; });
 
@@ -92,6 +94,53 @@ describe('Agent conversation', () => {
     fireEvent.click(select);
     fireEvent.click(screen.getByRole('option', { name: /个人模型/ }));
     expect(change).toHaveBeenCalledWith(memoryRef);
+  });
+  it('shows the selected conversation title in the top bar', () => {
+    render(<AgentChat title="一个很长的会话标题" threadId="thread-1" resourceId="agent"
+      initialMessages={[]} onMessageSent={vi.fn()} models={models} />);
+    expect(screen.getByText('一个很长的会话标题')).toHaveProperty('title', '一个很长的会话标题');
+    expect(screen.queryByText('智能体对话')).toBeNull();
+  });
+  it('shows a selected upload beside the add icon inside the composer', async () => {
+    let finishUpload!: (value: { path: string }) => void;
+    uploadUserFile.mockImplementationOnce(() => new Promise(resolve => { finishUpload = resolve; }));
+    const { container } = render(<AgentChat threadId="thread-1" resourceId="agent"
+      initialMessages={[]} onMessageSent={vi.fn()} models={models} />);
+    const actions = container.querySelector('[data-slot="composer-actions"]')!;
+    const add = screen.getByRole('button', { name: '添加文件' });
+    expect(actions.contains(add)).toBe(true);
+    expect(actions.contains(screen.getByRole('button', { name: '发送' }))).toBe(true);
+    const file = new File(['notes'], 'notes.txt', { type: 'text/plain' });
+    fireEvent.change(screen.getByLabelText('选择文件'), { target: { files: [file] } });
+    expect(screen.getByText('notes.txt')).toBeTruthy();
+    expect(screen.queryByText('上传到当前会话')).toBeNull();
+    finishUpload({ path: 'uploads/notes.txt' });
+    await waitFor(() => expect(screen.getByRole('button', { name: '下载 notes.txt' })).toBeTruthy());
+  });
+  it('follows a growing streamed reply only while the reader is at the bottom', () => {
+    const observers: Array<{ target: Element; notify: () => void }> = [];
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(private notify: () => void) {}
+      observe(target: Element) { observers.push({ target, notify: this.notify }); }
+      disconnect() {}
+    });
+    mockRunning = true;
+    const { container } = render(<AgentChat threadId="thread-1" resourceId="agent"
+      initialMessages={[]} onMessageSent={vi.fn()} models={models} />);
+    const viewport = container.querySelector('[data-slot="message-scroller-viewport"]') as HTMLElement;
+    const content = container.querySelector('[data-slot="message-scroller-content"]') as HTMLElement;
+    let height = 600;
+    Object.defineProperty(viewport, 'clientHeight', { configurable: true, value: 200 });
+    Object.defineProperty(viewport, 'scrollHeight', { configurable: true, get: () => height });
+    const resized = () => observers.filter(item => item.target === content).forEach(item => item.notify());
+    resized();
+    expect(viewport.scrollTop).toBe(400);
+    viewport.scrollTop = 100; fireEvent.scroll(viewport);
+    height = 800; resized();
+    expect(viewport.scrollTop).toBe(100);
+    viewport.scrollTop = 600; fireEvent.scroll(viewport);
+    height = 900; resized();
+    expect(viewport.scrollTop).toBe(700);
   });
   it('waits for a model change to save before allowing a send', () => {
     render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]} onMessageSent={vi.fn()}

@@ -21,7 +21,8 @@ describe('Composer run controls', () => {
     const select = screen.getByRole('combobox', { name: '模型' });
     const send = screen.getByRole('button', { name: '发送' });
     expect(actions.firstElementChild).toBe(select);
-    expect(actions.lastElementChild).toBe(send);
+    expect(actions.lastElementChild?.lastElementChild).toBe(send);
+    expect(screen.getByRole('button', { name: '添加文件' }).nextElementSibling).toBe(send);
     expect(select.textContent).toContain('默认模型');
     expect(send.querySelector('svg')).toBeTruthy();
     expect(send.textContent).toBe('');

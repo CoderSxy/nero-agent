@@ -39,14 +39,16 @@ vi.mock('./use-thread-list', () => ({ useThreadList: () => ({
   threads: threadItems, loading: false, error: null, refresh: vi.fn(), createThread, deleteThread,
   previewFirstMessageTitle, confirmFirstMessageTitle, discardFirstMessageTitle,
 }) }));
-vi.mock('./AgentChat', () => ({ AgentChat: ({ models, sendBlockedReason, catalog, modelRef, onModelChange,
+vi.mock('./AgentChat', () => ({ AgentChat: ({ title, models, sendBlockedReason, catalog, modelRef, onModelChange,
   modelError, pendingUserMessages, onMessageSubmitted, onFilesChanged }: {
+  title?: string;
   models: { chatModel: string; memoryModel: string } | null; sendBlockedReason?: string | null;
   catalog?: Array<{ ref: string; displayName: string }>; modelRef?: string; onModelChange?: (ref: string) => void;
   modelError?: string | null; pendingUserMessages?: PendingUserMessage[];
   onMessageSubmitted?: (message: PendingUserMessage) => void;
   onFilesChanged?: () => void;
 }) => <div data-testid="models">{models ? `${models.chatModel}|${models.memoryModel}` : 'none'}
+  <span data-testid="chat-title">{title}</span>
   <span data-testid="blocked">{sendBlockedReason ?? ''}</span>
   <span data-testid="pending">{pendingUserMessages?.map(message => message.text).join('|')}</span>
   <button type="button" onClick={() => onMessageSubmitted?.({ id: 'local', text: '刚发送的消息',
@@ -83,6 +85,11 @@ function renderPage(path = '/agent/thread-1') {
 }
 
 describe('Agent page model selection', () => {
+  it('passes the selected sidebar title to the conversation header', async () => {
+    threadItems = [{ id: 'thread-1', title: '和左侧一致的会话标题', resourceId: 'agent', updatedAt: '' }];
+    renderPage();
+    expect(await screen.findByTestId('chat-title')).toHaveProperty('textContent', '和左侧一致的会话标题');
+  });
   it('updates the workspace file list after the conversation creates a file', async () => {
     const fetch = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ files: [] }), { status: 200 }))
