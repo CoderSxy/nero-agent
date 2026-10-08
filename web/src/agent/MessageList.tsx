@@ -5,6 +5,7 @@ import { MarkdownRenderer } from '@mastra/playground-ui/components/MarkdownRende
 import { ToolCall, ToolCallTrigger, ToolCallHeader, ToolCallContent, ToolCallMono } from '@mastra/playground-ui/components/ai/tool-call';
 import { ToolApproval } from '@mastra/playground-ui/components/ai/tool-approval';
 import { AskUser } from '@mastra/playground-ui/components/ai/ask-user';
+import { Globe2, Wrench, Terminal, LoaderCircle } from 'lucide-react';
 import { messageParts, streamError, summarize, type ToolPart } from './message-parts';
 import { isUserMessage } from './pending-user-message';
 
@@ -41,6 +42,25 @@ function settled(state: string) {
   return state === 'result' || state === 'output-available' || state === 'output-error' || state === 'output-denied';
 }
 
+function toolPresentation(name: string) {
+  if (/search|browse/i.test(name)) return { label: 'Search the web', Icon: Globe2 };
+  if (/fetch/i.test(name)) return { label: 'Web fetch', Icon: Wrench };
+  if (/execute|command|shell/i.test(name)) return { label: 'Run command', Icon: Terminal };
+  return { label: name.replaceAll('_', ' '), Icon: Wrench };
+}
+
+function toolDetail(name: string, args: unknown) {
+  const input = record(args);
+  const value = /search|browse/i.test(name) ? input?.query ?? input?.searchQuery :
+    /fetch/i.test(name) ? input?.url : undefined;
+  return typeof value === 'string' ? value : null;
+}
+
+function formatTokens(tokens?: number) {
+  if (tokens === undefined) return '';
+  return ` ~${tokens >= 1000 ? `${Number((tokens / 1000).toFixed(1))}k` : tokens} tokens`;
+}
+
 export function MessageList({ messages, isRunning, error, onApprove, onDecline, onAnswer, approvals = {},
   pendingApprovalIds }: {
   messages: MastraDBMessage[]; isRunning: boolean; error: string | null;
@@ -68,8 +88,23 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
   return <div className="message-list" aria-live="polite">
     {messages.map(message => {
       const parts = messageParts(message);
-      return <Message key={message.id} from={isUserMessage(message) ? 'user' : 'assistant'}>
+      const runningProcess = isRunning && message === messages.at(-1) &&
+        parts.some(part => part.kind === 'reasoning' || part.kind === 'tool' || part.kind === 'observation');
+      return <Message key={message.id} from={isUserMessage(message) ? 'user' : 'assistant'}
+        className={runningProcess ? 'process-message process-message--running' : undefined}>
         {parts.map((part, index) => {
+          if (part.kind === 'observation') return <div key={index} className="observation-badge"
+            data-state={part.state} role={part.state === 'running' ? 'status' : undefined}>
+            {part.state === 'running' && <LoaderCircle size={14} aria-hidden="true" />}
+            <span aria-hidden="true">◎</span>
+            {part.state === 'running' ? 'Observing' : 'Observed'}{formatTokens(part.tokens)}
+          </div>;
+          if (part.kind === 'reasoning') return <details key={index} className="process-reasoning" open>
+            <summary className={part.streaming ? 'process-reasoning__streaming' : undefined}>Reasoning</summary>
+            <div className="process-reasoning__content">
+              <MarkdownRenderer streaming={part.streaming}>{part.redacted ? 'Reasoning was redacted by the provider.' : part.text}</MarkdownRenderer>
+            </div>
+          </details>;
           if (part.kind === 'text') {
             const errorText = message.role === 'assistant' ? streamError(part.text) : null;
             return errorText ? <p key={index} role="alert" className="error">回复未完成：{errorText}</p> :
@@ -88,11 +123,16 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
               onSubmit={value => void answer(tool.id, value)} />;
           }
           const unresolved = !settled(tool.state);
+          const { label, Icon } = toolPresentation(tool.name);
+          const detail = toolDetail(tool.name, tool.args);
           const needsApproval = unresolved && (tool.state === 'approval-requested' ||
             !!interaction(message, 'requireApprovalMetadata', tool) || pendingApprovalIds?.has(tool.id));
           return <div key={`${tool.id}-${index}`} className="tool-row">
-          <ToolCall defaultOpen={tool.state !== 'result'} status={tool.state === 'call' && isRunning ? 'running' : 'idle'}>
-            <ToolCallTrigger><ToolCallHeader>{tool.name}</ToolCallHeader></ToolCallTrigger>
+          <ToolCall defaultOpen={needsApproval} status={tool.state === 'call' && isRunning ? 'running' : 'idle'}>
+            <ToolCallTrigger><ToolCallHeader><Icon size={16} aria-hidden="true" />
+              <span>{label}</span>{detail && <span className="tool-detail">{detail}</span>}
+              {tool.state === 'call' && isRunning && <LoaderCircle className="tool-progress" size={14} aria-hidden="true" />}
+            </ToolCallHeader></ToolCallTrigger>
             <ToolCallContent><ToolCallMono copyText={summarize(tool.args)}>{summarize(tool.args)}</ToolCallMono>
               {tool.result !== undefined && <ToolCallMono copyText={summarize(tool.result)}>{summarize(tool.result)}</ToolCallMono>}
             </ToolCallContent>
@@ -106,9 +146,13 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
           </ToolApproval>}
           </div>;
         })}
+        {runningProcess && !parts.some(part => part.kind === 'observation' && part.state === 'running') &&
+          <p className="process-status" role="status"><LoaderCircle size={14} aria-hidden="true" />正在处理…</p>}
       </Message>;
     })}
-    {isRunning && <p className="run-status">正在回复…</p>}
+    {isRunning && !messages.some(message => message === messages.at(-1) && messageParts(message)
+      .some(part => part.kind === 'reasoning' || part.kind === 'tool' || part.kind === 'observation')) &&
+      <p className="run-status" role="status"><LoaderCircle size={14} aria-hidden="true" />正在回复…</p>}
     {error && <p role="alert" className="error">回复未完成：{error}</p>}
   </div>;
 }

@@ -79,6 +79,8 @@ npm run dev
 
 独立页面右侧“工作区”展示当前 Agent 实际使用的工作区目录树，包含所有层级的目录和文件，并可刷新、下载。个人工作区使用 `GET /current-workspace/files` 和 `GET /current-workspace/files/*`；本地回退的 `agent-workspace` 使用相同路径加 `?source=agent`，仅管理员可访问。文件列表是整个工作区的内容，不局限于当前会话。启用个人工作区时应将 `WORKSPACE_ROOT` 指向服务进程可写的持久目录。
 
+本地开发要让 Agent 实际保存文件，可在被 Git 忽略的 `.env` 中设置 `WORKSPACE_ROOT=<项目绝对路径>/.local-workspaces`、`WORKSPACE_RESOLVER_ENABLED=true` 和 `USER_FILES_ENABLED=true`，然后重启 `npm run dev`。`write_file` 只需要相对路径和内容；会话 ID 从 Agent 运行上下文获取，文件保存到当前用户当前会话目录。部署环境应使用独立的持久化目录，并按 [ECS 工作区与沙箱发布](docs/deployment/workspace-sandbox-ecs.md) 完成门禁后再启用。
+
 PostgreSQL 保存用户、角色、权限、登录会话，以及 Mastra 的会话记忆等数据。`app_permissions` 与 `app_role_permissions` 目前只建表，细粒度权限数据留待后续迭代。开发环境的可观测性仍使用 DuckDB；正式部署时应按流量改为 PostgreSQL 或 ClickHouse。定时任务会持续消耗模型用量，直到暂停。
 
 ## 修改项目

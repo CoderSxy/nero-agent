@@ -149,6 +149,26 @@ test('authorizeThreadRoute allows the owner and skips routes without a threadId'
   assert.equal(create.nextCalled, true);
 });
 
+test('a first stream may create its authenticated user thread', async () => {
+  const initial = await runGuard({
+    method: 'POST',
+    path: '/api/agents/agent/stream',
+    user: user(USER_A),
+    body: { memory: { thread: THREAD_A, resource: USER_B } },
+    threads: [],
+  });
+  assert.equal(initial.nextCalled, true);
+  assert.equal(initial.result, undefined);
+
+  const missingRead = await runGuard({
+    method: 'GET',
+    path: `/api/memory/threads/${THREAD_A}`,
+    user: user(USER_A),
+    threads: [],
+  });
+  assert.equal(missingRead.result?.status, 404);
+});
+
 test('authorizeThreadRoute calls a Hono query method with its request receiver', async () => {
   const request = {
     method: 'GET',
@@ -192,6 +212,40 @@ test('thread authorization validates bearer when requestContext has no user yet'
   async token => token === 'valid-token' ? user(USER_A) : null);
   assert.equal(reached, true);
   assert.equal(requestContext.get(MASTRA_USER_KEY)?.id, USER_A);
+});
+
+test('Studio thread authorization prefers its session cookie over a stale bearer', async () => {
+  const requestContext = new RequestContext();
+  const raw = new Request(`http://localhost/api/memory/threads/${THREAD_A}`, {
+    headers: {
+      authorization: 'Bearer stale-token',
+      cookie: 'nero_studio_session=valid-token',
+      'x-mastra-client-type': 'studio',
+    },
+  });
+  let reached = false;
+  const result = await authorizeThreadRoute.handler({
+    req: { method: 'GET', path: `/api/memory/threads/${THREAD_A}`, raw, query: {} },
+    get: (key: string) => key === 'requestContext' ? requestContext : undefined,
+  }, async () => { reached = true; }, lookup([{ id: THREAD_A, resourceId: USER_A }]),
+  async token => token === 'valid-token' ? { ...user(USER_A), roles: ['admin'] } : null);
+  assert.equal(result, undefined);
+  assert.equal(reached, true);
+  assert.equal(requestContext.get(MASTRA_USER_KEY)?.id, USER_A);
+});
+
+test('thread authorization does not accept a Studio cookie without the Studio header', async () => {
+  const raw = new Request(`http://localhost/api/memory/threads/${THREAD_A}`, {
+    headers: { cookie: 'nero_studio_session=valid-token' },
+  });
+  let reached = false;
+  const result = await authorizeThreadRoute.handler({
+    req: { method: 'GET', path: `/api/memory/threads/${THREAD_A}`, raw, query: {} },
+    get: () => undefined,
+  }, async () => { reached = true; }, lookup([{ id: THREAD_A, resourceId: USER_A }]),
+  async token => token === 'valid-token' ? { ...user(USER_A), roles: ['admin'] } : null);
+  assert.equal(result?.status, 401);
+  assert.equal(reached, false);
 });
 
 test('thread authorization rejects an invalid bearer when requestContext has no user', async () => {

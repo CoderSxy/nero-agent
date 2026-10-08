@@ -12,6 +12,28 @@ const pendingMessage = { id: 'a', role: 'assistant', content: { format: 2, parts
 ] } };
 
 describe('message tools and stream state', () => {
+  it('shows live reasoning and a bordered running process', () => {
+    const message = { id: 'live', role: 'assistant', content: { format: 2, parts: [
+      { type: 'reasoning', reasoning: '正在规划搜索', state: 'streaming' },
+      { type: 'tool-invocation', toolInvocation: { state: 'call', toolCallId: 'search', toolName: 'tavily_search', args: { query: '苏州天气' } } },
+    ] } };
+    const { container } = render(<MessageList messages={[message] as never} isRunning error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+    expect(screen.getByText('Reasoning')).toBeTruthy();
+    expect(screen.getByText('正在规划搜索')).toBeTruthy();
+    expect(screen.getByText('苏州天气')).toBeTruthy();
+    expect(container.querySelector('.process-message--running')).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toContain('正在处理');
+  });
+  it('shows an observing badge only for an observation marker', () => {
+    const message = { id: 'observing', role: 'assistant', content: { format: 2, parts: [
+      { type: 'data-om-observation-start', data: { tokensToObserve: 42600 } },
+    ] } };
+    render(<MessageList messages={[message] as never} isRunning error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+    expect(screen.getByText('Observing ~42.6k tokens')).toBeTruthy();
+    expect(screen.queryByText('正在处理…')).toBeNull();
+  });
   it('renders a saved user signal as a user bubble', () => {
     const signal = { id: 'signal-1', role: 'signal', type: 'user', content: { format: 2,
       metadata: { signal: { type: 'user' } }, parts: [{ type: 'text', text: '刚发送的消息' }] } };

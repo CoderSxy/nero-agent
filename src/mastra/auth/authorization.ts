@@ -1,6 +1,7 @@
 import { authContextFromUser, trustedAuth, type AuthContext } from './auth-context';
 import { assertThreadOwned, ThreadGuardError, type ThreadLookup } from './thread-guard';
 import { getUserByToken, type AuthUser } from './service';
+import { studioAuth } from './studio';
 import type { Context, Next } from 'hono';
 import { RequestContext } from '@mastra/core/request-context';
 
@@ -97,16 +98,28 @@ export const authorizeThreadRoute = {
         }
       }
       if (!auth) {
-        const token = context.req.raw?.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1];
+        const raw = context.req.raw;
+        const isStudio = raw?.headers.get('x-mastra-client-type')?.toLowerCase() === 'studio';
+        const bearer = raw?.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1];
+        const token = (isStudio && raw ? studioAuth.getSessionIdFromRequest(raw) : '') || bearer;
         if (!token) throw new ThreadGuardError(401, 'Authentication is required');
         const user = await authenticate(token);
-        if (!user) throw new ThreadGuardError(401, 'Authentication is required');
+        if (!user || (isStudio && !user.roles.includes('admin'))) {
+          throw new ThreadGuardError(401, 'Authentication is required');
+        }
         auth = authContextFromUser(user);
         requestContext ??= new RequestContext();
         requestContext.set('mastra__user', user);
       }
       if (!requestContext) throw new ThreadGuardError(401, 'Authentication is required');
-      await assertThreadOwned(auth, threadId, lookup ?? await lookupFromContext(context, requestContext));
+      const threadLookup = lookup ?? await lookupFromContext(context, requestContext);
+      const isInitialStream = method === 'POST' && /^\/api\/agents\/[^/]+\/stream$/.test(path);
+      if (isInitialStream && !(await threadLookup.getThreadById({ threadId }))) {
+        // Mastra creates this thread during the first stream and binds its resource to the authenticated user.
+        await next();
+        return;
+      }
+      await assertThreadOwned(auth, threadId, threadLookup);
       await next();
     } catch (error) {
       if (error instanceof ThreadGuardError) {

@@ -6,10 +6,13 @@ import type { Mastra } from '@mastra/core/mastra';
 import type { RequestContext } from '@mastra/core/request-context';
 import { FileService } from './service';
 
-const pathInput = z.object({
-  threadId: z.string().min(1),
-  path: z.string().min(1),
-});
+const pathInput = z.object({ path: z.string().min(1) });
+
+function agentThreadId(context: { agent?: { threadId?: string } }): string {
+  const threadId = context.agent?.threadId;
+  if (!threadId) throw new Error('Agent thread is required for file operations');
+  return threadId;
+}
 
 function serviceFrom(context: { mastra?: unknown; requestContext?: unknown }) {
   if (!context.mastra || !context.requestContext) throw new Error('Authentication is required');
@@ -29,7 +32,7 @@ export const userFileTools = {
     execute: async (input, context) => {
       const auth = trustedAuth(context.requestContext);
       const service = await serviceFrom(context);
-      const { data, name } = await service.read(auth, input.threadId, input.path);
+      const { data, name } = await service.read(auth, agentThreadId(context), input.path);
       return { path: input.path, name, content: data.toString('utf8') };
     },
   }),
@@ -40,18 +43,19 @@ export const userFileTools = {
     execute: async (input, context) => {
       const auth = trustedAuth(context.requestContext);
       const service = await serviceFrom(context);
-      await service.write(auth, input.threadId, input.path, Buffer.from(input.content));
-      return { path: `/user-files/${input.threadId}/${input.path}` };
+      const threadId = agentThreadId(context);
+      await service.write(auth, threadId, input.path, Buffer.from(input.content));
+      return { path: `/user-files/${threadId}/${input.path}` };
     },
   }),
   list_files: createTool({
     id: 'list_files',
     description: '列出当前会话工作目录中的文件。',
-    inputSchema: z.object({ threadId: z.string().min(1) }),
-    execute: async (input, context) => {
+    inputSchema: z.object({}),
+    execute: async (_input, context) => {
       const auth = trustedAuth(context.requestContext);
       const service = await serviceFrom(context);
-      return { files: await service.list(auth, input.threadId) };
+      return { files: await service.list(auth, agentThreadId(context)) };
     },
   }),
   delete_file: createTool({
@@ -61,7 +65,7 @@ export const userFileTools = {
     execute: async (input, context) => {
       const auth = trustedAuth(context.requestContext);
       const service = await serviceFrom(context);
-      await service.delete(auth, input.threadId, input.path);
+      await service.delete(auth, agentThreadId(context), input.path);
       return { ok: true, path: input.path };
     },
   }),

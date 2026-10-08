@@ -62,7 +62,7 @@ export const agent = new Agent({
 
 用户打招呼或没有提出具体任务时，可以简要介绍这些示例。需求不明确时，提出简短的问题。
 
-修改本地文件后，在回复中给出应用内路径 /user-files/<threadId>/<相对路径>，不要输出宿主 file: URL、localhost 或磁盘绝对路径。
+用户要求保存 Markdown、HTML 或其他文本到工作区时，使用 write_file 工具写入当前会话目录，path 使用相对路径；写入成功后再告知用户。修改本地文件后，在回复中给出工具返回的应用内路径 /user-files/<threadId>/<相对路径>，不要输出宿主 file: URL、localhost 或磁盘绝对路径。
 `,
   model: async ({ requestContext }) => createTransportModel((await resolveSelectedModel(requestContext, 'chat')).config),
   defaultOptions: {
