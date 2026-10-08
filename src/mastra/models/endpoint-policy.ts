@@ -6,7 +6,8 @@ const BLOCKED_HOSTNAMES = new Set([
   'metadata',
   'metadata.google.internal',
 ]);
-const APPROVED_HTTP_BASE_URL = 'http://101.37.135.116:7864/v1';
+// const APPROVED_HTTP_BASE_URL = 'http://101.37.135.116:7864/v1';
+const APPROVED_HTTP_BASE_URL = 'https://api.nerosun.cn/v1';
 
 let cachedAllowlistValue: string | undefined;
 let cachedAllowlistOrigins: Set<string> | undefined;
