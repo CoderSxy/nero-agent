@@ -30,6 +30,7 @@ if (!databaseUrl) throw new Error('DATABASE_URL 未配置，请先运行 npm run
 export const mastra = new Mastra({
   studio: { auth: studioAuth },
   server: {
+    studioBase: process.env.MASTRA_STUDIO_BASE || '/',
     middleware: [agentModelLockMiddleware, authorizeThreadRoute, studioChineseMiddleware],
     apiRoutes: [...authRoutes, ...modelRoutes, ...modelAdminRoutes, ...fileRoutes,
       ...currentWorkspaceFileRoutes],
