@@ -1,0 +1,64 @@
+web/src/agent/message-parts.test.ts
+  s_5075665097906f::t_336fc3c73cac09 26-31,33-35
+  s_5075665097906f::t_7cf5af64862feb 32
+  s_5075665097906f::t_877e5af00f5a42 17-25
+src/mastra/auth/authorization.ts
+  s_e99936c994c5e0::t_e12ea4ec3b1681 4,101-104,107-109
+  s_e99936c994c5e0::t_185bd0a207c21f 115-122
+src/mastra/files/tools.ts
+  s_5075665097906f::t_841c6b62384b4f 9-15,35,46-48,54-55,58,68
+web/src/styles.css
+  s_5075665097906f::t_e65b1cb01044fd 223
+  s_5075665097906f::t_36cf3f7f969b9c 224,226-227,235
+  s_5075665097906f::t_9231d46b098896 208
+  s_5075665097906f::t_2db45bcf55974f 209-222,225,228-230
+src/mastra/agents/agent.ts
+  s_5075665097906f::t_b49930e9e59971 65
+README.md
+  s_5075665097906f::t_5f24379ad6d207 82-83
+tests/thread-ownership.test.ts
+  s_e99936c994c5e0::t_f2d6b8ce0e9a4a 152-171
+  s_e99936c994c5e0::t_e567fb2f718a00 217-250
+web/src/agent/MessageList.test.tsx
+  s_5075665097906f::t_877e5af00f5a42 15-23,25-27
+  s_5075665097906f::t_05a013a3de7051 24,35
+  s_5075665097906f::t_336fc3c73cac09 28-34,36
+.gitignore
+  s_5075665097906f::t_13e330f11b1492 12
+web/src/agent/message-parts.ts
+  s_5075665097906f::t_36cf3f7f969b9c 6,28-29,31,36
+  s_5075665097906f::t_015cade103b004 30,32-35
+  s_5075665097906f::t_7197ed6caa1989 4-5,7,22-27,37
+web/src/agent/MessageList.tsx
+  s_5075665097906f::t_7197ed6caa1989 8,45-51,91,93-94,102-107,126,131-132,135,153,155
+  s_5075665097906f::t_e65b1cb01044fd 52-58,127,133-134,149-150
+  s_5075665097906f::t_36cf3f7f969b9c 59-63,92,96-101,154
+tests/file-tools.test.ts
+  s_5075665097906f::t_a9eb60c5de46b4 1-25,27,44-50
+  s_5075665097906f::t_d83a4116942e0f 26,28,40-43
+  s_5075665097906f::t_6f2a5e4eff48db 29-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "36788c56fc9f32c4e930d89b773bb54f1295adcb",
+  "prompts": {},
+  "sessions": {
+    "s_5075665097906f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1164f-b8dd-7532-930f-bbfd644597bf",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_e99936c994c5e0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1116a-f6bb-73b2-82b3-bb0f577dcabf",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
