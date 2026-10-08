@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { compareGatewayModels, parseGatewayModelList } from '../src/mastra/models/gateway-sync';
+import { compareGatewayModels, GATEWAY_BASE_URL, gatewayCatalogUrl, parseGatewayModelList } from '../src/mastra/models/gateway-sync';
+
+test('gateway management catalog uses the root API route', () => {
+  assert.equal(gatewayCatalogUrl(), 'https://api.nerosun.cn/api/model-catalog?realm=cn&force=false');
+});
 
 test('domestic model center list accepts catalog response and rejects malformed lists', () => {
   assert.deepEqual(parseGatewayModelList({ models: [
@@ -17,8 +21,8 @@ test('domestic model center list accepts catalog response and rejects malformed 
 test('gateway comparison preserves local models and shows new, existing and missing entries', () => {
   const diff = compareGatewayModels(
     parseGatewayModelList({ models: [{ id: 'glm-5.2', name: 'GLM 5.2' }, { id: 'kimi-k2.7', name: 'Kimi' }] }),
-    [{ ref: 'public:one', modelId: 'glm-5.2', displayName: '我的 GLM', baseUrl: 'http://101.37.135.116:7864/v1' },
-      { ref: 'public:two', modelId: 'old', displayName: '旧模型', baseUrl: 'http://101.37.135.116:7864/v1' },
+    [{ ref: 'public:one', modelId: 'glm-5.2', displayName: '我的 GLM', baseUrl: GATEWAY_BASE_URL },
+      { ref: 'public:two', modelId: 'old', displayName: '旧模型', baseUrl: GATEWAY_BASE_URL },
       { ref: 'public:three', modelId: 'kimi-k2.7', displayName: '其他来源', baseUrl: 'https://other.example/v1' }],
   );
   assert.equal(diff.incoming[0].status, 'existing');

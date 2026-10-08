@@ -136,34 +136,17 @@ test('endpoint policy accepts allowlisted HTTPS origins', async () => {
   });
 });
 
-test('endpoint policy allows only the approved HTTP model Base URL', async () => {
-  const approved = 'http://101.37.135.116:7864/v1';
-  await withEnvAsync({ MODEL_ENDPOINT_ALLOWLIST: `${ALLOWED_ORIGINS},${approved}` }, async () => {
-    const url = normalizeModelEndpoint(approved);
-    assert.equal(url.toString(), approved);
-    await assertAllowedEndpoint(url);
-
-    for (const other of [
-      'http://101.37.135.116:7864/v2',
-      'http://101.37.135.116:7865/v1',
-      'http://101.37.135.116:7864/v1?debug=1',
-      'http://api.openai.com/v1',
-    ]) {
-      await assert.rejects(async () => {
-        await assertAllowedEndpoint(normalizeModelEndpoint(other));
-      });
-    }
-
-    await assertAllowedEndpoint(normalizeModelEndpoint('https://api.openai.com/v1'));
-  });
+test('endpoint policy rejects HTTP model Base URLs', () => {
+  for (const url of [
+    'http://101.37.135.116:7864/v1',
+    'http://api.openai.com/v1',
+  ]) assert.throws(() => normalizeModelEndpoint(url), /HTTPS/);
 });
 
-test('the approved HTTP Base URL still requires an explicit allowlist entry', async () => {
+test('HTTPS gateway still requires an explicit allowlist entry', async () => {
   await withEnvAsync({ MODEL_ENDPOINT_ALLOWLIST: ALLOWED_ORIGINS }, async () => {
-    await assert.rejects(
-      () => assertAllowedEndpoint(normalizeModelEndpoint('http://101.37.135.116:7864/v1')),
-      /allowlist/,
-    );
+    const url = normalizeModelEndpoint('https://api.nerosun.cn/v1');
+    await assert.rejects(() => assertAllowedEndpoint(url), /allowlist/);
   });
 });
 

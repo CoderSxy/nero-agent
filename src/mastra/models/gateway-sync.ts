@@ -4,8 +4,10 @@ import { insertRecord, listAllPublic, lockPublicDefault, withTransaction, type M
 import { createGuardedModelFetch } from './transport';
 import { ModelCatalogError } from './types';
 
-// export const GATEWAY_BASE_URL = 'http://101.37.135.116:7864/v1';
 export const GATEWAY_BASE_URL = 'https://api.nerosun.cn/v1';
+export function gatewayCatalogUrl(): string {
+  return new URL('/api/model-catalog?realm=cn&force=false', GATEWAY_BASE_URL).toString();
+}
 const MODEL_ID_PATTERN = /^[a-zA-Z0-9._:/-]+$/;
 const MAX_MODELS = 500;
 type GatewayModel = { modelId: string; displayName: string };
@@ -72,10 +74,10 @@ function managementToken(input: unknown): string {
 async function fetchGatewayModels(source: ModelRecord, token: string): Promise<GatewayModel[]> {
   const baseUrl = normalizeModelEndpoint(GATEWAY_BASE_URL);
   await assertAllowedEndpoint(baseUrl);
-  const fetch = createGuardedModelFetch(new URL(`${GATEWAY_BASE_URL}/api`));
+  const fetch = createGuardedModelFetch(new URL('/api', GATEWAY_BASE_URL));
   let response: Response;
   try {
-    response = await fetch(`${GATEWAY_BASE_URL}/api/model-catalog?realm=cn&force=false`, {
+    response = await fetch(gatewayCatalogUrl(), {
       headers: { Authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(10000),
     });
