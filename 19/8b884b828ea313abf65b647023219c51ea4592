@@ -1,0 +1,21 @@
+.gitignore
+  s_3f0f872474eaa7::t_6d6617edb228a5 12
+src/mastra/index.ts
+  s_3f0f872474eaa7::t_ed398ffdfe31be 33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "198b884b828ea313abf65b647023219c51ea4592",
+  "prompts": {},
+  "sessions": {
+    "s_3f0f872474eaa7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a119ff-11d9-7e10-a5bb-44247d0152fa",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
