@@ -1,0 +1,16 @@
+src/mastra/models/endpoint-policy.ts
+  h_d083fb1648bfd3 9-10
+src/mastra/models/gateway-sync.ts
+  h_d083fb1648bfd3 7-8,75,78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "02e9436f5577b11bbf7f39268ba2145c8329e676",
+  "prompts": {},
+  "humans": {
+    "h_d083fb1648bfd3": {
+      "author": "sxy <545231960@qq.com>"
+    }
+  }
+}
