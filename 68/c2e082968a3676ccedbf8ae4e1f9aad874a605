@@ -1,0 +1,24 @@
+tests/model-sync.test.ts
+  s_3f0f872474eaa7::t_bd8fe1a19e5a35 3,24-25
+  s_3f0f872474eaa7::t_1da8df10273c41 4-7
+src/mastra/models/gateway-sync.ts
+  s_3f0f872474eaa7::t_ea81433bf139ad 8-10,77,80
+tests/model-security.test.ts
+  s_3f0f872474eaa7::t_01492fb2d913c4 139-143,146,148-149
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "68c2e082968a3676ccedbf8ae4e1f9aad874a605",
+  "prompts": {},
+  "sessions": {
+    "s_3f0f872474eaa7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a119ff-11d9-7e10-a5bb-44247d0152fa",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
