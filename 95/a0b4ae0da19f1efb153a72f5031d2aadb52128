@@ -1,0 +1,19 @@
+package.json
+  s_3f0f872474eaa7::t_e69fc3ad639112 12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "95a0b4ae0da19f1efb153a72f5031d2aadb52128",
+  "prompts": {},
+  "sessions": {
+    "s_3f0f872474eaa7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a119ff-11d9-7e10-a5bb-44247d0152fa",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
