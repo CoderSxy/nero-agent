@@ -1,0 +1,33 @@
+tests/attached-file-tool.test.ts
+  s_774cbf3e5eb9dd::t_a5fb7d3d78a5a6 21
+  s_774cbf3e5eb9dd::t_354efce0867602 177,200-212,236,240,245-408
+  s_774cbf3e5eb9dd::t_18945021d73615 3,5-6,12-17,25
+  s_774cbf3e5eb9dd::t_8f488f3951fa0e 26,409
+src/mastra/files/attachment-persistence-processor.ts
+  s_774cbf3e5eb9dd::t_2a1677cf8c7f2e 8-19
+  s_774cbf3e5eb9dd::t_c5d9866ac62ea0 123,125,130-134,136
+  s_774cbf3e5eb9dd::t_1c369f5c9ee7c7 53-54
+  s_774cbf3e5eb9dd::t_70e2920408659e 3,21-22,36-52,55-57,59-64,69,73-80,88-91,96-108,111-112,122,124,126-129,135,137-142,157
+  s_774cbf3e5eb9dd::t_73a8908dcfd35e 20
+  s_774cbf3e5eb9dd::t_e5c992fe27417a 109-110
+src/mastra/files/tools.ts
+  s_774cbf3e5eb9dd::t_6671a6e694db8a 110-145,159-160,163
+  s_774cbf3e5eb9dd::t_545dfd11970d92 51
+  s_774cbf3e5eb9dd::t_1702d75dbec786 243-244,250
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d8556b5180553e736f7a91d709eefcf70b691149",
+  "prompts": {},
+  "sessions": {
+    "s_774cbf3e5eb9dd": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "12256897-3824-43de-8d0b-c96551f7fc82",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
