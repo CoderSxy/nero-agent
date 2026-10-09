@@ -1,0 +1,78 @@
+web/src/styles.css
+  s_c321ba54df89cc::t_6a1561aceea9a4 178-194
+web/src/agent/attachment-types.ts
+  s_c321ba54df89cc::t_045b0df628a0bf 16
+web/src/agent/client.ts
+  s_c321ba54df89cc::t_7fc29a1411a361 102-132
+web/src/agent/attachment-protocol.ts
+  s_c321ba54df89cc::t_e47e2abca4b541 1-54
+web/src/agent/message-parts.ts
+  s_c321ba54df89cc::t_2722e3218ca813 3,12-18
+  s_c321ba54df89cc::t_58092a8c5c8aa4 11,19
+  s_c321ba54df89cc::t_9eb57204e696aa 4
+  s_c321ba54df89cc::t_a73ccb4402e82c 37
+  s_c321ba54df89cc::t_67d8e52125c973 36,38-39
+web/src/agent/pending-user-message.ts
+  s_c321ba54df89cc::t_a695db3629802d 2
+  s_c321ba54df89cc::t_692b5f8299b5e4 21,23
+web/src/agent/AgentChat.test.tsx
+  s_c321ba54df89cc::t_892ea836c5993c 321-363,365-367,369-376,378-409,411-413,415-422,424-427,429-495,514-533
+  s_c321ba54df89cc::t_277a79f6a4ca5b 410,414,423
+  s_c321ba54df89cc::t_14d7fd28b8b5c3 428
+  s_c321ba54df89cc::t_81227f090c7b62 14-15,20,22-24,26,43-44,47,52
+  s_c321ba54df89cc::t_d28301cb508957 3
+  s_c321ba54df89cc::t_f832c4355d1c96 48
+  s_c321ba54df89cc::t_dde99dca2dcaad 364,368,377
+  s_c321ba54df89cc::t_b9e525e746cf55 46,49,51
+  s_c321ba54df89cc::t_3eec3a6a6bfc28 496-513
+web/src/agent/AgentPage.test.tsx
+  s_c321ba54df89cc::t_5ee08173bb060c 251-271
+  s_c321ba54df89cc::t_1a3fdb6fa82cb7 44,51,56-57
+web/src/agent/attachment-client.ts
+  s_c321ba54df89cc::t_897ee7d4ccbed7 52
+  s_c321ba54df89cc::t_4373dfeef65d3b 1-6
+  s_c321ba54df89cc::t_941a898c3d28f1 50-51,53
+web/src/agent/MessageList.tsx
+  s_c321ba54df89cc::t_a2ec0a7429bcde 1,10-13,64-113,115-118,120,126,144-148,158,161,166-168
+  s_c321ba54df89cc::t_0c5e8ef7f191de 114
+web/src/agent/MessageList.test.tsx
+  s_c321ba54df89cc::t_df135ac4e21c7d 9-12,16
+  s_c321ba54df89cc::t_ec524b288d098a 255-256,258-313
+  s_c321ba54df89cc::t_4931504e9205e1 257
+web/src/agent/AgentChat.tsx
+  s_c321ba54df89cc::t_ff0f932353fa95 6-13,22-27,30,40,48,52,60,68-76,94-99,108-109,145,163,194-209,212,217,224,233,239-251,253,255-265,267-277,279-307,335,353
+web/src/agent/AgentPage.tsx
+  s_c321ba54df89cc::t_a5c39f81f1b739 153
+  s_c321ba54df89cc::t_2f41e961043259 1
+  s_c321ba54df89cc::t_ffc18ecf507afc 40-41
+  s_c321ba54df89cc::t_dcafb5c173e76b 173-178
+web/src/agent/message-parts.test.ts
+  s_c321ba54df89cc::t_a18641bc7d6aa8 2-36
+web/src/agent/WorkspaceFileTree.tsx
+  s_c321ba54df89cc::t_487de2c599ca38 2,7,9,16,32-38,64-73,85-86,90-98,104-120
+  s_c321ba54df89cc::t_357bdfc35cc49b 3
+web/src/agent/AgentComposer.tsx
+  s_c321ba54df89cc::t_8238430cd40e41 56-69,72-73,82
+  s_c321ba54df89cc::t_573c8f3b9c166c 191-192
+  s_c321ba54df89cc::t_b73de6f6231f31 7
+  s_c321ba54df89cc::t_c2570470ce4c8a 96-99,101-104,106-120,122-134
+  s_c321ba54df89cc::t_b8336d62bd94f6 100,105,121
+  s_c321ba54df89cc::t_f89756906bc248 274-275
+  s_c321ba54df89cc::t_af263b93c67e0a 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "41ec6769dfd74291cf3ee000cf03690fdb4bd3e9",
+  "prompts": {},
+  "sessions": {
+    "s_c321ba54df89cc": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b58995c1-5340-4ace-b6a2-497dcd1c25eb",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
