@@ -1,12 +1,12 @@
-import { mkdir, open, lstat, readdir, realpath, rename, unlink } from 'node:fs/promises';
+import { mkdir, open, lstat, readdir, realpath, rename, rm, unlink } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { AuthContext } from '../auth/auth-context';
 import { ensureUserWorkspace } from '../workspace/manager';
 import { assertContained, workspaceBase } from '../workspace/path';
-import { workspaceQuota } from '../workspace/quota';
+import { workspaceQuota, type QuotaState } from '../workspace/quota';
 import { assertHostWritable } from '../workspace/disk-protection';
-import { FilePathError, maxFileSizeBytes } from './policy';
+import { FilePathError, maxFileSizeBytes, relativeFilePath } from './policy';
 import { FileServiceError, type FileListEntry } from './service';
 import { readWorkspaceVersion } from './workspace-editor';
 
@@ -20,6 +20,19 @@ export type WorkspaceFileEntry = {
 };
 
 export type WorkspaceUsage = { usedBytes: number; quotaBytes: number; fileCount: number };
+
+export type BatchDeleteItemResult = { path: string; ok: boolean; errorCode?: string };
+
+export type BatchDeleteResult = {
+  results: BatchDeleteItemResult[];
+  deletedFiles: number;
+  freedBytes: number;
+  usage: QuotaState;
+};
+
+const MAX_BATCH_DELETE_PATHS = 100;
+const PROTECTED_TOP_ROOTS = new Set(['shared', 'uploads', 'projects', 'threads']);
+const PROTECTED_THREAD_LEAVES = new Set(['input', 'output', 'tmp']);
 
 export class WorkspaceFileService {
   async upload(auth: AuthContext, file: File, signal?: AbortSignal): Promise<WorkspaceFileEntry> {
@@ -81,6 +94,101 @@ export class WorkspaceFileService {
       usage: { usedBytes: usage.usedBytes, quotaBytes: usage.quotaBytes, fileCount: usage.fileCount },
     };
   }
+
+  async batchDelete(auth: AuthContext, paths: string[]): Promise<BatchDeleteResult> {
+    if (!Array.isArray(paths) || paths.length === 0) {
+      throw new FileServiceError(400, '删除路径不能为空');
+    }
+    if (paths.length > MAX_BATCH_DELETE_PATHS) {
+      throw new FileServiceError(400, `一次最多删除 ${MAX_BATCH_DELETE_PATHS} 个路径`);
+    }
+
+    const collapsed: string[] = [];
+    const collapseErrors: BatchDeleteItemResult[] = [];
+    for (const raw of paths) {
+      try {
+        collapsed.push(relativeFilePath(raw));
+      } catch {
+        collapseErrors.push({ path: String(raw ?? ''), ok: false, errorCode: 'INVALID_PATH' });
+      }
+    }
+    const targets = collapseParentChildPaths(collapsed);
+    if (targets.length > MAX_BATCH_DELETE_PATHS) {
+      throw new FileServiceError(400, `一次最多删除 ${MAX_BATCH_DELETE_PATHS} 个路径`);
+    }
+
+    const root = await realpath(await ensureUserWorkspace(auth));
+    const results: BatchDeleteItemResult[] = [...collapseErrors];
+    let deletedFiles = 0;
+    let freedBytes = 0;
+
+    for (const relative of targets) {
+      if (isProtectedWorkspacePath(relative)) {
+        results.push({ path: relative, ok: false, errorCode: 'PROTECTED_PATH' });
+        continue;
+      }
+      try {
+        const hostPath = join(root, relative);
+        assertContained(root, hostPath);
+        const info = await lstat(hostPath);
+        if (info.isSymbolicLink()) {
+          results.push({ path: relative, ok: false, errorCode: 'SYMLINK' });
+          continue;
+        }
+        await assertExistingRealPath(root, hostPath);
+        if (!info.isFile() && !info.isDirectory()) {
+          results.push({ path: relative, ok: false, errorCode: 'INVALID_PATH' });
+          continue;
+        }
+        const entries: FileListEntry[] = [];
+        if (info.isDirectory()) {
+          await walkWorkspace(hostPath, hostPath, entries);
+        } else {
+          entries.push({ path: relative, type: 'file', size: info.size });
+        }
+        const files = entries.filter(entry => entry.type === 'file');
+        const bytes = files.reduce((sum, entry) => sum + entry.size, 0);
+        await rm(hostPath, { recursive: true, force: false });
+        await workspaceQuota.release(auth.userId, bytes, files.length);
+        deletedFiles += files.length;
+        freedBytes += bytes;
+        results.push({ path: relative, ok: true });
+      } catch (error) {
+        if (error instanceof FilePathError) {
+          results.push({ path: relative, ok: false, errorCode: 'INVALID_PATH' });
+          continue;
+        }
+        const code = (error as NodeJS.ErrnoException).code;
+        if (code === 'ENOENT') {
+          results.push({ path: relative, ok: false, errorCode: 'NOT_FOUND' });
+          continue;
+        }
+        results.push({ path: relative, ok: false, errorCode: 'DELETE_FAILED' });
+      }
+    }
+
+    const usage = await workspaceQuota.reconcileFromDisk(auth.userId);
+    return { results, deletedFiles, freedBytes, usage };
+  }
+}
+
+export function collapseParentChildPaths(paths: string[]): string[] {
+  const unique = [...new Set(paths)].sort();
+  const kept: string[] = [];
+  for (const path of unique) {
+    if (kept.some(parent => path === parent || path.startsWith(`${parent}/`))) continue;
+    kept.push(path);
+  }
+  return kept;
+}
+
+export function isProtectedWorkspacePath(path: string): boolean {
+  if (PROTECTED_TOP_ROOTS.has(path)) return true;
+  const segments = path.split('/');
+  if (segments.length === 3 && segments[0] === 'threads' && PROTECTED_THREAD_LEAVES.has(segments[2]!)) {
+    return true;
+  }
+  return false;
 }
 
 export function safeUploadName(input: string): string {

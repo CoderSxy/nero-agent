@@ -29,7 +29,7 @@ export class WorkspaceQuota {
       return;
     }
     await this.withLock(userId, async () => {
-      const state = await this.loadMemory(userId);
+      const state = this.memoryState(userId);
       this.assertFits(state, bytes, files);
       state.usedBytes += bytes;
       state.fileCount += files;
@@ -47,7 +47,7 @@ export class WorkspaceQuota {
       return;
     }
     await this.withLock(userId, async () => {
-      const state = await this.loadMemory(userId);
+      const state = this.memoryState(userId);
       state.usedBytes = Math.max(0, state.usedBytes - bytes);
       state.fileCount = Math.max(0, state.fileCount - files);
       memory.set(userId, state);
@@ -95,7 +95,7 @@ export class WorkspaceQuota {
       return;
     }
     await this.withLock(userId, async () => {
-      const state = await this.loadMemory(userId);
+      const state = this.memoryState(userId);
       next(state);
       memory.set(userId, state);
     });
@@ -106,8 +106,12 @@ export class WorkspaceQuota {
     if (state.usedBytes + bytes > state.quotaBytes) throw new QuotaExceededError();
   }
 
-  private loadMemory(userId: string): QuotaState {
+  private memoryState(userId: string): QuotaState {
     return memory.get(userId) ?? { usedBytes: 0, fileCount: 0, quotaBytes: defaultQuotaBytes() };
+  }
+
+  private loadMemory(userId: string): QuotaState {
+    return { ...this.memoryState(userId) };
   }
 
   private async loadDatabase(userId: string): Promise<QuotaState> {

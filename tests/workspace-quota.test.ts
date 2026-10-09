@@ -126,6 +126,33 @@ test('deleting a file releases its workspace quota', async () => {
   }
 });
 
+test('WorkspaceFileService batchDelete frees quota and rescan matches disk', async () => {
+  const env = snapshotEnv(['DATABASE_URL', 'WORKSPACE_ROOT', 'WORKSPACE_DEFAULT_QUOTA_BYTES']);
+  delete process.env.DATABASE_URL;
+  process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'quota-batch-del-'));
+  process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = '500';
+  try {
+    const { WorkspaceFileService } = await import('../src/mastra/files/workspace-service');
+    const id = 'e1e1e1e1-e1e1-4e1e-8e1e-e1e1e1e1e1e1';
+    const auth = authContextFromUser(user(id));
+    const service = new WorkspaceFileService();
+    const first = await service.upload(auth, new File([Buffer.alloc(40)], 'a.bin'));
+    const second = await service.upload(auth, new File([Buffer.alloc(60)], 'b.bin'));
+    const deleted = await service.batchDelete(auth, [first.path, second.path]);
+    assert.equal(deleted.deletedFiles, 2);
+    assert.equal(deleted.freedBytes, 100);
+    assert.equal(deleted.usage.usedBytes, 0);
+    assert.equal(deleted.usage.fileCount, 0);
+    const quota = new WorkspaceQuota();
+    const scanned = await quota.reconcileFromDisk(id);
+    assert.equal(scanned.usedBytes, 0);
+    assert.equal(scanned.fileCount, 0);
+    assert.equal((await quota.usage(id)).usedBytes, 0);
+  } finally {
+    restoreEnv(env);
+  }
+});
+
 test('host disk protection checks filesystem usage independently of user quota', async () => {
   process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'quota-host-'));
   process.env.WORKSPACE_DISK_BLOCK_RATIO = '0';

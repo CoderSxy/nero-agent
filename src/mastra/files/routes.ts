@@ -260,6 +260,22 @@ export function createCurrentWorkspaceFileRoutes(lookup?: ThreadLookup) {
         } catch (error) { return respond(c, error); }
       },
     }),
+    registerApiRoute('/current-workspace/files/batch-delete', {
+      method: 'POST',
+      handler: async c => {
+        try {
+          const auth = trustedAuth(c.get('requestContext'));
+          if (c.req.query('source') === 'agent') throw new FileServiceError(403, '无权访问工作区');
+          const payload = await c.req.json().catch(() => undefined) as { paths?: unknown } | undefined;
+          if (!payload || !Array.isArray(payload.paths)) {
+            return c.json({ error: '删除路径无效' }, 400);
+          }
+          const paths = payload.paths.map(path => String(path));
+          const result = await new WorkspaceFileService().batchDelete(auth, paths);
+          return c.json(result);
+        } catch (error) { return respond(c, error); }
+      },
+    }),
     registerApiRoute('/current-workspace/files/*', {
       method: 'GET',
       handler: async c => {
