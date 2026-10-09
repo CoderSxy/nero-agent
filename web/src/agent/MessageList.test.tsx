@@ -1,6 +1,11 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { MessageList } from './MessageList';
+
+const styles = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../styles.css'), 'utf8');
 
 beforeAll(() => vi.stubGlobal('PointerEvent', MouseEvent));
 afterAll(() => vi.unstubAllGlobals());
@@ -25,6 +30,25 @@ describe('message tools and stream state', () => {
     expect(container.querySelector('.process-message--running')).toBeTruthy();
     expect(screen.getByRole('status').textContent).toContain('正在处理');
   });
+  it('keeps a wide streamed table inside the running process frame', () => {
+    const table = [
+      '| 口径 | 来源 | 换算 | 100 积分 ≈ |',
+      '|---|---|---|---|',
+      '| 公认换算参考 | 腾讯云开发者社区文章（2026-07-31，多方测试+官方文档验证） | 1 积分 ≈ 31,874 Token | 约 319 万 Token |',
+    ].join('\n');
+    const message = { id: 'table', role: 'assistant', content: { format: 2, parts: [
+      { type: 'reasoning', reasoning: '先核对积分口径', state: 'done' },
+      { type: 'text', text: `结论如下：\n\n${table}\n` },
+    ] } };
+    const { container } = render(<MessageList messages={[message] as never} isRunning error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+    const frame = container.querySelector('.process-message--running');
+    expect(frame?.querySelector('table')).toBeTruthy();
+    expect(screen.getByRole('table')).toBeTruthy();
+    expect(styles).toMatch(/\.process-message \{[^}]*overflow-x: auto/);
+    expect(styles).toMatch(/grid-template-columns: minmax\(0, 1fr\)/);
+    expect(styles).toMatch(/\.message-list \.mastra-markdown :is\(th, td\) \{[^}]*overflow-wrap: anywhere/);
+  });
   it('shows an observing badge only for an observation marker', () => {
     const message = { id: 'observing', role: 'assistant', content: { format: 2, parts: [
       { type: 'data-om-observation-start', data: { tokensToObserve: 42600 } },
@@ -33,6 +57,58 @@ describe('message tools and stream state', () => {
       onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
     expect(screen.getByText('Observing ~42.6k tokens')).toBeTruthy();
     expect(screen.queryByText('正在处理…')).toBeNull();
+  });
+  it('shows one expandable completed observation with Studio details', () => {
+    const message = { id: 'observed', role: 'assistant', content: { format: 2, parts: [
+      { type: 'data-om-observation-start', data: { cycleId: 'c1', tokensToObserve: 93500 } },
+      { type: 'data-om-observation-end', data: { cycleId: 'c1', completedAt: '2026-10-09T06:47:00Z',
+        tokensObserved: 93500, observationTokens: 382, durationMs: 29700,
+        observations: 'Date: Oct 9, 2026\n* 🟢 (14:47) Research summary',
+        currentTask: 'Continue research', suggestedResponse: 'Answer concisely' } },
+    ] } };
+    const { container } = render(<MessageList messages={[message] as never} isRunning={false} error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+    expect(container.querySelectorAll('[data-om-badge="c1"]')).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: /Observed 93\.5k→382 tokens/ }));
+    expect(screen.getByText('Input: 93.5k')).toBeTruthy();
+    expect(screen.getByText('Output: 382')).toBeTruthy();
+    expect(screen.getByText('Compression: 245x')).toBeTruthy();
+    expect(screen.getByText('Duration:')).toBeTruthy();
+    expect(screen.getByText('Research summary')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Observations' }));
+    expect(screen.queryByText('Research summary')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Current Task' }));
+    expect(screen.getByText('Continue research')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Suggested Response' }));
+    expect(screen.getByText('Answer concisely')).toBeTruthy();
+  });
+  it('deduplicates a cycle when start and end are saved in separate messages', () => {
+    const messages = [
+      { id: 'start', role: 'assistant', content: { format: 2, parts: [
+        { type: 'data-om-observation-start', data: { cycleId: 'c2', tokensToObserve: 12000 } },
+      ] } },
+      { id: 'end', role: 'assistant', content: { format: 2, parts: [
+        { type: 'data-om-observation-end', data: { cycleId: 'c2', tokensObserved: 12000,
+          observationTokens: 300, durationMs: 2000 } },
+      ] } },
+    ];
+    const { container } = render(<MessageList messages={messages as never} isRunning={false} error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+    expect(container.querySelectorAll('[data-om-badge="c2"]')).toHaveLength(1);
+    expect(container.querySelectorAll('[data-from="assistant"]')).toHaveLength(1);
+  });
+  it('expands extracted values and failures in the Studio badge', () => {
+    const message = { id: 'extracted', role: 'assistant', content: { format: 2, parts: [
+      { type: 'data-om-observation-end', data: { cycleId: 'c3', tokensObserved: 1000,
+        observationTokens: 100, extractedValues: { score: 42 },
+        extractionFailures: [{ slug: 'summary', error: 'unavailable' }] } },
+    ] } };
+    render(<MessageList messages={[message] as never} isRunning={false} error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /Extractions \(1\).*1 failed/ }));
+    expect(screen.getByText('score')).toBeTruthy();
+    expect(screen.getByText('42')).toBeTruthy();
+    expect(screen.getByText('unavailable')).toBeTruthy();
   });
   it('renders a saved user signal as a user bubble', () => {
     const signal = { id: 'signal-1', role: 'signal', type: 'user', content: { format: 2,

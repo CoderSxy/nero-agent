@@ -5,6 +5,7 @@ import { MarkdownRenderer } from '@mastra/playground-ui/components/MarkdownRende
 import { ToolCall, ToolCallTrigger, ToolCallHeader, ToolCallContent, ToolCallMono } from '@mastra/playground-ui/components/ai/tool-call';
 import { ToolApproval } from '@mastra/playground-ui/components/ai/tool-approval';
 import { AskUser } from '@mastra/playground-ui/components/ai/ask-user';
+import { ObservationMarkerBadge } from '@mastra/playground-ui/domains/chat/tools/badges/observation-marker-badge';
 import { Globe2, Wrench, Terminal, LoaderCircle } from 'lucide-react';
 import { messageParts, streamError, summarize, type ToolPart } from './message-parts';
 import { isUserMessage } from './pending-user-message';
@@ -56,11 +57,6 @@ function toolDetail(name: string, args: unknown) {
   return typeof value === 'string' ? value : null;
 }
 
-function formatTokens(tokens?: number) {
-  if (tokens === undefined) return '';
-  return ` ~${tokens >= 1000 ? `${Number((tokens / 1000).toFixed(1))}k` : tokens} tokens`;
-}
-
 export function MessageList({ messages, isRunning, error, onApprove, onDecline, onAnswer, approvals = {},
   pendingApprovalIds }: {
   messages: MastraDBMessage[]; isRunning: boolean; error: string | null;
@@ -85,20 +81,28 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
     catch { /* AgentChat shows the error; keep the question available. */ }
     finally { busy.current.delete(id); setPending(null); }
   }
+  const rows = messages.map(message => ({ message, parts: messageParts(message) }));
+  const completedCycles = new Set<string>();
+  for (const { parts } of rows) {
+    for (const part of parts) {
+      if (part.kind === 'observation' && part.state === 'complete' && part.cycleId) {
+        completedCycles.add(part.cycleId);
+      }
+    }
+  }
   return <div className="message-list" aria-live="polite">
-    {messages.map(message => {
-      const parts = messageParts(message);
+    {rows.map(({ message, parts: rawParts }) => {
+      const parts = rawParts.filter(part => part.kind !== 'observation' || part.state !== 'running' ||
+        !part.cycleId || !completedCycles.has(part.cycleId));
+      if (!parts.length) return null;
       const runningProcess = isRunning && message === messages.at(-1) &&
         parts.some(part => part.kind === 'reasoning' || part.kind === 'tool' || part.kind === 'observation');
       return <Message key={message.id} from={isUserMessage(message) ? 'user' : 'assistant'}
         className={runningProcess ? 'process-message process-message--running' : undefined}>
         {parts.map((part, index) => {
-          if (part.kind === 'observation') return <div key={index} className="observation-badge"
-            data-state={part.state} role={part.state === 'running' ? 'status' : undefined}>
-            {part.state === 'running' && <LoaderCircle size={14} aria-hidden="true" />}
-            <span aria-hidden="true">◎</span>
-            {part.state === 'running' ? 'Observing' : 'Observed'}{formatTokens(part.tokens)}
-          </div>;
+          if (part.kind === 'observation') return <ObservationMarkerBadge key={part.cycleId ?? index}
+            toolName={part.state === 'running' ? 'Observing' : 'Observed'} args={{}}
+            metadata={{ omData: part.data }} />;
           if (part.kind === 'reasoning') return <details key={index} className="process-reasoning" open>
             <summary className={part.streaming ? 'process-reasoning__streaming' : undefined}>Reasoning</summary>
             <div className="process-reasoning__content">
