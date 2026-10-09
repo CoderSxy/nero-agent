@@ -1,0 +1,70 @@
+src/mastra/files/tools.ts
+  s_059ab554ddfdb8::t_82b29c97298007 7-9,13-16,34-250,296
+web/src/agent/PrivateModelMenu.test.tsx
+  s_059ab554ddfdb8::t_ceb58131bbb41a 51
+  s_059ab554ddfdb8::t_bd73422ba37e97 19-20
+  s_059ab554ddfdb8::t_56d0b7bf6a0c3a 58-72
+src/mastra/files/attachment-persistence-processor.ts
+  s_059ab554ddfdb8::t_2678446be8fee9 1-6,20,24-26,28-31,35-41,43-46,49-50,53-55,60-64,67-68,77-92
+  s_059ab554ddfdb8::t_1af78706911399 7-19,21-23,27,32-34,42,47-48,51-52,56-59,65-66,69-76
+tests/model-catalog-db.test.ts
+  s_059ab554ddfdb8::t_9e791b9e3064c6 73,77-81
+  s_059ab554ddfdb8::t_995a8630c2a4c4 99,102-108
+  s_059ab554ddfdb8::t_187674057be501 82
+src/mastra/models/service.ts
+  s_059ab554ddfdb8::t_b4c5ba235956f3 189-191,208
+  s_059ab554ddfdb8::t_6bd106a6989048 158
+  s_059ab554ddfdb8::t_8d155b83c35415 37-38
+  s_059ab554ddfdb8::t_073d156cf7c3bf 240-242
+src/mastra/agents/agent.ts
+  s_059ab554ddfdb8::t_3e5273bce3e40b 14
+  s_059ab554ddfdb8::t_188c4a42dea3d0 67-68,81-82
+web/src/agent/model-catalog-client.ts
+  s_059ab554ddfdb8::t_88036848e59596 18,29
+tests/attached-file-tool.test.ts
+  s_059ab554ddfdb8::t_4c7a8eaf11124f 1-241
+src/mastra/models/types.ts
+  s_059ab554ddfdb8::t_af2d915329f5c0 18,30
+web/src/agent/PrivateModelMenu.tsx
+  s_059ab554ddfdb8::t_07e6882e6101c5 6,9,13-14
+  s_059ab554ddfdb8::t_8ec269da42a031 101
+  s_059ab554ddfdb8::t_32e90f8388102d 144-145
+src/mastra/models/admin-page.ts
+  s_059ab554ddfdb8::t_fb63908251bf0b 269
+  s_059ab554ddfdb8::t_8e63a0931bc402 214,221,227,235,238-240,242
+web/src/agent/AgentPage.test.tsx
+  s_059ab554ddfdb8::t_00414a4437c8ed 23
+src/mastra/models/repository.ts
+  s_059ab554ddfdb8::t_033795071f3328 19,33,47
+  s_059ab554ddfdb8::t_4c182e5c6dad96 60,62,73
+  s_059ab554ddfdb8::t_60f63508db9097 183-185,189-190,195-197,201
+  s_059ab554ddfdb8::t_beb219c3074533 88
+web/src/agent/AgentChat.test.tsx
+  s_059ab554ddfdb8::t_129eb9617bf375 20
+tests/model-admin-page.test.ts
+  s_059ab554ddfdb8::t_ffece6d652cc10 24
+src/mastra/models/gateway-sync.ts
+  s_059ab554ddfdb8::t_161859ecb9b2c3 155
+migrations/006_model_vision.sql
+  s_059ab554ddfdb8::t_69e9f030edd69e 1-5
+web/src/agent/model-settings.test.ts
+  s_059ab554ddfdb8::t_bf8341b84a8dcb 18-19
+web/src/agent/AgentComposer.test.tsx
+  s_059ab554ddfdb8::t_0a9ce6cc8a7395 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1547824d07c792e69a813bc8f12cee42e5ba7976",
+  "prompts": {},
+  "sessions": {
+    "s_059ab554ddfdb8": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a9d140c3-07be-457d-9c5c-9222a4569b75",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
