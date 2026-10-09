@@ -12,7 +12,7 @@ import { authContextFromUser } from '../src/mastra/auth/auth-context';
 import type { AuthUser } from '../src/mastra/auth/service';
 import { FilePathError } from '../src/mastra/files/policy';
 import { FileServiceError } from '../src/mastra/files/service';
-import { AttachmentService } from '../src/mastra/files/attachments';
+import { AttachmentService, messageLookupFromRecall } from '../src/mastra/files/attachments';
 import * as fileRoutes from '../src/mastra/files/routes';
 import { WorkspaceFileService } from '../src/mastra/files/workspace-service';
 import { ThreadGuardError } from '../src/mastra/auth/thread-guard';
@@ -178,6 +178,7 @@ test('forged users, other threads, unknown ids and non-admin agent source are re
     await assert.rejects(() => attachments.listForThread(other, 'thread-sec'), ThreadGuardError);
     await assert.rejects(() => attachments.readOwned(other, 'thread-sec', id), ThreadGuardError);
     await assert.rejects(() => attachments.readOwned(auth, THREAD_B, id), ThreadGuardError);
+    await assert.rejects(() => attachments.readOwned(other, THREAD_B, id), ThreadGuardError);
     await assert.rejects(
       () => attachments.readOwned(auth, 'thread-sec', '00000000-0000-4000-8000-000000000000'),
       (error: unknown) => error instanceof FileServiceError && error.status === 404,
@@ -251,6 +252,105 @@ test('stale unsent refs older than 24h are cleaned only after Mastra confirms no
   });
 });
 
+test('refs younger than 24h are not cleaned even when Mastra reports no message', async () => {
+  await withMemory(async () => {
+    const files = new WorkspaceFileService();
+    const auth = authContextFromUser(user(USER_ID));
+    const uploaded = await files.upload(auth, new File(['fresh'], 'fresh.txt'));
+    const attachments = new AttachmentService(lookup(), {
+      messageLookup: { async hasPersistedClientMessage() { return false; } },
+    });
+    await attachments.prepare(auth, 'thread-young', 'young-msg', [{ source: 'personal', path: uploaded.path }]);
+    await attachments.cleanupStalePending({ now: new Date() });
+    const listed = await attachments.listForThread(auth, 'thread-young');
+    assert.equal(listed.some(item => item.clientMessageId === 'young-msg'), true);
+  });
+});
+
+test('lookup throw fails closed and does not clean stale refs', async () => {
+  await withMemory(async () => {
+    const files = new WorkspaceFileService();
+    const auth = authContextFromUser(user(USER_ID));
+    const uploaded = await files.upload(auth, new File(['throw'], 'throw.txt'));
+    const attachments = new AttachmentService(lookup(), {
+      messageLookup: {
+        async hasPersistedClientMessage() {
+          throw new Error('recall unavailable');
+        },
+      },
+    });
+    await attachments.prepare(auth, 'thread-throw', 'throw-msg', [{ source: 'personal', path: uploaded.path }]);
+    const now = new Date(Date.now() + 25 * 60 * 60 * 1000);
+    await attachments.cleanupStalePending({ now });
+    const listed = await attachments.listForThread(auth, 'thread-throw');
+    assert.equal(listed.some(item => item.clientMessageId === 'throw-msg'), true);
+  });
+});
+
+test('cleanup only deletes expired rows in a clientMessageId group', async () => {
+  await withMemory(async () => {
+    const files = new WorkspaceFileService();
+    const auth = authContextFromUser(user(USER_ID));
+    const oldFile = await files.upload(auth, new File(['old'], 'old.txt'));
+    const youngFile = await files.upload(auth, new File(['young'], 'young.txt'));
+    let nowMs = Date.now() - 25 * 60 * 60 * 1000;
+    const attachments = new AttachmentService(lookup(), {
+      clock: () => new Date(nowMs),
+      messageLookup: { async hasPersistedClientMessage() { return false; } },
+    });
+    await attachments.prepare(auth, 'thread-mixed', 'mixed-msg', [{ source: 'personal', path: oldFile.path }]);
+    nowMs = Date.now();
+    await attachments.prepare(auth, 'thread-mixed', 'mixed-msg', [{ source: 'personal', path: youngFile.path }]);
+    await attachments.cleanupStalePending({ now: new Date() });
+    const listed = await attachments.listForThread(auth, 'thread-mixed');
+    assert.equal(listed.some(item => item.path === oldFile.path), false);
+    assert.equal(listed.some(item => item.path === youngFile.path), true);
+  });
+});
+
+test('messageLookupFromRecall paginates to exhaustion instead of first-page false negative', async () => {
+  const calls: Array<{
+    page?: number;
+    perPage?: number | false;
+    include?: Array<{ id: string }>;
+    filter?: { metadata?: Record<string, string | number | boolean | null> };
+  }> = [];
+  const lookup = messageLookupFromRecall(async args => {
+    calls.push({ page: args.page, perPage: args.perPage, include: args.include, filter: args.filter });
+    const page = args.page ?? 0;
+    if (args.include?.length || args.filter?.metadata) {
+      return { messages: [], hasMore: false };
+    }
+    if (page === 0) {
+      return {
+        messages: Array.from({ length: 100 }, (_, index) => ({ id: `page0-${index}` })),
+        hasMore: true,
+      };
+    }
+    return { messages: [{ id: 'hidden-msg' }], hasMore: false };
+  });
+  assert.equal(await lookup.hasPersistedClientMessage({
+    threadId: 'thread-page',
+    resourceId: USER_ID,
+    clientMessageId: 'hidden-msg',
+  }), true);
+  const usedExactId = calls.some(call =>
+    Array.isArray(call.include) && call.include.some(item => item.id === 'hidden-msg'));
+  const pagedPastFirst = calls.some(call => (call.page ?? 0) > 0);
+  assert.equal(usedExactId || pagedPastFirst, true);
+});
+
+test('messageLookupFromRecall fails closed when recall cannot prove absence', async () => {
+  const lookup = messageLookupFromRecall(async () => {
+    throw new Error('truncated recall');
+  });
+  assert.equal(await lookup.hasPersistedClientMessage({
+    threadId: 'thread-fail',
+    resourceId: USER_ID,
+    clientMessageId: 'maybe-msg',
+  }), true);
+});
+
 test('attachment HTTP routes prepare, list, isolate users and reject unsafe items', async () => {
   const env = snapshotEnv(['DATABASE_URL', 'WORKSPACE_ROOT']);
   delete process.env.DATABASE_URL;
@@ -278,6 +378,7 @@ test('attachment HTTP routes prepare, list, isolate users and reject unsafe item
     const listedBody = await listed.json() as { attachments: Array<{ attachmentId: string }> };
     assert.equal(listedBody.attachments.length, 1);
 
+    const stolenId = preparedBody.attachments[0]!.attachmentId;
     assert.equal((await app.request('/current-workspace/attachments', {
       method: 'POST',
       headers: { authorization: 'Bearer other', 'content-type': 'application/json' },
@@ -286,6 +387,21 @@ test('attachment HTTP routes prepare, list, isolate users and reject unsafe item
     assert.equal((await app.request(`/current-workspace/attachments?threadId=${THREAD_A}`, {
       headers: { authorization: 'Bearer other' },
     })).status, 403);
+    const attackerList = await app.request(`/current-workspace/attachments?threadId=${THREAD_B}`, {
+      headers: { authorization: 'Bearer other' },
+    });
+    assert.equal(attackerList.status, 200);
+    const attackerBody = await attackerList.json() as { attachments: Array<{ attachmentId: string }> };
+    assert.equal(attackerBody.attachments.some(item => item.attachmentId === stolenId), false);
+    assert.equal((await app.request('/current-workspace/attachments', {
+      method: 'POST',
+      headers: { authorization: 'Bearer other', 'content-type': 'application/json' },
+      body: JSON.stringify({
+        threadId: THREAD_B,
+        clientMessageId: 'attacker-msg',
+        items: [{ source: 'personal', path: 'projects/note.txt' }],
+      }),
+    })).status, 404);
     assert.equal((await app.request('/current-workspace/attachments', { method: 'POST', body })).status, 401);
     assert.equal((await app.request('/current-workspace/attachments', {
       method: 'POST',
@@ -339,13 +455,17 @@ test('postgres stores scoped attachment refs without copying workspace files',
       { source: 'personal', path: uploaded.path },
     ]);
     const row = await getPool().query(
-      'SELECT owner_id, thread_id, path, size FROM app_attachment_refs WHERE id = $1',
+      'SELECT owner_id, thread_id, path, size, name, mime_type, etag, source, client_message_id FROM app_attachment_refs WHERE id = $1',
       [prepared[0]!.attachmentId],
     );
     assert.equal(row.rowCount, 1);
     assert.equal(row.rows[0].owner_id, created.id);
     assert.equal(row.rows[0].path, uploaded.path);
-    assert.ok(!String(row.rows[0]).includes('db-bytes'));
+    const encoded = JSON.stringify(row.rows[0]);
+    assert.equal(encoded.includes('db-bytes'), false);
+    for (const value of Object.values(row.rows[0] as Record<string, unknown>)) {
+      assert.equal(JSON.stringify(value).includes('db-bytes'), false);
+    }
     const host = join(process.env.WORKSPACE_ROOT, 'users', created.id, 'workspace', uploaded.path);
     assert.equal(await readFile(host, 'utf8'), 'db-bytes');
   } finally {

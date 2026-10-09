@@ -61,8 +61,13 @@ export class AttachmentService {
     private readonly options: {
       resolveAgentWorkspace?: AgentWorkspaceResolver;
       messageLookup?: MessagePersistenceLookup;
+      clock?: () => Date;
     } = {},
   ) {}
+
+  private now(): Date {
+    return this.options.clock?.() ?? new Date();
+  }
 
   async prepare(
     auth: AuthContext,
@@ -99,7 +104,7 @@ export class AttachmentService {
         size: file.size,
         mimeType: file.mimeType,
         etag: file.etag,
-        createdAt: new Date(),
+        createdAt: this.now(),
       }));
     }
     const byKey = new Map(
@@ -134,7 +139,7 @@ export class AttachmentService {
   async cleanupStalePending(options: { now?: Date } = {}): Promise<number> {
     const lookup = this.options.messageLookup;
     if (!lookup) return 0;
-    const now = options.now ?? new Date();
+    const now = options.now ?? this.now();
     const cutoff = new Date(now.getTime() - STALE_PENDING_MS);
     const groups = await this.loadStaleGroups(cutoff);
     let removed = 0;
@@ -150,7 +155,9 @@ export class AttachmentService {
         continue;
       }
       if (persisted) continue;
-      removed += await this.deleteMessageRefs(group.ownerId, group.threadId, group.clientMessageId);
+      removed += await this.deleteExpiredMessageRefs(
+        group.ownerId, group.threadId, group.clientMessageId, cutoff,
+      );
     }
     return removed;
   }
@@ -337,12 +344,22 @@ export class AttachmentService {
     }));
   }
 
-  private async deleteMessageRefs(ownerId: string, threadId: string, clientMessageId: string) {
+  private async deleteExpiredMessageRefs(
+    ownerId: string,
+    threadId: string,
+    clientMessageId: string,
+    cutoff: Date,
+  ) {
     if (!this.usesDatabase()) {
       let count = 0;
       for (let index = memoryStore.length - 1; index >= 0; index -= 1) {
         const item = memoryStore[index]!;
-        if (item.ownerId === ownerId && item.threadId === threadId && item.clientMessageId === clientMessageId) {
+        if (
+          item.ownerId === ownerId
+          && item.threadId === threadId
+          && item.clientMessageId === clientMessageId
+          && item.createdAt <= cutoff
+        ) {
           memoryStore.splice(index, 1);
           count += 1;
         }
@@ -352,8 +369,8 @@ export class AttachmentService {
     const { getPool } = await import('../auth/db');
     const result = await getPool().query(
       `DELETE FROM app_attachment_refs
-       WHERE owner_id = $1 AND thread_id = $2 AND client_message_id = $3`,
-      [ownerId, threadId, clientMessageId],
+       WHERE owner_id = $1 AND thread_id = $2 AND client_message_id = $3 AND created_at <= $4`,
+      [ownerId, threadId, clientMessageId, cutoff],
     );
     return result.rowCount ?? 0;
   }
@@ -420,19 +437,88 @@ function fromRow(row: Record<string, unknown>): StoredRef {
   };
 }
 
-export function messageLookupFromRecall(recall: (args: {
+type RecallMessage = { id: string; content?: { metadata?: Record<string, unknown> } };
+
+type RecallArgs = {
   threadId: string;
   resourceId?: string;
-  perPage?: number;
+  page?: number;
+  perPage?: number | false;
   includeTotal?: boolean;
-}) => Promise<{ messages: Array<{ id: string; content?: { metadata?: Record<string, unknown> } }> }>):
-  MessagePersistenceLookup {
+  include?: Array<{ id: string }>;
+  filter?: { metadata?: Record<string, string | number | boolean | null> };
+};
+
+type RecallResult = {
+  messages: RecallMessage[];
+  hasMore?: boolean;
+  page?: number;
+  perPage?: number | false;
+};
+
+const RECALL_PAGE_SIZE = 100;
+const RECALL_MAX_PAGES = 1000;
+
+function messageMatchesClientId(message: RecallMessage, clientMessageId: string): boolean {
+  return message.id === clientMessageId
+    || message.content?.metadata?.clientMessageId === clientMessageId;
+}
+
+export function messageLookupFromRecall(
+  recall: (args: RecallArgs) => Promise<RecallResult>,
+): MessagePersistenceLookup {
   return {
     async hasPersistedClientMessage({ threadId, resourceId, clientMessageId }) {
-      const result = await recall({ threadId, resourceId, perPage: 100, includeTotal: false });
-      return result.messages.some(message =>
-        message.id === clientMessageId
-        || message.content?.metadata?.clientMessageId === clientMessageId);
+      try {
+        const exact = await recall({
+          threadId,
+          resourceId,
+          include: [{ id: clientMessageId }],
+          perPage: 1,
+          includeTotal: false,
+        });
+        if (exact.messages.some(message => messageMatchesClientId(message, clientMessageId))) {
+          return true;
+        }
+      } catch {
+        // Exact include is unavailable; fall through to exhaustive paging.
+      }
+      try {
+        const byMeta = await recall({
+          threadId,
+          resourceId,
+          filter: { metadata: { clientMessageId } },
+          perPage: 1,
+          includeTotal: false,
+        });
+        if (byMeta.messages.some(message => messageMatchesClientId(message, clientMessageId))) {
+          return true;
+        }
+      } catch {
+        // Metadata filter is unavailable; fall through to exhaustive paging.
+      }
+      try {
+        for (let page = 0; page < RECALL_MAX_PAGES; page += 1) {
+          const result = await recall({
+            threadId,
+            resourceId,
+            page,
+            perPage: RECALL_PAGE_SIZE,
+            includeTotal: false,
+          });
+          if (result.messages.some(message => messageMatchesClientId(message, clientMessageId))) {
+            return true;
+          }
+          const pageSize = typeof result.perPage === 'number' ? result.perPage : RECALL_PAGE_SIZE;
+          const exhausted = result.hasMore === false
+            || (result.hasMore !== true && result.messages.length < pageSize);
+          if (exhausted) return false;
+          if (result.hasMore !== true && result.messages.length === 0) return false;
+        }
+      } catch {
+        return true;
+      }
+      return true;
     },
   };
 }

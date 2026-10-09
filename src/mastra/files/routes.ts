@@ -208,8 +208,17 @@ export function createCurrentWorkspaceFileRoutes(lookup?: ThreadLookup) {
       getAgent(id: string): {
         getMemory(args: { requestContext: unknown }): Promise<ThreadLookup & {
           recall?: (args: {
-            threadId: string; resourceId?: string; perPage?: number; includeTotal?: boolean;
-          }) => Promise<{ messages: Array<{ id: string; content?: { metadata?: Record<string, unknown> } }> }>;
+            threadId: string;
+            resourceId?: string;
+            page?: number;
+            perPage?: number | false;
+            includeTotal?: boolean;
+            include?: Array<{ id: string }>;
+            filter?: { metadata?: Record<string, string | number | boolean | null> };
+          }) => Promise<{
+            messages: Array<{ id: string; content?: { metadata?: Record<string, unknown> } }>;
+            hasMore?: boolean;
+          }>;
         }>;
       };
     } | undefined;
