@@ -166,26 +166,33 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     try {
       const { files } = await listWorkspaceFiles('personal');
       const byPath = new Map(files.filter(file => file.type === 'file').map(file => [file.path, file]));
+      const seen = new Set<string>();
+      const candidates: ComposerAttachment[] = [];
+      for (const path of paths) {
+        const identity = `personal:${path}`;
+        if (seen.has(identity)) continue;
+        const entry = byPath.get(path);
+        if (!entry) continue;
+        seen.add(identity);
+        candidates.push({
+          key: nextKey(),
+          source: 'personal',
+          path,
+          name: path.split('/').at(-1) ?? path,
+          size: entry.size,
+          mimeType: guessMime(path),
+          etag: '',
+          state: 'ready',
+        });
+      }
       setAttachments(current => {
         const existing = new Set(current.map(item => `${item.source}:${item.path}`));
-        const additions: ComposerAttachment[] = [];
-        for (const path of paths) {
-          const identity = `personal:${path}`;
-          if (existing.has(identity)) continue;
-          const entry = byPath.get(path);
-          if (!entry) continue;
+        const additions = candidates.filter(item => {
+          const identity = `${item.source}:${item.path}`;
+          if (existing.has(identity)) return false;
           existing.add(identity);
-          additions.push({
-            key: nextKey(),
-            source: 'personal',
-            path,
-            name: path.split('/').at(-1) ?? path,
-            size: entry.size,
-            mimeType: guessMime(path),
-            etag: '',
-            state: 'ready',
-          });
-        }
+          return true;
+        });
         const next = [...current, ...additions];
         reconcileComposerError(next);
         return next;
