@@ -1,0 +1,47 @@
+tests/workspace-editor.test.ts
+  s_0a97fddba8b771::t_50252ddc4c652f 63-64
+  s_0a97fddba8b771::t_03ce0c2e875b79 48-49
+tests/file-tools.test.ts
+  s_0a97fddba8b771::t_34f105aed2950d 51-54,57,60-73,78-79
+  s_0a97fddba8b771::t_ce39903385f965 55-56,58-59,74-77
+src/mastra/files/workspace-editor.ts
+  s_0a97fddba8b771::t_ed7484fce23162 70
+  s_0a97fddba8b771::t_d85675e345c9e8 12
+  s_0a97fddba8b771::t_9808dfeeb147cf 79
+  s_0a97fddba8b771::t_102b620e5bb207 55
+src/mastra/workspace/quota.ts
+  s_0a97fddba8b771::t_5837ce5aece788 1-2,4,8,15,22-30,32-33,36,41-48,50,53,60-61,65-72,74,77,81-128,131-144,148-153,175-204
+  s_0a97fddba8b771::t_e85395ab18d37e 205-206
+src/mastra/files/service.ts
+  s_0a97fddba8b771::t_a65023becb80f0 42,45-46,48-49,53-55,57,73-75,79-81
+  s_0a97fddba8b771::t_8370e81a3ba5fb 13
+tests/workspace-quota.test.ts
+  s_0a97fddba8b771::t_1baaf76ee59181 25-40
+  s_0a97fddba8b771::t_4d37555874dd7b 101-103,106,109,111-122,127-180,183-212,214-215
+  s_0a97fddba8b771::t_620a601f4c18e6 110
+  s_0a97fddba8b771::t_80456872f1366e 3,6,9-10,13
+  s_0a97fddba8b771::t_ceac318c75e7ba 123-126
+  s_0a97fddba8b771::t_bb2298ca4c5543 18-19
+  s_0a97fddba8b771::t_f2a0a0e5f1f998 181-182,213
+  s_0a97fddba8b771::t_ab9406d4c77c03 104-105,107-108
+src/mastra/files/policy.ts
+  s_0a97fddba8b771::t_b271ac92b07097 16
+package.json
+  s_0a97fddba8b771::t_611bcbdb5f9f68 16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c89b3323779eb38c2cad641820a1156312751cc5",
+  "prompts": {},
+  "sessions": {
+    "s_0a97fddba8b771": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "778f5ec6-cbea-4f50-8d88-23dd88b1922d",
+        "model": "cursor-grok-4.6-medium"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
