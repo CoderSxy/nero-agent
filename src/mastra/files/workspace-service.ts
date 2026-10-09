@@ -185,6 +185,7 @@ export function collapseParentChildPaths(paths: string[]): string[] {
 export function isProtectedWorkspacePath(path: string): boolean {
   if (PROTECTED_TOP_ROOTS.has(path)) return true;
   const segments = path.split('/');
+  if (segments.length === 2 && segments[0] === 'threads' && segments[1]) return true;
   if (segments.length === 3 && segments[0] === 'threads' && PROTECTED_THREAD_LEAVES.has(segments[2]!)) {
     return true;
   }

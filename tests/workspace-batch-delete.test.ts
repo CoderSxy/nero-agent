@@ -135,6 +135,26 @@ test('protected workspace roots and thread input/output/tmp roots are rejected',
   });
 });
 
+test('deleting a thread workspace root is rejected and preserves input/output/tmp', async () => {
+  await withWorkspace(async () => {
+    const service = new WorkspaceFileService();
+    const { auth } = await seedPersonalTree(USER_A);
+    const before = await workspaceQuota.usage(USER_A);
+    const result = await service.batchDelete(auth, [`threads/${THREAD}`]);
+    assert.equal(result.results.length, 1);
+    assert.equal(result.results[0]?.path, `threads/${THREAD}`);
+    assert.equal(result.results[0]?.ok, false);
+    assert.equal(result.results[0]?.errorCode, 'PROTECTED_PATH');
+    assert.equal(result.deletedFiles, 0);
+    assert.equal(result.freedBytes, 0);
+    assert.equal(result.usage.usedBytes, before.usedBytes);
+    const root = workspaceRoot(USER_A);
+    await access(join(root, 'threads', THREAD, 'input', 'in.txt'));
+    await access(join(root, 'threads', THREAD, 'output', 'out.txt'));
+    await access(join(root, 'threads', THREAD, 'tmp'));
+  });
+});
+
 test('rejects empty arrays, more than 100 top-level paths, traversal, and symlinks', async () => {
   await withWorkspace(async () => {
     const service = new WorkspaceFileService();
