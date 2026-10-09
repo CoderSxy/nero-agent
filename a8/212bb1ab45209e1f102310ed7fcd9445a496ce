@@ -1,0 +1,28 @@
+tests/workspace-quota.test.ts
+  s_58c94aaf1951cb::t_12d7ae9d1de3c0 166-167,170-184
+  s_58c94aaf1951cb::t_e16dbcb462733e 52-53,55-68
+  s_58c94aaf1951cb::t_8776774ada902f 113-114,117-126
+  s_58c94aaf1951cb::t_c024fbd14908ca 72-73,76-82
+  s_58c94aaf1951cb::t_c63b5e96bef1ab 19-29
+  s_58c94aaf1951cb::t_8fe8b0a56aa4bc 188-189,192-204
+  s_58c94aaf1951cb::t_326aab7c370044 208-209,212-230
+  s_58c94aaf1951cb::t_ff1f492a500ed7 97-98,101-109
+  s_58c94aaf1951cb::t_50ab46ff3c67e6 137-145,161
+  s_58c94aaf1951cb::t_7d1020f935ca18 266-267
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a8212bb1ab45209e1f102310ed7fcd9445a496ce",
+  "prompts": {},
+  "sessions": {
+    "s_58c94aaf1951cb": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "531d295e-3db3-4da4-8ddb-bca662d3924e",
+        "model": "composer-2.5-fast"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
