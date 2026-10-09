@@ -1,0 +1,38 @@
+web/src/agent/WorkspaceFileTree.tsx
+  s_7097fdaec28554::t_dfbc5c228c5632 3-4,7-44,47,50,56-61,66,69,85-92,100-105,118-129,146-161,163-169,171-185,187-193,196,202-203,206-208,212,214,221-229,233,235,245,247,250-254,258-272
+  s_7097fdaec28554::t_030893aa5521e8 232
+  s_7097fdaec28554::t_d739a8b0d8cb74 162
+web/src/agent/AgentPage.test.tsx
+  s_7097fdaec28554::t_83920fa8a6b328 277-310
+  s_7097fdaec28554::t_0049650fb31785 37-41
+web/src/styles.css
+  s_7097fdaec28554::t_966f2b01d834c3 244,247
+  s_7097fdaec28554::t_c67f8f79327b9d 231,233-239,245-246,248-253
+web/src/agent/AgentPage.tsx
+  s_7097fdaec28554::t_cfc45b99e61022 178-179
+web/src/agent/client.test.ts
+  s_7097fdaec28554::t_badb7cb4d146e9 2-3
+  s_7097fdaec28554::t_f268d433053796 85-105
+web/src/agent/client.ts
+  s_7097fdaec28554::t_f4df1506f97811 35-41
+  s_7097fdaec28554::t_4176081e00c233 86-98
+web/src/agent/WorkspaceFileTree.test.tsx
+  s_7097fdaec28554::t_122ba867672816 110-113
+  s_7097fdaec28554::t_3a0d90dcf8f6f6 1,6-10,13-20,22,24-27,30-31,34,47,65-109,114-202
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "491645af2b5af62c980351bab03316e182d9a553",
+  "prompts": {},
+  "sessions": {
+    "s_7097fdaec28554": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "93c78266-a96a-44f9-ba30-d2e868de14b8",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
