@@ -35,10 +35,13 @@ function user(id: string, roles: AuthUser['roles'] = ['user']): AuthUser {
 }
 
 async function withWorkspace<T>(run: () => Promise<T>): Promise<T> {
-  const env = snapshotEnv(['DATABASE_URL', 'WORKSPACE_ROOT', 'WORKSPACE_DEFAULT_QUOTA_BYTES']);
+  const env = snapshotEnv([
+    'DATABASE_URL', 'WORKSPACE_ROOT', 'WORKSPACE_DEFAULT_QUOTA_BYTES', 'USER_FILES_ENABLED',
+  ]);
   delete process.env.DATABASE_URL;
   process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'ws-batch-del-'));
   process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = String(10 * 1024 * 1024);
+  process.env.USER_FILES_ENABLED = 'true';
   try {
     return await run();
   } finally {

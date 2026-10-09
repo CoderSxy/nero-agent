@@ -52,6 +52,7 @@ function restoreEnv(snapshot: Record<string, string | undefined>): void {
 async function appWithWorkspace() {
   const agentRoot = await mkdtemp(join(tmpdir(), 'agent-attach-'));
   process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'user-attach-'));
+  process.env.USER_FILES_ENABLED = 'true';
   await mkdir(join(agentRoot, 'output'), { recursive: true });
   await writeFile(join(agentRoot, 'output', 'agent.txt'), 'agent-file');
   const personal = join(process.env.WORKSPACE_ROOT, 'users', USER_ID, 'workspace', 'projects');
@@ -351,8 +352,47 @@ test('messageLookupFromRecall fails closed when recall cannot prove absence', as
   }), true);
 });
 
+test('cleanup fails closed when renamed client-set message body holds attachment ids', async () => {
+  await withMemory(async () => {
+    const files = new WorkspaceFileService();
+    const auth = authContextFromUser(user(USER_ID));
+    const uploaded = await files.upload(auth, new File(['body-ev'], 'body-ev.txt'));
+    const prepared = await new AttachmentService(lookup()).prepare(
+      auth, 'thread-body', 'composer-orig', [{ source: 'personal', path: uploaded.path }],
+    );
+    const attachmentId = prepared[0]!.attachmentId;
+    const body = [
+      '请查看附件',
+      '',
+      '[[nero-attachments]]',
+      `id=${attachmentId}|name=body-ev.txt|mime=text/plain`,
+      '[[/nero-attachments]]',
+      '',
+      '请使用 read_attached_file({ attachmentId }) 读取以上附件。',
+    ].join('\n');
+    const attachments = new AttachmentService(lookup(), {
+      messageLookup: messageLookupFromRecall(async args => {
+        if (args.include?.length || args.filter?.metadata) return { messages: [], hasMore: false };
+        return {
+          messages: [{
+            id: 'client-set-renamed',
+            content: { parts: [{ type: 'text', text: body }] },
+          }],
+          hasMore: false,
+        };
+      }),
+    });
+    // Re-prepare under same id so cleanup group exists with the attachment id.
+    await attachments.prepare(auth, 'thread-body', 'composer-orig', [{ source: 'personal', path: uploaded.path }]);
+    const now = new Date(Date.now() + 25 * 60 * 60 * 1000);
+    await attachments.cleanupStalePending({ now });
+    const listed = await attachments.listForThread(auth, 'thread-body');
+    assert.equal(listed.some(item => item.clientMessageId === 'composer-orig'), true);
+  });
+});
+
 test('attachment HTTP routes prepare, list, isolate users and reject unsafe items', async () => {
-  const env = snapshotEnv(['DATABASE_URL', 'WORKSPACE_ROOT']);
+  const env = snapshotEnv(['DATABASE_URL', 'WORKSPACE_ROOT', 'USER_FILES_ENABLED']);
   delete process.env.DATABASE_URL;
   try {
     const { app } = await appWithWorkspace();

@@ -66,7 +66,7 @@ it('preserves FILE_TOO_LARGE and WORKSPACE_QUOTA_EXCEEDED on upload failures', a
   vi.stubGlobal('fetch', vi.fn()
     .mockResolvedValueOnce(new Response(JSON.stringify({ error: '文件过大', code: 'FILE_TOO_LARGE' }), { status: 413 }))
     .mockResolvedValueOnce(new Response(JSON.stringify({
-      error: '工作区配额已满', code: 'WORKSPACE_QUOTA_EXCEEDED',
+      error: '工作区已超过 500 MiB 上限，请删除无效或过期文件后再上传。', code: 'WORKSPACE_QUOTA_EXCEEDED',
     }), { status: 413 })));
   const file = new File(['x'], 'a.bin');
   await expect(uploadWorkspaceFile(file)).rejects.toMatchObject({ code: 'FILE_TOO_LARGE' });

@@ -16,6 +16,7 @@ const USER_ID = '22222222-2222-4222-8222-222222222222';
 async function appWithWorkspace() {
   const root = await mkdtemp(join(tmpdir(), 'agent-workspace-files-'));
   process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'user-workspaces-'));
+  process.env.USER_FILES_ENABLED = 'true';
   await mkdir(join(root, 'output'));
   await writeFile(join(root, 'output', 'result.md'), '# Result');
   await mkdir(join(process.env.WORKSPACE_ROOT, 'users', USER_ID, 'workspace', 'projects'), { recursive: true });
@@ -248,9 +249,11 @@ test('workspace upload maps quota failures to WORKSPACE_QUOTA_EXCEEDED', async (
   const previous = {
     quota: process.env.WORKSPACE_DEFAULT_QUOTA_BYTES,
     database: process.env.DATABASE_URL,
+    enabled: process.env.USER_FILES_ENABLED,
   };
   delete process.env.DATABASE_URL;
   process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = '4';
+  process.env.USER_FILES_ENABLED = 'true';
   try {
     const quotaUser = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
     process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'user-workspaces-'));
@@ -284,6 +287,39 @@ test('workspace upload maps quota failures to WORKSPACE_QUOTA_EXCEEDED', async (
     else process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = previous.quota;
     if (previous.database === undefined) delete process.env.DATABASE_URL;
     else process.env.DATABASE_URL = previous.database;
+    if (previous.enabled === undefined) delete process.env.USER_FILES_ENABLED;
+    else process.env.USER_FILES_ENABLED = previous.enabled;
+  }
+});
+
+test('USER_FILES_ENABLED=false rejects workspace upload/delete/prepare but GET list stays open', async () => {
+  const previous = process.env.USER_FILES_ENABLED;
+  try {
+    const app = await appWithWorkspace();
+    process.env.USER_FILES_ENABLED = 'false';
+    const headers = { authorization: 'Bearer user' };
+    const form = new FormData();
+    form.set('file', new File(['x'], 'gate.txt'));
+    assert.equal((await app.request('/current-workspace/upload', {
+      method: 'POST', headers, body: form,
+    })).status, 404);
+    assert.equal((await app.request('/current-workspace/files/batch-delete', {
+      method: 'POST',
+      headers: { ...headers, 'content-type': 'application/json' },
+      body: JSON.stringify({ paths: ['projects/own.md'] }),
+    })).status, 404);
+    assert.equal((await app.request('/current-workspace/attachments', {
+      method: 'POST',
+      headers: { ...headers, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        threadId: 't', clientMessageId: 'm', items: [{ source: 'personal', path: 'projects/own.md' }],
+      }),
+    })).status, 404);
+    const listed = await app.request('/current-workspace/files', { headers });
+    assert.equal(listed.status, 200);
+  } finally {
+    if (previous === undefined) delete process.env.USER_FILES_ENABLED;
+    else process.env.USER_FILES_ENABLED = previous;
   }
 });
 

@@ -10,6 +10,7 @@ import { addRecursiveDirectorySizes, WorkspaceFileService } from './workspace-se
 import { AttachmentService, messageLookupFromRecall } from './attachments';
 import { ensureUserWorkspace } from '../workspace/manager';
 import { QuotaExceededError } from '../workspace/quota';
+import { DiskProtectionError } from '../workspace/disk-protection';
 import { readWorkspaceVersion, saveWorkspaceText, WorkspaceEditError } from './workspace-editor';
 
 const MULTIPART_OVERHEAD_BYTES = 64 * 1024;
@@ -22,6 +23,12 @@ function jsonError(
     ? 413 as const : error.status;
   if (error.code) return c.json({ error: error.message, code: error.code }, status);
   return c.json({ error: error.message }, error.status);
+}
+
+/** Same gate as `/user-files/*` for workspace write APIs. */
+function requireUserFilesEnabled(c: Context): Response | undefined {
+  if (!isUserFilesEnabled()) return c.json({ error: '文件功能未开放' }, 404);
+  return undefined;
 }
 
 async function readLimitedFormData(c: Context): Promise<FormData> {
@@ -71,6 +78,9 @@ function filePathFromRequest(c: Context, threadId: string): string {
 function respond(c: Context, error: unknown) {
   if (error instanceof QuotaExceededError) {
     return jsonError(c, error);
+  }
+  if (error instanceof DiskProtectionError) {
+    return jsonError(c, { message: error.message, status: 409 });
   }
   if (error instanceof FilePathError || error instanceof FileServiceError || error instanceof ThreadGuardError ||
     error instanceof WorkspaceEditError) {
@@ -233,6 +243,8 @@ export function createCurrentWorkspaceFileRoutes(lookup?: ThreadLookup) {
       method: 'POST',
       handler: async c => {
         try {
+          const gated = requireUserFilesEnabled(c);
+          if (gated) return gated;
           const auth = trustedAuth(c.get('requestContext'));
           if (c.req.query('source') === 'agent') throw new FileServiceError(403, '无权访问工作区');
           const form = await readLimitedFormData(c);
@@ -264,6 +276,8 @@ export function createCurrentWorkspaceFileRoutes(lookup?: ThreadLookup) {
       method: 'POST',
       handler: async c => {
         try {
+          const gated = requireUserFilesEnabled(c);
+          if (gated) return gated;
           const auth = trustedAuth(c.get('requestContext'));
           if (c.req.query('source') === 'agent') throw new FileServiceError(403, '无权访问工作区');
           const payload = await c.req.json().catch(() => undefined) as { paths?: unknown } | undefined;
@@ -323,6 +337,8 @@ export function createCurrentWorkspaceFileRoutes(lookup?: ThreadLookup) {
       method: 'POST',
       handler: async c => {
         try {
+          const gated = requireUserFilesEnabled(c);
+          if (gated) return gated;
           trustedAuth(c.get('requestContext'));
           const payload = await c.req.json().catch(() => undefined) as {
             threadId?: string;

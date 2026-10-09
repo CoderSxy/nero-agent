@@ -34,8 +34,18 @@ export type MessagePersistenceLookup = {
     threadId: string;
     resourceId: string;
     clientMessageId: string;
+    /** When Mastra renames message ids, match these IDs inside message body / attachment protocol. */
+    attachmentIds?: string[];
   }): Promise<boolean>;
 };
+
+/**
+ * Stale-pending cleanup is intentionally NOT scheduled in production yet.
+ * Callers must prove a message was never persisted; ambiguous recall fails closed.
+ */
+export const ATTACHMENT_CLEANUP_SCHEDULED_IN_PRODUCTION = false;
+
+const ATTACHMENT_BLOCK_START = '[[nero-attachments]]';
 
 type StoredRef = {
   attachmentId: string;
@@ -144,14 +154,18 @@ export class AttachmentService {
     const groups = await this.loadStaleGroups(cutoff);
     let removed = 0;
     for (const group of groups) {
+      const records = await this.loadForMessage(group.ownerId, group.threadId, group.clientMessageId);
+      const attachmentIds = records.map(record => record.attachmentId);
       let persisted: boolean;
       try {
         persisted = await lookup.hasPersistedClientMessage({
           threadId: group.threadId,
           resourceId: group.ownerId,
           clientMessageId: group.clientMessageId,
+          attachmentIds,
         });
       } catch {
+        // Fail closed: lookup errors must not delete refs.
         continue;
       }
       if (persisted) continue;
@@ -437,7 +451,13 @@ function fromRow(row: Record<string, unknown>): StoredRef {
   };
 }
 
-type RecallMessage = { id: string; content?: { metadata?: Record<string, unknown> } };
+type RecallMessage = {
+  id: string;
+  content?: {
+    metadata?: Record<string, unknown>;
+    parts?: Array<{ type?: string; text?: string }>;
+  } | string;
+};
 
 type RecallArgs = {
   threadId: string;
@@ -460,15 +480,57 @@ const RECALL_PAGE_SIZE = 100;
 const RECALL_MAX_PAGES = 1000;
 
 function messageMatchesClientId(message: RecallMessage, clientMessageId: string): boolean {
-  return message.id === clientMessageId
-    || message.content?.metadata?.clientMessageId === clientMessageId;
+  if (message.id === clientMessageId) return true;
+  if (typeof message.content === 'object' && message.content?.metadata?.clientMessageId === clientMessageId) {
+    return true;
+  }
+  return false;
+}
+
+function messageBodyText(message: RecallMessage): string {
+  const content = message.content;
+  if (!content) return '';
+  if (typeof content === 'string') return content;
+  const parts = Array.isArray(content.parts) ? content.parts : [];
+  return parts
+    .map(part => (part && typeof part.text === 'string' ? part.text : ''))
+    .filter(Boolean)
+    .join('\n');
+}
+
+/** Fail-closed evidence: renamed client-set-* messages may only keep attachment IDs in body. */
+export function messageContainsAttachmentEvidence(
+  message: RecallMessage,
+  attachmentIds: string[] | undefined,
+): boolean {
+  const text = messageBodyText(message);
+  if (!text) return false;
+  if (attachmentIds?.length) {
+    for (const id of attachmentIds) {
+      if (id && text.includes(id)) return true;
+    }
+  }
+  // Ambiguous protocol without extractable IDs: treat as persisted.
+  if (text.includes(ATTACHMENT_BLOCK_START) && (!attachmentIds || attachmentIds.length === 0)) {
+    return true;
+  }
+  return false;
+}
+
+function messageLooksPersisted(
+  message: RecallMessage,
+  clientMessageId: string,
+  attachmentIds: string[] | undefined,
+): boolean {
+  return messageMatchesClientId(message, clientMessageId)
+    || messageContainsAttachmentEvidence(message, attachmentIds);
 }
 
 export function messageLookupFromRecall(
   recall: (args: RecallArgs) => Promise<RecallResult>,
 ): MessagePersistenceLookup {
   return {
-    async hasPersistedClientMessage({ threadId, resourceId, clientMessageId }) {
+    async hasPersistedClientMessage({ threadId, resourceId, clientMessageId, attachmentIds }) {
       try {
         const exact = await recall({
           threadId,
@@ -477,7 +539,7 @@ export function messageLookupFromRecall(
           perPage: 1,
           includeTotal: false,
         });
-        if (exact.messages.some(message => messageMatchesClientId(message, clientMessageId))) {
+        if (exact.messages.some(message => messageLooksPersisted(message, clientMessageId, attachmentIds))) {
           return true;
         }
       } catch {
@@ -491,7 +553,7 @@ export function messageLookupFromRecall(
           perPage: 1,
           includeTotal: false,
         });
-        if (byMeta.messages.some(message => messageMatchesClientId(message, clientMessageId))) {
+        if (byMeta.messages.some(message => messageLooksPersisted(message, clientMessageId, attachmentIds))) {
           return true;
         }
       } catch {
@@ -506,7 +568,7 @@ export function messageLookupFromRecall(
             perPage: RECALL_PAGE_SIZE,
             includeTotal: false,
           });
-          if (result.messages.some(message => messageMatchesClientId(message, clientMessageId))) {
+          if (result.messages.some(message => messageLooksPersisted(message, clientMessageId, attachmentIds))) {
             return true;
           }
           const pageSize = typeof result.perPage === 'number' ? result.perPage : RECALL_PAGE_SIZE;
@@ -516,8 +578,10 @@ export function messageLookupFromRecall(
           if (result.hasMore !== true && result.messages.length === 0) return false;
         }
       } catch {
+        // Fail closed when paging is truncated / unavailable.
         return true;
       }
+      // Exhausted page budget without proving absence — fail closed.
       return true;
     },
   };

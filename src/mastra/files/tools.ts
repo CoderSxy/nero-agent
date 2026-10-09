@@ -7,6 +7,7 @@ import type { RequestContext } from '@mastra/core/request-context';
 import { findAuthorizedModel } from '../models/service';
 import { resolveSelectedModel, trustedUserFrom } from '../models/resolver';
 import { AttachmentService, type AttachmentStatus } from './attachments';
+import { maxFileSizeBytes } from './policy';
 import { FileService } from './service';
 
 const pathInput = z.object({ path: z.string().min(1) });
@@ -212,6 +213,12 @@ export function createReadAttachedFileTool(deps: ReadAttachedFileDeps = {}) {
         const supportsVision = await modelSupportsVision(context.requestContext as RequestContext);
         if (!supportsVision) {
           throw new Error('当前模型不支持图片，请切换支持图片的模型后再读取该附件');
+        }
+        const maxBytes = maxFileSizeBytes();
+        if (data.byteLength > maxBytes) {
+          throw new Error(
+            `图片 ${ref.name} 超过模型可读上限（${maxBytes} 字节 / 10 MiB），请压缩后再读取；选择或引用该文件仍可用`,
+          );
         }
         return {
           attachmentId: ref.attachmentId,

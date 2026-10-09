@@ -48,7 +48,7 @@ export class WorkspaceFileService {
     await assertHostWritable(data.byteLength);
     await workspaceQuota.reserve(auth.userId, data.byteLength, 1);
     if (signal?.aborted) {
-      await workspaceQuota.release(auth.userId, data.byteLength, 1);
+      await workspaceQuota.releaseReserve(auth.userId, data.byteLength, 1);
       throw new FileServiceError(400, '上传已中断');
     }
     const tempPath = join(workspaceBase(), 'temp', randomUUID());
@@ -65,10 +65,11 @@ export class WorkspaceFileService {
       await mkdir(dirname(hostPath), { recursive: true });
       await assertExistingRealPath(root, dirname(hostPath));
       await rename(tempPath, hostPath);
-      await workspaceQuota.commit();
+      await workspaceQuota.commit(auth.userId);
+      await workspaceQuota.reconcileFromDisk(auth.userId);
     } catch (error) {
       await unlink(tempPath).catch(() => undefined);
-      await workspaceQuota.release(auth.userId, data.byteLength, 1).catch(() => undefined);
+      await workspaceQuota.releaseReserve(auth.userId, data.byteLength, 1).catch(() => undefined);
       throw error;
     }
     return {
@@ -87,8 +88,7 @@ export class WorkspaceFileService {
     await walkWorkspace(root, root, files);
     const regular = files.filter(entry => entry.type === 'file');
     const usedBytes = regular.reduce((sum, entry) => sum + entry.size, 0);
-    await workspaceQuota.reconcileUsage(auth.userId, usedBytes, regular.length);
-    const usage = await workspaceQuota.usage(auth.userId);
+    const usage = await workspaceQuota.reconcileForList(auth.userId, usedBytes, regular.length);
     return {
       files,
       usage: { usedBytes: usage.usedBytes, quotaBytes: usage.quotaBytes, fileCount: usage.fileCount },

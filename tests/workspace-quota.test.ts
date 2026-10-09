@@ -248,6 +248,45 @@ test('reconcileUsage keeps reserved bytes that are not yet on disk', async () =>
   }
 });
 
+test('reconcileForList replaces stale over-count when no in-flight reserve', async () => {
+  const env = snapshotEnv(['DATABASE_URL', 'WORKSPACE_ROOT', 'WORKSPACE_DEFAULT_QUOTA_BYTES']);
+  delete process.env.DATABASE_URL;
+  process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'quota-list-'));
+  process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = '1000';
+  try {
+    const quota = new WorkspaceQuota();
+    const id = '15151515-1515-4151-8151-151515151515';
+    await quota.reserve(id, 400, 2);
+    // Simulate crash after reserve: settle inflight without file on disk, leaving stale bytes.
+    await quota.commit(id);
+    assert.equal(quota.hasInflightReserve(id), false);
+    assert.equal((await quota.usage(id)).usedBytes, 400);
+    const usage = await quota.reconcileForList(id, 0, 0);
+    assert.equal(usage.usedBytes, 0);
+    assert.equal(usage.fileCount, 0);
+  } finally {
+    restoreEnv(env);
+  }
+});
+
+test('reconcileForList keeps in-flight reserve (max-only) and does not wipe it', async () => {
+  const env = snapshotEnv(['DATABASE_URL', 'WORKSPACE_DEFAULT_QUOTA_BYTES']);
+  delete process.env.DATABASE_URL;
+  process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = '1000';
+  try {
+    const quota = new WorkspaceQuota();
+    const id = '16161616-1616-4161-8161-161616161616';
+    await quota.reserve(id, 300, 1);
+    assert.equal(quota.hasInflightReserve(id), true);
+    const usage = await quota.reconcileForList(id, 0, 0);
+    assert.equal(usage.usedBytes, 300);
+    assert.equal(usage.fileCount, 1);
+    await quota.commit(id);
+  } finally {
+    restoreEnv(env);
+  }
+});
+
 test('reconcileFromDisk recounts regular files and skips symlinks outside the user root', async () => {
   const env = snapshotEnv(['DATABASE_URL', 'WORKSPACE_ROOT', 'WORKSPACE_DEFAULT_QUOTA_BYTES']);
   delete process.env.DATABASE_URL;

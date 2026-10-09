@@ -174,6 +174,43 @@ test('read_attached_file rejects non-image binary as text', async () => {
   });
 });
 
+test('read_attached_file refuses oversized images for the model while refs remain selectable', async () => {
+  await withMemoryWorkspace(async () => {
+    const previous = process.env.WORKSPACE_MAX_FILE_SIZE_BYTES;
+    process.env.WORKSPACE_MAX_FILE_SIZE_BYTES = '64';
+    try {
+      const pngHeader = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+        'base64',
+      );
+      const large = Buffer.concat([pngHeader, Buffer.alloc(128, 1)]);
+      const { attachments, ref } = await prepareTextAttachment(large, 'big.png');
+      assert.ok(ref.size > 64);
+      const tool = createReadAttachedFileTool({
+        attachmentsFrom: async () => attachments,
+        modelSupportsVision: async () => true,
+      });
+      await assert.rejects(
+        () => tool.execute!({ attachmentId: ref.attachmentId } as never, toolContext({
+          threadId: THREAD_A,
+          supportsVision: true,
+          attachments,
+        })),
+        /超过模型可读上限|10 MiB|64/,
+      );
+      // Selecting/referencing remains OK: prepare already succeeded and list still returns it.
+      const listed = await attachments.listForThread(
+        { userId: USER_ID, roles: ['user'] },
+        THREAD_A,
+      );
+      assert.equal(listed.some(item => item.attachmentId === ref.attachmentId), true);
+    } finally {
+      if (previous === undefined) delete process.env.WORKSPACE_MAX_FILE_SIZE_BYTES;
+      else process.env.WORKSPACE_MAX_FILE_SIZE_BYTES = previous;
+    }
+  });
+});
+
 test('toModelOutput persists workspace refs only; turn media stays out of durable shapes', async () => {
   await withMemoryWorkspace(async () => {
     const png = tinyPng();

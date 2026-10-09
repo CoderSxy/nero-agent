@@ -54,7 +54,7 @@ export class FileService {
     const newFiles = existed ? 0 : 1;
     if (growth > 0 || newFiles > 0) await workspaceQuota.reserve(auth.userId, growth, newFiles);
     if (options.signal?.aborted) {
-      if (growth > 0 || newFiles > 0) await workspaceQuota.release(auth.userId, growth, newFiles);
+      if (growth > 0 || newFiles > 0) await workspaceQuota.releaseReserve(auth.userId, growth, newFiles);
       throw new FileServiceError(400, '上传已中断');
     }
     const tempPath = join(workspaceBase(), 'temp', randomUUID());
@@ -73,11 +73,11 @@ export class FileService {
       if (existed && data.byteLength < previousSize) {
         await workspaceQuota.release(auth.userId, previousSize - data.byteLength, 0);
       }
-      await workspaceQuota.commit();
+      if (growth > 0 || newFiles > 0) await workspaceQuota.commit(auth.userId);
     } catch (error) {
       await unlink(tempPath).catch(() => undefined);
       if (growth > 0 || newFiles > 0) {
-        await workspaceQuota.release(auth.userId, growth, newFiles).catch(() => undefined);
+        await workspaceQuota.releaseReserve(auth.userId, growth, newFiles).catch(() => undefined);
       }
       throw error;
     }
