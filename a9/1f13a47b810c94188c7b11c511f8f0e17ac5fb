@@ -1,0 +1,42 @@
+src/mastra/files/routes.ts
+  s_c422eb48afc250::t_e2a4e92f0d6552 7,9,11,14-17,19-20,22-58
+  s_c422eb48afc250::t_563b49ad16956b 193-206,211-215,218-220
+  s_c422eb48afc250::t_4053b3b8b97776 116
+  s_c422eb48afc250::t_bb1b625a6e7072 71-73,76
+  s_c422eb48afc250::t_1c11250504eb26 18,21
+  s_c422eb48afc250::t_4e969dc37527f0 59
+tests/file-routes.test.ts
+  s_c422eb48afc250::t_a1dcf2ddb57e6d 182-190,196-239
+  s_c422eb48afc250::t_17a1d774cdf17b 157-181,191-195,240
+web/src/agent/client.ts
+  s_c422eb48afc250::t_d4abb56dabd579 26-34
+  s_c422eb48afc250::t_74fb66ba475827 58-60,66-74
+  s_c422eb48afc250::t_e3827fbb76c667 75-76
+tests/workspace-file-routes.test.ts
+  s_c422eb48afc250::t_8a9f9c5d966ab8 200-208,210-218,220-228,230-245,247-287
+  s_c422eb48afc250::t_a0e6dda6e34bd6 141-199,209,219,229,246,288-289
+tests/workspace-service.test.ts
+  s_c422eb48afc250::t_dc06dcf42e95b3 99
+  s_c422eb48afc250::t_b1bb4c5e80cbd7 1-14,16-98,100-148
+  s_c422eb48afc250::t_4f7eb3ba8c9c45 15
+src/mastra/files/workspace-service.ts
+  s_c422eb48afc250::t_c5112f530fb3ec 104-105
+  s_c422eb48afc250::t_6bd68248d1d4b0 1-33,35-52,54-103,106-153
+  s_c422eb48afc250::t_25ed3e7da5dfb1 34,53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a91f13a47b810c94188c7b11c511f8f0e17ac5fb",
+  "prompts": {},
+  "sessions": {
+    "s_c422eb48afc250": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "eb0e3edc-acb9-4f6c-ba57-f42c718982e5",
+        "model": "cursor-grok-4.6-medium"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
