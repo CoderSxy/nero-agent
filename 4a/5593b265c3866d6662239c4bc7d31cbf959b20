@@ -1,0 +1,45 @@
+web/src/agent/WorkspaceFilePicker.tsx
+  s_f418d9366af400::t_d11d54169ced53 1-122
+web/src/styles.css
+  s_f418d9366af400::t_197ef53da15dd2 166-177,182-187,191-207
+web/src/agent/AgentChat.test.tsx
+  s_f418d9366af400::t_6c5ed5a4f7c43a 11-13,33,36
+  s_f418d9366af400::t_fe353fb2eac289 165
+  s_f418d9366af400::t_aad7335bfb408b 189
+  s_f418d9366af400::t_c226e773f4be4b 34-35,37-40
+  s_f418d9366af400::t_772a50d28a9735 113-118,120,122,124-164,166-188,190-200
+web/src/agent/AgentComposer.test.tsx
+  s_f418d9366af400::t_473e5cf92cf071 4,14-17,36,56-71,77-81,83-84,86-88,91-104,108-144
+  s_f418d9366af400::t_3226e82a48431d 72-76,82,85,89-90,105-107
+  s_f418d9366af400::t_a3a4d411a88b85 1,7-12
+  s_f418d9366af400::t_19851e8004c111 13
+web/src/agent/attachment-client.ts
+  s_f418d9366af400::t_053ab6a71c70ca 1-44
+web/src/agent/attachment-types.ts
+  s_f418d9366af400::t_7709b849628622 1-26
+web/src/agent/WorkspaceFilePicker.test.tsx
+  s_f418d9366af400::t_b9be082506d32a 1-70
+web/src/agent/AgentChat.tsx
+  s_f418d9366af400::t_532510a3ef0377 5-7,13-15,35-37,69-100,103-132,134-137,139-172,176,230-234,236-238,242-251
+  s_f418d9366af400::t_e6622c1d3c6650 252
+web/src/agent/AgentComposer.tsx
+  s_f418d9366af400::t_b2748f16a0c360 4-8,11-55,58,62-66,71-72,75,78-81,99-112,115-121,123-133,137,147,179-197,201,205-209
+  s_f418d9366af400::t_6a24a932982554 122
+  s_f418d9366af400::t_ad9ded9a04c695 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4a5593b265c3866d6662239c4bc7d31cbf959b20",
+  "prompts": {},
+  "sessions": {
+    "s_f418d9366af400": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "2ddaab8b-aa11-4d7e-9cca-e2f15b408682",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
