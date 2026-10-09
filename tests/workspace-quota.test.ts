@@ -16,7 +16,17 @@ const USER_A = 'aaaaaaaa-1111-4111-8111-111111111111';
 const USER_B = 'bbbbbbbb-2222-4222-8222-222222222222';
 const USER_C = 'cccccccc-3333-4333-8333-333333333333';
 const DATABASE_URL = process.env.DATABASE_URL;
-delete process.env.DATABASE_URL;
+
+function snapshotEnv(keys: string[]): Record<string, string | undefined> {
+  return Object.fromEntries(keys.map(key => [key, process.env[key]]));
+}
+
+function restoreEnv(snapshot: Record<string, string | undefined>): void {
+  for (const [key, value] of Object.entries(snapshot)) {
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+}
 
 function user(id: string): AuthUser {
   return { id, email: `${id}@example.test`, displayName: 'u', roles: ['user'] };
@@ -39,25 +49,37 @@ test('QuotaExceededError uses a stable WORKSPACE_QUOTA_EXCEEDED code', () => {
 });
 
 test('two concurrent reserves that together exceed quota only commit one', async () => {
+  const env = snapshotEnv(['DATABASE_URL', 'WORKSPACE_DEFAULT_QUOTA_BYTES']);
+  delete process.env.DATABASE_URL;
   process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = '1000';
-  const quota = new WorkspaceQuota();
-  const attempts = await Promise.allSettled([
-    quota.reserve(USER_A, 600),
-    quota.reserve(USER_A, 600),
-  ]);
-  const ok = attempts.filter(item => item.status === 'fulfilled').length;
-  const denied = attempts.filter(item => item.status === 'rejected').length;
-  assert.equal(ok, 1);
-  assert.equal(denied, 1);
-  assert.equal((await quota.usage(USER_A)).usedBytes, 600);
+  try {
+    const quota = new WorkspaceQuota();
+    const attempts = await Promise.allSettled([
+      quota.reserve(USER_A, 600),
+      quota.reserve(USER_A, 600),
+    ]);
+    const ok = attempts.filter(item => item.status === 'fulfilled').length;
+    const denied = attempts.filter(item => item.status === 'rejected').length;
+    assert.equal(ok, 1);
+    assert.equal(denied, 1);
+    assert.equal((await quota.usage(USER_A)).usedBytes, 600);
+  } finally {
+    restoreEnv(env);
+  }
 });
 
 test('write and output over quota are rejected', async () => {
+  const env = snapshotEnv(['DATABASE_URL', 'WORKSPACE_ROOT', 'WORKSPACE_DEFAULT_QUOTA_BYTES']);
+  delete process.env.DATABASE_URL;
   process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'quota-write-'));
   process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = '100';
-  const quota = new WorkspaceQuota();
-  await quota.reserve(USER_B, 90);
-  await assert.rejects(() => quota.reserve(USER_B, 20), QuotaExceededError);
+  try {
+    const quota = new WorkspaceQuota();
+    await quota.reserve(USER_B, 90);
+    await assert.rejects(() => quota.reserve(USER_B, 20), QuotaExceededError);
+  } finally {
+    restoreEnv(env);
+  }
 });
 
 test('disk protection thresholds and host quota fail closed', () => {
@@ -72,24 +94,36 @@ test('disk protection thresholds and host quota fail closed', () => {
 });
 
 test('FileService write over remaining quota fails', async () => {
+  const env = snapshotEnv(['DATABASE_URL', 'WORKSPACE_ROOT', 'WORKSPACE_DEFAULT_QUOTA_BYTES']);
+  delete process.env.DATABASE_URL;
   process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'quota-fs-'));
   process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = '50';
-  const service = new FileService({
-    getThreadById: async () => ({ id: 't', resourceId: USER_C }),
-  });
-  await service.write(authContextFromUser(user(USER_C)), 't', 'a.txt', Buffer.alloc(40));
-  await assert.rejects(() => service.write(authContextFromUser(user(USER_C)), 't', 'b.txt', Buffer.alloc(40)));
+  try {
+    const service = new FileService({
+      getThreadById: async () => ({ id: 't', resourceId: USER_C }),
+    });
+    await service.write(authContextFromUser(user(USER_C)), 't', 'a.txt', Buffer.alloc(40));
+    await assert.rejects(() => service.write(authContextFromUser(user(USER_C)), 't', 'b.txt', Buffer.alloc(40)));
+  } finally {
+    restoreEnv(env);
+  }
 });
 
 test('deleting a file releases its workspace quota', async () => {
+  const env = snapshotEnv(['DATABASE_URL', 'WORKSPACE_ROOT', 'WORKSPACE_DEFAULT_QUOTA_BYTES']);
+  delete process.env.DATABASE_URL;
   process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'quota-delete-'));
   process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = '100';
-  const id = 'eeeeeeee-5555-4555-8555-555555555555';
-  const auth = authContextFromUser(user(id));
-  const service = new FileService({ getThreadById: async () => ({ id: 't', resourceId: id }) });
-  await service.write(auth, 't', 'a.txt', Buffer.alloc(80));
-  await service.delete(auth, 't', 'a.txt');
-  await service.write(auth, 't', 'b.txt', Buffer.alloc(80));
+  try {
+    const id = 'eeeeeeee-5555-4555-8555-555555555555';
+    const auth = authContextFromUser(user(id));
+    const service = new FileService({ getThreadById: async () => ({ id: 't', resourceId: id }) });
+    await service.write(auth, 't', 'a.txt', Buffer.alloc(80));
+    await service.delete(auth, 't', 'a.txt');
+    await service.write(auth, 't', 'b.txt', Buffer.alloc(80));
+  } finally {
+    restoreEnv(env);
+  }
 });
 
 test('host disk protection checks filesystem usage independently of user quota', async () => {
@@ -100,9 +134,15 @@ test('host disk protection checks filesystem usage independently of user quota',
 });
 
 test('FileService accepts a 10 MiB write and rejects one extra byte with FILE_TOO_LARGE', async () => {
-  const previousMax = process.env.WORKSPACE_MAX_FILE_SIZE_BYTES;
-  const previousWarn = process.env.WORKSPACE_DISK_WARN_RATIO;
-  const previousBlock = process.env.WORKSPACE_DISK_BLOCK_RATIO;
+  const env = snapshotEnv([
+    'DATABASE_URL',
+    'WORKSPACE_MAX_FILE_SIZE_BYTES',
+    'WORKSPACE_DISK_WARN_RATIO',
+    'WORKSPACE_DISK_BLOCK_RATIO',
+    'WORKSPACE_ROOT',
+    'WORKSPACE_DEFAULT_QUOTA_BYTES',
+  ]);
+  delete process.env.DATABASE_URL;
   delete process.env.WORKSPACE_MAX_FILE_SIZE_BYTES;
   process.env.WORKSPACE_DISK_WARN_RATIO = '1';
   process.env.WORKSPACE_DISK_BLOCK_RATIO = '1';
@@ -118,63 +158,76 @@ test('FileService accepts a 10 MiB write and rejects one extra byte with FILE_TO
       (error: unknown) => error instanceof FileServiceError && error.code === 'FILE_TOO_LARGE',
     );
   } finally {
-    if (previousMax === undefined) delete process.env.WORKSPACE_MAX_FILE_SIZE_BYTES;
-    else process.env.WORKSPACE_MAX_FILE_SIZE_BYTES = previousMax;
-    if (previousWarn === undefined) delete process.env.WORKSPACE_DISK_WARN_RATIO;
-    else process.env.WORKSPACE_DISK_WARN_RATIO = previousWarn;
-    if (previousBlock === undefined) delete process.env.WORKSPACE_DISK_BLOCK_RATIO;
-    else process.env.WORKSPACE_DISK_BLOCK_RATIO = previousBlock;
+    restoreEnv(env);
   }
 });
 
 test('overwrite write reserves only max(0, new - old) and shrinking releases the difference', async () => {
+  const env = snapshotEnv(['DATABASE_URL', 'WORKSPACE_ROOT', 'WORKSPACE_DEFAULT_QUOTA_BYTES']);
+  delete process.env.DATABASE_URL;
   process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'quota-overwrite-'));
   process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = '50';
-  const id = '10101010-1010-4101-8101-101010101010';
-  const auth = authContextFromUser(user(id));
-  const service = new FileService({ getThreadById: async () => ({ id: 't', resourceId: id }) });
-  const quota = new WorkspaceQuota();
-  await service.write(auth, 't', 'note.txt', Buffer.alloc(40));
-  await service.write(auth, 't', 'note.txt', Buffer.alloc(45));
-  assert.equal((await quota.usage(id)).usedBytes, 45);
-  assert.equal((await quota.usage(id)).fileCount, 1);
-  await service.write(auth, 't', 'note.txt', Buffer.alloc(10));
-  assert.equal((await quota.usage(id)).usedBytes, 10);
-  assert.equal((await quota.usage(id)).fileCount, 1);
+  try {
+    const id = '10101010-1010-4101-8101-101010101010';
+    const auth = authContextFromUser(user(id));
+    const service = new FileService({ getThreadById: async () => ({ id: 't', resourceId: id }) });
+    const quota = new WorkspaceQuota();
+    await service.write(auth, 't', 'note.txt', Buffer.alloc(40));
+    await service.write(auth, 't', 'note.txt', Buffer.alloc(45));
+    assert.equal((await quota.usage(id)).usedBytes, 45);
+    assert.equal((await quota.usage(id)).fileCount, 1);
+    await service.write(auth, 't', 'note.txt', Buffer.alloc(10));
+    assert.equal((await quota.usage(id)).usedBytes, 10);
+    assert.equal((await quota.usage(id)).fileCount, 1);
+  } finally {
+    restoreEnv(env);
+  }
 });
 
 test('overwriting a zero-byte file does not increment the file count', async () => {
+  const env = snapshotEnv(['DATABASE_URL', 'WORKSPACE_ROOT', 'WORKSPACE_DEFAULT_QUOTA_BYTES']);
+  delete process.env.DATABASE_URL;
   process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'quota-zero-'));
   process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = '50';
-  const id = '12121212-1212-4121-8121-121212121212';
-  const auth = authContextFromUser(user(id));
-  const service = new FileService({ getThreadById: async () => ({ id: 't', resourceId: id }) });
-  const quota = new WorkspaceQuota();
-  await service.write(auth, 't', 'empty.txt', Buffer.alloc(0));
-  await service.write(auth, 't', 'empty.txt', Buffer.from('hello'));
-  const usage = await quota.usage(id);
-  assert.equal(usage.usedBytes, 5);
-  assert.equal(usage.fileCount, 1);
+  try {
+    const id = '12121212-1212-4121-8121-121212121212';
+    const auth = authContextFromUser(user(id));
+    const service = new FileService({ getThreadById: async () => ({ id: 't', resourceId: id }) });
+    const quota = new WorkspaceQuota();
+    await service.write(auth, 't', 'empty.txt', Buffer.alloc(0));
+    await service.write(auth, 't', 'empty.txt', Buffer.from('hello'));
+    const usage = await quota.usage(id);
+    assert.equal(usage.usedBytes, 5);
+    assert.equal(usage.fileCount, 1);
+  } finally {
+    restoreEnv(env);
+  }
 });
 
 test('reconcileFromDisk recounts regular files and skips symlinks outside the user root', async () => {
+  const env = snapshotEnv(['DATABASE_URL', 'WORKSPACE_ROOT', 'WORKSPACE_DEFAULT_QUOTA_BYTES']);
+  delete process.env.DATABASE_URL;
   process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'quota-reconcile-'));
   process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = '1000';
-  const id = '13131313-1313-4131-8131-131313131313';
-  const quota = new WorkspaceQuota();
-  await quota.reserve(id, 999, 9);
-  const root = workspaceRoot(id);
-  await mkdir(join(root, 'uploads'), { recursive: true });
-  await writeFile(join(root, 'uploads', 'a.txt'), Buffer.alloc(7));
-  await writeFile(join(root, 'uploads', 'b.txt'), Buffer.alloc(11));
-  const outside = join(process.env.WORKSPACE_ROOT, 'outside.bin');
-  await writeFile(outside, Buffer.alloc(400));
-  await symlink(outside, join(root, 'uploads', 'link.bin'));
-  const usage = await quota.reconcileFromDisk(id);
-  assert.equal(usage.usedBytes, 18);
-  assert.equal(usage.fileCount, 2);
-  assert.equal((await quota.usage(id)).usedBytes, 18);
-  assert.equal((await quota.usage(id)).fileCount, 2);
+  try {
+    const id = '13131313-1313-4131-8131-131313131313';
+    const quota = new WorkspaceQuota();
+    await quota.reserve(id, 999, 9);
+    const root = workspaceRoot(id);
+    await mkdir(join(root, 'uploads'), { recursive: true });
+    await writeFile(join(root, 'uploads', 'a.txt'), Buffer.alloc(7));
+    await writeFile(join(root, 'uploads', 'b.txt'), Buffer.alloc(11));
+    const outside = join(process.env.WORKSPACE_ROOT!, 'outside.bin');
+    await writeFile(outside, Buffer.alloc(400));
+    await symlink(outside, join(root, 'uploads', 'link.bin'));
+    const usage = await quota.reconcileFromDisk(id);
+    assert.equal(usage.usedBytes, 18);
+    assert.equal(usage.fileCount, 2);
+    assert.equal((await quota.usage(id)).usedBytes, 18);
+    assert.equal((await quota.usage(id)).fileCount, 2);
+  } finally {
+    restoreEnv(env);
+  }
 });
 
 test('database concurrent reserves that together exceed quota only commit one',
@@ -210,6 +263,7 @@ test('database concurrent reserves that together exceed quota only commit one',
     assert.equal((await quota.usage(created.id)).usedBytes, 600);
   } finally {
     await getPool().query('DELETE FROM app_users WHERE id = $1', [created.id]);
-    delete process.env.DATABASE_URL;
+    if (DATABASE_URL === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = DATABASE_URL;
   }
 });
