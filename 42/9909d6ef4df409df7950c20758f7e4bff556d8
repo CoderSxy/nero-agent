@@ -1,0 +1,36 @@
+src/mastra/workspace/quota.ts
+  s_f707fec3bc4b49::t_37c84976a566d8 98,109,113-114
+  s_f707fec3bc4b49::t_9de9fd99438f56 32,50
+  s_f707fec3bc4b49::t_bbaae105c43347 115-116
+tests/workspace-quota.test.ts
+  s_f707fec3bc4b49::t_9ad3b880c1d329 129-155
+src/mastra/files/routes.ts
+  s_f707fec3bc4b49::t_85977ec9467c00 263-276
+  s_f707fec3bc4b49::t_1f39d075ca2a8f 261-262
+src/mastra/files/workspace-service.ts
+  s_f707fec3bc4b49::t_f50d8889393356 97-137,139-191
+  s_f707fec3bc4b49::t_567330d9807d79 138
+  s_f707fec3bc4b49::t_49f7a8471447aa 1,7,9,24-35
+  s_f707fec3bc4b49::t_654df9b17ecbce 36
+tests/workspace-batch-delete.test.ts
+  s_f707fec3bc4b49::t_25fdc58b59521c 1-106,108-118,124-127,133-167,169-173,176-182,203-277
+  s_f707fec3bc4b49::t_6541809cae66cd 168,174-175,183-202
+  s_f707fec3bc4b49::t_6ee6d73322f1d2 107
+  s_f707fec3bc4b49::t_b62ab3ff3da27b 119-123,128-132
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "429909d6ef4df409df7950c20758f7e4bff556d8",
+  "prompts": {},
+  "sessions": {
+    "s_f707fec3bc4b49": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "644d82b6-3c47-457c-ad28-d8a9f5bfa6cf",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
