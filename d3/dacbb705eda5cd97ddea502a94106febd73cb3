@@ -1,0 +1,34 @@
+web/src/agent/MessageList.test.tsx
+  s_ef5296a9ee10d7::t_ed8a9877fb0e56 256,268-269
+web/src/agent/AgentChat.tsx
+  s_ef5296a9ee10d7::t_bb98a2b746236d 289,297-298,310
+  s_ef5296a9ee10d7::t_14a4f3ccab6c2f 53-55,67-91,93-96,98,100-102
+web/src/agent/AgentComposer.tsx
+  s_ef5296a9ee10d7::t_a63e30da273270 7
+  s_ef5296a9ee10d7::t_11b2bd2794633a 118-123
+web/src/agent/MessageList.tsx
+  s_ef5296a9ee10d7::t_e89f4e13e5588b 73-80,88
+web/src/agent/client.ts
+  s_ef5296a9ee10d7::t_f285a56c37e6c0 103,114-116
+web/src/agent/AgentChat.test.tsx
+  s_ef5296a9ee10d7::t_8f4539087da218 462-482
+  s_ef5296a9ee10d7::t_8a2cc34dd9bdae 517,520,524,526-535,539-540,543-615
+web/src/agent/attachment-client.ts
+  s_ef5296a9ee10d7::t_2187a0e2bedc2a 51-55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d3dacbb705eda5cd97ddea502a94106febd73cb3",
+  "prompts": {},
+  "sessions": {
+    "s_ef5296a9ee10d7": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b892e506-2961-46b4-bb72-8d1815beff9f",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
