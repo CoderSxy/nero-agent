@@ -1,0 +1,22 @@
+docs/deployment/workspace-sandbox-ecs.md
+  s_cfa75c13685436::t_61b6b34e55bf15 5-6,13,18-24
+README.md
+  s_cfa75c13685436::t_42dd136e7291bc 73-74,76-85,88-93,95,97
+  s_cfa75c13685436::t_5d1f61eef7d7ef 75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "479c638f979067d9d5141dfd0677b09bf6e41a7f",
+  "prompts": {},
+  "sessions": {
+    "s_cfa75c13685436": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "bbd3f8ab-3245-49e0-ac92-cbcfbd8da7b6",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
