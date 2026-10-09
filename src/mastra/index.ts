@@ -23,7 +23,7 @@ import { modelAdminRoutes } from './models/admin-page';
 import { authContextFromUser, resourceIdFor } from './auth/auth-context';
 import { getUserByToken } from './auth/service';
 import { studioAuth } from './auth/studio';
-import { createStudioProxyAuth } from './auth/studio-proxy';
+import { createStudioProxyAuth, createStudioProxyRBAC } from './auth/studio-proxy';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error('DATABASE_URL 未配置，请先运行 npm run db:local:setup');
@@ -39,7 +39,9 @@ const configuredStudioAuth = studioProxyKey && studioAdminId ? createStudioProxy
 }) : studioAuth;
 
 export const mastra = new Mastra({
-  studio: { auth: configuredStudioAuth },
+  studio: { auth: configuredStudioAuth,
+    ...(studioProxyKey ? { rbac: createStudioProxyRBAC() } : {}),
+  },
   server: {
     studioBase: process.env.MASTRA_STUDIO_BASE || '/',
     middleware: [agentModelLockMiddleware, authorizeThreadRoute, studioChineseMiddleware],
