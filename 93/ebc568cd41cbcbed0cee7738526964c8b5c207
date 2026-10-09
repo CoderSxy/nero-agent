@@ -1,0 +1,47 @@
+src/mastra/auth/studio-proxy.ts
+  s_3f0f872474eaa7::t_6b90d59020b4a6 39-40,42
+  s_3f0f872474eaa7::t_0dbf6e1fc83590 1-38,41,43-46
+tests/studio-zh.test.ts
+  s_3f0f872474eaa7::t_b92aa82e43b845 48,55-59
+  s_3f0f872474eaa7::t_fa1efde7c5b005 50-51
+deploy/nginx-studio-gateway.conf
+  s_3f0f872474eaa7::t_121dac8c98c675 35-51
+  s_3f0f872474eaa7::t_492e686361379d 1-34
+tests/studio-auth.test.ts
+  s_3f0f872474eaa7::t_8c3962f18f478f 19
+  s_3f0f872474eaa7::t_362770ae388ef2 5,12-17,20-28
+  s_3f0f872474eaa7::t_4aa087dee94a75 18
+  s_3f0f872474eaa7::t_c6ffb5851b1271 29
+src/mastra/auth/routes.ts
+  s_3f0f872474eaa7::t_06003e340ab632 2-3,9-12,31,35-39,44-63
+  s_3f0f872474eaa7::t_fe6836cdd8603b 40-43
+web/src/App.test.tsx
+  s_3f0f872474eaa7::t_c59ec3a71fdf68 28,30-31,38-40
+web/src/App.tsx
+  s_3f0f872474eaa7::t_452fa55cf89597 40-58,92
+README.md
+  s_3f0f872474eaa7::t_ea8b36bc9478be 23-24
+src/mastra/index.ts
+  s_3f0f872474eaa7::t_01eb874796c666 26,30-39,42
+src/mastra/studio-zh.ts
+  s_3f0f872474eaa7::t_cd6d4e1b5f318d 140-143
+  s_3f0f872474eaa7::t_efad3f7f5d4944 144-147
+.env.example
+  s_3f0f872474eaa7::t_f8ab8cea9fa478 16-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "93ebc568cd41cbcbed0cee7738526964c8b5c207",
+  "prompts": {},
+  "sessions": {
+    "s_3f0f872474eaa7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a119ff-11d9-7e10-a5bb-44247d0152fa",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
