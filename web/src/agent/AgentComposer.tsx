@@ -72,7 +72,7 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
   const [addPosition, setAddPosition] = useState({ top: 0, left: 0 });
   const [query, setQuery] = useState('');
   const [position, setPosition] = useState({ top: 0, left: 0, width: 360 });
-  const [preview, setPreview] = useState<{ name: string; url: string } | null>(null);
+  const [preview, setPreview] = useState<{ key: string; name: string; url: string } | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -125,11 +125,20 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
     if (list.length) onUploadFiles?.(list, kind);
   }
 
+  function removeAttachment(key: string) {
+    if (preview?.key === key) setPreview(null);
+    onRemoveAttachment?.(key);
+  }
+
+  function closePreview() {
+    setPreview(null);
+  }
+
   return <Composer className="agent-composer" onSubmit={event => { event.preventDefault(); if (canSend) onSend(); }}>
     {attachments.length > 0 && <div className="composer-attachment-row" aria-label="已选择的文件">
       {attachments.map(file => <AttachmentCard key={file.key} attachment={file}
-        onRemove={onRemoveAttachment} onRetry={onRetryAttachment}
-        onPreview={(item, url) => setPreview({ name: item.name, url })} />)}
+        onRemove={removeAttachment} onRetry={onRetryAttachment}
+        onPreview={(item, url) => setPreview({ key: item.key, name: item.name, url })} />)}
     </div>}
     <ComposerRing busy={isRunning}><ComposerBox>
       <ComposerInput aria-label="发送消息" placeholder="向智能体发送消息…" value={draft}
@@ -204,7 +213,7 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
     </ComposerBox></ComposerRing>
     {preview && createPortal(<div className="composer-image-preview-backdrop" role="dialog" aria-label="图片预览">
       <button type="button" className="composer-image-preview-close" aria-label="关闭预览"
-        onClick={() => setPreview(null)}>关闭</button>
+        onClick={closePreview}>关闭</button>
       <img src={preview.url} alt={preview.name} />
     </div>, document.body)}
   </Composer>;

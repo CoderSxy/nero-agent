@@ -71,6 +71,23 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     return `att-${++nextAttachmentId.current}`;
   }
 
+  function oversizeMessage(name: string) {
+    return `文件超过 10 MiB 上限：${name}`;
+  }
+
+  function reconcileComposerError(attachments: ComposerAttachment[]) {
+    if (!attachments.some(item => item.state === 'failed')) setError(null);
+  }
+
+  function addOversizeAttachment(file: File) {
+    const key = nextKey();
+    const error = oversizeMessage(file.name);
+    setAttachments(current => [...current, {
+      key, source: 'personal', path: '', name: file.name, size: file.size,
+      mimeType: file.type || 'application/octet-stream', etag: '', state: 'failed', error,
+    }]);
+  }
+
   async function startUpload(file: File, key = nextKey()) {
     pendingUploads.current.set(key, { key, file });
     setAttachments(current => {
@@ -86,20 +103,23 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     });
     try {
       const result = await uploadWorkspaceFile(file);
-      setAttachments(current => current.map(item => item.key === key ? {
-        ...item,
-        source: result.source,
-        path: result.path,
-        name: result.name,
-        size: result.size,
-        mimeType: result.mimeType,
-        etag: result.etag,
-        state: 'ready',
-        error: undefined,
-      } : item));
+      setAttachments(current => {
+        const next = current.map(item => item.key === key ? {
+          ...item,
+          source: result.source,
+          path: result.path,
+          name: result.name,
+          size: result.size,
+          mimeType: result.mimeType,
+          etag: result.etag,
+          state: 'ready',
+          error: undefined,
+        } : item);
+        reconcileComposerError(next);
+        return next;
+      });
       pendingUploads.current.delete(key);
       onFilesChanged?.();
-      setError(null);
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : '上传失败';
       setAttachments(current => current.map(item => item.key === key
@@ -119,7 +139,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     }
     for (const file of accepted) {
       if (file.size > MAX_UPLOAD_BYTES) {
-        setError(`文件超过 10 MiB 上限：${file.name}`);
+        addOversizeAttachment(file);
         continue;
       }
       void startUpload(file);
@@ -134,7 +154,11 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
 
   function removeAttachment(key: string) {
     pendingUploads.current.delete(key);
-    setAttachments(current => current.filter(item => item.key !== key));
+    setAttachments(current => {
+      const next = current.filter(item => item.key !== key);
+      reconcileComposerError(next);
+      return next;
+    });
   }
 
   async function chooseWorkspaceFiles(paths: string[]) {
@@ -144,14 +168,14 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
       const byPath = new Map(files.filter(file => file.type === 'file').map(file => [file.path, file]));
       setAttachments(current => {
         const existing = new Set(current.map(item => `${item.source}:${item.path}`));
-        const next = [...current];
+        const additions: ComposerAttachment[] = [];
         for (const path of paths) {
           const identity = `personal:${path}`;
           if (existing.has(identity)) continue;
           const entry = byPath.get(path);
           if (!entry) continue;
           existing.add(identity);
-          next.push({
+          additions.push({
             key: nextKey(),
             source: 'personal',
             path,
@@ -162,9 +186,10 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
             state: 'ready',
           });
         }
+        const next = [...current, ...additions];
+        reconcileComposerError(next);
         return next;
       });
-      setError(null);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '加载工作区文件失败');
     }

@@ -95,6 +95,10 @@ describe('Composer attachment menu and cards', () => {
     expect(screen.getByRole('dialog', { name: '图片预览' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: '关闭预览' }));
     expect(screen.queryByRole('dialog', { name: '图片预览' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '预览 shot.png' }));
+    fireEvent.click(screen.getByRole('button', { name: '从本次消息移除 shot.png' }));
+    expect(screen.queryByRole('dialog', { name: '图片预览' })).toBeNull();
+    expect(onRemove).toHaveBeenCalledWith('b');
 
     rerender(<AgentComposer draft="你好" onDraftChange={vi.fn()} isRunning={false}
       onSend={onSend} onStop={vi.fn()} attachments={[readyFile({ key: 'f', state: 'failed', error: '上传失败' })]}

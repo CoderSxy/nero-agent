@@ -196,8 +196,33 @@ describe('Agent conversation', () => {
     fireEvent.click(screen.getByRole('menuitem', { name: '上传文件' }));
     const huge = new File([new Uint8Array(10 * 1024 * 1024 + 1)], 'huge.bin', { type: 'application/octet-stream' });
     fireEvent.change(screen.getByLabelText('选择本地文件'), { target: { files: [huge] } });
-    expect(await screen.findByText(/10 MiB/)).toBeTruthy();
+    const hugeCard = await screen.findByLabelText('附件 huge.bin');
+    expect(hugeCard.textContent).toMatch(/10 MiB/);
+    expect(hugeCard.classList.contains('is-failed')).toBe(true);
     expect(uploadWorkspaceFile).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '从本次消息移除 huge.bin' }));
+    expect(screen.queryByLabelText('附件 huge.bin')).toBeNull();
+    expect(uploadWorkspaceFile).not.toHaveBeenCalled();
+  });
+
+  it('keeps oversize precheck feedback when another file in the same batch uploads', async () => {
+    uploadWorkspaceFile.mockResolvedValue({
+      source: 'personal', path: 'uploads/u3/ok.txt', name: 'ok.txt',
+      size: 2, mimeType: 'text/plain', etag: 'e3',
+    });
+    render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}
+      onMessageSent={vi.fn()} models={models} />);
+    fireEvent.click(screen.getByRole('button', { name: '添加附件' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '上传文件' }));
+    const huge = new File([new Uint8Array(10 * 1024 * 1024 + 1)], 'huge.bin', { type: 'application/octet-stream' });
+    const ok = new File(['ok'], 'ok.txt', { type: 'text/plain' });
+    fireEvent.change(screen.getByLabelText('选择本地文件'), { target: { files: [huge, ok] } });
+    await waitFor(() => expect(screen.getByLabelText('附件 ok.txt')).toBeTruthy());
+    const hugeCard = screen.getByLabelText('附件 huge.bin');
+    expect(hugeCard.textContent).toMatch(/10 MiB/);
+    expect(hugeCard.classList.contains('is-failed')).toBe(true);
+    expect(uploadWorkspaceFile).toHaveBeenCalledTimes(1);
+    expect(uploadWorkspaceFile).toHaveBeenCalledWith(ok);
   });
   it('follows a growing streamed reply only while the reader is at the bottom', () => {
     const observers: Array<{ target: Element; notify: () => void }> = [];
