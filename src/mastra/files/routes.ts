@@ -7,6 +7,7 @@ import { ThreadGuardError, type ThreadLookup } from '../auth/thread-guard';
 import { FilePathError, isUserFilesEnabled, maxFileSizeBytes, relativeFilePath } from './policy';
 import { FileService, FileServiceError } from './service';
 import { addRecursiveDirectorySizes, WorkspaceFileService } from './workspace-service';
+import { AttachmentService, messageLookupFromRecall } from './attachments';
 import { ensureUserWorkspace } from '../workspace/manager';
 import { QuotaExceededError } from '../workspace/quota';
 import { readWorkspaceVersion, saveWorkspaceText, WorkspaceEditError } from './workspace-editor';
@@ -162,9 +163,12 @@ export function createFileRoutes(lookup?: ThreadLookup) {
 
 export const fileRoutes = createFileRoutes();
 
-async function currentWorkspace(c: Context): Promise<{ id: string; filesystem: WorkspaceFilesystem }> {
+async function currentWorkspace(
+  c: Context,
+  sourceOverride?: string,
+): Promise<{ id: string; filesystem: WorkspaceFilesystem }> {
   const auth = trustedAuth(c.get('requestContext'));
-  const source = c.req.query('source');
+  const source = sourceOverride ?? c.req.query('source');
   if (source && source !== 'agent') throw new FilePathError('工作区来源无效');
   if (!source) {
     const root = await ensureUserWorkspace(auth);
@@ -182,12 +186,38 @@ async function currentWorkspace(c: Context): Promise<{ id: string; filesystem: W
   return { id: workspace.id, filesystem: workspace.filesystem };
 }
 
-export function createCurrentWorkspaceFileRoutes() {
+export function createCurrentWorkspaceFileRoutes(lookup?: ThreadLookup) {
   function workspacePath(c: Context): string {
     const prefix = '/current-workspace/files/';
     const raw = c.req.path.startsWith(prefix) ? c.req.path.slice(prefix.length) : c.req.param('*') ?? '';
     try { return relativeFilePath(decodeURIComponent(raw)); }
     catch { throw new FilePathError(); }
+  }
+  async function threadLookupFor(c: Context): Promise<ThreadLookup> {
+    if (lookup) return lookup;
+    const mastra = c.get('mastra') as {
+      getAgent(id: string): { getMemory(args: { requestContext: unknown }): Promise<ThreadLookup> };
+    } | undefined;
+    const requestContext = c.get('requestContext');
+    if (!mastra || !requestContext) throw new FileServiceError(401, 'Authentication is required');
+    return mastra.getAgent('agent').getMemory({ requestContext });
+  }
+  async function attachmentsFor(c: Context): Promise<AttachmentService> {
+    const requestContext = c.get('requestContext');
+    const mastra = c.get('mastra') as {
+      getAgent(id: string): {
+        getMemory(args: { requestContext: unknown }): Promise<ThreadLookup & {
+          recall?: (args: {
+            threadId: string; resourceId?: string; perPage?: number; includeTotal?: boolean;
+          }) => Promise<{ messages: Array<{ id: string; content?: { metadata?: Record<string, unknown> } }> }>;
+        }>;
+      };
+    } | undefined;
+    const memory = mastra && requestContext ? await mastra.getAgent('agent').getMemory({ requestContext }) : undefined;
+    return new AttachmentService(await threadLookupFor(c), {
+      resolveAgentWorkspace: async () => currentWorkspace(c, 'agent'),
+      messageLookup: memory?.recall ? messageLookupFromRecall(memory.recall.bind(memory)) : undefined,
+    });
   }
   return [
     registerApiRoute('/current-workspace/upload', {
@@ -261,6 +291,45 @@ export function createCurrentWorkspaceFileRoutes() {
           const etag = await saveWorkspaceText(workspace.filesystem, path, text, c.req.header('if-match') ?? '',
             c.req.query('source') === 'agent' ? undefined : auth.userId);
           return c.json({ ok: true }, 200, { etag, 'cache-control': 'no-store' });
+        } catch (error) { return respond(c, error); }
+      },
+    }),
+    registerApiRoute('/current-workspace/attachments', {
+      method: 'POST',
+      handler: async c => {
+        try {
+          trustedAuth(c.get('requestContext'));
+          const payload = await c.req.json().catch(() => undefined) as {
+            threadId?: string;
+            clientMessageId?: string;
+            items?: Array<{ source?: string; path?: string }>;
+          } | undefined;
+          if (!payload?.threadId || !payload.clientMessageId || !Array.isArray(payload.items)) {
+            return c.json({ error: '附件请求无效' }, 400);
+          }
+          const attachments = await attachmentsFor(c);
+          const refs = await attachments.prepare(
+            trustedAuth(c.get('requestContext')),
+            payload.threadId,
+            payload.clientMessageId,
+            payload.items.map(item => ({
+              source: item.source as 'personal' | 'agent',
+              path: String(item.path ?? ''),
+            })),
+          );
+          return c.json({ attachments: refs });
+        } catch (error) { return respond(c, error); }
+      },
+    }),
+    registerApiRoute('/current-workspace/attachments', {
+      method: 'GET',
+      handler: async c => {
+        try {
+          const threadId = c.req.query('threadId') ?? '';
+          if (!threadId) return c.json({ error: '缺少 threadId' }, 400);
+          const attachments = await attachmentsFor(c);
+          const refs = await attachments.listForThread(trustedAuth(c.get('requestContext')), threadId);
+          return c.json({ attachments: refs });
         } catch (error) { return respond(c, error); }
       },
     }),
