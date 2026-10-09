@@ -1,8 +1,24 @@
 import type { Processor } from '@mastra/core/processors';
 import {
+  attachedFileModelOutputForTurn,
   sanitizeAttachedFileForPersistence,
   type AttachedFileToolResult,
 } from './tools';
+
+type PromptMessage = {
+  role: string;
+  content: unknown;
+};
+
+type ToolResultPart = {
+  type: 'tool-result';
+  toolCallId: string;
+  toolName: string;
+  output: unknown;
+  providerOptions?: unknown;
+};
+
+const PENDING_IMAGE_OUTPUTS_KEY = 'pendingAttachedImageOutputs';
 
 type ToolInvocationPart = {
   type?: string;
@@ -17,21 +33,51 @@ type ToolInvocationPart = {
   providerMetadata?: { mastra?: { modelOutput?: unknown } };
 };
 
+type PendingImageOutputs = Record<string, unknown>;
+
+function pendingMap(state: Record<string, unknown>): PendingImageOutputs {
+  const existing = state[PENDING_IMAGE_OUTPUTS_KEY];
+  if (existing && typeof existing === 'object') return existing as PendingImageOutputs;
+  const created: PendingImageOutputs = {};
+  state[PENDING_IMAGE_OUTPUTS_KEY] = created;
+  return created;
+}
+
+function containsImagePayload(value: unknown): boolean {
+  if (value == null) return false;
+  const text = JSON.stringify(value);
+  return (
+    text.includes('imageBase64')
+    || text.includes('"image-data"')
+    || text.includes('"file-data"')
+    || text.includes('"type":"media"')
+    || /data:image\//i.test(text)
+  );
+}
+
 /**
- * Keep multimodal image-data available for the current model turn via toModelOutput,
- * but strip raw imageBase64 / image-data from persisted message list before memory
- * and observational storage.
+ * Durable storage never retains raw image bytes. The current-turn model still
+ * receives multimodal media via processLLMRequest (request-scoped state only).
+ *
+ * Why processLLMRequest: Mastra writes providerMetadata.mastra.modelOutput after
+ * processToolResult, and Observational Memory can observe/persist on step>0
+ * before final processOutputResult. processLLMRequest mutations are not persisted.
  */
 export const attachmentPersistenceProcessor: Processor = {
   id: 'attachment-persistence-sanitizer',
 
-  async processToolResult({ toolName, toolCallId, args, result, messageList }) {
+  async processToolResult({ toolName, toolCallId, args, result, messageList, state }) {
     if (toolName !== 'read_attached_file') return;
     if (!result || typeof result !== 'object') return;
     const typed = result as AttachedFileToolResult;
-    if (!typed.imageBase64) return;
-    // Redact raw execute payload for streams/transcript; leave modelOutput alone so
-    // the current turn's next LLM step can still see image-data from toModelOutput.
+    if (!typed.imageBase64 && typed.kind !== 'image') return;
+
+    const turnOutput = attachedFileModelOutputForTurn(typed);
+    if (turnOutput != null) {
+      pendingMap(state)[toolCallId] = turnOutput;
+    }
+
+    const sanitized = sanitizeAttachedFileForPersistence(typed, turnOutput);
     messageList.updateToolInvocation({
       type: 'tool-invocation',
       toolInvocation: {
@@ -39,9 +85,29 @@ export const attachmentPersistenceProcessor: Processor = {
         toolCallId,
         toolName,
         args,
-        result: sanitizeAttachedFileForPersistence(typed).result,
+        result: sanitized.result,
+      },
+      providerMetadata: {
+        mastra: { modelOutput: sanitized.modelOutput },
       },
     });
+  },
+
+  async processOutputStream({ part, messageList }) {
+    // After processToolResult, Mastra may rewrite providerMetadata with toModelOutput.
+    // Re-strip any image bytes that landed on the message list before OM/input-step.
+    if (messageList && part?.type === 'tool-result') {
+      stripStoredImageBytes(messageList);
+    }
+    return part;
+  },
+
+  async processLLMRequest({ prompt, state }) {
+    const pending = state[PENDING_IMAGE_OUTPUTS_KEY] as PendingImageOutputs | undefined;
+    if (!pending || Object.keys(pending).length === 0) return;
+
+    const next = rehydratePromptImages(prompt as PromptMessage[], pending);
+    return { prompt: next as typeof prompt };
   },
 
   async processOutputResult({ messageList }) {
@@ -53,7 +119,27 @@ export const attachmentPersistenceProcessor: Processor = {
   },
 };
 
-function stripStoredImageBytes(messageList: {
+export function rehydratePromptImages(
+  prompt: PromptMessage[],
+  pending: PendingImageOutputs,
+): PromptMessage[] {
+  return prompt.map(message => {
+    if (message.role !== 'tool' || !Array.isArray(message.content)) return message;
+    return {
+      ...message,
+      content: message.content.map((part: unknown) => {
+        if (!part || typeof part !== 'object') return part;
+        const typed = part as ToolResultPart;
+        if (typed.type !== 'tool-result') return part;
+        const replacement = pending[typed.toolCallId];
+        if (replacement == null) return part;
+        return { ...typed, output: replacement };
+      }),
+    };
+  });
+}
+
+export function stripStoredImageBytes(messageList: {
   get: { all: { db(): unknown[] } };
   updateToolInvocation(part: unknown): void;
 }): void {
@@ -68,11 +154,7 @@ function stripStoredImageBytes(messageList: {
       if (invocation.state !== 'result' || !invocation.result) continue;
       const meta = invocation.providerMetadata ?? typed.providerMetadata;
       const modelOutput = meta?.mastra?.modelOutput;
-      const serialized = JSON.stringify({ result: invocation.result, modelOutput });
-      if (!serialized.includes('imageBase64') && !serialized.includes('"image-data"')
-        && !serialized.includes('data:image')) {
-        continue;
-      }
+      if (!containsImagePayload({ result: invocation.result, modelOutput })) continue;
       const sanitized = sanitizeAttachedFileForPersistence(invocation.result, modelOutput);
       messageList.updateToolInvocation({
         type: 'tool-invocation',

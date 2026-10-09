@@ -1,18 +1,28 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { RequestContext } from '@mastra/core/request-context';
 import { authContextFromUser } from '../src/mastra/auth/auth-context';
 import type { AuthUser } from '../src/mastra/auth/service';
 import { AttachmentService } from '../src/mastra/files/attachments';
 import {
+  attachmentPersistenceProcessor,
+  rehydratePromptImages,
+  stripStoredImageBytes,
+} from '../src/mastra/files/attachment-persistence-processor';
+import {
+  attachedFileModelOutputForTurn,
   createReadAttachedFileTool,
   sanitizeAttachedFileForPersistence,
   userFileTools,
+  type AttachedFileToolResult,
 } from '../src/mastra/files/tools';
 import { ThreadGuardError } from '../src/mastra/auth/thread-guard';
+
+const TOOLS_SRC = join(dirname(fileURLToPath(import.meta.url)), '../src/mastra/files/tools.ts');
 
 const USER_ID = '22222222-2222-4222-8222-222222222222';
 const OTHER_ID = '33333333-3333-4333-8333-333333333333';
@@ -164,7 +174,7 @@ test('read_attached_file rejects non-image binary as text', async () => {
   });
 });
 
-test('vision model receives image-data via toModelOutput; display/transcript omit base64', async () => {
+test('toModelOutput persists workspace refs only; turn media stays out of durable shapes', async () => {
   await withMemoryWorkspace(async () => {
     const png = tinyPng();
     const { attachments, ref } = await prepareTextAttachment(png, 'dot.png');
@@ -187,10 +197,19 @@ test('vision model receives image-data via toModelOutput; display/transcript omi
       value: Array<{ type: string; data?: string; mediaType?: string; text?: string }>;
     };
     assert.equal(modelOut.type, 'content');
-    const imagePart = modelOut.value.find(part => part.type === 'image-data');
-    assert.ok(imagePart);
-    assert.equal(imagePart!.data, png.toString('base64'));
-    assert.equal(imagePart!.mediaType, 'image/png');
+    assert.equal(modelOut.value.some(part => part.type === 'image-data' || part.type === 'media'), false);
+    assert.match(JSON.stringify(modelOut), /workspace-attachment:/);
+    assert.doesNotMatch(JSON.stringify(modelOut), /iVBORw0KGgo/);
+
+    const turnOut = attachedFileModelOutputForTurn(result) as {
+      type: string;
+      value: Array<{ type: string; data?: string; mediaType?: string }>;
+    };
+    assert.ok(turnOut);
+    const mediaPart = turnOut.value.find(part => part.type === 'media');
+    assert.ok(mediaPart);
+    assert.equal(mediaPart!.data, png.toString('base64'));
+    assert.equal(mediaPart!.mediaType, 'image/png');
 
     const display = tool.transform?.display?.output?.({
       target: 'display',
@@ -214,12 +233,178 @@ test('vision model receives image-data via toModelOutput; display/transcript omi
       assert.equal('content' in (payload as object), false);
     }
 
-    const sanitized = sanitizeAttachedFileForPersistence(result, modelOut);
+    const sanitized = sanitizeAttachedFileForPersistence(result, turnOut);
     const sanitizedText = JSON.stringify(sanitized);
     assert.doesNotMatch(sanitizedText, /iVBORw0KGgo/);
     assert.doesNotMatch(sanitizedText, /data:/);
+    assert.doesNotMatch(sanitizedText, /"type":"media"/);
     assert.equal((sanitized.result as { attachmentId: string }).attachmentId, ref.attachmentId);
   });
+});
+
+test('client requestContext vision flag cannot force image output when catalog denies', async () => {
+  await withMemoryWorkspace(async () => {
+    const src = await readFile(TOOLS_SRC, 'utf8');
+    assert.equal(src.includes('nero-agent.model-supports-vision'), false);
+    assert.equal(src.includes('VISION_OVERRIDE'), false);
+
+    const { attachments, ref } = await prepareTextAttachment(tinyPng(), 'dot.png');
+    // Production default ignores client flags; tests inject catalog result via deps only.
+    const tool = createReadAttachedFileTool({
+      attachmentsFrom: async () => attachments,
+      modelSupportsVision: async () => false,
+    });
+    await assert.rejects(
+      () => tool.execute!({ attachmentId: ref.attachmentId } as never, toolContext({
+        threadId: THREAD_A,
+        supportsVision: true,
+        attachments,
+      })),
+      /不支持图片|vision|视觉/i,
+    );
+  });
+});
+
+test('processToolResult + processLLMRequest keep bytes off durable messages across multistep', async () => {
+  const pngB64 = tinyPng().toString('base64');
+  const toolCallId = 'call-img-1';
+  const rawResult: AttachedFileToolResult = {
+    attachmentId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    name: 'dot.png',
+    status: 'available',
+    mimeType: 'image/png',
+    kind: 'image',
+    imageBase64: pngB64,
+  };
+
+  const invocations: unknown[] = [];
+  const messageList = {
+    get: {
+      all: {
+        db: () => [{
+          content: {
+            parts: invocations.map(inv => ({
+              type: 'tool-invocation',
+              toolInvocation: inv,
+              providerMetadata: (inv as { providerMetadata?: unknown }).providerMetadata,
+            })),
+          },
+        }],
+      },
+    },
+    updateToolInvocation(part: {
+      toolInvocation: Record<string, unknown>;
+      providerMetadata?: { mastra?: { modelOutput?: unknown } };
+    }) {
+      const existingIdx = invocations.findIndex(
+        inv => (inv as { toolCallId?: string }).toolCallId === part.toolInvocation.toolCallId,
+      );
+      const next = {
+        ...part.toolInvocation,
+        providerMetadata: part.providerMetadata,
+      };
+      if (existingIdx >= 0) invocations[existingIdx] = next;
+      else invocations.push(next);
+    },
+  };
+
+  const state: Record<string, unknown> = {};
+
+  await attachmentPersistenceProcessor.processToolResult!({
+    toolName: 'read_attached_file',
+    toolCallId,
+    args: { attachmentId: rawResult.attachmentId },
+    result: rawResult,
+    messageList: messageList as never,
+    state,
+    messages: [],
+    systemMessages: [],
+    steps: [],
+    stepNumber: 0,
+    abort: () => {
+      throw new Error('abort');
+    },
+    retryCount: 0,
+  } as never);
+
+  // Simulate Mastra rewriting providerMetadata after processToolResult with a dirty media payload
+  // (as would happen if toModelOutput still carried bytes, or a future normalize path).
+  messageList.updateToolInvocation({
+    toolInvocation: {
+      state: 'result',
+      toolCallId,
+      toolName: 'read_attached_file',
+      args: { attachmentId: rawResult.attachmentId },
+      result: { attachmentId: rawResult.attachmentId, name: 'dot.png', status: 'available' },
+    },
+    providerMetadata: {
+      mastra: {
+        modelOutput: {
+          type: 'content',
+          value: [{ type: 'media', data: pngB64, mediaType: 'image/png' }],
+        },
+      },
+    },
+  });
+
+  await attachmentPersistenceProcessor.processOutputStream!({
+    part: { type: 'tool-result', payload: { toolCallId, toolName: 'read_attached_file' } } as never,
+    messageList: messageList as never,
+    streamParts: [],
+    state,
+    abort: () => {
+      throw new Error('abort');
+    },
+    retryCount: 0,
+  } as never);
+
+  const durable = JSON.stringify(messageList.get.all.db());
+  assert.doesNotMatch(durable, /iVBORw0KGgo/);
+  assert.doesNotMatch(durable, /"type":"media"/);
+  assert.doesNotMatch(durable, /imageBase64/);
+  assert.match(durable, /workspace-attachment:/);
+
+  // Next LLM step (step>0): OM would see messageList — still clean — while processLLMRequest
+  // rehydrates media only into the non-persisted prompt.
+  const prompt = [{
+    role: 'tool' as const,
+    content: [{
+      type: 'tool-result' as const,
+      toolCallId,
+      toolName: 'read_attached_file',
+      output: {
+        type: 'content',
+        value: [{ type: 'text', text: '[workspace-attachment:…]' }],
+      },
+    }],
+  }];
+  const llmResult = await attachmentPersistenceProcessor.processLLMRequest!({
+    prompt: prompt as never,
+    model: {} as never,
+    state,
+    stepNumber: 1,
+    steps: [],
+    abort: () => {
+      throw new Error('abort');
+    },
+    retryCount: 0,
+  } as never);
+  assert.ok(llmResult && typeof llmResult === 'object' && 'prompt' in llmResult);
+  const rehydrated = JSON.stringify((llmResult as { prompt: unknown }).prompt);
+  assert.match(rehydrated, /iVBORw0KGgo/);
+  assert.match(rehydrated, /"type":"media"/);
+
+  // Message list remains clean after rehydrate (prompt-only mutation).
+  assert.doesNotMatch(JSON.stringify(messageList.get.all.db()), /iVBORw0KGgo/);
+
+  // Explicit helper coverage for the rehydrate mapping.
+  const mapped = rehydratePromptImages(prompt, {
+    [toolCallId]: attachedFileModelOutputForTurn(rawResult),
+  });
+  assert.match(JSON.stringify(mapped), /iVBORw0KGgo/);
+
+  stripStoredImageBytes(messageList as never);
+  assert.doesNotMatch(JSON.stringify(messageList.get.all.db()), /iVBORw0KGgo/);
 });
 
 test('non-vision model rejects image attachments with a clear error', async () => {

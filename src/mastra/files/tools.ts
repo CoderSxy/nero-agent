@@ -13,7 +13,6 @@ const pathInput = z.object({ path: z.string().min(1) });
 const TEXT_BYTE_LIMIT = 64 * 1024;
 const IMAGE_MIME = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
 const TEXT_MIME = /^(text\/|application\/(json|xml|javascript|x-javascript|yaml|x-yaml|toml|csv|sql))/i;
-const VISION_OVERRIDE_KEY = 'nero-agent.model-supports-vision';
 
 function agentThreadId(context: { agent?: { threadId?: string } }): string {
   const threadId = context.agent?.threadId;
@@ -49,9 +48,8 @@ async function defaultAttachmentsFrom(context: {
   });
 }
 
+/** Server-authoritative vision gate. Never trusts client requestContext flags. */
 async function defaultModelSupportsVision(requestContext: RequestContext): Promise<boolean> {
-  const override = requestContext.get(VISION_OVERRIDE_KEY);
-  if (typeof override === 'boolean') return override;
   const user = trustedUserFrom(requestContext);
   const { ref } = await resolveSelectedModel(requestContext, 'chat');
   const record = await findAuthorizedModel(ref, user);
@@ -109,6 +107,42 @@ export type ReadAttachedFileDeps = {
   modelSupportsVision?: (requestContext: RequestContext) => Promise<boolean>;
 };
 
+function workspaceAttachmentRefText(result: Pick<AttachedFileToolResult, 'attachmentId' | 'name' | 'status'>): string {
+  return `[workspace-attachment:${result.attachmentId} name=${result.name} status=${result.status}]`;
+}
+
+/** Build the multimodal payload the LLM should see for the current turn only (not persisted). */
+export function attachedFileModelOutputForTurn(result: AttachedFileToolResult): unknown {
+  if (result.kind === 'image' && result.imageBase64) {
+    return {
+      type: 'content',
+      value: [
+        {
+          type: 'text',
+          text: `附件 ${result.name}（${result.attachmentId}），状态 ${result.status}`,
+        },
+        {
+          // Match normalizeModelOutput storage/prompt shape (media, not image-data).
+          type: 'media',
+          data: result.imageBase64,
+          mediaType: result.mimeType,
+        },
+      ],
+    };
+  }
+  return undefined;
+}
+
+function isBinaryMediaPart(part: { type?: string; data?: unknown; url?: unknown }): boolean {
+  if (part.type === 'image-data' || part.type === 'file-data' || part.type === 'media') {
+    return typeof part.data === 'string' && part.data.length > 0;
+  }
+  if (part.type === 'image-url' || part.type === 'file-url') {
+    return typeof part.url === 'string' && /^data:/i.test(part.url);
+  }
+  return false;
+}
+
 /** Strip image bytes / multimodal parts before messages or observations are stored. */
 export function sanitizeAttachedFileForPersistence(
   result: AttachedFileToolResult,
@@ -122,11 +156,11 @@ export function sanitizeAttachedFileForPersistence(
         type: 'content',
         value: typed.value.map(part => {
           if (!part || typeof part !== 'object') return part;
-          const item = part as { type?: string; text?: string; mediaType?: string };
-          if (item.type === 'image-data' || item.type === 'file-data') {
+          const item = part as { type?: string; text?: string; data?: unknown; url?: unknown };
+          if (isBinaryMediaPart(item)) {
             return {
               type: 'text',
-              text: `[workspace-attachment:${result.attachmentId} name=${result.name} status=${result.status}]`,
+              text: workspaceAttachmentRefText(result),
             };
           }
           return part;
@@ -206,17 +240,14 @@ export function createReadAttachedFileTool(deps: ReadAttachedFileDeps = {}) {
     },
     toModelOutput: (output: AttachedFileToolResult) => {
       if (output.kind === 'image' && output.imageBase64) {
+        // Persistable shape only — raw bytes are injected for the current LLM call via
+        // attachmentPersistenceProcessor.processLLMRequest (not written to messageList/OM).
         return {
           type: 'content',
           value: [
             {
               type: 'text',
-              text: `附件 ${output.name}（${output.attachmentId}），状态 ${output.status}`,
-            },
-            {
-              type: 'image-data',
-              data: output.imageBase64,
-              mediaType: output.mimeType,
+              text: `附件 ${output.name}（${output.attachmentId}），状态 ${output.status}\n${workspaceAttachmentRefText(output)}`,
             },
           ],
         };
