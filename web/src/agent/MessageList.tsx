@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { MastraDBMessage } from '@mastra/core/agent/message-list';
 import { Message } from '@mastra/playground-ui/components/Message';
 import { MarkdownRenderer } from '@mastra/playground-ui/components/MarkdownRenderer';
@@ -7,6 +7,10 @@ import { ToolApproval } from '@mastra/playground-ui/components/ai/tool-approval'
 import { AskUser } from '@mastra/playground-ui/components/ai/ask-user';
 import { ObservationMarkerBadge } from '@mastra/playground-ui/domains/chat/tools/badges/observation-marker-badge';
 import { Globe2, Wrench, Terminal, LoaderCircle } from 'lucide-react';
+import type { PreparedAttachment } from './attachment-client';
+import { formatBytes, isImageAttachment } from './attachment-types';
+import { parseAttachmentIdsFromText } from './attachment-protocol';
+import { fetchWorkspaceFile } from './client';
 import { messageParts, streamError, summarize, type ToolPart } from './message-parts';
 import { isUserMessage } from './pending-user-message';
 
@@ -57,13 +61,69 @@ function toolDetail(name: string, args: unknown) {
   return typeof value === 'string' ? value : null;
 }
 
+function rawUserText(message: MastraDBMessage): string {
+  const content = message.content;
+  if (typeof content === 'string') return content;
+  const parts = Array.isArray(content.parts) ? content.parts : [];
+  return parts.filter(part => part.type === 'text').map(part => 'text' in part ? part.text : '').join('');
+}
+
+function attachmentsForMessage(message: MastraDBMessage, threadAttachments: PreparedAttachment[]): PreparedAttachment[] {
+  if (!threadAttachments.length || !isUserMessage(message)) return [];
+  const byId = threadAttachments.filter(item => item.clientMessageId === message.id);
+  if (byId.length) return byId;
+  const metadataId = record(message.content.metadata)?.clientMessageId;
+  if (typeof metadataId === 'string') {
+    const byMeta = threadAttachments.filter(item => item.clientMessageId === metadataId);
+    if (byMeta.length) return byMeta;
+  }
+  const ids = new Set(parseAttachmentIdsFromText(rawUserText(message)));
+  if (!ids.size) return [];
+  return threadAttachments.filter(item => ids.has(item.attachmentId));
+}
+
+function HistoryAttachmentCard({ attachment }: { attachment: PreparedAttachment }) {
+  const [thumbUrl, setThumbUrl] = useState<string | null>(null);
+  const unavailable = attachment.status === 'deleted' || attachment.status === 'changed';
+  const isImage = !unavailable && isImageAttachment(attachment) && attachment.path;
+
+  useEffect(() => {
+    if (!isImage) return;
+    let active = true;
+    let objectUrl: string | null = null;
+    void fetchWorkspaceFile(attachment.path, attachment.source).then(blob => {
+      if (!active) return;
+      objectUrl = URL.createObjectURL(blob);
+      setThumbUrl(objectUrl);
+    }).catch(() => { if (active) setThumbUrl(null); });
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [isImage, attachment.path, attachment.source]);
+
+  const statusLabel = attachment.status === 'deleted' ? '文件已删除'
+    : attachment.status === 'changed' ? '文件已更新' : formatBytes(attachment.size);
+
+  return <div className={`message-attachment-card${unavailable ? ' is-unavailable' : ''}`}
+    aria-label={`附件 ${attachment.name}`} title={attachment.path}>
+    {isImage && thumbUrl ? <div className="message-attachment-thumb">
+      <img src={thumbUrl} alt={attachment.name} />
+    </div> : <div className="message-attachment-meta">
+      <strong>{attachment.name}</strong>
+      <small className={unavailable ? 'message-attachment-status' : undefined}>{statusLabel}</small>
+    </div>}
+  </div>;
+}
+
 export function MessageList({ messages, isRunning, error, onApprove, onDecline, onAnswer, approvals = {},
-  pendingApprovalIds }: {
+  pendingApprovalIds, threadAttachments = [] }: {
   messages: MastraDBMessage[]; isRunning: boolean; error: string | null;
   onApprove: (id: string) => Promise<void>; onDecline: (id: string) => Promise<void>;
   onAnswer: (id: string, answer: string | string[]) => Promise<void>;
   approvals?: Record<string, { status: 'approved' | 'declined' }>;
   pendingApprovalIds?: ReadonlySet<string>;
+  threadAttachments?: PreparedAttachment[];
 }) {
   const [pending, setPending] = useState<string | null>(null);
   const busy = useRef(new Set<string>());
@@ -81,7 +141,11 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
     catch { /* AgentChat shows the error; keep the question available. */ }
     finally { busy.current.delete(id); setPending(null); }
   }
-  const rows = messages.map(message => ({ message, parts: messageParts(message) }));
+  const rows = messages.map(message => ({
+    message,
+    parts: messageParts(message),
+    attachments: attachmentsForMessage(message, threadAttachments),
+  }));
   const completedCycles = new Set<string>();
   for (const { parts } of rows) {
     for (const part of parts) {
@@ -91,14 +155,17 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
     }
   }
   return <div className="message-list" aria-live="polite">
-    {rows.map(({ message, parts: rawParts }) => {
+    {rows.map(({ message, parts: rawParts, attachments }) => {
       const parts = rawParts.filter(part => part.kind !== 'observation' || part.state !== 'running' ||
         !part.cycleId || !completedCycles.has(part.cycleId));
-      if (!parts.length) return null;
+      if (!parts.length && !attachments.length) return null;
       const runningProcess = isRunning && message === messages.at(-1) &&
         parts.some(part => part.kind === 'reasoning' || part.kind === 'tool' || part.kind === 'observation');
       return <Message key={message.id} from={isUserMessage(message) ? 'user' : 'assistant'}
         className={runningProcess ? 'process-message process-message--running' : undefined}>
+        {attachments.length > 0 && <div className="message-attachment-row" aria-label="消息附件">
+          {attachments.map(item => <HistoryAttachmentCard key={item.attachmentId} attachment={item} />)}
+        </div>}
         {parts.map((part, index) => {
           if (part.kind === 'observation') return <ObservationMarkerBadge key={part.cycleId ?? index}
             toolName={part.state === 'running' ? 'Observing' : 'Observed'} args={{}}

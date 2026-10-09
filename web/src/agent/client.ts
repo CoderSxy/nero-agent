@@ -99,3 +99,34 @@ export async function uploadUserFile(threadId: string, relativePath: string, fil
   if (!response.ok) throw new Error((await response.json().catch(() => ({ error: '上传失败' })) as { error?: string }).error ?? '上传失败');
   return response.json() as Promise<{ path: string }>;
 }
+
+export async function listThreadAttachments(threadId: string): Promise<Array<{
+  attachmentId: string;
+  clientMessageId: string;
+  source: 'personal' | 'agent';
+  path: string;
+  name: string;
+  size: number;
+  mimeType: string;
+  etag: string;
+  status: 'available' | 'changed' | 'deleted';
+}>> {
+  const response = await apiFetch(`/current-workspace/attachments?threadId=${encodeURIComponent(threadId)}`);
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({})) as { error?: string };
+    throw new Error(payload.error ?? '加载附件失败');
+  }
+  const body = await response.json() as { attachments?: unknown };
+  if (!Array.isArray(body.attachments)) throw new Error('附件响应格式无效');
+  return body.attachments as Array<{
+    attachmentId: string;
+    clientMessageId: string;
+    source: 'personal' | 'agent';
+    path: string;
+    name: string;
+    size: number;
+    mimeType: string;
+    etag: string;
+    status: 'available' | 'changed' | 'deleted';
+  }>;
+}

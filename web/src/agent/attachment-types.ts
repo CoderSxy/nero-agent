@@ -13,6 +13,7 @@ export type ComposerAttachment = {
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 export const IMAGE_ACCEPT = 'image/png,image/jpeg,image/webp,image/gif';
 export const IMAGE_MIME = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
+export const WORKSPACE_FILE_MIME = 'application/x-nero-workspace-file';
 
 export function isImageAttachment(attachment: Pick<ComposerAttachment, 'mimeType' | 'name'>): boolean {
   if (IMAGE_MIME.has(attachment.mimeType)) return true;

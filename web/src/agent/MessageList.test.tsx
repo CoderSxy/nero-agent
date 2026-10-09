@@ -6,10 +6,14 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 import { MessageList } from './MessageList';
 
 const styles = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../styles.css'), 'utf8');
+const fetchWorkspaceFile = vi.hoisted(() => vi.fn());
+vi.mock('./client', () => ({
+  fetchWorkspaceFile: (...args: unknown[]) => fetchWorkspaceFile(...args),
+}));
 
 beforeAll(() => vi.stubGlobal('PointerEvent', MouseEvent));
 afterAll(() => vi.unstubAllGlobals());
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 const pendingMessage = { id: 'a', role: 'assistant', content: { format: 2, parts: [
   { type: 'text', text: '正在执行' },
@@ -247,5 +251,64 @@ describe('message tools and stream state', () => {
     await waitFor(() => expect(button).toHaveProperty('disabled', false));
     fireEvent.click(button);
     expect(approve).toHaveBeenCalledTimes(2);
+  });
+
+  it('renders history attachment cards by clientMessageId and strips agent protocol text', async () => {
+    fetchWorkspaceFile.mockResolvedValue(new Blob(['img'], { type: 'image/png' }));
+    const createObjectURL = vi.fn(() => 'blob:history-shot');
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL });
+    const agentText = [
+      '请看图',
+      '',
+      '[[nero-attachments]]',
+      'id=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa|name=shot.png|mime=image/png',
+      '[[/nero-attachments]]',
+    ].join('\n');
+    const message = { id: 'msg-1', role: 'user', content: { format: 2, parts: [{ type: 'text', text: agentText }] } };
+    const attachments = [{
+      attachmentId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      clientMessageId: 'pending-1',
+      source: 'personal' as const,
+      path: 'uploads/u1/shot.png',
+      name: 'shot.png',
+      size: 4,
+      mimeType: 'image/png',
+      etag: 'e1',
+      status: 'available' as const,
+    }];
+    const { unmount } = render(<MessageList messages={[message] as never} isRunning={false} error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()}
+      threadAttachments={attachments} />);
+    expect(screen.getByText('请看图')).toBeTruthy();
+    expect(screen.queryByText(/nero-attachments/)).toBeNull();
+    expect(screen.queryByText(/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/)).toBeNull();
+    expect(await screen.findByLabelText('附件 shot.png')).toBeTruthy();
+    unmount();
+    expect(revokeObjectURL).toHaveBeenCalled();
+  });
+
+  it('shows changed and deleted attachment statuses as non-interactive cards', () => {
+    const message = { id: 'pending-2', role: 'user', content: { format: 2, parts: [{ type: 'text', text: '文件' }] } };
+    const attachments = [
+      {
+        attachmentId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+        clientMessageId: 'pending-2',
+        source: 'personal' as const, path: 'docs/a.txt', name: 'a.txt',
+        size: 3, mimeType: 'text/plain', etag: 'e1', status: 'changed' as const,
+      },
+      {
+        attachmentId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+        clientMessageId: 'pending-2',
+        source: 'personal' as const, path: 'docs/gone.txt', name: 'gone.txt',
+        size: 3, mimeType: 'text/plain', etag: 'e2', status: 'deleted' as const,
+      },
+    ];
+    render(<MessageList messages={[message] as never} isRunning={false} error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()}
+      threadAttachments={attachments} />);
+    expect(screen.getByText('文件已更新')).toBeTruthy();
+    expect(screen.getByText('文件已删除')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /预览 gone|打开 gone/ })).toBeNull();
   });
 });

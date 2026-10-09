@@ -41,17 +41,20 @@ vi.mock('./use-thread-list', () => ({ useThreadList: () => ({
   previewFirstMessageTitle, confirmFirstMessageTitle, discardFirstMessageTitle,
 }) }));
 vi.mock('./AgentChat', () => ({ AgentChat: ({ title, models, sendBlockedReason, catalog, modelRef, onModelChange,
-  modelError, pendingUserMessages, onMessageSubmitted, onFilesChanged }: {
+  modelError, pendingUserMessages, onMessageSubmitted, onFilesChanged, attachRequest }: {
   title?: string;
   models: { chatModel: string; memoryModel: string } | null; sendBlockedReason?: string | null;
   catalog?: Array<{ ref: string; displayName: string }>; modelRef?: string; onModelChange?: (ref: string) => void;
   modelError?: string | null; pendingUserMessages?: PendingUserMessage[];
   onMessageSubmitted?: (message: PendingUserMessage) => void;
   onFilesChanged?: () => void;
+  attachRequest?: { id: number; path: string; source: 'personal' | 'agent' } | null;
 }) => <div data-testid="models">{models ? `${models.chatModel}|${models.memoryModel}` : 'none'}
   <span data-testid="chat-title">{title}</span>
   <span data-testid="blocked">{sendBlockedReason ?? ''}</span>
   <span data-testid="pending">{pendingUserMessages?.map(message => message.text).join('|')}</span>
+  <span data-testid="attach-request">{attachRequest
+    ? `${attachRequest.id}|${attachRequest.source}|${attachRequest.path}` : ''}</span>
   <button type="button" onClick={() => onMessageSubmitted?.({ id: 'local', text: '刚发送的消息',
     createdAt: new Date(), occurrence: 1 })}>模拟发送</button>
   <button type="button" onClick={() => onFilesChanged?.()}>模拟文件生成</button>
@@ -244,5 +247,26 @@ describe('Agent page model selection', () => {
     fireEvent.click(screen.getByRole('button', { name: '设置' }));
     fireEvent.click(screen.getByRole('button', { name: '浅色' }));
     expect(document.documentElement.classList.contains('light')).toBe(true);
+  });
+
+  it('passes incremental attach requests to the active chat', async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ files: [
+      { path: 'docs', type: 'directory', size: 0 },
+      { path: 'docs/a.txt', type: 'file', size: 3 },
+      { path: 'docs/b.txt', type: 'file', size: 4 },
+    ] }), { status: 200 }));
+    vi.stubGlobal('fetch', fetch);
+    renderPage();
+    await screen.findByTestId('models');
+    fireEvent.click(screen.getByRole('button', { name: '打开文件管理面板' }));
+    fireEvent.click(await screen.findByRole('button', { name: '展开 docs' }));
+    fireEvent.click(screen.getByRole('button', { name: 'docs/a.txt 的更多操作' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '加入当前对话' }));
+    await waitFor(() => expect(screen.getByTestId('attach-request').textContent)
+      .toBe('1|personal|docs/a.txt'));
+    fireEvent.click(screen.getByRole('button', { name: 'docs/b.txt 的更多操作' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '加入当前对话' }));
+    await waitFor(() => expect(screen.getByTestId('attach-request').textContent)
+      .toBe('2|personal|docs/b.txt'));
   });
 });

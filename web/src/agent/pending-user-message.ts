@@ -1,4 +1,5 @@
 import type { MastraDBMessage } from '@mastra/core/agent/message-list';
+import { stripAttachmentProtocol } from './attachment-protocol';
 
 export type PendingUserMessage = {
   id: string;
@@ -17,8 +18,9 @@ export function isUserMessage(message: MastraDBMessage): boolean {
 
 function userText(message: MastraDBMessage): string | null {
   if (!isUserMessage(message)) return null;
-  return message.content.parts.filter(part => part.type === 'text')
+  const raw = message.content.parts.filter(part => part.type === 'text')
     .map(part => 'text' in part ? part.text : '').join('');
+  return stripAttachmentProtocol(raw);
 }
 
 export function nextPendingUserMessage(text: string, messages: MastraDBMessage[],

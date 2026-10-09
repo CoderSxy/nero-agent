@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type ClipboardEvent, type DragEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { Composer, ComposerActions, ComposerBox, ComposerInput, ComposerRing } from '@mastra/playground-ui/components/Composer';
 import { ArrowUp, Check, ChevronDown, Plus, Search, Square, X } from 'lucide-react';
 import { fetchWorkspaceFile } from './client';
 import {
-  formatBytes, IMAGE_ACCEPT, isImageAttachment, type ComposerAttachment,
+  formatBytes, IMAGE_ACCEPT, isImageAttachment, WORKSPACE_FILE_MIME, type ComposerAttachment,
 } from './attachment-types';
 import type { ModelRef, SafeModel } from './model-catalog-client';
 
@@ -53,9 +53,24 @@ function AttachmentCard({ attachment, onRemove, onRetry, onPreview }: {
   </div>;
 }
 
+export type WorkspaceDragItem = {
+  source: 'personal' | 'agent';
+  path: string;
+  name: string;
+  size: number;
+  mimeType: string;
+};
+
+function dragHasFiles(transfer: DataTransfer | null | undefined): boolean {
+  if (!transfer) return false;
+  const types = Array.from(transfer.types ?? []);
+  return types.includes('Files') || types.includes(WORKSPACE_FILE_MIME);
+}
+
 export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop, sendDisabled = false,
   catalog = [], modelRef, onModelChange, modelDisabled = false,
-  attachments = [], onChooseWorkspaceFiles, onUploadFiles, onRemoveAttachment, onRetryAttachment }: {
+  attachments = [], onChooseWorkspaceFiles, onUploadFiles, onRemoveAttachment, onRetryAttachment,
+  onWorkspaceDrop }: {
   sendDisabled?: boolean; draft: string; onDraftChange: (value: string) => void; isRunning: boolean;
   onSend: () => void; onStop: () => void;
   catalog?: SafeModel[]; modelRef?: ModelRef; onModelChange?: (ref: ModelRef) => void; modelDisabled?: boolean;
@@ -64,6 +79,7 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
   onUploadFiles?: (files: File[], kind: 'file' | 'image') => void;
   onRemoveAttachment?: (key: string) => void;
   onRetryAttachment?: (key: string) => void;
+  onWorkspaceDrop?: (items: WorkspaceDragItem[]) => void;
 }) {
   const available = modelRef && catalog.some(model => model.ref === modelRef);
   const selected = available ? catalog.find(model => model.ref === modelRef) : undefined;
@@ -77,7 +93,45 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const attachmentBusy = attachments.some(item => item.state === 'uploading' || item.state === 'failed');
-  const canSend = !isRunning && !sendDisabled && !attachmentBusy && Boolean(draft.trim());
+  const hasReadyAttachment = attachments.some(item => item.state === 'ready');
+  const canSend = !isRunning && !sendDisabled && !attachmentBusy
+    && (Boolean(draft.trim()) || hasReadyAttachment);
+
+  function onDragOver(event: DragEvent<HTMLDivElement>) {
+    if (!dragHasFiles(event.dataTransfer)) return;
+    event.preventDefault();
+  }
+
+  function onDrop(event: DragEvent<HTMLDivElement>) {
+    if (!dragHasFiles(event.dataTransfer)) return;
+    event.preventDefault();
+    const workspaceRaw = event.dataTransfer.getData(WORKSPACE_FILE_MIME);
+    if (workspaceRaw) {
+      try {
+        const parsed = JSON.parse(workspaceRaw) as WorkspaceDragItem | WorkspaceDragItem[];
+        const items = Array.isArray(parsed) ? parsed : [parsed];
+        onWorkspaceDrop?.(items.filter(item => item?.path));
+      } catch { /* ignore malformed payload */ }
+      return;
+    }
+    const files = event.dataTransfer.files ? Array.from(event.dataTransfer.files) : [];
+    if (files.length) onUploadFiles?.(files, 'file');
+  }
+
+  function onPaste(event: ClipboardEvent<HTMLDivElement>) {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+    const images: File[] = [];
+    for (const item of Array.from(items)) {
+      if (item.kind === 'file' && /^image\/(png|jpeg|webp|gif)$/i.test(item.type)) {
+        const file = item.getAsFile();
+        if (file) images.push(file);
+      }
+    }
+    if (!images.length) return;
+    event.preventDefault();
+    onUploadFiles?.(images, 'image');
+  }
 
   useEffect(() => { if (open) searchRef.current?.focus(); }, [open]);
   useEffect(() => {
@@ -134,7 +188,8 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
     setPreview(null);
   }
 
-  return <Composer className="agent-composer" onSubmit={event => { event.preventDefault(); if (canSend) onSend(); }}>
+  return <div className="agent-composer" onDragOver={onDragOver} onDrop={onDrop} onPaste={onPaste}>
+    <Composer onSubmit={event => { event.preventDefault(); if (canSend) onSend(); }}>
     {attachments.length > 0 && <div className="composer-attachment-row" aria-label="已选择的文件">
       {attachments.map(file => <AttachmentCard key={file.key} attachment={file}
         onRemove={removeAttachment} onRetry={onRetryAttachment}
@@ -216,5 +271,6 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
         onClick={closePreview}>关闭</button>
       <img src={preview.url} alt={preview.name} />
     </div>, document.body)}
-  </Composer>;
+  </Composer>
+  </div>;
 }

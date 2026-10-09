@@ -1,5 +1,39 @@
 import { describe, expect, it } from 'vitest';
-import { messageParts, streamError } from './message-parts';
+import {
+  buildAgentAttachmentMessage,
+  DEFAULT_ATTACHMENT_PROMPT,
+  messageParts,
+  parseAttachmentIdsFromText,
+  streamError,
+  stripAttachmentProtocol,
+  userVisibleText,
+} from './message-parts';
+
+describe('attachment message protocol', () => {
+  it('embeds attachment ids for the agent and strips them for the user bubble', () => {
+    const agentText = buildAgentAttachmentMessage('请总结', [{
+      attachmentId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      name: 'notes.txt',
+      mimeType: 'text/plain',
+    }]);
+    expect(agentText).toContain('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+    expect(agentText).toContain('notes.txt');
+    expect(agentText).toContain('read_attached_file');
+    expect(stripAttachmentProtocol(agentText)).toBe('请总结');
+    expect(userVisibleText(agentText)).toBe('请总结');
+    expect(parseAttachmentIdsFromText(agentText)).toEqual(['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa']);
+  });
+
+  it('uses the default prompt when only attachments are present', () => {
+    const agentText = buildAgentAttachmentMessage('', [{
+      attachmentId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      name: 'shot.png',
+      mimeType: 'image/png',
+    }]);
+    expect(agentText.startsWith(DEFAULT_ATTACHMENT_PROMPT)).toBe(true);
+    expect(userVisibleText(agentText)).toBe(DEFAULT_ATTACHMENT_PROMPT);
+  });
+});
 
 describe('stream error display', () => {
   it('extracts a safe message without exposing a server stack', () => {

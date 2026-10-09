@@ -1,11 +1,22 @@
 import type { MastraDBMessage } from '@mastra/core/agent/message-list';
 import type { OmMarkerData } from '@mastra/playground-ui/domains/chat/tools/badges/observation-marker-badge';
+import { stripAttachmentProtocol } from './attachment-protocol';
+import { isUserMessage } from './pending-user-message';
 
 export type ToolPart = { id: string; name: string; args: unknown; result?: unknown; state: string };
 export type DisplayPart = { kind: 'text'; text: string } |
   { kind: 'reasoning'; text: string; streaming: boolean; redacted: boolean } |
   { kind: 'observation'; state: 'running' | 'complete'; cycleId?: string; data: OmMarkerData } |
   { kind: 'tool'; tool: ToolPart };
+
+export {
+  buildAgentAttachmentMessage,
+  DEFAULT_ATTACHMENT_PROMPT,
+  parseAttachmentIdsFromText,
+  stripAttachmentProtocol,
+  userVisibleText,
+} from './attachment-protocol';
+
 export function streamError(text: string): string | null {
   if (!text.trimStart().startsWith('{')) return null;
   try {
@@ -22,7 +33,10 @@ export function messageParts(message: MastraDBMessage) {
     .map(part => (part as typeof part & { data?: { cycleId?: string } }).data?.cycleId)
     .filter((id): id is string => typeof id === 'string'));
   const items: DisplayPart[] = parts.flatMap<DisplayPart>(part => {
-    if (part.type === 'text' && 'text' in part) return [{ kind: 'text', text: part.text }];
+    if (part.type === 'text' && 'text' in part) {
+      const text = isUserMessage(message) ? stripAttachmentProtocol(part.text) : part.text;
+      return text ? [{ kind: 'text', text }] : [];
+    }
     if (part.type === 'reasoning') {
       const reasoning = part as typeof part & { reasoning?: string; text?: string; state?: string; redacted?: boolean };
       const text = reasoning.text ?? reasoning.reasoning ?? '';

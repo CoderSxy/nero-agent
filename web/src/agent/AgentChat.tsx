@@ -3,9 +3,14 @@ import type { MastraDBMessage } from '@mastra/core/agent/message-list';
 import { useChat } from '@mastra/react';
 import { ChatShell } from '@mastra/playground-ui/components/ChatShell';
 import { AGENT_ID, listWorkspaceFiles } from './client';
-import { uploadWorkspaceFile } from './attachment-client';
-import { MAX_UPLOAD_BYTES, type ComposerAttachment } from './attachment-types';
-import { AgentComposer } from './AgentComposer';
+import {
+  listThreadAttachments, prepareAttachments, uploadWorkspaceFile, type PreparedAttachment,
+} from './attachment-client';
+import {
+  IMAGE_MIME, MAX_UPLOAD_BYTES, isImageAttachment, type ComposerAttachment,
+} from './attachment-types';
+import { AgentComposer, type WorkspaceDragItem } from './AgentComposer';
+import { buildAgentAttachmentMessage, DEFAULT_ATTACHMENT_PROMPT } from './attachment-protocol';
 import { MessageList } from './MessageList';
 import { createModelRequestContext, type ModelSettings } from './model-settings';
 import type { ModelRef, SafeModel } from './model-catalog-client';
@@ -14,9 +19,15 @@ import { WorkspaceFilePicker } from './WorkspaceFilePicker';
 
 type PendingUpload = { key: string; file: File };
 
+export type AttachRequest = {
+  id: number;
+  path: string;
+  source: 'personal' | 'agent';
+};
+
 export function AgentChat({ title = '未命名会话', threadId, resourceId, initialMessages, onMessageSent, models, catalog = [],
   onModelChange, modelRef, modelDisabled = false, modelError, sendBlockedReason,
-  pendingUserMessages = [], onMessageSubmitted, onMessageFailed, onFilesChanged }: {
+  pendingUserMessages = [], onMessageSubmitted, onMessageFailed, onFilesChanged, attachRequest }: {
   title?: string; threadId: string; resourceId: string; initialMessages: MastraDBMessage[];
   onMessageSent: (message: PendingUserMessage) => void;
   models: ModelSettings | null; catalog?: SafeModel[]; modelRef?: ModelRef;
@@ -26,6 +37,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   onMessageSubmitted?: (message: PendingUserMessage) => void;
   onMessageFailed?: (message: PendingUserMessage) => void;
   onFilesChanged?: () => void;
+  attachRequest?: AttachRequest | null;
 }) {
   const [draft, setDraft] = useState('');
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -33,9 +45,11 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   const [failedDecisions, setFailedDecisions] = useState<Set<string>>(new Set());
   const [pendingApprovalIds, setPendingApprovalIds] = useState<Set<string>>(new Set());
   const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
+  const [threadAttachments, setThreadAttachments] = useState<PreparedAttachment[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const pendingUploads = useRef(new Map<string, PendingUpload>());
   const nextAttachmentId = useRef(0);
+  const lastAttachRequestId = useRef<number | null>(null);
   const viewportId = useId();
   const followRef = useRef(true);
   const chatModel = models?.chatModel;
@@ -43,6 +57,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   const requestContext = useMemo(() => chatModel && memoryModel
     ? createModelRequestContext({ chatModel, memoryModel }) : undefined, [chatModel, memoryModel]);
   const blockedReason = sendBlockedReason ?? (models ? null : '请先配置可用模型');
+  const selectedModel = catalog.find(model => model.ref === (modelRef ?? chatModel));
   const chat = useChat({ agentId: AGENT_ID, resourceId, threadId, initialMessages, requestContext,
     enableThreadSignals: true });
   const wasRunning = useRef(chat.isRunning);
@@ -50,6 +65,15 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     if (wasRunning.current && !chat.isRunning) onFilesChanged?.();
     wasRunning.current = chat.isRunning;
   }, [chat.isRunning, onFilesChanged]);
+  useEffect(() => {
+    let active = true;
+    void listThreadAttachments(threadId).then(items => {
+      if (active) setThreadAttachments(items);
+    }).catch(() => {
+      if (active) setThreadAttachments([]);
+    });
+    return () => { active = false; };
+  }, [threadId, hasSubmitted, chat.isRunning]);
   const visibleMessages = withPendingUserMessages(chat.messages, pendingUserMessages);
   const isEmpty = !hasSubmitted && initialMessages.length === 0 && visibleMessages.length === 0;
   useLayoutEffect(() => {
@@ -67,6 +91,12 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     return () => observer.disconnect();
   }, [viewportId]);
 
+  useEffect(() => {
+    if (!attachRequest || attachRequest.id === lastAttachRequestId.current) return;
+    lastAttachRequestId.current = attachRequest.id;
+    void chooseWorkspaceFiles([attachRequest.path], attachRequest.source);
+  }, [attachRequest]);
+
   function nextKey() {
     return `att-${++nextAttachmentId.current}`;
   }
@@ -75,8 +105,8 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     return `文件超过 10 MiB 上限：${name}`;
   }
 
-  function reconcileComposerError(attachments: ComposerAttachment[]) {
-    if (!attachments.some(item => item.state === 'failed')) setError(null);
+  function reconcileComposerError(next: ComposerAttachment[]) {
+    if (!next.some(item => item.state === 'failed')) setError(null);
   }
 
   function addOversizeAttachment(file: File) {
@@ -112,7 +142,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
           size: result.size,
           mimeType: result.mimeType,
           etag: result.etag,
-          state: 'ready',
+          state: 'ready' as const,
           error: undefined,
         } : item);
         reconcileComposerError(next);
@@ -130,7 +160,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
 
   function uploadFiles(files: File[], kind: 'file' | 'image') {
     const accepted = kind === 'image'
-      ? files.filter(file => /^image\/(png|jpeg|webp|gif)$/i.test(file.type)
+      ? files.filter(file => IMAGE_MIME.has(file.type)
         || /\.(png|jpe?g|webp|gif)$/i.test(file.name))
       : files;
     if (!accepted.length) {
@@ -161,22 +191,37 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     });
   }
 
-  async function chooseWorkspaceFiles(paths: string[]) {
+  function addReadyAttachments(candidates: ComposerAttachment[]) {
+    setAttachments(current => {
+      const existing = new Set(current.map(item => `${item.source}:${item.path}`));
+      const additions = candidates.filter(item => {
+        const identity = `${item.source}:${item.path}`;
+        if (!item.path || existing.has(identity)) return false;
+        existing.add(identity);
+        return true;
+      });
+      const next = [...current, ...additions];
+      reconcileComposerError(next);
+      return next;
+    });
+  }
+
+  async function chooseWorkspaceFiles(paths: string[], source: 'personal' | 'agent' = 'personal') {
     if (!paths.length) return;
     try {
-      const { files } = await listWorkspaceFiles('personal');
+      const { files } = await listWorkspaceFiles(source);
       const byPath = new Map(files.filter(file => file.type === 'file').map(file => [file.path, file]));
       const seen = new Set<string>();
       const candidates: ComposerAttachment[] = [];
       for (const path of paths) {
-        const identity = `personal:${path}`;
+        const identity = `${source}:${path}`;
         if (seen.has(identity)) continue;
         const entry = byPath.get(path);
         if (!entry) continue;
         seen.add(identity);
         candidates.push({
           key: nextKey(),
-          source: 'personal',
+          source,
           path,
           name: path.split('/').at(-1) ?? path,
           size: entry.size,
@@ -185,41 +230,81 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
           state: 'ready',
         });
       }
-      setAttachments(current => {
-        const existing = new Set(current.map(item => `${item.source}:${item.path}`));
-        const additions = candidates.filter(item => {
-          const identity = `${item.source}:${item.path}`;
-          if (existing.has(identity)) return false;
-          existing.add(identity);
-          return true;
-        });
-        const next = [...current, ...additions];
-        reconcileComposerError(next);
-        return next;
-      });
+      addReadyAttachments(candidates);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '加载工作区文件失败');
     }
   }
 
+  function onWorkspaceDrop(items: WorkspaceDragItem[]) {
+    addReadyAttachments(items.map(item => ({
+      key: nextKey(),
+      source: item.source,
+      path: item.path,
+      name: item.name || item.path.split('/').at(-1) || item.path,
+      size: item.size,
+      mimeType: item.mimeType || guessMime(item.path),
+      etag: '',
+      state: 'ready' as const,
+    })));
+  }
+
   async function send() {
-    const message = draft.trim();
-    if (!message || blockedReason || modelDisabled || chat.isRunning || chat.isAwaitingToolApproval) return;
+    const ready = attachments.filter(item => item.state === 'ready' && item.path);
     if (attachments.some(item => item.state !== 'ready')) return;
-    const pending = nextPendingUserMessage(message, chat.messages, pendingUserMessages);
+    const visibleText = draft.trim() || (ready.length ? DEFAULT_ATTACHMENT_PROMPT : '');
+    if (!visibleText || blockedReason || modelDisabled || chat.isRunning || chat.isAwaitingToolApproval) return;
+    const hasImage = ready.some(item => isImageAttachment(item));
+    if (hasImage && selectedModel?.supportsVision !== true) {
+      setError('当前模型不支持图片，请切换支持图片的模型');
+      return;
+    }
+    const pending = nextPendingUserMessage(visibleText, chat.messages, pendingUserMessages);
+    const clientMessageId = pending.id;
+    const draftSnapshot = draft;
+    const attachmentSnapshot = attachments;
     onMessageSubmitted?.(pending);
-    setHasSubmitted(true); setDraft(''); setError(null);
-    try { await chat.sendMessage({ message, mode: 'stream', threadId,
-      requestContext,
-      onChunk: async chunk => {
-        if (chunk.type === 'tool-call-approval') {
-          const id = chunk.payload?.toolCallId;
-          if (typeof id === 'string') setPendingApprovalIds(value => new Set(value).add(id));
+    setHasSubmitted(true);
+    setDraft('');
+    setError(null);
+    try {
+      let agentText = visibleText;
+      if (ready.length) {
+        const prepared = await prepareAttachments(threadId, clientMessageId, ready.map(item => ({
+          source: item.source, path: item.path,
+        })));
+        if (prepared.some(item => item.status !== 'available')) {
+          throw new Error('附件已变更或删除，请重新选择后再发送');
         }
-      },
-    }); onMessageSent(pending); }
-    catch (cause) { onMessageFailed?.(pending);
-      setError(cause instanceof Error ? cause.message : '请求失败'); }
+        agentText = buildAgentAttachmentMessage(visibleText === DEFAULT_ATTACHMENT_PROMPT && !draftSnapshot.trim()
+          ? '' : visibleText, prepared);
+        setThreadAttachments(current => {
+          const others = current.filter(item => item.clientMessageId !== clientMessageId);
+          return [...others, ...prepared];
+        });
+      }
+      await chat.sendMessage({
+        message: agentText,
+        mode: 'stream',
+        threadId,
+        clientMessageId,
+        requestContext,
+        onChunk: async chunk => {
+          if (chunk.type === 'tool-call-approval') {
+            const id = chunk.payload?.toolCallId;
+            if (typeof id === 'string') setPendingApprovalIds(value => new Set(value).add(id));
+          }
+        },
+      });
+      setAttachments([]);
+      pendingUploads.current.clear();
+      onMessageSent(pending);
+    } catch (cause) {
+      onMessageFailed?.(pending);
+      setDraft(draftSnapshot);
+      setAttachments(attachmentSnapshot);
+      setError(cause instanceof Error ? cause.message : '请求失败');
+    }
   }
   async function approve(id: string) {
     try { await chat.approveToolCall(id); setError(null);
@@ -247,6 +332,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     }}><ChatShell.Content><ChatShell.Column>
       <MessageList messages={visibleMessages} isRunning={chat.isRunning} error={error}
         approvals={visibleApprovals} pendingApprovalIds={pendingApprovalIds}
+        threadAttachments={threadAttachments}
         onApprove={approve} onDecline={decline} onAnswer={answer} />
     </ChatShell.Column></ChatShell.Content></ChatShell.Viewport></ChatShell.Stage>
     <ChatShell.Dock><ChatShell.Column>
@@ -264,6 +350,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
       onUploadFiles={uploadFiles}
       onRemoveAttachment={removeAttachment}
       onRetryAttachment={retryAttachment}
+      onWorkspaceDrop={onWorkspaceDrop}
       onStop={() => { chat.cancelRun(); setError('已停止'); }} />
       {pickerOpen && <WorkspaceFilePicker source="personal"
         onConfirm={paths => void chooseWorkspaceFiles(paths)}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { GetAgentResponse, GetMemoryConfigResponse } from '@mastra/client-js';
 import type { MastraDBMessage } from '@mastra/core/agent/message-list';
@@ -37,6 +37,8 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
   const [pendingByThread, setPendingByThread] = useState<Record<string, PendingUserMessage[]>>({});
   const [filesRefreshVersion, setFilesRefreshVersion] = useState(0);
   const [fileRequest, setFileRequest] = useState<{ path: string; id: number } | null>(null);
+  const [attachRequest, setAttachRequest] = useState<{ id: number; path: string; source: 'personal' | 'agent' } | null>(null);
+  const nextAttachId = useRef(0);
   const [loadingThread, setLoadingThread] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [agent, setAgent] = useState<GetAgentResponse | null>(null);
@@ -148,6 +150,7 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
           }}
           onFilesChanged={() => setFilesRefreshVersion(value => value + 1)}
           pendingUserMessages={pendingByThread[threadId] ?? []}
+          attachRequest={attachRequest}
           onMessageSubmitted={message => {
             list.previewFirstMessageTitle(threadId, message.text);
             setPendingByThread(current => ({ ...current,
@@ -167,6 +170,11 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
       models={configModels} />}
       files={<WorkspaceFileTree source={workspaceSource}
         workspaceId={workspaceSource === 'agent' ? agent?.workspaceId : undefined}
-        refreshVersion={filesRefreshVersion} onOpenFile={path => setFileRequest(current => ({ path, id: (current?.id ?? 0) + 1 }))} />} />
+        refreshVersion={filesRefreshVersion}
+        onOpenFile={path => setFileRequest(current => ({ path, id: (current?.id ?? 0) + 1 }))}
+        onAttachFile={(path, source) => {
+          nextAttachId.current += 1;
+          setAttachRequest({ id: nextAttachId.current, path, source });
+        }} />} />
   </main>;
 }

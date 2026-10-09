@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentChat } from './AgentChat';
 import type { SafeModel } from './model-catalog-client';
 import type { PendingUserMessage } from './pending-user-message';
@@ -11,15 +11,19 @@ const approveToolCall = vi.fn();
 const uploadWorkspaceFile = vi.hoisted(() => vi.fn());
 const listWorkspaceFiles = vi.hoisted(() => vi.fn());
 const fetchWorkspaceFile = vi.hoisted(() => vi.fn());
+const prepareAttachments = vi.hoisted(() => vi.fn());
+const listThreadAttachments = vi.hoisted(() => vi.fn());
 let chatOptions: { enableThreadSignals?: boolean } | undefined;
 let mockRunning = false;
 const chatRef = 'public:11111111-1111-4111-8111-111111111111' as const;
 const memoryRef = 'private:22222222-2222-4222-8222-222222222222' as const;
+const visionRef = 'public:33333333-3333-4333-8333-333333333333' as const;
 const models = { chatModel: chatRef, memoryModel: memoryRef };
-const catalog = [chatRef, memoryRef].map((ref, index) => ({ ref,
-  scope: index === 0 ? 'public' : 'private', displayName: index === 0 ? '默认模型' : '个人模型',
+const catalog = [chatRef, memoryRef, visionRef].map((ref, index) => ({ ref,
+  scope: index === 1 ? 'private' : 'public',
+  displayName: index === 0 ? '默认模型' : index === 1 ? '个人模型' : '视觉模型',
   providerId: 'test', modelId: `m${index}`, baseUrl: 'https://example.test', apiMode: 'chat',
-  enabled: true, hasApiKey: true, keyHint: '1234', supportsVision: false,
+  enabled: true, hasApiKey: true, keyHint: '1234', supportsVision: index === 2,
 })) as SafeModel[];
 let mockMessages: Array<{ id: string; role: string; content: { format: number; parts: Array<{ type: string; text: string }> } }> =
   [{ id: 'partial', role: 'assistant', content: { format: 2, parts: [{ type: 'text', text: '部分回复' }] } }];
@@ -36,10 +40,16 @@ vi.mock('./client', () => ({
 }));
 vi.mock('./attachment-client', () => ({
   uploadWorkspaceFile: (...args: unknown[]) => uploadWorkspaceFile(...args),
-  prepareAttachments: vi.fn(),
+  prepareAttachments: (...args: unknown[]) => prepareAttachments(...args),
+  listThreadAttachments: (...args: unknown[]) => listThreadAttachments(...args),
 }));
+beforeEach(() => {
+  listThreadAttachments.mockResolvedValue([]);
+  fetchWorkspaceFile.mockResolvedValue(new Blob(['x'], { type: 'application/octet-stream' }));
+});
 afterEach(() => { cleanup(); vi.clearAllMocks(); vi.unstubAllGlobals(); mockRunning = false; mockMessages =
-  [{ id: 'partial', role: 'assistant', content: { format: 2, parts: [{ type: 'text', text: '部分回复' }] } }]; });
+  [{ id: 'partial', role: 'assistant', content: { format: 2, parts: [{ type: 'text', text: '部分回复' }] } }];
+});
 
 describe('Agent conversation', () => {
   it('notifies the workspace file list when a run finishes', () => {
@@ -307,5 +317,218 @@ describe('Agent conversation', () => {
     fireEvent.click(screen.getByRole('button', { name: '发送' }));
     expect(await screen.findByRole('alert')).toHaveProperty('textContent', '回复未完成：stream disconnected');
     expect(screen.getByText('部分回复')).toBeTruthy();
+  });
+
+  it('prepares attachments with the pending id and puts ids in the agent message', async () => {
+    mockMessages = [];
+    uploadWorkspaceFile.mockResolvedValue({
+      source: 'personal', path: 'uploads/u1/notes.txt', name: 'notes.txt',
+      size: 5, mimeType: 'text/plain', etag: 'e1',
+    });
+    prepareAttachments.mockResolvedValue([{
+      attachmentId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      clientMessageId: 'ignored',
+      source: 'personal', path: 'uploads/u1/notes.txt', name: 'notes.txt',
+      size: 5, mimeType: 'text/plain', etag: 'e1', status: 'available',
+    }]);
+    sendMessage.mockResolvedValue(undefined);
+    const submitted: PendingUserMessage[] = [];
+    render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}
+      onMessageSent={vi.fn()} models={models} catalog={catalog}
+      onMessageSubmitted={message => submitted.push(message)} />);
+    fireEvent.click(screen.getByRole('button', { name: '添加附件' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '上传文件' }));
+    fireEvent.change(screen.getByLabelText('选择本地文件'), {
+      target: { files: [new File(['notes'], 'notes.txt', { type: 'text/plain' })] },
+    });
+    await waitFor(() => expect(screen.getByLabelText('附件 notes.txt')).toBeTruthy());
+    fireEvent.change(screen.getByRole('textbox', { name: '发送消息' }), { target: { value: '请阅读' } });
+    fireEvent.click(screen.getByRole('button', { name: '发送' }));
+    await waitFor(() => expect(prepareAttachments).toHaveBeenCalled());
+    expect(submitted).toHaveLength(1);
+    expect(prepareAttachments).toHaveBeenCalledWith('thread-1', submitted[0]!.id, [
+      { source: 'personal', path: 'uploads/u1/notes.txt' },
+    ]);
+    await waitFor(() => expect(sendMessage).toHaveBeenCalled());
+    const options = sendMessage.mock.calls[0]![0];
+    expect(options.clientMessageId).toBe(submitted[0]!.id);
+    expect(options.message).toContain('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+    expect(options.message).toContain('notes.txt');
+    expect(submitted[0]!.text).toBe('请阅读');
+    expect(submitted[0]!.text).not.toContain('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+  });
+
+  it('sends with default prompt when only ready attachments are present', async () => {
+    mockMessages = [];
+    listWorkspaceFiles.mockResolvedValue({
+      files: [{ path: 'a.txt', type: 'file', size: 3 }],
+    });
+    prepareAttachments.mockResolvedValue([{
+      attachmentId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+      clientMessageId: 'x', source: 'personal', path: 'a.txt', name: 'a.txt',
+      size: 3, mimeType: 'text/plain', etag: '', status: 'available',
+    }]);
+    sendMessage.mockResolvedValue(undefined);
+    render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}
+      onMessageSent={vi.fn()} models={models} catalog={catalog} />);
+    fireEvent.click(screen.getByRole('button', { name: '添加附件' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '选择工作区文件' }));
+    await waitFor(() => expect(screen.getByRole('dialog', { name: '选择工作区文件' })).toBeTruthy());
+    fireEvent.click(screen.getByRole('checkbox', { name: '选择 a.txt' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认' }));
+    await waitFor(() => expect(screen.getByLabelText('附件 a.txt')).toBeTruthy());
+    expect((screen.getByRole('button', { name: '发送' }) as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: '发送' }));
+    await waitFor(() => expect(sendMessage).toHaveBeenCalled());
+    expect(sendMessage.mock.calls[0]![0].message).toContain('请查看附件');
+    expect(sendMessage.mock.calls[0]![0].message).toContain('cccccccc-cccc-4ccc-8ccc-cccccccccccc');
+  });
+
+  it('blocks send when images are attached but the model lacks supportsVision', async () => {
+    uploadWorkspaceFile.mockResolvedValue({
+      source: 'personal', path: 'uploads/u1/shot.png', name: 'shot.png',
+      size: 4, mimeType: 'image/png', etag: 'e1',
+    });
+    render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}
+      onMessageSent={vi.fn()} models={models} catalog={catalog} modelRef={chatRef} />);
+    fireEvent.click(screen.getByRole('button', { name: '添加附件' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '添加图片' }));
+    fireEvent.change(screen.getByLabelText('选择图片'), {
+      target: { files: [new File(['png'], 'shot.png', { type: 'image/png' })] },
+    });
+    await waitFor(() => expect(screen.getByLabelText('附件 shot.png')).toBeTruthy());
+    fireEvent.change(screen.getByRole('textbox', { name: '发送消息' }), { target: { value: '图里有什么' } });
+    fireEvent.click(screen.getByRole('button', { name: '发送' }));
+    expect(sendMessage).not.toHaveBeenCalled();
+    expect(prepareAttachments).not.toHaveBeenCalled();
+    expect(await screen.findByText(/当前模型不支持图片/)).toBeTruthy();
+  });
+
+  it('keeps draft and attachments when send fails after prepare', async () => {
+    mockMessages = [];
+    listWorkspaceFiles.mockResolvedValue({
+      files: [{ path: 'a.txt', type: 'file', size: 3 }],
+    });
+    prepareAttachments.mockResolvedValue([{
+      attachmentId: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+      clientMessageId: 'x', source: 'personal', path: 'a.txt', name: 'a.txt',
+      size: 3, mimeType: 'text/plain', etag: '', status: 'available',
+    }]);
+    sendMessage.mockRejectedValue(new Error('network down'));
+    render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}
+      onMessageSent={vi.fn()} models={models} catalog={catalog} />);
+    fireEvent.click(screen.getByRole('button', { name: '添加附件' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '选择工作区文件' }));
+    await waitFor(() => expect(screen.getByRole('dialog', { name: '选择工作区文件' })).toBeTruthy());
+    fireEvent.click(screen.getByRole('checkbox', { name: '选择 a.txt' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认' }));
+    await waitFor(() => expect(screen.getByLabelText('附件 a.txt')).toBeTruthy());
+    fireEvent.change(screen.getByRole('textbox', { name: '发送消息' }), { target: { value: '草稿保留' } });
+    fireEvent.click(screen.getByRole('button', { name: '发送' }));
+    expect((await screen.findByRole('alert')).textContent).toContain('network down');
+    expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).value).toBe('草稿保留');
+    expect(screen.getByLabelText('附件 a.txt')).toBeTruthy();
+  });
+
+  it('uploads OS file drops and only preventDefaults when files are present', async () => {
+    uploadWorkspaceFile.mockResolvedValue({
+      source: 'personal', path: 'uploads/u1/drop.md', name: 'drop.md',
+      size: 4, mimeType: 'text/markdown', etag: 'e1',
+    });
+    const { container } = render(<AgentChat threadId="thread-1" resourceId="agent"
+      initialMessages={[]} onMessageSent={vi.fn()} models={models} />);
+    const composer = container.querySelector('.agent-composer')!;
+    const emptyDrag = new Event('dragover', { bubbles: true, cancelable: true });
+    Object.defineProperty(emptyDrag, 'dataTransfer', { value: { types: ['text/plain'] } });
+    composer.dispatchEvent(emptyDrag);
+    expect(emptyDrag.defaultPrevented).toBe(false);
+
+    const fileDrag = new Event('dragover', { bubbles: true, cancelable: true });
+    Object.defineProperty(fileDrag, 'dataTransfer', { value: { types: ['Files'] } });
+    composer.dispatchEvent(fileDrag);
+    expect(fileDrag.defaultPrevented).toBe(true);
+
+    const drop = new Event('drop', { bubbles: true, cancelable: true });
+    const file = new File(['drop'], 'drop.md', { type: 'text/markdown' });
+    Object.defineProperty(drop, 'dataTransfer', {
+      value: { types: ['Files'], files: [file], getData: () => '' },
+    });
+    composer.dispatchEvent(drop);
+    expect(drop.defaultPrevented).toBe(true);
+    await waitFor(() => expect(uploadWorkspaceFile).toHaveBeenCalledWith(file));
+    await waitFor(() => expect(screen.getByLabelText('附件 drop.md')).toBeTruthy());
+  });
+
+  it('references workspace drag items without uploading and pastes clipboard images', async () => {
+    uploadWorkspaceFile.mockResolvedValue({
+      source: 'personal', path: 'uploads/u1/paste.png', name: 'paste.png',
+      size: 4, mimeType: 'image/png', etag: 'e1',
+    });
+    listWorkspaceFiles.mockResolvedValue({
+      files: [{ path: 'docs/ref.txt', type: 'file', size: 3 }],
+    });
+    const { container } = render(<AgentChat threadId="thread-1" resourceId="agent"
+      initialMessages={[]} onMessageSent={vi.fn()} models={models} catalog={catalog} modelRef={visionRef} />);
+    const composer = container.querySelector('.agent-composer')!;
+    const workspaceDrop = new Event('drop', { bubbles: true, cancelable: true });
+    Object.defineProperty(workspaceDrop, 'dataTransfer', {
+      value: {
+        types: ['application/x-nero-workspace-file'],
+        files: [],
+        getData: (type: string) => type === 'application/x-nero-workspace-file'
+          ? JSON.stringify({ source: 'personal', path: 'docs/ref.txt', name: 'ref.txt', size: 3, mimeType: 'text/plain' })
+          : '',
+      },
+    });
+    composer.dispatchEvent(workspaceDrop);
+    await waitFor(() => expect(screen.getByLabelText('附件 ref.txt')).toBeTruthy());
+    expect(uploadWorkspaceFile).not.toHaveBeenCalled();
+
+    const paste = new Event('paste', { bubbles: true, cancelable: true });
+    const image = new File(['img'], 'paste.png', { type: 'image/png' });
+    Object.defineProperty(paste, 'clipboardData', {
+      value: { items: [{ type: 'image/png', kind: 'file', getAsFile: () => image }] },
+    });
+    composer.dispatchEvent(paste);
+    await waitFor(() => expect(uploadWorkspaceFile).toHaveBeenCalledWith(image));
+  });
+
+  it('loads thread attachments for history cards after refresh', async () => {
+    listThreadAttachments.mockResolvedValue([{
+      attachmentId: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+      clientMessageId: 'pending-hist',
+      source: 'personal', path: 'docs/hist.txt', name: 'hist.txt',
+      size: 4, mimeType: 'text/plain', etag: 'e1', status: 'available',
+    }]);
+    mockMessages = [{
+      id: 'pending-hist', role: 'user',
+      content: { format: 2, parts: [{ type: 'text', text: '历史提问' }] },
+    }];
+    render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={mockMessages as never}
+      onMessageSent={vi.fn()} models={models} />);
+    await waitFor(() => expect(listThreadAttachments).toHaveBeenCalledWith('thread-1'));
+    expect(await screen.findByLabelText('附件 hist.txt')).toBeTruthy();
+    expect(screen.getByText('历史提问')).toBeTruthy();
+  });
+
+  it('consumes incremental attach requests from the page without repeating them', async () => {
+    listWorkspaceFiles.mockResolvedValue({
+      files: [
+        { path: 'docs/a.txt', type: 'file', size: 3 },
+        { path: 'docs/b.txt', type: 'file', size: 4 },
+      ],
+    });
+    const { rerender } = render(<AgentChat threadId="thread-1" resourceId="agent"
+      initialMessages={[]} onMessageSent={vi.fn()} models={models}
+      attachRequest={{ id: 1, path: 'docs/a.txt', source: 'personal' }} />);
+    expect(await screen.findByLabelText('附件 a.txt')).toBeTruthy();
+    rerender(<AgentChat threadId="thread-1" resourceId="agent"
+      initialMessages={[]} onMessageSent={vi.fn()} models={models}
+      attachRequest={{ id: 1, path: 'docs/a.txt', source: 'personal' }} />);
+    expect(screen.getAllByLabelText('附件 a.txt')).toHaveLength(1);
+    rerender(<AgentChat threadId="thread-1" resourceId="agent"
+      initialMessages={[]} onMessageSent={vi.fn()} models={models}
+      attachRequest={{ id: 2, path: 'docs/b.txt', source: 'personal' }} />);
+    expect(await screen.findByLabelText('附件 b.txt')).toBeTruthy();
   });
 });

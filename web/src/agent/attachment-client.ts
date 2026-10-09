@@ -1,4 +1,9 @@
-import { apiFetch, uploadWorkspaceFile as postWorkspaceFile, type WorkspaceFileEntry } from './client';
+import {
+  apiFetch,
+  listThreadAttachments as fetchThreadAttachments,
+  uploadWorkspaceFile as postWorkspaceFile,
+  type WorkspaceFileEntry,
+} from './client';
 
 export type AttachmentPrepareItem = { source: 'personal' | 'agent'; path: string };
 
@@ -41,4 +46,8 @@ export async function prepareAttachments(
   const body = await response.json() as { attachments?: PreparedAttachment[] };
   if (!Array.isArray(body.attachments)) throw new Error('附件响应格式无效');
   return body.attachments;
+}
+
+export async function listThreadAttachments(threadId: string): Promise<PreparedAttachment[]> {
+  return fetchThreadAttachments(threadId);
 }
