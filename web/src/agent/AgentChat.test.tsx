@@ -459,6 +459,27 @@ describe('Agent conversation', () => {
     await waitFor(() => expect(screen.getByLabelText('附件 drop.md')).toBeTruthy());
   });
 
+  it('routes OS image drops through image upload kind for image cards', async () => {
+    uploadWorkspaceFile.mockResolvedValue({
+      source: 'personal', path: 'uploads/u1/shot.png', name: 'shot.png',
+      size: 4, mimeType: 'image/png', etag: 'e1',
+    });
+    fetchWorkspaceFile.mockResolvedValue(new Blob(['img'], { type: 'image/png' }));
+    vi.stubGlobal('URL', { ...URL, createObjectURL: () => 'blob:drop-shot', revokeObjectURL: vi.fn() });
+    const { container } = render(<AgentChat threadId="thread-1" resourceId="agent"
+      initialMessages={[]} onMessageSent={vi.fn()} models={models} catalog={catalog} modelRef={visionRef} />);
+    const composer = container.querySelector('.agent-composer')!;
+    const image = new File(['img'], 'shot.png', { type: 'image/png' });
+    const drop = new Event('drop', { bubbles: true, cancelable: true });
+    Object.defineProperty(drop, 'dataTransfer', {
+      value: { types: ['Files'], files: [image], getData: () => '' },
+    });
+    composer.dispatchEvent(drop);
+    await waitFor(() => expect(uploadWorkspaceFile).toHaveBeenCalledWith(image));
+    const card = await screen.findByLabelText('附件 shot.png');
+    expect(card.querySelector('img')).toBeTruthy();
+  });
+
   it('references workspace drag items without uploading and pastes clipboard images', async () => {
     uploadWorkspaceFile.mockResolvedValue({
       source: 'personal', path: 'uploads/u1/paste.png', name: 'paste.png',
@@ -493,22 +514,105 @@ describe('Agent conversation', () => {
     await waitFor(() => expect(uploadWorkspaceFile).toHaveBeenCalledWith(image));
   });
 
-  it('loads thread attachments for history cards after refresh', async () => {
+  it('loads thread attachments for history cards after refresh by attachment ids in text', async () => {
     listThreadAttachments.mockResolvedValue([{
       attachmentId: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
-      clientMessageId: 'pending-hist',
+      clientMessageId: 'prepare-client-id',
       source: 'personal', path: 'docs/hist.txt', name: 'hist.txt',
       size: 4, mimeType: 'text/plain', etag: 'e1', status: 'available',
     }]);
+    // Production: Mastra renames message.id (client-set-*) and strips metadata.clientMessageId on reload.
     mockMessages = [{
-      id: 'pending-hist', role: 'user',
-      content: { format: 2, parts: [{ type: 'text', text: '历史提问' }] },
+      id: 'client-set-renamed', role: 'user',
+      content: { format: 2, parts: [{ type: 'text', text: [
+        '历史提问',
+        '',
+        '[[nero-attachments]]',
+        'id=eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee|name=hist.txt|mime=text/plain',
+        '[[/nero-attachments]]',
+        '',
+        '请使用 read_attached_file({ attachmentId }) 读取以上附件。',
+      ].join('\n') }] },
     }];
     render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={mockMessages as never}
       onMessageSent={vi.fn()} models={models} />);
-    await waitFor(() => expect(listThreadAttachments).toHaveBeenCalledWith('thread-1'));
+    await waitFor(() => expect(listThreadAttachments).toHaveBeenCalledWith(
+      'thread-1', expect.any(AbortSignal)));
     expect(await screen.findByLabelText('附件 hist.txt')).toBeTruthy();
     expect(screen.getByText('历史提问')).toBeTruthy();
+    expect(screen.queryByText(/nero-attachments/)).toBeNull();
+  });
+
+  it('does not let a stale attachment list overwrite prepare results', async () => {
+    mockMessages = [];
+    let resolveList!: (items: unknown[]) => void;
+    listThreadAttachments.mockImplementation(() => new Promise(resolve => { resolveList = resolve; }));
+    listWorkspaceFiles.mockResolvedValue({
+      files: [{ path: 'a.txt', type: 'file', size: 3 }],
+    });
+    prepareAttachments.mockResolvedValue([{
+      attachmentId: 'ffffffff-ffff-4fff-8fff-ffffffffffff',
+      clientMessageId: 'prepare-client-id',
+      source: 'personal', path: 'a.txt', name: 'a.txt',
+      size: 3, mimeType: 'text/plain', etag: '', status: 'available',
+    }]);
+    sendMessage.mockResolvedValue(undefined);
+    const { rerender } = render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}
+      onMessageSent={vi.fn()} models={models} catalog={catalog} />);
+    await waitFor(() => expect(listThreadAttachments).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('button', { name: '添加附件' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '选择工作区文件' }));
+    await waitFor(() => expect(screen.getByRole('dialog', { name: '选择工作区文件' })).toBeTruthy());
+    fireEvent.click(screen.getByRole('checkbox', { name: '选择 a.txt' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认' }));
+    await waitFor(() => expect(screen.getByLabelText('附件 a.txt')).toBeTruthy());
+    fireEvent.change(screen.getByRole('textbox', { name: '发送消息' }), { target: { value: '请阅读' } });
+    fireEvent.click(screen.getByRole('button', { name: '发送' }));
+    await waitFor(() => expect(prepareAttachments).toHaveBeenCalled());
+    await waitFor(() => expect(sendMessage).toHaveBeenCalled());
+    const agentText = sendMessage.mock.calls[0]![0].message as string;
+    mockMessages = [{
+      id: 'client-set-not-pending', role: 'user',
+      content: { format: 2, parts: [{ type: 'text', text: agentText }] },
+    }];
+    rerender(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}
+      onMessageSent={vi.fn()} models={models} catalog={catalog} />);
+    expect(await screen.findByLabelText('附件 a.txt')).toBeTruthy();
+    // Stale mount-time list returns empty after prepare — must not wipe cards.
+    resolveList([]);
+    await waitFor(() => expect(screen.getByLabelText('附件 a.txt')).toBeTruthy());
+  });
+
+  it('keeps existing history cards when attachment list refresh fails', async () => {
+    listThreadAttachments
+      .mockResolvedValueOnce([{
+        attachmentId: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+        clientMessageId: 'prepare-client-id',
+        source: 'personal', path: 'docs/hist.txt', name: 'hist.txt',
+        size: 4, mimeType: 'text/plain', etag: 'e1', status: 'available',
+      }])
+      .mockRejectedValueOnce(new Error('temporary network blip'));
+    mockMessages = [{
+      id: 'client-set-renamed', role: 'user',
+      content: { format: 2, parts: [{ type: 'text', text: [
+        '历史提问',
+        '',
+        '[[nero-attachments]]',
+        'id=eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee|name=hist.txt|mime=text/plain',
+        '[[/nero-attachments]]',
+      ].join('\n') }] },
+    }];
+    const { rerender } = render(<AgentChat threadId="thread-1" resourceId="agent"
+      initialMessages={mockMessages as never} onMessageSent={vi.fn()} models={models} />);
+    expect(await screen.findByLabelText('附件 hist.txt')).toBeTruthy();
+    mockRunning = true;
+    rerender(<AgentChat threadId="thread-1" resourceId="agent"
+      initialMessages={mockMessages as never} onMessageSent={vi.fn()} models={models} />);
+    mockRunning = false;
+    rerender(<AgentChat threadId="thread-1" resourceId="agent"
+      initialMessages={mockMessages as never} onMessageSent={vi.fn()} models={models} />);
+    await waitFor(() => expect(listThreadAttachments).toHaveBeenCalledTimes(2));
+    expect(screen.getByLabelText('附件 hist.txt')).toBeTruthy();
   });
 
   it('consumes incremental attach requests from the page without repeating them', async () => {

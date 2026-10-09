@@ -4,7 +4,7 @@ import { Composer, ComposerActions, ComposerBox, ComposerInput, ComposerRing } f
 import { ArrowUp, Check, ChevronDown, Plus, Search, Square, X } from 'lucide-react';
 import { fetchWorkspaceFile } from './client';
 import {
-  formatBytes, IMAGE_ACCEPT, isImageAttachment, WORKSPACE_FILE_MIME, type ComposerAttachment,
+  formatBytes, IMAGE_ACCEPT, IMAGE_MIME, isImageAttachment, WORKSPACE_FILE_MIME, type ComposerAttachment,
 } from './attachment-types';
 import type { ModelRef, SafeModel } from './model-catalog-client';
 
@@ -115,7 +115,12 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
       return;
     }
     const files = event.dataTransfer.files ? Array.from(event.dataTransfer.files) : [];
-    if (files.length) onUploadFiles?.(files, 'file');
+    if (!files.length) return;
+    const images = files.filter(file => IMAGE_MIME.has(file.type)
+      || /\.(png|jpe?g|webp|gif)$/i.test(file.name));
+    const others = files.filter(file => !images.includes(file));
+    if (images.length) onUploadFiles?.(images, 'image');
+    if (others.length) onUploadFiles?.(others, 'file');
   }
 
   function onPaste(event: ClipboardEvent<HTMLDivElement>) {

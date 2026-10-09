@@ -253,7 +253,7 @@ describe('message tools and stream state', () => {
     expect(approve).toHaveBeenCalledTimes(2);
   });
 
-  it('renders history attachment cards by clientMessageId and strips agent protocol text', async () => {
+  it('renders history attachment cards by ids in text when Mastra renames message.id', async () => {
     fetchWorkspaceFile.mockResolvedValue(new Blob(['img'], { type: 'image/png' }));
     const createObjectURL = vi.fn(() => 'blob:history-shot');
     const revokeObjectURL = vi.fn();
@@ -265,7 +265,8 @@ describe('message tools and stream state', () => {
       'id=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa|name=shot.png|mime=image/png',
       '[[/nero-attachments]]',
     ].join('\n');
-    const message = { id: 'msg-1', role: 'user', content: { format: 2, parts: [{ type: 'text', text: agentText }] } };
+    // message.id ≠ prepare clientMessageId (Mastra client-set-* / server id after reload).
+    const message = { id: 'client-set-renamed', role: 'user', content: { format: 2, parts: [{ type: 'text', text: agentText }] } };
     const attachments = [{
       attachmentId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
       clientMessageId: 'pending-1',

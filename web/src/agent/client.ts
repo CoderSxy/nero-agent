@@ -100,7 +100,7 @@ export async function uploadUserFile(threadId: string, relativePath: string, fil
   return response.json() as Promise<{ path: string }>;
 }
 
-export async function listThreadAttachments(threadId: string): Promise<Array<{
+export async function listThreadAttachments(threadId: string, signal?: AbortSignal): Promise<Array<{
   attachmentId: string;
   clientMessageId: string;
   source: 'personal' | 'agent';
@@ -111,7 +111,9 @@ export async function listThreadAttachments(threadId: string): Promise<Array<{
   etag: string;
   status: 'available' | 'changed' | 'deleted';
 }>> {
-  const response = await apiFetch(`/current-workspace/attachments?threadId=${encodeURIComponent(threadId)}`);
+  const response = await apiFetch(`/current-workspace/attachments?threadId=${encodeURIComponent(threadId)}`, {
+    signal,
+  });
   if (!response.ok) {
     const payload = await response.json().catch(() => ({})) as { error?: string };
     throw new Error(payload.error ?? '加载附件失败');

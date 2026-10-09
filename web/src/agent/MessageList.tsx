@@ -70,6 +70,14 @@ function rawUserText(message: MastraDBMessage): string {
 
 function attachmentsForMessage(message: MastraDBMessage, threadAttachments: PreparedAttachment[]): PreparedAttachment[] {
   if (!threadAttachments.length || !isUserMessage(message)) return [];
+  // Durable join: attachment IDs embedded in agent text survive reload.
+  // @mastra/react may rename message.id to client-set-* and strip metadata.clientMessageId.
+  const ids = new Set(parseAttachmentIdsFromText(rawUserText(message)));
+  if (ids.size) {
+    const byText = threadAttachments.filter(item => ids.has(item.attachmentId));
+    if (byText.length) return byText;
+  }
+  // Optimistic / pending bubbles still match prepare's clientMessageId.
   const byId = threadAttachments.filter(item => item.clientMessageId === message.id);
   if (byId.length) return byId;
   const metadataId = record(message.content.metadata)?.clientMessageId;
@@ -77,9 +85,7 @@ function attachmentsForMessage(message: MastraDBMessage, threadAttachments: Prep
     const byMeta = threadAttachments.filter(item => item.clientMessageId === metadataId);
     if (byMeta.length) return byMeta;
   }
-  const ids = new Set(parseAttachmentIdsFromText(rawUserText(message)));
-  if (!ids.size) return [];
-  return threadAttachments.filter(item => ids.has(item.attachmentId));
+  return [];
 }
 
 function HistoryAttachmentCard({ attachment }: { attachment: PreparedAttachment }) {

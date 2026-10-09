@@ -50,6 +50,9 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   const pendingUploads = useRef(new Map<string, PendingUpload>());
   const nextAttachmentId = useRef(0);
   const lastAttachRequestId = useRef<number | null>(null);
+  const attachmentListGen = useRef(0);
+  const attachmentListAbort = useRef<AbortController | null>(null);
+  const prepareEpoch = useRef(0);
   const viewportId = useId();
   const followRef = useRef(true);
   const chatModel = models?.chatModel;
@@ -61,19 +64,42 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   const chat = useChat({ agentId: AGENT_ID, resourceId, threadId, initialMessages, requestContext,
     enableThreadSignals: true });
   const wasRunning = useRef(chat.isRunning);
-  useEffect(() => {
-    if (wasRunning.current && !chat.isRunning) onFilesChanged?.();
-    wasRunning.current = chat.isRunning;
-  }, [chat.isRunning, onFilesChanged]);
-  useEffect(() => {
-    let active = true;
-    void listThreadAttachments(threadId).then(items => {
-      if (active) setThreadAttachments(items);
-    }).catch(() => {
-      if (active) setThreadAttachments([]);
+
+  function invalidateAttachmentList() {
+    attachmentListAbort.current?.abort();
+    attachmentListAbort.current = null;
+    attachmentListGen.current += 1;
+  }
+
+  function refreshThreadAttachments() {
+    const generation = ++attachmentListGen.current;
+    attachmentListAbort.current?.abort();
+    const controller = new AbortController();
+    attachmentListAbort.current = controller;
+    const epochAtStart = prepareEpoch.current;
+    void listThreadAttachments(threadId, controller.signal).then(items => {
+      if (controller.signal.aborted || generation !== attachmentListGen.current) return;
+      // A prepare that finished after this fetch started owns fresher local state.
+      if (prepareEpoch.current !== epochAtStart) return;
+      setThreadAttachments(items);
+    }).catch(error => {
+      if (controller.signal.aborted || generation !== attachmentListGen.current) return;
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      // Keep existing cards on benign list failures; never wipe to [].
     });
-    return () => { active = false; };
-  }, [threadId, hasSubmitted, chat.isRunning]);
+  }
+
+  useEffect(() => {
+    if (wasRunning.current && !chat.isRunning) {
+      onFilesChanged?.();
+      refreshThreadAttachments();
+    }
+    wasRunning.current = chat.isRunning;
+  }, [chat.isRunning, onFilesChanged, threadId]);
+  useEffect(() => {
+    refreshThreadAttachments();
+    return () => { invalidateAttachmentList(); };
+  }, [threadId]);
   const visibleMessages = withPendingUserMessages(chat.messages, pendingUserMessages);
   const isEmpty = !hasSubmitted && initialMessages.length === 0 && visibleMessages.length === 0;
   useLayoutEffect(() => {
@@ -260,6 +286,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
       return;
     }
     const pending = nextPendingUserMessage(visibleText, chat.messages, pendingUserMessages);
+    // Stable id for prepare/server records. @mastra/react may ignore this and use client-set-*.
     const clientMessageId = pending.id;
     const draftSnapshot = draft;
     const attachmentSnapshot = attachments;
@@ -267,6 +294,8 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     setHasSubmitted(true);
     setDraft('');
     setError(null);
+    // Abort list refresh that hasSubmitted/isRunning would otherwise race against prepare.
+    invalidateAttachmentList();
     try {
       let agentText = visibleText;
       if (ready.length) {
@@ -278,6 +307,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
         }
         agentText = buildAgentAttachmentMessage(visibleText === DEFAULT_ATTACHMENT_PROMPT && !draftSnapshot.trim()
           ? '' : visibleText, prepared);
+        prepareEpoch.current += 1;
         setThreadAttachments(current => {
           const others = current.filter(item => item.clientMessageId !== clientMessageId);
           return [...others, ...prepared];

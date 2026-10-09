@@ -48,6 +48,9 @@ export async function prepareAttachments(
   return body.attachments;
 }
 
-export async function listThreadAttachments(threadId: string): Promise<PreparedAttachment[]> {
-  return fetchThreadAttachments(threadId);
+export async function listThreadAttachments(
+  threadId: string,
+  signal?: AbortSignal,
+): Promise<PreparedAttachment[]> {
+  return fetchThreadAttachments(threadId, signal);
 }
