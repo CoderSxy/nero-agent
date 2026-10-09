@@ -13,7 +13,7 @@
     "build:web": "npm run build --prefix web",
     "start": "mastra start",
     "test": "node --import tsx --test tests/*.test.ts",
-    "test:db": "node --env-file-if-exists=.env --import tsx --test tests/auth-db.test.ts",
+    "test:db": "node --env-file-if-exists=.env --import tsx --test tests/auth-db.test.ts tests/workspace-quota.test.ts",
     "db:migrate": "node --env-file-if-exists=.env --import tsx scripts/migrate.ts",
     "db:local:setup": "node scripts/setup-local-postgres.mjs",
     "db:import:libsql": "node --env-file-if-exists=.env --import tsx scripts/import-libsql.ts",

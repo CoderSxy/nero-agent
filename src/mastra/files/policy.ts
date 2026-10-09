@@ -13,7 +13,7 @@ export function isUserFilesEnabled(): boolean {
 }
 
 export function maxFileSizeBytes(): number {
-  return Number(process.env.WORKSPACE_MAX_FILE_SIZE_BYTES ?? 100 * 1024 * 1024);
+  return Number(process.env.WORKSPACE_MAX_FILE_SIZE_BYTES ?? 10 * 1024 * 1024);
 }
 
 export function relativeFilePath(input: string): string {

@@ -10,7 +10,7 @@ import { workspaceQuota } from '../workspace/quota';
 import { assertHostWritable } from '../workspace/disk-protection';
 
 export class FileServiceError extends Error {
-  constructor(readonly status: 400 | 401 | 403 | 404, message: string) {
+  constructor(readonly status: 400 | 401 | 403 | 404 | 413, message: string, readonly code?: string) {
     super(message);
     this.name = 'FileServiceError';
   }
@@ -39,18 +39,22 @@ export class FileService {
     data: Buffer,
     options: { signal?: AbortSignal } = {},
   ) {
-    if (data.byteLength > maxFileSizeBytes()) throw new FileServiceError(400, '文件过大');
+    if (data.byteLength > maxFileSizeBytes()) throw new FileServiceError(413, '文件过大', 'FILE_TOO_LARGE');
     const { hostPath } = await this.resolveOwnedPath(auth, threadId, relativePath, { create: true });
     await assertHostWritable(data.byteLength);
-    let replacing = 0;
+    let existed = false;
+    let previousSize = 0;
     try {
-      replacing = (await stat(hostPath)).size;
+      previousSize = (await stat(hostPath)).size;
+      existed = true;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
     }
-    await workspaceQuota.reserve(auth.userId, data.byteLength, replacing > 0 ? 0 : 1);
+    const growth = Math.max(0, data.byteLength - previousSize);
+    const newFiles = existed ? 0 : 1;
+    if (growth > 0 || newFiles > 0) await workspaceQuota.reserve(auth.userId, growth, newFiles);
     if (options.signal?.aborted) {
-      await workspaceQuota.release(auth.userId, data.byteLength, replacing > 0 ? 0 : 1);
+      if (growth > 0 || newFiles > 0) await workspaceQuota.release(auth.userId, growth, newFiles);
       throw new FileServiceError(400, '上传已中断');
     }
     const tempPath = join(workspaceBase(), 'temp', randomUUID());
@@ -66,11 +70,15 @@ export class FileService {
       if (options.signal?.aborted) throw new FileServiceError(400, '上传已中断');
       await mkdir(dirname(hostPath), { recursive: true });
       await rename(tempPath, hostPath);
-      if (replacing > 0) await workspaceQuota.release(auth.userId, replacing, 0);
+      if (existed && data.byteLength < previousSize) {
+        await workspaceQuota.release(auth.userId, previousSize - data.byteLength, 0);
+      }
       await workspaceQuota.commit();
     } catch (error) {
       await unlink(tempPath).catch(() => undefined);
-      await workspaceQuota.release(auth.userId, data.byteLength, replacing > 0 ? 0 : 1).catch(() => undefined);
+      if (growth > 0 || newFiles > 0) {
+        await workspaceQuota.release(auth.userId, growth, newFiles).catch(() => undefined);
+      }
       throw error;
     }
   }

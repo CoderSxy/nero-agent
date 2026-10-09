@@ -45,7 +45,8 @@ test('rejects missing, binary, invalid and oversized text without creating or ch
   await assert.rejects(() => saveWorkspaceText(filesystem, 'note.md', 'bad\0text', etag),
     (error: unknown) => error instanceof WorkspaceEditError && error.status === 400);
   await assert.rejects(() => saveWorkspaceText(filesystem, 'note.md', 'x'.repeat(10 * 1024 * 1024 + 1), etag),
-    (error: unknown) => error instanceof WorkspaceEditError && error.status === 413);
+    (error: unknown) => error instanceof WorkspaceEditError && error.status === 413
+      && error.code === 'FILE_TOO_LARGE');
 });
 
 test('a larger edit respects the user workspace quota', async () => {
@@ -59,7 +60,8 @@ test('a larger edit respects the user workspace quota', async () => {
     await workspaceQuota.reconcileUsage(userId, 6, 1);
     await assert.rejects(() => saveWorkspaceText(filesystem, 'note.md', 'much longer',
       readWorkspaceVersion(Buffer.from('before')), userId),
-    (error: unknown) => error instanceof WorkspaceEditError && error.status === 413);
+    (error: unknown) => error instanceof WorkspaceEditError && error.status === 413
+      && error.code === 'WORKSPACE_QUOTA_EXCEEDED');
     assert.equal(await readFile(path, 'utf8'), 'before');
   } finally {
     if (previousRoot === undefined) delete process.env.WORKSPACE_ROOT;

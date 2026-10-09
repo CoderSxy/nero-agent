@@ -9,7 +9,7 @@ const MAX_EDIT_BYTES = 10 * 1024 * 1024;
 const pending = new Map<string, Promise<unknown>>();
 
 export class WorkspaceEditError extends Error {
-  constructor(readonly status: 400 | 404 | 409 | 412 | 413, message: string) {
+  constructor(readonly status: 400 | 404 | 409 | 412 | 413, message: string, readonly code?: string) {
     super(message);
     this.name = 'WorkspaceEditError';
   }
@@ -52,7 +52,7 @@ export async function saveWorkspaceText(
   if (!/^"[a-f0-9]{64}"$/.test(expectedEtag)) throw new WorkspaceEditError(400, '缺少有效的文件版本');
   if (text.includes('\0')) throw new WorkspaceEditError(400, '文件包含无效文本');
   const next = Buffer.from(text, 'utf8');
-  if (next.length > MAX_EDIT_BYTES) throw new WorkspaceEditError(413, '文件超过在线编辑上限');
+  if (next.length > MAX_EDIT_BYTES) throw new WorkspaceEditError(413, '文件超过在线编辑上限', 'FILE_TOO_LARGE');
   if (next.toString('utf8') !== text) throw new WorkspaceEditError(400, '文件包含无效 UTF-8 文本');
 
   const key = `${filesystem.basePath ?? filesystem.id}:${path}`;
@@ -67,7 +67,7 @@ export async function saveWorkspaceText(
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new WorkspaceEditError(404, '文件不存在');
       throw error;
     }
-    if (current.length > MAX_EDIT_BYTES) throw new WorkspaceEditError(413, '文件超过在线编辑上限');
+    if (current.length > MAX_EDIT_BYTES) throw new WorkspaceEditError(413, '文件超过在线编辑上限', 'FILE_TOO_LARGE');
     if (!isWorkspaceText(current)) throw new WorkspaceEditError(409, '该文件不支持文本编辑');
     if (readWorkspaceVersion(current) !== expectedEtag) throw new WorkspaceEditError(412, '文件已被其他操作修改，请重新打开');
     const growth = Math.max(0, next.length - current.length);
@@ -76,7 +76,7 @@ export async function saveWorkspaceText(
         await assertHostWritable(growth);
         if (growth) await workspaceQuota.reserve(userId, growth, 0);
       } catch (error) {
-        if (error instanceof QuotaExceededError) throw new WorkspaceEditError(413, error.message);
+        if (error instanceof QuotaExceededError) throw new WorkspaceEditError(413, error.message, error.code);
         if (error instanceof DiskProtectionError) throw new WorkspaceEditError(409, error.message);
         throw error;
       }
