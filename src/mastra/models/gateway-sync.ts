@@ -152,7 +152,7 @@ export async function applyGatewaySync(user: AuthUser, input: unknown): Promise<
       await insertRecord('public', null, {
         displayName, providerId: 'workbuddy', modelId, baseUrl: GATEWAY_BASE_URL,
         apiMode: 'chat', apiKeyCiphertext: source.apiKeyCiphertext,
-        enabled: true, isDefault: !hasDefault,
+        enabled: true, supportsVision: false, isDefault: !hasDefault,
       }, db);
       hasDefault = true;
     }

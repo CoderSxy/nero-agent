@@ -4,9 +4,16 @@ import { trustedAuth } from '../auth/auth-context';
 import type { ThreadLookup } from '../auth/thread-guard';
 import type { Mastra } from '@mastra/core/mastra';
 import type { RequestContext } from '@mastra/core/request-context';
+import { findAuthorizedModel } from '../models/service';
+import { resolveSelectedModel, trustedUserFrom } from '../models/resolver';
+import { AttachmentService, type AttachmentStatus } from './attachments';
 import { FileService } from './service';
 
 const pathInput = z.object({ path: z.string().min(1) });
+const TEXT_BYTE_LIMIT = 64 * 1024;
+const IMAGE_MIME = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
+const TEXT_MIME = /^(text\/|application\/(json|xml|javascript|x-javascript|yaml|x-yaml|toml|csv|sql))/i;
+const VISION_OVERRIDE_KEY = 'nero-agent.model-supports-vision';
 
 function agentThreadId(context: { agent?: { threadId?: string } }): string {
   const threadId = context.agent?.threadId;
@@ -23,6 +30,223 @@ function serviceFrom(context: { mastra?: unknown; requestContext?: unknown }) {
       return new FileService(memory as ThreadLookup);
     });
 }
+
+async function defaultAttachmentsFrom(context: {
+  mastra?: unknown;
+  requestContext?: unknown;
+}): Promise<AttachmentService> {
+  if (!context.mastra || !context.requestContext) throw new Error('Authentication is required');
+  const mastra = context.mastra as Mastra;
+  const requestContext = context.requestContext as RequestContext;
+  const memory = await mastra.getAgent('agent').getMemory({ requestContext });
+  if (!memory) throw new Error('Agent memory is unavailable');
+  return new AttachmentService(memory as ThreadLookup, {
+    resolveAgentWorkspace: async () => {
+      const workspace = await mastra.getAgent('agent').getWorkspace({ requestContext });
+      if (!workspace) return undefined;
+      return workspace as { filesystem: { basePath?: string } };
+    },
+  });
+}
+
+async function defaultModelSupportsVision(requestContext: RequestContext): Promise<boolean> {
+  const override = requestContext.get(VISION_OVERRIDE_KEY);
+  if (typeof override === 'boolean') return override;
+  const user = trustedUserFrom(requestContext);
+  const { ref } = await resolveSelectedModel(requestContext, 'chat');
+  const record = await findAuthorizedModel(ref, user);
+  return record.supportsVision === true;
+}
+
+export type AttachedFileToolResult = {
+  attachmentId: string;
+  name: string;
+  status: AttachmentStatus;
+  mimeType: string;
+  kind: 'text' | 'image' | 'binary' | 'unavailable';
+  content?: string;
+  truncated?: boolean;
+  imageBase64?: string;
+};
+
+export type AttachedFileDisplay = {
+  attachmentId: string;
+  name: string;
+  status: AttachmentStatus;
+};
+
+function toDisplay(output: AttachedFileToolResult): AttachedFileDisplay {
+  return {
+    attachmentId: output.attachmentId,
+    name: output.name,
+    status: output.status,
+  };
+}
+
+function isTextMime(mimeType: string, name: string): boolean {
+  if (TEXT_MIME.test(mimeType)) return true;
+  if (mimeType === 'application/octet-stream' || !mimeType) {
+    return /\.(txt|md|markdown|csv|json|xml|yaml|yml|toml|log|ts|tsx|js|jsx|py|rs|go|java|c|h|cpp|css|html|svg)$/i
+      .test(name);
+  }
+  return false;
+}
+
+function truncateUtf8(data: Buffer, limit: number): { content: string; truncated: boolean } {
+  if (data.byteLength <= limit) {
+    return { content: data.toString('utf8'), truncated: false };
+  }
+  let end = limit;
+  while (end > 0 && (data[end] & 0xc0) === 0x80) end -= 1;
+  return { content: data.subarray(0, end).toString('utf8'), truncated: true };
+}
+
+export type ReadAttachedFileDeps = {
+  attachmentsFrom?: (context: {
+    mastra?: unknown;
+    requestContext?: unknown;
+  }) => Promise<AttachmentService>;
+  modelSupportsVision?: (requestContext: RequestContext) => Promise<boolean>;
+};
+
+/** Strip image bytes / multimodal parts before messages or observations are stored. */
+export function sanitizeAttachedFileForPersistence(
+  result: AttachedFileToolResult,
+  modelOutput?: unknown,
+): { result: AttachedFileDisplay; modelOutput: unknown } {
+  let sanitizedModel = modelOutput;
+  if (modelOutput && typeof modelOutput === 'object' && modelOutput !== null) {
+    const typed = modelOutput as { type?: string; value?: unknown[] };
+    if (typed.type === 'content' && Array.isArray(typed.value)) {
+      sanitizedModel = {
+        type: 'content',
+        value: typed.value.map(part => {
+          if (!part || typeof part !== 'object') return part;
+          const item = part as { type?: string; text?: string; mediaType?: string };
+          if (item.type === 'image-data' || item.type === 'file-data') {
+            return {
+              type: 'text',
+              text: `[workspace-attachment:${result.attachmentId} name=${result.name} status=${result.status}]`,
+            };
+          }
+          return part;
+        }),
+      };
+    }
+  }
+  return { result: toDisplay(result), modelOutput: sanitizedModel };
+}
+
+export function createReadAttachedFileTool(deps: ReadAttachedFileDeps = {}) {
+  const attachmentsFrom = deps.attachmentsFrom ?? defaultAttachmentsFrom;
+  const modelSupportsVision = deps.modelSupportsVision ?? defaultModelSupportsVision;
+
+  return createTool({
+    id: 'read_attached_file',
+    description:
+      '按附件 ID 读取当前会话已登记的附件。文本返回有限 UTF-8 内容；图片仅在当前模型支持视觉时以多模态形式提供。',
+    inputSchema: z.object({
+      attachmentId: z.string().uuid().describe('服务端签发的附件 ID'),
+    }),
+    outputSchema: z.object({
+      attachmentId: z.string(),
+      name: z.string(),
+      status: z.enum(['available', 'changed', 'deleted']),
+      mimeType: z.string(),
+      kind: z.enum(['text', 'image', 'binary', 'unavailable']),
+      content: z.string().optional(),
+      truncated: z.boolean().optional(),
+      imageBase64: z.string().optional(),
+    }),
+    execute: async ({ attachmentId }, context) => {
+      if (!context?.requestContext) throw new Error('Authentication is required');
+      const auth = trustedAuth(context.requestContext);
+      const threadId = agentThreadId(context);
+      const attachments = await attachmentsFrom(context);
+      const { ref, data } = await attachments.readOwned(auth, threadId, attachmentId);
+      if (ref.status === 'deleted' || data.byteLength === 0 && ref.status === 'deleted') {
+        return {
+          attachmentId: ref.attachmentId,
+          name: ref.name,
+          status: ref.status,
+          mimeType: ref.mimeType,
+          kind: 'unavailable' as const,
+        };
+      }
+
+      if (IMAGE_MIME.has(ref.mimeType)) {
+        const supportsVision = await modelSupportsVision(context.requestContext as RequestContext);
+        if (!supportsVision) {
+          throw new Error('当前模型不支持图片，请切换支持图片的模型后再读取该附件');
+        }
+        return {
+          attachmentId: ref.attachmentId,
+          name: ref.name,
+          status: ref.status,
+          mimeType: ref.mimeType,
+          kind: 'image' as const,
+          imageBase64: data.toString('base64'),
+        };
+      }
+
+      if (!isTextMime(ref.mimeType, ref.name)) {
+        throw new Error(`附件 ${ref.name} 是二进制文件，不能按文本读取`);
+      }
+
+      const { content, truncated } = truncateUtf8(data, TEXT_BYTE_LIMIT);
+      return {
+        attachmentId: ref.attachmentId,
+        name: ref.name,
+        status: ref.status,
+        mimeType: ref.mimeType,
+        kind: 'text' as const,
+        content,
+        truncated,
+      };
+    },
+    toModelOutput: (output: AttachedFileToolResult) => {
+      if (output.kind === 'image' && output.imageBase64) {
+        return {
+          type: 'content',
+          value: [
+            {
+              type: 'text',
+              text: `附件 ${output.name}（${output.attachmentId}），状态 ${output.status}`,
+            },
+            {
+              type: 'image-data',
+              data: output.imageBase64,
+              mediaType: output.mimeType,
+            },
+          ],
+        };
+      }
+      if (output.kind === 'text') {
+        const note = output.truncated ? '\n\n[内容已截断至 64KiB]' : '';
+        return {
+          type: 'text',
+          value: `附件 ${output.name}（${output.attachmentId}），状态 ${output.status}\n\n${output.content ?? ''}${note}`,
+        };
+      }
+      return {
+        type: 'json',
+        value: toDisplay(output),
+      };
+    },
+    transform: {
+      display: {
+        output: ({ output }) => toDisplay(output as AttachedFileToolResult),
+        error: () => ({ message: '读取附件失败' }),
+      },
+      transcript: {
+        output: ({ output }) => toDisplay(output as AttachedFileToolResult),
+        error: () => ({ message: '读取附件失败' }),
+      },
+    },
+  });
+}
+
+export const read_attached_file = createReadAttachedFileTool();
 
 export const userFileTools = {
   read_file: createTool({
@@ -69,4 +293,5 @@ export const userFileTools = {
       return { ok: true, path: input.path };
     },
   }),
+  read_attached_file,
 };

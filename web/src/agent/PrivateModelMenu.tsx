@@ -3,14 +3,15 @@ import { createPrivateModel, deletePrivateModel, listPrivateModels, updatePrivat
   type ApiMode, type PrivateModelInput, type SafeModel } from './model-catalog-client';
 
 interface Draft { displayName: string; providerId: string; modelId: string; baseUrl: string;
-  apiMode: ApiMode; enabled: boolean; apiKey: string }
+  apiMode: ApiMode; enabled: boolean; supportsVision: boolean; apiKey: string }
 
 const emptyDraft: Draft = { displayName: '', providerId: '', modelId: '', baseUrl: '', apiMode: 'chat',
-  enabled: true, apiKey: '' };
+  enabled: true, supportsVision: false, apiKey: '' };
 
 function draftOf(model: SafeModel): Draft {
   return { displayName: model.displayName, providerId: model.providerId, modelId: model.modelId,
-    baseUrl: model.baseUrl, apiMode: model.apiMode, enabled: model.enabled, apiKey: '' };
+    baseUrl: model.baseUrl, apiMode: model.apiMode, enabled: model.enabled,
+    supportsVision: model.supportsVision === true, apiKey: '' };
 }
 
 function message(cause: unknown, fallback: string) {
@@ -97,6 +98,7 @@ export function PrivateModelMenu({ onBack, onChanged }: {
           <div className="private-meta">
             <span className="private-name">{model.displayName}</span>
             {!model.enabled && <span className="private-badge">已停用</span>}
+            {model.supportsVision && <span className="private-badge">支持图片</span>}
             <span className="settings-help">{model.providerId}/{model.modelId}</span>
             <span className="settings-help">Key ····{model.keyHint ?? ''}</span>
           </div>
@@ -139,6 +141,8 @@ export function PrivateModelMenu({ onBack, onChanged }: {
         onChange={event => field('apiKey', event.target.value)} />
       <label className="private-check"><input type="checkbox" checked={form.draft.enabled} disabled={saving}
         onChange={event => field('enabled', event.target.checked)} /> 启用</label>
+      <label className="private-check"><input type="checkbox" checked={form.draft.supportsVision} disabled={saving}
+        onChange={event => field('supportsVision', event.target.checked)} /> 支持图片</label>
       <div className="private-actions">
         <button type="submit" disabled={saving}>{saving ? '保存中…' : '保存'}</button>
         <button type="button" disabled={saving} onClick={() => { setForm(null); setError(null); }}>取消</button>

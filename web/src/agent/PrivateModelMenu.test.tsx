@@ -16,7 +16,8 @@ vi.mock('./model-catalog-client', () => ({
 
 const ref = 'private:22222222-2222-4222-8222-222222222222';
 const existing: SafeModel = { ref, scope: 'private', displayName: 'Pro', providerId: 'deepseek', modelId: 'v4-pro',
-  baseUrl: 'https://api.example.com/v1', apiMode: 'chat', enabled: true, hasApiKey: true, keyHint: '5678' };
+  baseUrl: 'https://api.example.com/v1', apiMode: 'chat', enabled: true, hasApiKey: true, keyHint: '5678',
+  supportsVision: false };
 
 beforeEach(() => { list.mockResolvedValue([existing]); });
 afterEach(() => { cleanup(); vi.clearAllMocks(); localStorage.clear(); sessionStorage.clear(); });
@@ -47,11 +48,26 @@ describe('private model management', () => {
     fireEvent.click(screen.getByRole('button', { name: '保存' }));
     await waitFor(() => expect(create).toHaveBeenCalledWith({ displayName: 'New', providerId: 'deepseek',
       modelId: 'v4-new', baseUrl: 'https://api.example.com/v1', apiMode: 'chat', enabled: true,
-      apiKey: 'sk-secret-9999' }));
+      supportsVision: false, apiKey: 'sk-secret-9999' }));
     await waitFor(() => expect(onChanged).toHaveBeenCalled());
     expect(screen.queryByDisplayValue('sk-secret-9999')).toBeNull();
     expect(JSON.stringify({ ...localStorage })).not.toContain('sk-secret');
     expect(JSON.stringify({ ...sessionStorage })).not.toContain('sk-secret');
+  });
+
+  it('creates with supportsVision when the image checkbox is checked', async () => {
+    create.mockResolvedValue({ ...existing, ref: 'private:44444444-4444-4444-8444-444444444444',
+      displayName: 'Vision', supportsVision: true });
+    setup();
+    await screen.findByText('Pro');
+    fireEvent.click(screen.getByRole('button', { name: '添加模型' }));
+    type('显示名称', 'Vision'); type('Provider ID', 'openai'); type('Model ID', 'gpt-vision');
+    type('Base URL', 'https://api.example.com/v1'); type('API Key', 'sk-v');
+    fireEvent.click(screen.getByLabelText('支持图片'));
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+    await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({
+      displayName: 'Vision', supportsVision: true, apiKey: 'sk-v',
+    })));
   });
 
   it('omits apiKey from PATCH when the key field is blank', async () => {

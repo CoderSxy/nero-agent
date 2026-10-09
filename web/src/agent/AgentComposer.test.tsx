@@ -12,7 +12,7 @@ describe('Composer run controls', () => {
     const catalog = [first, second].map((ref, index) => ({
       ref, scope: index === 0 ? 'public' : 'private', displayName: index === 0 ? '默认模型' : '个人模型',
       providerId: 'test', modelId: `m${index}`, enabled: true, baseUrl: 'https://example.test',
-      apiMode: 'chat', hasApiKey: true, keyHint: '1234',
+      apiMode: 'chat', hasApiKey: true, keyHint: '1234', supportsVision: false,
     })) as SafeModel[];
     const change = vi.fn();
     const { container } = render(<AgentComposer draft="测试" onDraftChange={vi.fn()} isRunning={false}

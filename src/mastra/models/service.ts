@@ -34,7 +34,8 @@ const MODEL_ID_PATTERN = /^[a-zA-Z0-9._:/-]+$/;
 const API_MODES: readonly ApiMode[] = ['chat', 'responses'];
 const MAX_API_KEY_LENGTH = 4096;
 const INPUT_KEYS = new Set<keyof ModelInput>([
-  'displayName', 'providerId', 'modelId', 'baseUrl', 'apiMode', 'apiKey', 'enabled', 'isDefault',
+  'displayName', 'providerId', 'modelId', 'baseUrl', 'apiMode', 'apiKey', 'enabled',
+  'supportsVision', 'isDefault',
 ]);
 
 function isAdmin(user: AuthUser): boolean {
@@ -154,6 +155,7 @@ function toSafeModel(record: ModelRecord): SafeModel {
     enabled: record.enabled,
     hasApiKey: record.apiKeyCiphertext.length > 0,
     keyHint: record.apiKeyCiphertext ? hintFor(record.apiKeyCiphertext) : null,
+    supportsVision: record.supportsVision === true,
   };
   if (record.scope === 'public') safe.isDefault = record.isDefault;
   return safe;
@@ -184,6 +186,9 @@ export async function createModel(scope: ModelScope, user: AuthUser, input: Mode
   assertKnownKeys(input);
 
   const enabled = input.enabled === undefined ? true : validateBoolean(input.enabled, 'enabled');
+  const supportsVision = input.supportsVision === undefined
+    ? false
+    : validateBoolean(input.supportsVision, 'supportsVision');
   const isDefault = input.isDefault === undefined ? false : validateBoolean(input.isDefault, 'isDefault');
   if (isDefault && scope !== 'public') {
     throw new ModelCatalogError('invalid_input', 'Only public models can be the default');
@@ -200,6 +205,7 @@ export async function createModel(scope: ModelScope, user: AuthUser, input: Mode
     apiMode: input.apiMode === undefined ? 'chat' : validateApiMode(input.apiMode),
     apiKeyCiphertext: encryptNewKey(input.apiKey),
     enabled,
+    supportsVision,
     isDefault,
   };
 
@@ -231,6 +237,9 @@ async function buildChanges(patch: Partial<ModelInput>, scope: ModelScope): Prom
   if (patch.baseUrl !== undefined) changes.baseUrl = await validateBaseUrl(patch.baseUrl);
   if (patch.apiMode !== undefined) changes.apiMode = validateApiMode(patch.apiMode);
   if (patch.enabled !== undefined) changes.enabled = validateBoolean(patch.enabled, 'enabled');
+  if (patch.supportsVision !== undefined) {
+    changes.supportsVision = validateBoolean(patch.supportsVision, 'supportsVision');
+  }
   if (patch.isDefault !== undefined) changes.isDefault = validateBoolean(patch.isDefault, 'isDefault');
   if (patch.apiKey !== undefined) changes.apiKeyCiphertext = encryptNewKey(patch.apiKey);
   return changes;

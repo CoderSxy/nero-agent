@@ -17,7 +17,7 @@ const models = { chatModel: chatRef, memoryModel: memoryRef };
 const catalog = [chatRef, memoryRef].map((ref, index) => ({ ref,
   scope: index === 0 ? 'public' : 'private', displayName: index === 0 ? '默认模型' : '个人模型',
   providerId: 'test', modelId: `m${index}`, baseUrl: 'https://example.test', apiMode: 'chat',
-  enabled: true, hasApiKey: true, keyHint: '1234',
+  enabled: true, hasApiKey: true, keyHint: '1234', supportsVision: false,
 })) as SafeModel[];
 let mockMessages: Array<{ id: string; role: string; content: { format: number; parts: Array<{ type: string; text: string }> } }> =
   [{ id: 'partial', role: 'assistant', content: { format: 2, parts: [{ type: 'text', text: '部分回复' }] } }];

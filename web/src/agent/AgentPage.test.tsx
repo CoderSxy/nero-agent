@@ -20,7 +20,7 @@ let threadItems: Array<{ id: string; title: string; resourceId: string; updatedA
 const listAgentsModelProviders = vi.fn();
 const model = (ref: string, modelId: string, extra = {}) => ({ ref, scope: 'public', displayName: modelId,
   providerId: 'deepseek', modelId, baseUrl: 'https://api.example.com', apiMode: 'chat', enabled: true,
-  hasApiKey: true, keyHint: '1234', ...extra });
+  hasApiKey: true, keyHint: '1234', supportsVision: false, ...extra });
 
 vi.mock('./client', () => ({ AGENT_ID: 'agent', client: {
   getAgent: () => ({ details: () => Promise.resolve({ name: '智能体', modelId: 'openai/gpt-5.6-terra', tools: {} }) }),

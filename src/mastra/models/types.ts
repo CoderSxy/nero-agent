@@ -15,6 +15,7 @@ export type SafeModel = {
   enabled: boolean;
   hasApiKey: boolean;
   keyHint: string | null;
+  supportsVision: boolean;
   isDefault?: boolean;
 };
 
@@ -26,6 +27,7 @@ export type ModelInput = {
   apiMode?: ApiMode;
   apiKey?: string;
   enabled?: boolean;
+  supportsVision?: boolean;
   isDefault?: boolean;
 };
 

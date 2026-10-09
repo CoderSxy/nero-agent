@@ -1,0 +1,241 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { RequestContext } from '@mastra/core/request-context';
+import { authContextFromUser } from '../src/mastra/auth/auth-context';
+import type { AuthUser } from '../src/mastra/auth/service';
+import { AttachmentService } from '../src/mastra/files/attachments';
+import {
+  createReadAttachedFileTool,
+  sanitizeAttachedFileForPersistence,
+  userFileTools,
+} from '../src/mastra/files/tools';
+import { ThreadGuardError } from '../src/mastra/auth/thread-guard';
+
+const USER_ID = '22222222-2222-4222-8222-222222222222';
+const OTHER_ID = '33333333-3333-4333-8333-333333333333';
+const THREAD_A = 'thread-attach-tool-a';
+const THREAD_B = 'thread-attach-tool-b';
+const TEXT_LIMIT = 64 * 1024;
+
+function user(id: string, roles: AuthUser['roles'] = ['user']): AuthUser {
+  return { id, email: `${id}@example.test`, displayName: 'u', roles };
+}
+
+function lookup() {
+  return {
+    getThreadById: async ({ threadId }: { threadId: string }) => {
+      if (threadId === THREAD_B) return { id: threadId, resourceId: OTHER_ID };
+      if (threadId === THREAD_A) return { id: threadId, resourceId: USER_ID };
+      return null;
+    },
+  };
+}
+
+function snapshotEnv(keys: string[]): Record<string, string | undefined> {
+  return Object.fromEntries(keys.map(key => [key, process.env[key]]));
+}
+
+function restoreEnv(snapshot: Record<string, string | undefined>): void {
+  for (const [key, value] of Object.entries(snapshot)) {
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+}
+
+async function withMemoryWorkspace<T>(run: (root: string) => Promise<T>): Promise<T> {
+  const env = snapshotEnv(['DATABASE_URL', 'WORKSPACE_ROOT']);
+  delete process.env.DATABASE_URL;
+  const root = await mkdtemp(join(tmpdir(), 'attach-tool-'));
+  process.env.WORKSPACE_ROOT = root;
+  try {
+    return await run(root);
+  } finally {
+    restoreEnv(env);
+  }
+}
+
+function toolContext(opts: {
+  threadId?: string;
+  userId?: string;
+  supportsVision?: boolean;
+  attachments?: AttachmentService;
+}) {
+  const requestContext = new RequestContext();
+  requestContext.set('mastra__user', user(opts.userId ?? USER_ID));
+  if (typeof opts.supportsVision === 'boolean') {
+    requestContext.set('nero-agent.model-supports-vision', opts.supportsVision);
+  }
+  const attachments = opts.attachments ?? new AttachmentService(lookup());
+  return {
+    requestContext,
+    mastra: {
+      getAgent: () => ({
+        getMemory: async () => lookup(),
+        getWorkspace: async () => undefined,
+      }),
+    },
+    agent: opts.threadId ? { threadId: opts.threadId } : undefined,
+    __attachments: attachments,
+  } as never;
+}
+
+async function prepareTextAttachment(content: string | Buffer, name: string) {
+  const attachments = new AttachmentService(lookup());
+  const auth = authContextFromUser(user(USER_ID));
+  const uploads = join(process.env.WORKSPACE_ROOT!, 'users', USER_ID, 'workspace', 'uploads', 't1');
+  await mkdir(uploads, { recursive: true });
+  const path = `uploads/t1/${name}`;
+  await writeFile(join(process.env.WORKSPACE_ROOT!, 'users', USER_ID, 'workspace', path), content);
+  const [ref] = await attachments.prepare(auth, THREAD_A, `msg-${name}`, [
+    { source: 'personal', path },
+  ]);
+  return { attachments, ref };
+}
+
+function tinyPng(): Buffer {
+  return Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+    'base64',
+  );
+}
+
+test('userFileTools exposes read_attached_file', () => {
+  assert.ok(userFileTools.read_attached_file);
+  assert.equal(userFileTools.read_attached_file.id, 'read_attached_file');
+});
+
+test('read_attached_file rejects cross-thread attachment ids', async () => {
+  await withMemoryWorkspace(async () => {
+    const { attachments, ref } = await prepareTextAttachment('hello', 'note.txt');
+    const tool = createReadAttachedFileTool({
+      attachmentsFrom: async () => attachments,
+      modelSupportsVision: async () => false,
+    });
+    await assert.rejects(
+      () => tool.execute!({ attachmentId: ref.attachmentId } as never, toolContext({
+        threadId: THREAD_B,
+        userId: OTHER_ID,
+        attachments,
+      })),
+      (error: unknown) => error instanceof ThreadGuardError || (error instanceof Error && /denied|无权|thread/i.test(error.message)),
+    );
+  });
+});
+
+test('read_attached_file returns truncated UTF-8 text with truncated flag', async () => {
+  await withMemoryWorkspace(async () => {
+    const body = '字'.repeat(TEXT_LIMIT + 32);
+    const { attachments, ref } = await prepareTextAttachment(body, 'big.txt');
+    const tool = createReadAttachedFileTool({
+      attachmentsFrom: async () => attachments,
+      modelSupportsVision: async () => false,
+    });
+    const result = await tool.execute!({ attachmentId: ref.attachmentId } as never, toolContext({
+      threadId: THREAD_A,
+      attachments,
+    }));
+    assert.equal(result.kind, 'text');
+    assert.equal(result.truncated, true);
+    assert.ok(typeof result.content === 'string');
+    assert.ok(Buffer.byteLength(result.content!, 'utf8') <= TEXT_LIMIT);
+    assert.equal(result.attachmentId, ref.attachmentId);
+    assert.equal(result.name, 'big.txt');
+  });
+});
+
+test('read_attached_file rejects non-image binary as text', async () => {
+  await withMemoryWorkspace(async () => {
+    const { attachments, ref } = await prepareTextAttachment(Buffer.from([0, 1, 2, 3, 4, 255]), 'blob.bin');
+    const tool = createReadAttachedFileTool({
+      attachmentsFrom: async () => attachments,
+      modelSupportsVision: async () => true,
+    });
+    await assert.rejects(
+      () => tool.execute!({ attachmentId: ref.attachmentId } as never, toolContext({
+        threadId: THREAD_A,
+        supportsVision: true,
+        attachments,
+      })),
+      /二进制|binary|不支持/i,
+    );
+  });
+});
+
+test('vision model receives image-data via toModelOutput; display/transcript omit base64', async () => {
+  await withMemoryWorkspace(async () => {
+    const png = tinyPng();
+    const { attachments, ref } = await prepareTextAttachment(png, 'dot.png');
+    const tool = createReadAttachedFileTool({
+      attachmentsFrom: async () => attachments,
+      modelSupportsVision: async () => true,
+    });
+    const result = await tool.execute!({ attachmentId: ref.attachmentId } as never, toolContext({
+      threadId: THREAD_A,
+      supportsVision: true,
+      attachments,
+    }));
+    assert.equal(result.kind, 'image');
+    assert.ok(result.imageBase64);
+    assert.equal(result.imageBase64, png.toString('base64'));
+
+    assert.ok(typeof tool.toModelOutput === 'function');
+    const modelOut = tool.toModelOutput!(result) as {
+      type: string;
+      value: Array<{ type: string; data?: string; mediaType?: string; text?: string }>;
+    };
+    assert.equal(modelOut.type, 'content');
+    const imagePart = modelOut.value.find(part => part.type === 'image-data');
+    assert.ok(imagePart);
+    assert.equal(imagePart!.data, png.toString('base64'));
+    assert.equal(imagePart!.mediaType, 'image/png');
+
+    const display = tool.transform?.display?.output?.({
+      target: 'display',
+      phase: 'output-available',
+      output: result,
+    } as never);
+    const transcript = tool.transform?.transcript?.output?.({
+      target: 'transcript',
+      phase: 'output-available',
+      output: result,
+    } as never);
+    for (const payload of [display, transcript]) {
+      const text = JSON.stringify(payload);
+      assert.ok(payload && typeof payload === 'object');
+      assert.equal((payload as { attachmentId: string }).attachmentId, ref.attachmentId);
+      assert.equal((payload as { name: string }).name, 'dot.png');
+      assert.ok('status' in (payload as object));
+      assert.doesNotMatch(text, /data:/);
+      assert.doesNotMatch(text, /iVBORw0KGgo/);
+      assert.equal('imageBase64' in (payload as object), false);
+      assert.equal('content' in (payload as object), false);
+    }
+
+    const sanitized = sanitizeAttachedFileForPersistence(result, modelOut);
+    const sanitizedText = JSON.stringify(sanitized);
+    assert.doesNotMatch(sanitizedText, /iVBORw0KGgo/);
+    assert.doesNotMatch(sanitizedText, /data:/);
+    assert.equal((sanitized.result as { attachmentId: string }).attachmentId, ref.attachmentId);
+  });
+});
+
+test('non-vision model rejects image attachments with a clear error', async () => {
+  await withMemoryWorkspace(async () => {
+    const { attachments, ref } = await prepareTextAttachment(tinyPng(), 'dot.png');
+    const tool = createReadAttachedFileTool({
+      attachmentsFrom: async () => attachments,
+      modelSupportsVision: async () => false,
+    });
+    await assert.rejects(
+      () => tool.execute!({ attachmentId: ref.attachmentId } as never, toolContext({
+        threadId: THREAD_A,
+        supportsVision: false,
+        attachments,
+      })),
+      /不支持图片|vision|视觉/i,
+    );
+  });
+});

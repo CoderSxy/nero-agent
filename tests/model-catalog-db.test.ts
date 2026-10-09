@@ -70,8 +70,15 @@ test('model catalog enforces ownership, admin scope, and default invariants',
     assert.equal(publicModel.keyHint, '1234');
     assert.equal(publicModel.baseUrl, `${FIXTURE_ORIGIN}/v1`);
     assert.equal(publicModel.apiMode, 'chat');
+    assert.equal(publicModel.supportsVision, false);
     assert.ok(!JSON.stringify(publicModel).includes(FIXTURE_KEY));
     assert.ok(!JSON.stringify(publicModel).toLowerCase().includes('ciphertext'));
+
+    const visionPublic = await updateModel('public', publicIds[0], admin, { supportsVision: true });
+    assert.equal(visionPublic.supportsVision, true);
+    assert.equal((await listSelectableModels(userB)).find(m => m.ref === publicModel.ref)?.supportsVision, true);
+    await assertCode(updateModel('public', publicIds[0], userB, { supportsVision: false }), 'forbidden');
+    await updateModel('public', publicIds[0], admin, { supportsVision: false });
 
     const stored = await getPool().query<{ api_key_ciphertext: string }>(
       'SELECT api_key_ciphertext FROM app_public_models WHERE id = $1', [publicIds[0]]);
@@ -89,9 +96,16 @@ test('model catalog enforces ownership, admin scope, and default invariants',
     await assertCode(createModel('private', userA, input('default-private', { isDefault: true })), 'invalid_input');
 
     const privateA = await createModel('private', userA, input('priv-a'));
-    const privateB = await createModel('private', userB, input('priv-b'));
+    const privateB = await createModel('private', userB, input('priv-b', { supportsVision: true }));
     assert.equal(privateA.scope, 'private');
     assert.equal(privateA.isDefault, undefined);
+    assert.equal(privateA.supportsVision, false);
+    assert.equal(privateB.supportsVision, true);
+    const privateVisionOff = await updateModel('private', privateB.ref.slice('private:'.length), userB, {
+      supportsVision: false,
+    });
+    assert.equal(privateVisionOff.supportsVision, false);
+    await updateModel('private', privateB.ref.slice('private:'.length), userB, { supportsVision: true });
 
     const selectableB = (await listSelectableModels(userB)).map((model) => model.ref);
     assert.ok(selectableB.includes(publicModel.ref));

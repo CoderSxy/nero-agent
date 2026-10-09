@@ -21,6 +21,7 @@ const PUBLIC_MODEL = {
   enabled: true,
   hasApiKey: true,
   keyHint: '1234',
+  supportsVision: false,
   isDefault: false,
 };
 

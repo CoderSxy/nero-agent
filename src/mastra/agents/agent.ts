@@ -11,6 +11,7 @@ import { tavilySearchTool } from '../tools/tavily-search-tool';
 import { isWorkspaceResolverEnabled } from '../workspace/config';
 import { resolveUserFilesystem } from '../workspace/resolver';
 import { isUserFilesEnabled } from '../files/policy';
+import { attachmentPersistenceProcessor } from '../files/attachment-persistence-processor';
 import { userFileTools } from '../files/tools';
 import { disabledNativeWorkspaceTools } from '../sandbox/native-tools';
 import { sandboxTools } from '../sandbox/tool';
@@ -63,6 +64,8 @@ export const agent = new Agent({
 用户打招呼或没有提出具体任务时，可以简要介绍这些示例。需求不明确时，提出简短的问题。
 
 用户要求保存 Markdown、HTML 或其他文本到工作区时，使用 write_file 工具写入当前会话目录，path 使用相对路径；写入成功后再告知用户。修改本地文件后，在回复中给出工具返回的应用内路径 /user-files/<threadId>/<相对路径>，不要输出宿主 file: URL、localhost 或磁盘绝对路径。
+
+用户消息中若列出附件 ID 与名称，使用 read_attached_file({ attachmentId }) 读取；不要猜测工作区路径。文本附件返回内容；图片仅在当前模型支持视觉时可读。
 `,
   model: async ({ requestContext }) => createTransportModel((await resolveSelectedModel(requestContext, 'chat')).config),
   defaultOptions: {
@@ -75,6 +78,8 @@ export const agent = new Agent({
     return isWorkspaceResolverEnabled() ? userWorkspace : workspace;
   },
   tools: ({ requestContext }) => resolveAgentTools(requestContext),
+  inputProcessors: [attachmentPersistenceProcessor],
+  outputProcessors: [attachmentPersistenceProcessor],
   signals: [new TaskSignalProvider()],
 });
 

@@ -15,7 +15,8 @@ const ids = {
 
 function model(scope: 'public' | 'private', id: string, extra: Partial<SafeModel> = {}): SafeModel {
   return { ref: `${scope}:${id}`, scope, displayName: id, providerId: 'deepseek', modelId: `m-${id.slice(0, 4)}`,
-    baseUrl: 'https://api.example.com/v1', apiMode: 'chat', enabled: true, hasApiKey: true, keyHint: '1234', ...extra };
+    baseUrl: 'https://api.example.com/v1', apiMode: 'chat', enabled: true, hasApiKey: true, keyHint: '1234',
+    supportsVision: false, ...extra };
 }
 
 const privateFirst = model('private', ids.a);

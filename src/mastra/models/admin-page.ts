@@ -211,17 +211,20 @@ const SCRIPT = `
 
   function createForm() {
     var enabled = el('input', { type: 'checkbox', name: 'enabled', checked: true });
+    var supportsVision = el('input', { type: 'checkbox', name: 'supportsVision' });
     var isDefault = el('input', { type: 'checkbox', name: 'isDefault' });
     var form = el('form', { class: 'grid', 'data-form': 'create', onsubmit: function (event) {
       event.preventDefault();
       var body = baseBody(form);
       body.apiKey = form.elements.apiKey.value;
       body.enabled = enabled.checked;
+      body.supportsVision = supportsVision.checked;
       body.isDefault = isDefault.checked;
       mutate('POST', API, body, '已创建公共模型');
     } }, baseFields().concat([
       el('label', {}, ['API Key', el('input', { type: 'password', name: 'apiKey', required: true, autocomplete: 'new-password' })]),
       el('label', { class: 'check' }, [enabled, '启用']),
+      el('label', { class: 'check' }, [supportsVision, '支持图片']),
       el('label', { class: 'check' }, [isDefault, '设为默认']),
       el('button', { type: 'submit', class: 'primary', 'data-action': 'create', text: '创建模型' }),
     ]));
@@ -229,10 +232,14 @@ const SCRIPT = `
   }
 
   function editForm(model) {
+    var supportsVision = el('input', { type: 'checkbox', name: 'supportsVision', checked: !!model.supportsVision });
     var form = el('form', { class: 'grid', 'data-form': 'edit', onsubmit: function (event) {
       event.preventDefault();
-      mutate('PATCH', API + '/' + encodeURIComponent(modelId(model)), baseBody(form), '已保存修改');
+      var body = baseBody(form);
+      body.supportsVision = supportsVision.checked;
+      mutate('PATCH', API + '/' + encodeURIComponent(modelId(model)), body, '已保存修改');
     } }, baseFields(model).concat([
+      el('label', { class: 'check' }, [supportsVision, '支持图片']),
       el('button', { type: 'submit', class: 'primary', 'data-action': 'save-edit', text: '保存' }),
       el('button', { type: 'button', text: '取消', onclick: function () { state.editing = null; renderAdmin(); } }),
     ]));
@@ -259,6 +266,7 @@ const SCRIPT = `
     var id = modelId(model);
     var path = API + '/' + encodeURIComponent(id);
     var status = [el('span', { class: 'badge' + (model.enabled ? ' ok' : ''), text: model.enabled ? '已启用' : '已停用' })];
+    if (model.supportsVision) status.push(' ', el('span', { class: 'badge ok', text: '支持图片' }));
     if (model.isDefault) status.push(' ', el('span', { class: 'badge default', text: '默认' }));
     var buttons = [
       actionButton('edit', '编辑', function () { state.editing = model.ref; state.keyFor = null; state.confirmDelete = null; renderAdmin(); }),

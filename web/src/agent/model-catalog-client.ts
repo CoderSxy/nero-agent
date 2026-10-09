@@ -15,6 +15,7 @@ export interface SafeModel {
   enabled: boolean;
   hasApiKey: boolean;
   keyHint: string | null;
+  supportsVision: boolean;
   isDefault?: boolean;
 }
 
@@ -25,6 +26,7 @@ export interface PrivateModelInput {
   baseUrl: string;
   apiMode: ApiMode;
   enabled: boolean;
+  supportsVision: boolean;
   apiKey: string;
 }
 

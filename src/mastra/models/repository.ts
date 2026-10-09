@@ -16,6 +16,7 @@ export type ModelRecord = {
   apiMode: ApiMode;
   apiKeyCiphertext: string;
   enabled: boolean;
+  supportsVision: boolean;
   isDefault: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -29,6 +30,7 @@ export type ModelColumns = {
   apiMode: ApiMode;
   apiKeyCiphertext: string;
   enabled: boolean;
+  supportsVision: boolean;
   isDefault: boolean;
 };
 
@@ -42,6 +44,7 @@ type ModelRow = {
   api_mode: ApiMode;
   api_key_ciphertext: string;
   enabled: boolean;
+  supports_vision: boolean;
   is_default: boolean;
   created_at: Date;
   updated_at: Date;
@@ -54,9 +57,9 @@ const TABLES: Record<ModelScope, string> = {
 
 const SELECT_COLUMNS: Record<ModelScope, string> = {
   public: `id, NULL::uuid AS user_id, display_name, provider_id, model_id, base_url, api_mode,
-    api_key_ciphertext, enabled, is_default, created_at, updated_at`,
+    api_key_ciphertext, enabled, supports_vision, is_default, created_at, updated_at`,
   private: `id, user_id, display_name, provider_id, model_id, base_url, api_mode,
-    api_key_ciphertext, enabled, false AS is_default, created_at, updated_at`,
+    api_key_ciphertext, enabled, supports_vision, false AS is_default, created_at, updated_at`,
 };
 
 const COLUMN_NAMES: Record<keyof Omit<ModelColumns, 'isDefault'>, string> = {
@@ -67,6 +70,7 @@ const COLUMN_NAMES: Record<keyof Omit<ModelColumns, 'isDefault'>, string> = {
   apiMode: 'api_mode',
   apiKeyCiphertext: 'api_key_ciphertext',
   enabled: 'enabled',
+  supportsVision: 'supports_vision',
 };
 
 function toRecord(scope: ModelScope, row: ModelRow): ModelRecord {
@@ -81,6 +85,7 @@ function toRecord(scope: ModelScope, row: ModelRow): ModelRecord {
     apiMode: row.api_mode,
     apiKeyCiphertext: row.api_key_ciphertext,
     enabled: row.enabled,
+    supportsVision: row.supports_vision,
     isDefault: row.is_default,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -175,22 +180,25 @@ export async function insertRecord(
     scope === 'public'
       ? await db.query<ModelRow>(
           `INSERT INTO ${TABLES.public}
-             (display_name, provider_id, model_id, base_url, api_mode, api_key_ciphertext, enabled, is_default)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             (display_name, provider_id, model_id, base_url, api_mode, api_key_ciphertext, enabled,
+              supports_vision, is_default)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
            RETURNING ${SELECT_COLUMNS.public}`,
           [
             columns.displayName, columns.providerId, columns.modelId, columns.baseUrl,
-            columns.apiMode, columns.apiKeyCiphertext, columns.enabled, columns.isDefault,
+            columns.apiMode, columns.apiKeyCiphertext, columns.enabled, columns.supportsVision,
+            columns.isDefault,
           ],
         )
       : await db.query<ModelRow>(
           `INSERT INTO ${TABLES.private}
-             (user_id, display_name, provider_id, model_id, base_url, api_mode, api_key_ciphertext, enabled)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             (user_id, display_name, provider_id, model_id, base_url, api_mode, api_key_ciphertext,
+              enabled, supports_vision)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
            RETURNING ${SELECT_COLUMNS.private}`,
           [
             ownerId, columns.displayName, columns.providerId, columns.modelId, columns.baseUrl,
-            columns.apiMode, columns.apiKeyCiphertext, columns.enabled,
+            columns.apiMode, columns.apiKeyCiphertext, columns.enabled, columns.supportsVision,
           ],
         );
   return toRecord(scope, result.rows[0]);
