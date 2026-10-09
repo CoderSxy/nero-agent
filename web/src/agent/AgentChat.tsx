@@ -27,7 +27,8 @@ export type AttachRequest = {
 
 export function AgentChat({ title = '未命名会话', threadId, resourceId, initialMessages, onMessageSent, models, catalog = [],
   onModelChange, modelRef, modelDisabled = false, modelError, sendBlockedReason,
-  pendingUserMessages = [], onMessageSubmitted, onMessageFailed, onFilesChanged, attachRequest }: {
+  pendingUserMessages = [], onMessageSubmitted, onMessageFailed, onFilesChanged, attachRequest,
+  attachmentRefreshVersion = 0 }: {
   title?: string; threadId: string; resourceId: string; initialMessages: MastraDBMessage[];
   onMessageSent: (message: PendingUserMessage) => void;
   models: ModelSettings | null; catalog?: SafeModel[]; modelRef?: ModelRef;
@@ -38,6 +39,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   onMessageFailed?: (message: PendingUserMessage) => void;
   onFilesChanged?: () => void;
   attachRequest?: AttachRequest | null;
+  attachmentRefreshVersion?: number;
 }) {
   const [draft, setDraft] = useState('');
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -50,6 +52,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   const pendingUploads = useRef(new Map<string, PendingUpload>());
   const nextAttachmentId = useRef(0);
   const lastAttachRequestId = useRef<number | null>(null);
+  const lastAttachmentRefreshVersion = useRef(attachmentRefreshVersion);
   const attachmentListGen = useRef(0);
   const attachmentListAbort = useRef<AbortController | null>(null);
   const prepareEpoch = useRef(0);
@@ -100,6 +103,31 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     refreshThreadAttachments();
     return () => { invalidateAttachmentList(); };
   }, [threadId]);
+
+  useEffect(() => {
+    if (attachmentRefreshVersion === lastAttachmentRefreshVersion.current) return;
+    lastAttachmentRefreshVersion.current = attachmentRefreshVersion;
+    refreshThreadAttachments();
+    void (async () => {
+      try {
+        const { files } = await listWorkspaceFiles('personal');
+        const existing = new Set(files.filter(file => file.type === 'file').map(file => file.path));
+        setAttachments(current => {
+          let changed = false;
+          const next = current.map(item => {
+            if (item.source !== 'personal' || !item.path || item.state === 'uploading') return item;
+            if (existing.has(item.path)) return item;
+            changed = true;
+            return { ...item, state: 'failed' as const, error: item.error ?? '文件已删除' };
+          });
+          return changed ? next : current;
+        });
+      } catch {
+        // Keep draft cards when workspace listing fails after delete.
+      }
+    })();
+  }, [attachmentRefreshVersion]);
+
   const visibleMessages = withPendingUserMessages(chat.messages, pendingUserMessages);
   const isEmpty = !hasSubmitted && initialMessages.length === 0 && visibleMessages.length === 0;
   useLayoutEffect(() => {

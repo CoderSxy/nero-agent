@@ -46,7 +46,7 @@ vi.mock('./use-thread-list', () => ({ useThreadList: () => ({
   previewFirstMessageTitle, confirmFirstMessageTitle, discardFirstMessageTitle,
 }) }));
 vi.mock('./AgentChat', () => ({ AgentChat: ({ title, models, sendBlockedReason, catalog, modelRef, onModelChange,
-  modelError, pendingUserMessages, onMessageSubmitted, onFilesChanged, attachRequest }: {
+  modelError, pendingUserMessages, onMessageSubmitted, onFilesChanged, attachRequest, attachmentRefreshVersion }: {
   title?: string;
   models: { chatModel: string; memoryModel: string } | null; sendBlockedReason?: string | null;
   catalog?: Array<{ ref: string; displayName: string }>; modelRef?: string; onModelChange?: (ref: string) => void;
@@ -54,12 +54,14 @@ vi.mock('./AgentChat', () => ({ AgentChat: ({ title, models, sendBlockedReason, 
   onMessageSubmitted?: (message: PendingUserMessage) => void;
   onFilesChanged?: () => void;
   attachRequest?: { id: number; path: string; source: 'personal' | 'agent' } | null;
+  attachmentRefreshVersion?: number;
 }) => <div data-testid="models">{models ? `${models.chatModel}|${models.memoryModel}` : 'none'}
   <span data-testid="chat-title">{title}</span>
   <span data-testid="blocked">{sendBlockedReason ?? ''}</span>
   <span data-testid="pending">{pendingUserMessages?.map(message => message.text).join('|')}</span>
   <span data-testid="attach-request">{attachRequest
     ? `${attachRequest.id}|${attachRequest.source}|${attachRequest.path}` : ''}</span>
+  <span data-testid="attachment-refresh">{String(attachmentRefreshVersion ?? 0)}</span>
   <button type="button" onClick={() => onMessageSubmitted?.({ id: 'local', text: '刚发送的消息',
     createdAt: new Date(), occurrence: 1 })}>模拟发送</button>
   <button type="button" onClick={() => onFilesChanged?.()}>模拟文件生成</button>
@@ -307,5 +309,6 @@ describe('Agent page model selection', () => {
     await waitFor(() => expect(fetch).toHaveBeenCalledWith('/current-workspace/files/batch-delete',
       expect.objectContaining({ method: 'POST' })));
     expect(await screen.findByText(/已用 0 B \/ 500 MiB/)).toBeTruthy();
+    await waitFor(() => expect(screen.getByTestId('attachment-refresh').textContent).not.toBe('0'));
   });
 });

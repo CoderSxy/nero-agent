@@ -149,6 +149,7 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
             setFilesRefreshVersion(value => value + 1);
           }}
           onFilesChanged={() => setFilesRefreshVersion(value => value + 1)}
+          attachmentRefreshVersion={filesRefreshVersion}
           pendingUserMessages={pendingByThread[threadId] ?? []}
           attachRequest={attachRequest}
           onMessageSubmitted={message => {

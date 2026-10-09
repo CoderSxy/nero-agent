@@ -10,7 +10,11 @@ const PROTECTED_THREAD_LEAVES = new Set(['input', 'output', 'tmp']);
 export function isProtectedWorkspacePath(path: string): boolean {
   if (!path || PROTECTED_TOP_ROOTS.has(path)) return true;
   const segments = path.split('/');
-  return segments.length === 3 && segments[0] === 'threads' && PROTECTED_THREAD_LEAVES.has(segments[2]!);
+  if (segments.length === 2 && segments[0] === 'threads' && segments[1]) return true;
+  if (segments.length === 3 && segments[0] === 'threads' && PROTECTED_THREAD_LEAVES.has(segments[2]!)) {
+    return true;
+  }
+  return false;
 }
 
 export function collapseSelectedPaths(paths: Iterable<string>): string[] {

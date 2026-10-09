@@ -635,4 +635,53 @@ describe('Agent conversation', () => {
       attachRequest={{ id: 2, path: 'docs/b.txt', source: 'personal' }} />);
     expect(await screen.findByLabelText('附件 b.txt')).toBeTruthy();
   });
+
+  it('refreshes history refs and marks draft attachments failed after attachmentRefreshVersion bumps', async () => {
+    listThreadAttachments
+      .mockResolvedValueOnce([{
+        attachmentId: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+        clientMessageId: 'prepare-client-id',
+        source: 'personal', path: 'docs/hist.txt', name: 'hist.txt',
+        size: 4, mimeType: 'text/plain', etag: 'e1', status: 'available',
+      }])
+      .mockResolvedValueOnce([{
+        attachmentId: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+        clientMessageId: 'prepare-client-id',
+        source: 'personal', path: 'docs/hist.txt', name: 'hist.txt',
+        size: 4, mimeType: 'text/plain', etag: 'e1', status: 'deleted',
+      }]);
+    listWorkspaceFiles
+      .mockResolvedValueOnce({
+        files: [
+          { path: 'docs/hist.txt', type: 'file', size: 4 },
+          { path: 'docs/draft.txt', type: 'file', size: 3 },
+        ],
+      })
+      .mockResolvedValueOnce({ files: [] });
+    mockMessages = [{
+      id: 'client-set-renamed', role: 'user',
+      content: { format: 2, parts: [{ type: 'text', text: [
+        '历史提问',
+        '',
+        '[[nero-attachments]]',
+        'id=eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee|name=hist.txt|mime=text/plain',
+        '[[/nero-attachments]]',
+      ].join('\n') }] },
+    }];
+    const { rerender } = render(<AgentChat threadId="thread-1" resourceId="agent"
+      initialMessages={mockMessages as never} onMessageSent={vi.fn()} models={models}
+      attachmentRefreshVersion={0}
+      attachRequest={{ id: 1, path: 'docs/draft.txt', source: 'personal' }} />);
+    expect(await screen.findByLabelText('附件 hist.txt')).toBeTruthy();
+    expect(await screen.findByLabelText('附件 draft.txt')).toBeTruthy();
+    await waitFor(() => expect(listThreadAttachments).toHaveBeenCalledTimes(1));
+    rerender(<AgentChat threadId="thread-1" resourceId="agent"
+      initialMessages={mockMessages as never} onMessageSent={vi.fn()} models={models}
+      attachmentRefreshVersion={1}
+      attachRequest={{ id: 1, path: 'docs/draft.txt', source: 'personal' }} />);
+    await waitFor(() => expect(listThreadAttachments).toHaveBeenCalledTimes(2));
+    await waitFor(() => {
+      expect(screen.getAllByText('文件已删除').length).toBeGreaterThanOrEqual(2);
+    });
+  });
 });

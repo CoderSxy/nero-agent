@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { WorkspaceFileTree } from './WorkspaceFileTree';
+import { isProtectedWorkspacePath, WorkspaceFileTree } from './WorkspaceFileTree';
 
 const listWorkspaceFiles = vi.fn();
 const deleteWorkspaceFiles = vi.fn();
@@ -133,6 +133,9 @@ describe('workspace file tree', () => {
   });
 
   it('does not allow deleting protected workspace roots from the UI', async () => {
+    expect(isProtectedWorkspacePath('threads/t1')).toBe(true);
+    expect(isProtectedWorkspacePath('threads/t1/input')).toBe(true);
+    expect(isProtectedWorkspacePath('threads/t1/notes.txt')).toBe(false);
     listWorkspaceFiles.mockResolvedValue({ files: personalFiles, usage });
     render(<WorkspaceFileTree source="personal" refreshVersion={0} onOpenFile={vi.fn()}
       onAttachFile={vi.fn()} />);
@@ -142,6 +145,7 @@ describe('workspace file tree', () => {
     expect(screen.getByRole('checkbox', { name: '选择 uploads' })).toHaveProperty('disabled', true);
     expect(screen.getByRole('checkbox', { name: '选择 threads' })).toHaveProperty('disabled', true);
     fireEvent.click(screen.getByRole('button', { name: '展开 threads' }));
+    expect(screen.getByRole('checkbox', { name: '选择 threads/t1' })).toHaveProperty('disabled', true);
     fireEvent.click(screen.getByRole('button', { name: '展开 threads/t1' }));
     expect(screen.getByRole('checkbox', { name: '选择 threads/t1/input' })).toHaveProperty('disabled', true);
     expect(screen.getByRole('checkbox', { name: '选择 threads/t1/output' })).toHaveProperty('disabled', true);
