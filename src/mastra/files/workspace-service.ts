@@ -78,7 +78,7 @@ export class WorkspaceFileService {
     const usage = await workspaceQuota.usage(auth.userId);
     return {
       files,
-      usage: { usedBytes, quotaBytes: usage.quotaBytes, fileCount: regular.length },
+      usage: { usedBytes: usage.usedBytes, quotaBytes: usage.quotaBytes, fileCount: usage.fileCount },
     };
   }
 }

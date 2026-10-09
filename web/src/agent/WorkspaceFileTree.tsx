@@ -15,7 +15,7 @@ export function WorkspaceFileTree({ source, workspaceId, refreshVersion, onOpenF
   useEffect(() => {
     let active = true;
     setLoading(true);
-    void listWorkspaceFiles(source, workspaceId).then(files => {
+    void listWorkspaceFiles(source, workspaceId).then(({ files }) => {
       if (!active) return;
       setEntries(files);
       setExpanded(previous => new Set([...previous].filter(path => files.some(file => file.path === path && file.type === 'directory'))));

@@ -45,7 +45,7 @@ export async function listUserFiles(threadId: string): Promise<UserFileEntry[]> 
 }
 
 export async function listWorkspaceFiles(source: 'personal' | 'agent' = 'personal',
-  expectedWorkspaceId?: string): Promise<UserFileEntry[]> {
+  expectedWorkspaceId?: string): Promise<{ files: UserFileEntry[]; usage?: WorkspaceUsage }> {
   const response = await apiFetch(source === 'agent'
     ? '/current-workspace/files?source=agent' : '/current-workspace/files');
   if (!response.ok) {
@@ -60,7 +60,7 @@ export async function listWorkspaceFiles(source: 'personal' | 'agent' = 'persona
   };
   if ((expectedWorkspaceId && body.workspaceId !== expectedWorkspaceId) || !Array.isArray(body.files))
     throw new Error('工作区文件列表与当前用户不匹配');
-  return body.files;
+  return { files: body.files, usage: body.usage };
 }
 
 export async function uploadWorkspaceFile(file: File): Promise<WorkspaceFileEntry> {
@@ -69,7 +69,9 @@ export async function uploadWorkspaceFile(file: File): Promise<WorkspaceFileEntr
   const response = await apiFetch('/current-workspace/upload', { method: 'POST', body });
   if (!response.ok) {
     const payload = await response.json().catch(() => ({})) as { error?: string; code?: string };
-    throw new Error(payload.error ?? '上传失败');
+    const error = new Error(payload.error ?? '上传失败') as Error & { code?: string };
+    error.code = payload.code;
+    throw error;
   }
   return response.json() as Promise<WorkspaceFileEntry>;
 }

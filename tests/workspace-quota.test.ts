@@ -204,6 +204,23 @@ test('overwriting a zero-byte file does not increment the file count', async () 
   }
 });
 
+test('reconcileUsage keeps reserved bytes that are not yet on disk', async () => {
+  const env = snapshotEnv(['DATABASE_URL', 'WORKSPACE_DEFAULT_QUOTA_BYTES']);
+  delete process.env.DATABASE_URL;
+  process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = '100';
+  try {
+    const quota = new WorkspaceQuota();
+    const id = '14141414-1414-4141-8141-141414141414';
+    await quota.reserve(id, 80, 1);
+    await quota.reconcileUsage(id, 0, 0);
+    assert.equal((await quota.usage(id)).usedBytes, 80);
+    assert.equal((await quota.usage(id)).fileCount, 1);
+    await assert.rejects(() => quota.reserve(id, 30, 1), QuotaExceededError);
+  } finally {
+    restoreEnv(env);
+  }
+});
+
 test('reconcileFromDisk recounts regular files and skips symlinks outside the user root', async () => {
   const env = snapshotEnv(['DATABASE_URL', 'WORKSPACE_ROOT', 'WORKSPACE_DEFAULT_QUOTA_BYTES']);
   delete process.env.DATABASE_URL;

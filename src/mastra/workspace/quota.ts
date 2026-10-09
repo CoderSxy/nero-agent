@@ -62,27 +62,43 @@ export class WorkspaceQuota {
   }
 
   async reconcileUsage(userId: string, usedBytes: number, fileCount: number): Promise<void> {
-    if (process.env.DATABASE_URL) {
-      await this.mutateDatabase(userId, async (state, client) => {
+    await this.applyUsage(userId, usedBytes, fileCount, 'max');
+  }
+
+  async reconcileFromDisk(userId: string): Promise<QuotaState> {
+    const counted = await scanPersonalWorkspace(workspaceRoot(userId));
+    await this.applyUsage(userId, counted.usedBytes, counted.fileCount, 'replace');
+    const usage = await this.usage(userId);
+    return { ...usage, usedBytes: counted.usedBytes, fileCount: counted.fileCount };
+  }
+
+  private async applyUsage(
+    userId: string,
+    usedBytes: number,
+    fileCount: number,
+    mode: 'max' | 'replace',
+  ): Promise<void> {
+    const next = (state: QuotaState) => {
+      if (mode === 'max') {
+        state.usedBytes = Math.max(state.usedBytes, usedBytes);
+        state.fileCount = Math.max(state.fileCount, fileCount);
+      } else {
         state.usedBytes = usedBytes;
         state.fileCount = fileCount;
+      }
+    };
+    if (process.env.DATABASE_URL) {
+      await this.mutateDatabase(userId, async (state, client) => {
+        next(state);
         await this.writeDatabase(client, userId, state);
       });
       return;
     }
     await this.withLock(userId, async () => {
       const state = await this.loadMemory(userId);
-      state.usedBytes = usedBytes;
-      state.fileCount = fileCount;
+      next(state);
       memory.set(userId, state);
     });
-  }
-
-  async reconcileFromDisk(userId: string): Promise<QuotaState> {
-    const counted = await scanPersonalWorkspace(workspaceRoot(userId));
-    await this.reconcileUsage(userId, counted.usedBytes, counted.fileCount);
-    const usage = await this.usage(userId);
-    return { ...usage, usedBytes: counted.usedBytes, fileCount: counted.fileCount };
   }
 
   private assertFits(state: QuotaState, bytes: number, files: number) {

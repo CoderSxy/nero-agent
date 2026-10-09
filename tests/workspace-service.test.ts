@@ -7,7 +7,7 @@ import { authContextFromUser } from '../src/mastra/auth/auth-context';
 import type { AuthUser } from '../src/mastra/auth/service';
 import { FileServiceError } from '../src/mastra/files/service';
 import { WorkspaceFileService } from '../src/mastra/files/workspace-service';
-import { QuotaExceededError } from '../src/mastra/workspace/quota';
+import { QuotaExceededError, workspaceQuota } from '../src/mastra/workspace/quota';
 import { workspaceRoot } from '../src/mastra/workspace/path';
 
 const USER_A = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -105,11 +105,29 @@ test('uploads that exceed workspace quota return WORKSPACE_QUOTA_EXCEEDED', asyn
   });
 });
 
+test('list reconcile does not drop reserved-but-not-yet-on-disk quota', async () => {
+  await withWorkspace(async () => {
+    process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = '50';
+    const service = new WorkspaceFileService();
+    const id = 'cdcdcdcd-cdcd-4cdc-8dcd-cdcdcdcdcdcd';
+    const auth = authContextFromUser(user(id));
+    await workspaceQuota.reserve(id, 40, 1);
+    const listed = await service.list(auth);
+    assert.equal(listed.usage.usedBytes, 40);
+    assert.equal(listed.usage.fileCount, 1);
+    await assert.rejects(
+      () => service.upload(auth, new File(['x'.repeat(20)], 'overflow.txt')),
+      QuotaExceededError,
+    );
+  });
+});
+
 test('list reports recursive directory sizes and personal usage', async () => {
   await withWorkspace(async () => {
     const service = new WorkspaceFileService();
-    const auth = authContextFromUser(user(USER_A));
-    const root = workspaceRoot(USER_A);
+    const id = 'aeaeaeae-aeae-4aea-8eae-aeaeaeaeaeae';
+    const auth = authContextFromUser(user(id));
+    const root = workspaceRoot(id);
     await mkdir(join(root, 'projects', 'nested'), { recursive: true });
     await writeFile(join(root, 'projects', 'a.txt'), 'aaaaa');
     await writeFile(join(root, 'projects', 'nested', 'b.txt'), 'bbbbbbb');

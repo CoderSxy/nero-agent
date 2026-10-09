@@ -15,7 +15,7 @@ const files = [
 
 describe('workspace file tree', () => {
   it('expands nested folders and opens a file without downloading it', async () => {
-    listWorkspaceFiles.mockResolvedValue(files);
+    listWorkspaceFiles.mockResolvedValue({ files });
     const onOpenFile = vi.fn();
     render(<WorkspaceFileTree source="personal" refreshVersion={0} onOpenFile={onOpenFile} />);
     expect(await screen.findByRole('button', { name: '展开 docs' })).toBeTruthy();
@@ -28,7 +28,7 @@ describe('workspace file tree', () => {
   });
 
   it('keeps expanded folders during refresh and uses the Agent source', async () => {
-    listWorkspaceFiles.mockResolvedValue(files);
+    listWorkspaceFiles.mockResolvedValue({ files });
     const view = render(<WorkspaceFileTree source="agent" workspaceId="agent-workspace" refreshVersion={0}
       onOpenFile={vi.fn()} />);
     fireEvent.click(await screen.findByRole('button', { name: '展开 docs' }));
@@ -40,7 +40,7 @@ describe('workspace file tree', () => {
   });
 
   it('shows empty and error states', async () => {
-    listWorkspaceFiles.mockResolvedValueOnce([]).mockRejectedValueOnce(new Error('无法加载'));
+    listWorkspaceFiles.mockResolvedValueOnce({ files: [] }).mockRejectedValueOnce(new Error('无法加载'));
     const view = render(<WorkspaceFileTree source="personal" refreshVersion={0} onOpenFile={vi.fn()} />);
     expect(await screen.findByText('暂无文件')).toBeTruthy();
     view.rerender(<WorkspaceFileTree source="personal" refreshVersion={1} onOpenFile={vi.fn()} />);

@@ -32,7 +32,8 @@ vi.mock('./client', () => ({ AGENT_ID: 'agent', client: {
   return (await response.json() as { files: unknown[] }).files;
 }, listWorkspaceFiles: async () => {
   const response = await fetch('/current-workspace/files');
-  return (await response.json() as { files: unknown[] }).files;
+  const body = await response.json() as { files: unknown[]; usage?: unknown };
+  return { files: body.files, usage: body.usage };
 } }));
 vi.mock('./model-catalog-client', () => ({ getSelectableModels: () => getSelectableModels() }));
 vi.mock('./use-thread-list', () => ({ useThreadList: () => ({

@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { fetchUserFile, fetchWorkspaceFile, listUserFiles, listWorkspaceFiles, setAgentClientToken } from './client';
+import { fetchUserFile, fetchWorkspaceFile, listUserFiles, listWorkspaceFiles, setAgentClientToken,
+  uploadWorkspaceFile } from './client';
 
 afterEach(() => {
   setAgentClientToken(null);
@@ -34,10 +35,14 @@ it('lists only the selected thread files with the bearer token', async () => {
 
 it('lists the authenticated user workspace without a client-supplied id', async () => {
   const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ workspaceId: 'ws-user',
-    files: [{ path: 'created.md', type: 'file', size: 8 }] }), { status: 200 }));
+    files: [{ path: 'created.md', type: 'file', size: 8 }],
+    usage: { usedBytes: 8, quotaBytes: 500 * 1024 * 1024, fileCount: 1 } }), { status: 200 }));
   vi.stubGlobal('fetch', fetch);
   setAgentClientToken('secret-session');
-  expect(await listWorkspaceFiles()).toEqual([{ path: 'created.md', type: 'file', size: 8 }]);
+  expect(await listWorkspaceFiles()).toEqual({
+    files: [{ path: 'created.md', type: 'file', size: 8 }],
+    usage: { usedBytes: 8, quotaBytes: 500 * 1024 * 1024, fileCount: 1 },
+  });
   expect(fetch).toHaveBeenCalledWith('/current-workspace/files', expect.anything());
 });
 
@@ -46,7 +51,7 @@ it('lists the Agent workspace only through its explicit source', async () => {
     files: [{ path: 'legacy.md', type: 'file', size: 8 }] }), { status: 200 }));
   vi.stubGlobal('fetch', fetch);
   expect(await listWorkspaceFiles('agent', 'agent-workspace'))
-    .toEqual([{ path: 'legacy.md', type: 'file', size: 8 }]);
+    .toEqual({ files: [{ path: 'legacy.md', type: 'file', size: 8 }] });
   expect(fetch).toHaveBeenCalledWith('/current-workspace/files?source=agent', expect.anything());
 });
 
@@ -55,6 +60,17 @@ it('reports an HTML workspace response as a routing error', async () => {
     status: 200, headers: { 'content-type': 'text/html' },
   })));
   await expect(listWorkspaceFiles('agent')).rejects.toThrow('工作区接口返回了 HTML，请检查开发服务器代理');
+});
+
+it('preserves FILE_TOO_LARGE and WORKSPACE_QUOTA_EXCEEDED on upload failures', async () => {
+  vi.stubGlobal('fetch', vi.fn()
+    .mockResolvedValueOnce(new Response(JSON.stringify({ error: '文件过大', code: 'FILE_TOO_LARGE' }), { status: 413 }))
+    .mockResolvedValueOnce(new Response(JSON.stringify({
+      error: '工作区配额已满', code: 'WORKSPACE_QUOTA_EXCEEDED',
+    }), { status: 413 })));
+  const file = new File(['x'], 'a.bin');
+  await expect(uploadWorkspaceFile(file)).rejects.toMatchObject({ code: 'FILE_TOO_LARGE' });
+  await expect(uploadWorkspaceFile(file)).rejects.toMatchObject({ code: 'WORKSPACE_QUOTA_EXCEEDED' });
 });
 
 it('downloads a nested Agent workspace file with an encoded path and bearer token', async () => {
