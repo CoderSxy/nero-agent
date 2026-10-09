@@ -20,6 +20,8 @@ npm run dev
 
 用户页面打开 [http://localhost:5173/agent/new](http://localhost:5173/agent/new)；Mastra Studio 位于 [http://localhost:4111](http://localhost:4111)，使用与用户页面相同的邮箱和密码登录，仅管理员账号可进入。Studio 登录不开放注册，通过仅供 Studio 使用的 HttpOnly 会话 Cookie 保持登录；普通用户仍可登录 5173 页面。Studio 界面常用文案由项目中间件汉化；尚未实现的 Workflows 导航入口已隐藏。Mastra Studio 是依赖包提供的界面，升级 Mastra 后可能需要补充或调整 [汉化映射](src/mastra/studio-zh.ts)。
 
+ECS 生产环境没有 Mastra EE 授权时，Studio 使用官方 `SimpleAuth` 加服务器端 Nginx 网关。管理员仍用原账号登录用户页面；进入 Studio 前，应用签发同域 HttpOnly Cookie，Nginx 用它验证现有管理员会话，并在内部转发时加入 `.env` 中的 `STUDIO_PROXY_KEY`。浏览器不会收到该密钥。ECS 需同时配置 `STUDIO_PROXY_KEY`、`STUDIO_ADMIN_USER_ID`，并在 HTTPS 站点中包含 [Studio 网关配置](deploy/nginx-studio-gateway.conf)。
+
 用户页面需要登录。首次开发环境已创建管理员和普通用户测试账号，凭据只保存在 Git 忽略的 `.local-accounts` 文件中。新环境可通过 `NERO_USER_PASSWORD` 环境变量运行 `npm run user:create -- <邮箱> <显示名> <admin|user>` 创建首位管理员；之后管理员可调用 `POST /auth/users` 创建用户。当前不开放自助注册。登录会话在浏览器当前标签页保存，退出登录会撤销服务端会话。
 
 若本地已有旧 LibSQL 会话，可在创建管理员并启动 Mastra 后执行 `npm run db:import:libsql -- <旧数据库路径> <管理员邮箱>`。导入脚本把旧会话、消息、观测记忆和线程状态归到指定管理员，重复执行不会复制已有记录；原 LibSQL 文件不会删除。

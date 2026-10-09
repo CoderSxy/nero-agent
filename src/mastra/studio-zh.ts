@@ -137,8 +137,14 @@ function studioSameOriginClient() {
       return;
     }
     const url = new URL(location.href);
-    url.searchParams.set('auth_header', `Bearer ${token}`);
-    history.replaceState(null, '', url.pathname + url.search + url.hash);
+    if (url.searchParams.has('auth_header')) {
+      url.searchParams.delete('auth_header');
+      history.replaceState(null, '', url.pathname + url.search + url.hash);
+    }
+    localStorage.setItem('mastra-studio-config', JSON.stringify({
+      baseUrl: location.origin, apiPrefix: '/studio-api', headers: {},
+    }));
+    return;
   }
   try {
     const key = 'mastra-studio-config';

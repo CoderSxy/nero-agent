@@ -37,6 +37,25 @@ function LoginPage({ onLogin }: { onLogin: (token: string, user: CurrentUser) =>
   </form></main>;
 }
 
+function StudioEntry({ token }: { token: string }) {
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    let active = true;
+    fetch('/auth/studio-session', { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+      .then(response => { if (!response.ok) throw new Error('Studio 会话准备失败');
+        if (active) setReady(true); })
+      .catch(cause => { if (active) setError(cause instanceof Error ? cause.message : 'Studio 会话准备失败'); });
+    return () => { active = false; };
+  }, [token]);
+  return <>
+    <h1>进入 Mastra Studio</h1>
+    <p>使用当前管理员账号进入。</p>
+    {ready ? <a href="/studio/">进入 Studio</a> :
+      <p role={error ? 'alert' : undefined}>{error || '正在准备 Studio…'}</p>}
+  </>;
+}
+
 export function App() {
   const routeLocation = useLocation();
   const [token, setToken] = useState<string | null>(() => sessionStorage.getItem(TOKEN_KEY));
@@ -70,9 +89,7 @@ export function App() {
     return <main className="login-page"><div className="login-card">
       <div className="login-brand">NERO <span>AGENT</span></div>
       {user.roles.includes('admin') ? <>
-        <h1>进入 Mastra Studio</h1>
-        <p>使用当前管理员账号进入。</p>
-        <a href="/studio/">进入 Studio</a>
+        <StudioEntry token={token} />
       </> : <>
         <h1>仅管理员可以进入 Studio</h1>
         <a href="/agent/new">返回智能体</a>

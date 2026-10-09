@@ -2,11 +2,30 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { randomUUID } from 'node:crypto';
 import { createStudioAuth } from '../src/mastra/auth/studio';
+import { createStudioProxyAuth, studioGatewayAuthorization, studioSessionCookie } from '../src/mastra/auth/studio-proxy';
 import { getPool } from '../src/mastra/auth/db';
 import { createUser, getUserByToken, login, logout } from '../src/mastra/auth/service';
 
 const admin = { id: 'admin-1', email: 'admin@example.test', displayName: 'Admin', roles: ['admin'] as ('admin' | 'user')[] };
 const ordinary = { id: 'user-1', email: 'user@example.test', displayName: 'User', roles: ['user'] as ('admin' | 'user')[] };
+
+test('Studio proxy authenticates only the configured admin through its internal key', async () => {
+  const proxy = createStudioProxyAuth('internal-key-that-is-long-enough-to-be-safe', admin);
+  const request = new Request('https://agent.example.test/studio-api/auth/capabilities', {
+    headers: { Authorization: 'Bearer internal-key-that-is-long-enough-to-be-safe' },
+  });
+  assert.equal((await proxy.getCurrentUser(request))?.id, admin.id);
+  assert.equal((await proxy.getCurrentUser(request))?.name, 'Admin');
+  assert.equal((await proxy.authenticateToken('wrong-key', new Request(request.url)))?.id ?? null, null);
+  assert.equal(await proxy.authorizeUser(ordinary, request), false);
+  const cookie = studioSessionCookie('active-session', true);
+  assert.match(cookie, /^nero_studio_gateway=active-session; Path=\/; HttpOnly; Secure; SameSite=Strict;/);
+  const findUser = async (token: string) => token === 'active-session' ? admin : ordinary;
+  assert.equal(await studioGatewayAuthorization(cookie, admin.id, 'internal-key-that-is-long-enough-to-be-safe', findUser),
+    'Bearer internal-key-that-is-long-enough-to-be-safe');
+  assert.equal(await studioGatewayAuthorization(studioSessionCookie('other-session', true), admin.id,
+    'internal-key-that-is-long-enough-to-be-safe', findUser), null);
+});
 
 test('Studio accepts existing admin credentials and rejects ordinary users', async () => {
   const revoked: string[] = [];
