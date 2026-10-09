@@ -1,0 +1,34 @@
+web/src/agent/AgentChat.test.tsx
+  s_bd865f1b6551c1::t_f7892c90f714c6 644,650,654-659,667,674-676,681,683-685
+  s_bd865f1b6551c1::t_6b77ed0b59e7ea 638-643,645-649,651-653,660-666,668-673,677-680,682,686
+web/src/agent/WorkspaceFileTree.test.tsx
+  s_bd865f1b6551c1::t_d7a6b289991e34 3
+  s_bd865f1b6551c1::t_8d16b3be685db3 136-138,148
+web/src/agent/AgentPage.test.tsx
+  s_bd865f1b6551c1::t_c55287a52398ba 49,57,64
+  s_bd865f1b6551c1::t_a484d09130461a 312
+web/src/agent/AgentChat.tsx
+  s_bd865f1b6551c1::t_5e61f570a95452 106-130
+  s_bd865f1b6551c1::t_7081caf0f935d8 30-31,42
+  s_bd865f1b6551c1::t_af17efe756deea 55
+web/src/agent/WorkspaceFileTree.tsx
+  s_bd865f1b6551c1::t_d12ab2b4912321 13-17
+web/src/agent/AgentPage.tsx
+  s_bd865f1b6551c1::t_a6442484205402 152
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "28818ca99ca3bfea7ce2de89888f2cc6b480563a",
+  "prompts": {},
+  "sessions": {
+    "s_bd865f1b6551c1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "7eb8f486-9fae-4551-b3c7-7b37505ca387",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
