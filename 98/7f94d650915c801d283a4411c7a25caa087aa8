@@ -1,0 +1,44 @@
+web/src/agent/MessageList.tsx
+  s_5075665097906f::t_163b021d7a3b31 8,84,94-96,103-105
+  s_5075665097906f::t_dd4d025cb81738 85-92,97
+web/src/styles.css
+  s_20a16e48c66eb7::t_e0658ab1f558e0 147
+  s_20a16e48c66eb7::t_3363a3aa8e4ff7 136
+  s_20a16e48c66eb7::t_68283143577b79 210,212-215
+  s_5075665097906f::t_dd4d025cb81738 228,237
+web/src/agent/message-parts.ts
+  s_5075665097906f::t_163b021d7a3b31 2,7,21-23,34-38
+web/src/agent/message-parts.test.ts
+  s_5075665097906f::t_5b7d205aabcc06 26,28-31,33-36
+web/src/agent/MessageList.test.tsx
+  s_20a16e48c66eb7::t_3a71f947f09d94 46-50
+  s_20a16e48c66eb7::t_96f9077266ba21 33-45,51
+  s_20a16e48c66eb7::t_9f47a842bda7c3 1-3,8
+  s_5075665097906f::t_5b7d205aabcc06 61-84
+  s_5075665097906f::t_1663d6657b412a 85-112
+  s_20a16e48c66eb7::t_a22d99fc4dba6d 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "987f94d650915c801d283a4411c7a25caa087aa8",
+  "prompts": {},
+  "sessions": {
+    "s_20a16e48c66eb7": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "85761208-8610-416b-a3ca-3d861ca748e1",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_5075665097906f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1164f-b8dd-7532-930f-bbfd644597bf",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
