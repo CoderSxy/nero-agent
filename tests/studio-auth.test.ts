@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { randomUUID } from 'node:crypto';
 import { createStudioAuth } from '../src/mastra/auth/studio';
-import { createStudioProxyAuth, createStudioProxyRBAC, studioGatewayAuthorization, studioSessionCookie } from '../src/mastra/auth/studio-proxy';
+import { createStudioProxyAuth, studioGatewayAuthorization, studioSessionCookie } from '../src/mastra/auth/studio-proxy';
 import { getPool } from '../src/mastra/auth/db';
 import { createUser, getUserByToken, login, logout } from '../src/mastra/auth/service';
 
@@ -25,9 +25,6 @@ test('Studio proxy authenticates only the configured admin through its internal 
     'Bearer internal-key-that-is-long-enough-to-be-safe');
   assert.equal(await studioGatewayAuthorization(studioSessionCookie('other-session', true), admin.id,
     'internal-key-that-is-long-enough-to-be-safe', findUser), null);
-  const rbac = createStudioProxyRBAC();
-  assert.deepEqual(await rbac.getPermissions(admin), ['*']);
-  assert.deepEqual(await rbac.getPermissions(ordinary), []);
 });
 
 test('Studio accepts existing admin credentials and rejects ordinary users', async () => {

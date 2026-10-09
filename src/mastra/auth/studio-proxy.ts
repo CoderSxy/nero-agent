@@ -1,5 +1,4 @@
 import { SimpleAuth } from '@mastra/core/server';
-import { DEFAULT_ROLES, StaticRBACProvider } from '@mastra/core/auth/ee';
 import { authContextFromUser, resourceIdFor } from './auth-context';
 import type { AuthUser } from './service';
 
@@ -43,12 +42,5 @@ export function createStudioProxyAuth(proxyKey: string, admin: AuthUser) {
     tokens: { [proxyKey]: studioUser },
     authorizeUser: user => user.id === admin.id && user.roles.includes('admin'),
     mapUserToResourceId: user => resourceIdFor(authContextFromUser(user)),
-  });
-}
-
-export function createStudioProxyRBAC() {
-  return new StaticRBACProvider<AuthUser>({
-    roles: DEFAULT_ROLES,
-    getUserRoles: user => user.roles.includes('admin') ? ['owner'] : [],
   });
 }
