@@ -1,0 +1,35 @@
+src/mastra/files/routes.ts
+  s_2f064755a9669f::t_bd4de6632d1b2a 211-221
+src/mastra/files/attachments.ts
+  s_2f064755a9669f::t_3a36b3119e3c91 142,158-160
+  s_2f064755a9669f::t_1d16a50f6f0d7b 347-352,357-362,372-373
+  s_2f064755a9669f::t_0c18765874bfc5 64,68-70
+  s_2f064755a9669f::t_271154a32b9635 440-442,445-446,448-469,472-521
+  s_2f064755a9669f::t_da39a31fb58879 107
+  s_2f064755a9669f::t_b5302dd9b68816 71
+tests/attachment-routes.test.ts
+  s_2f064755a9669f::t_8068e1e4f26cf3 255-311,318,320,323-336,341-353
+  s_2f064755a9669f::t_cd953c07f7adb3 321-322
+  s_2f064755a9669f::t_ba87a8c99d0d90 381,390-404
+  s_2f064755a9669f::t_3db90c921495c2 312-317,319
+  s_2f064755a9669f::t_b85347ddd7201b 458,464-468
+  s_2f064755a9669f::t_1072e9f3ff2e6a 337-340
+  s_2f064755a9669f::t_3ad77a2a4bd810 181
+  s_2f064755a9669f::t_d1070b2ea44153 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fe01ba7a4adde1442b61605f83003a8e5eea0754",
+  "prompts": {},
+  "sessions": {
+    "s_2f064755a9669f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "2d5cdba4-7c31-414e-83bf-22c86204c1af",
+        "model": "cursor-grok-4.6-medium"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
