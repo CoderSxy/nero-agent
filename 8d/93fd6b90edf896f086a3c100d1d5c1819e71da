@@ -1,0 +1,24 @@
+tests/studio-auth.test.ts
+  s_3f0f872474eaa7::t_1e65e309c29c28 5,28-30
+src/mastra/index.ts
+  s_3f0f872474eaa7::t_7a16eb47ac5929 26,42-44
+src/mastra/auth/studio-proxy.ts
+  s_3f0f872474eaa7::t_a3eeea06bb86ea 2,48-52
+  s_3f0f872474eaa7::t_724f1e2fe99468 53-54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8d93fd6b90edf896f086a3c100d1d5c1819e71da",
+  "prompts": {},
+  "sessions": {
+    "s_3f0f872474eaa7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a119ff-11d9-7e10-a5bb-44247d0152fa",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
