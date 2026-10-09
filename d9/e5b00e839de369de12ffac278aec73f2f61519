@@ -1,0 +1,19 @@
+web/src/agent/AgentChat.tsx
+  s_4f336d84eba41d::t_3d77fd192577b6 169-187,190-192,194-195
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d9e5b00e839de369de12ffac278aec73f2f61519",
+  "prompts": {},
+  "sessions": {
+    "s_4f336d84eba41d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8c708140-8a9f-42e4-a9f7-9cf82c1bd9e2",
+        "model": "composer-2.5-fast"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
