@@ -2,12 +2,17 @@ import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 're
 import type { MastraDBMessage } from '@mastra/core/agent/message-list';
 import { useChat } from '@mastra/react';
 import { ChatShell } from '@mastra/playground-ui/components/ChatShell';
-import { AGENT_ID, fetchUserFile, uploadUserFile } from './client';
+import { AGENT_ID, listWorkspaceFiles } from './client';
+import { uploadWorkspaceFile } from './attachment-client';
+import { MAX_UPLOAD_BYTES, type ComposerAttachment } from './attachment-types';
 import { AgentComposer } from './AgentComposer';
 import { MessageList } from './MessageList';
 import { createModelRequestContext, type ModelSettings } from './model-settings';
 import type { ModelRef, SafeModel } from './model-catalog-client';
 import { nextPendingUserMessage, withPendingUserMessages, type PendingUserMessage } from './pending-user-message';
+import { WorkspaceFilePicker } from './WorkspaceFilePicker';
+
+type PendingUpload = { key: string; file: File };
 
 export function AgentChat({ title = '未命名会话', threadId, resourceId, initialMessages, onMessageSent, models, catalog = [],
   onModelChange, modelRef, modelDisabled = false, modelError, sendBlockedReason,
@@ -27,7 +32,9 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   const [error, setError] = useState<string | null>(null);
   const [failedDecisions, setFailedDecisions] = useState<Set<string>>(new Set());
   const [pendingApprovalIds, setPendingApprovalIds] = useState<Set<string>>(new Set());
-  const [attachments, setAttachments] = useState<Array<{ id: number; name: string; path?: string }>>([]);
+  const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const pendingUploads = useRef(new Map<string, PendingUpload>());
   const nextAttachmentId = useRef(0);
   const viewportId = useId();
   const followRef = useRef(true);
@@ -59,31 +66,114 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     observer.observe(content);
     return () => observer.disconnect();
   }, [viewportId]);
-  function chooseFile(file: File) {
-    const id = ++nextAttachmentId.current;
-    setAttachments(current => [...current, { id, name: file.name }]);
-    void uploadUserFile(threadId, file.name, file).then(result => {
-      setAttachments(current => current.map(item => item.id === id ? { ...item, path: result.path } : item));
+
+  function nextKey() {
+    return `att-${++nextAttachmentId.current}`;
+  }
+
+  async function startUpload(file: File, key = nextKey()) {
+    pendingUploads.current.set(key, { key, file });
+    setAttachments(current => {
+      const existing = current.find(item => item.key === key);
+      if (existing) {
+        return current.map(item => item.key === key
+          ? { ...item, state: 'uploading', error: undefined } : item);
+      }
+      return [...current, {
+        key, source: 'personal', path: '', name: file.name, size: file.size,
+        mimeType: file.type || 'application/octet-stream', etag: '', state: 'uploading',
+      }];
+    });
+    try {
+      const result = await uploadWorkspaceFile(file);
+      setAttachments(current => current.map(item => item.key === key ? {
+        ...item,
+        source: result.source,
+        path: result.path,
+        name: result.name,
+        size: result.size,
+        mimeType: result.mimeType,
+        etag: result.etag,
+        state: 'ready',
+        error: undefined,
+      } : item));
+      pendingUploads.current.delete(key);
       onFilesChanged?.();
       setError(null);
-    }).catch(cause => {
-      setAttachments(current => current.filter(item => item.id !== id));
-      setError(cause instanceof Error ? cause.message : '上传失败');
-    });
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : '上传失败';
+      setAttachments(current => current.map(item => item.key === key
+        ? { ...item, state: 'failed', error: message } : item));
+      setError(message);
+    }
   }
-  function downloadFile(path: string) {
-    void fetchUserFile(threadId, path).then(blob => {
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = path.split('/').at(-1) ?? 'download';
-      anchor.click();
-      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    }).catch(cause => setError(cause instanceof Error ? cause.message : '下载失败'));
+
+  function uploadFiles(files: File[], kind: 'file' | 'image') {
+    const accepted = kind === 'image'
+      ? files.filter(file => /^image\/(png|jpeg|webp|gif)$/i.test(file.type)
+        || /\.(png|jpe?g|webp|gif)$/i.test(file.name))
+      : files;
+    if (!accepted.length) {
+      setError(kind === 'image' ? '仅支持 PNG、JPEG、WebP、GIF 图片' : '未选择有效文件');
+      return;
+    }
+    for (const file of accepted) {
+      if (file.size > MAX_UPLOAD_BYTES) {
+        setError(`文件超过 10 MiB 上限：${file.name}`);
+        continue;
+      }
+      void startUpload(file);
+    }
   }
+
+  function retryAttachment(key: string) {
+    const pending = pendingUploads.current.get(key);
+    if (!pending) return;
+    void startUpload(pending.file, key);
+  }
+
+  function removeAttachment(key: string) {
+    pendingUploads.current.delete(key);
+    setAttachments(current => current.filter(item => item.key !== key));
+  }
+
+  async function chooseWorkspaceFiles(paths: string[]) {
+    if (!paths.length) return;
+    try {
+      const { files } = await listWorkspaceFiles('personal');
+      const byPath = new Map(files.filter(file => file.type === 'file').map(file => [file.path, file]));
+      setAttachments(current => {
+        const existing = new Set(current.map(item => `${item.source}:${item.path}`));
+        const next = [...current];
+        for (const path of paths) {
+          const identity = `personal:${path}`;
+          if (existing.has(identity)) continue;
+          const entry = byPath.get(path);
+          if (!entry) continue;
+          existing.add(identity);
+          next.push({
+            key: nextKey(),
+            source: 'personal',
+            path,
+            name: path.split('/').at(-1) ?? path,
+            size: entry.size,
+            mimeType: guessMime(path),
+            etag: '',
+            state: 'ready',
+          });
+        }
+        return next;
+      });
+      setError(null);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '加载工作区文件失败');
+    }
+  }
+
   async function send() {
     const message = draft.trim();
     if (!message || blockedReason || modelDisabled || chat.isRunning || chat.isAwaitingToolApproval) return;
+    if (attachments.some(item => item.state !== 'ready')) return;
     const pending = nextPendingUserMessage(message, chat.messages, pendingUserMessages);
     onMessageSubmitted?.(pending);
     setHasSubmitted(true); setDraft(''); setError(null);
@@ -137,8 +227,26 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
       <AgentComposer draft={draft} sendDisabled={Boolean(blockedReason) || modelDisabled} onDraftChange={setDraft}
       catalog={catalog} modelRef={modelRef ?? models?.chatModel} onModelChange={onModelChange} modelDisabled={modelDisabled}
       isRunning={chat.isRunning || chat.isAwaitingToolApproval} onSend={() => void send()}
-      attachments={attachments} onChooseFile={chooseFile} onDownloadFile={downloadFile}
+      attachments={attachments}
+      onChooseWorkspaceFiles={() => setPickerOpen(true)}
+      onUploadFiles={uploadFiles}
+      onRemoveAttachment={removeAttachment}
+      onRetryAttachment={retryAttachment}
       onStop={() => { chat.cancelRun(); setError('已停止'); }} />
+      {pickerOpen && <WorkspaceFilePicker source="personal"
+        onConfirm={paths => void chooseWorkspaceFiles(paths)}
+        onClose={() => setPickerOpen(false)} />}
     </ChatShell.Column></ChatShell.Dock>
   </ChatShell>;
+}
+
+function guessMime(path: string): string {
+  const extension = path.split('.').at(-1)?.toLowerCase() ?? '';
+  if (extension === 'png') return 'image/png';
+  if (extension === 'jpg' || extension === 'jpeg') return 'image/jpeg';
+  if (extension === 'webp') return 'image/webp';
+  if (extension === 'gif') return 'image/gif';
+  if (extension === 'md' || extension === 'markdown') return 'text/markdown';
+  if (extension === 'txt') return 'text/plain';
+  return 'application/octet-stream';
 }

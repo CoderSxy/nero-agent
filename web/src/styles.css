@@ -163,16 +163,48 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .composer-model-detail strong { font-size: 12px; font-weight: 600; }
 .composer-model-detail small { color: var(--muted-foreground); font-size: 11px; }
 .composer-file-controls { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex: 1; min-width: 0; }
-.composer-attachments { display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; max-width: 100%; overflow-x: auto; scrollbar-width: thin; }
-.composer-attachment { display: block; flex: none; max-width: 132px; overflow: hidden; padding: 5px 8px; border-radius: 8px; background: var(--card); color: var(--muted-foreground); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
-.composer-attachment:hover:is(button) { color: var(--foreground); }
+.composer-attachment-row { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 4px 10px; }
+.composer-attachment-card { position: relative; display: flex; align-items: center; gap: 8px; max-width: 220px; min-width: 0; padding: 7px 28px 7px 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); }
+.composer-attachment-card.is-failed { border-color: color-mix(in srgb, var(--destructive) 45%, var(--border)); }
+.composer-attachment-meta { display: grid; gap: 2px; min-width: 0; }
+.composer-attachment-meta strong, .composer-attachment-meta small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.composer-attachment-meta strong { font-size: 12px; font-weight: 600; }
+.composer-attachment-meta small { color: var(--muted-foreground); font-size: 11px; }
+.composer-attachment-thumb { display: block; width: 44px; height: 44px; padding: 0; overflow: hidden; border-radius: 7px; }
+.composer-attachment-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.composer-attachment-remove { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 999px; color: var(--muted-foreground); }
+.composer-attachment-remove:hover { background: var(--popover); color: var(--foreground); }
+.composer-attachment-retry { flex: none; padding: 3px 7px; border-radius: 6px; background: var(--popover); color: var(--foreground); font-size: 11px; }
 .composer-file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .agent-composer .composer-add-button { display: grid; place-items: center; width: 34px; height: 34px; flex: none; padding: 0; border: 1px solid var(--border); border-radius: 50%; background: var(--card); color: var(--foreground); }
 .agent-composer .composer-add-button:hover { background: var(--popover); }
 .composer-add-button:focus-visible { outline: 2px solid var(--foreground); outline-offset: 2px; }
+.composer-add-menu { position: fixed; z-index: 46; min-width: 160px; padding: 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--popover); box-shadow: 0 12px 32px #0004; }
+.composer-add-menu button { display: block; width: 100%; padding: 8px 10px; border-radius: 7px; color: var(--foreground); font-size: 12px; text-align: left; }
+.composer-add-menu button:hover { background: var(--card); }
+.composer-image-preview-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 24px; background: #000a; }
+.composer-image-preview-backdrop img { max-width: min(920px, 92vw); max-height: 86vh; object-fit: contain; border-radius: 10px; }
+.composer-image-preview-close { position: absolute; top: 18px; right: 18px; padding: 7px 12px; border-radius: 8px; background: var(--popover); color: var(--foreground); font-size: 12px; }
 .composer-model-default { padding: 2px 6px; border-radius: 5px; background: var(--card); color: var(--muted-foreground); font-size: 10px; }
 .composer-model-empty { padding: 14px 8px; color: var(--muted-foreground); font-size: 12px; }
 .agent-composer .composer-send-button { display: grid; place-items: center; width: 34px; height: 34px; flex: none; padding: 0; border-radius: 50%; background: var(--foreground); color: var(--background); }
+.workspace-file-picker-backdrop { position: fixed; inset: 0; z-index: 48; display: grid; place-items: center; padding: 20px; background: #0006; }
+.workspace-file-picker { display: flex; flex-direction: column; width: min(520px, 100%); max-height: min(640px, 86vh); overflow: hidden; border: 1px solid var(--border); border-radius: 14px; background: var(--popover); box-shadow: 0 18px 48px #0005; }
+.workspace-file-picker-header, .workspace-file-picker-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; }
+.workspace-file-picker-header { border-bottom: 1px solid var(--border); }
+.workspace-file-picker-footer { border-top: 1px solid var(--border); }
+.workspace-file-picker-header button { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 7px; }
+.workspace-file-picker-header button:hover { background: var(--card); }
+.workspace-file-picker-search { padding: 10px 14px 0; }
+.workspace-file-picker-search input { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 12px; }
+.workspace-file-picker-body { flex: 1; min-height: 0; overflow: auto; padding: 10px 8px 14px; }
+.workspace-file-picker-list { list-style: none; margin: 0; padding: 0; }
+.workspace-file-picker-list li button, .workspace-file-picker-file { display: flex; align-items: center; gap: 7px; width: 100%; min-width: 0; padding: 6px 8px; border-radius: 7px; color: var(--foreground); text-align: left; font-size: 12px; }
+.workspace-file-picker-list li button:hover, .workspace-file-picker-file:hover { background: var(--card); }
+.workspace-file-picker-file span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workspace-file-picker-footer button { padding: 7px 12px; border-radius: 8px; font-size: 12px; }
+.workspace-file-picker-confirm { background: var(--foreground); color: var(--background); }
+.workspace-file-picker-confirm:disabled { opacity: 0.45; }
 .empty-chat { height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
 .empty-chat h1 { font-size: 26px; font-weight: 600; }
 .empty-chat p, .muted { color: var(--muted-foreground); }

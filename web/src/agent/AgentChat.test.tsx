@@ -8,7 +8,9 @@ import type { PendingUserMessage } from './pending-user-message';
 const sendMessage = vi.fn();
 const cancelRun = vi.fn();
 const approveToolCall = vi.fn();
-const uploadUserFile = vi.hoisted(() => vi.fn());
+const uploadWorkspaceFile = vi.hoisted(() => vi.fn());
+const listWorkspaceFiles = vi.hoisted(() => vi.fn());
+const fetchWorkspaceFile = vi.hoisted(() => vi.fn());
 let chatOptions: { enableThreadSignals?: boolean } | undefined;
 let mockRunning = false;
 const chatRef = 'public:11111111-1111-4111-8111-111111111111' as const;
@@ -28,7 +30,14 @@ vi.mock('@mastra/react', () => ({ useChat: (options: { enableThreadSignals?: boo
     isRunning: mockRunning, sendMessage, cancelRun, toolCallApprovals: {}, approveToolCall, declineToolCall: vi.fn(),
   };
 } }));
-vi.mock('./client', () => ({ AGENT_ID: 'agent', uploadUserFile, fetchUserFile: vi.fn() }));
+vi.mock('./client', () => ({
+  AGENT_ID: 'agent', listWorkspaceFiles, fetchWorkspaceFile, fetchUserFile: vi.fn(),
+  uploadWorkspaceFile: (...args: unknown[]) => uploadWorkspaceFile(...args),
+}));
+vi.mock('./attachment-client', () => ({
+  uploadWorkspaceFile: (...args: unknown[]) => uploadWorkspaceFile(...args),
+  prepareAttachments: vi.fn(),
+}));
 afterEach(() => { cleanup(); vi.clearAllMocks(); vi.unstubAllGlobals(); mockRunning = false; mockMessages =
   [{ id: 'partial', role: 'assistant', content: { format: 2, parts: [{ type: 'text', text: '部分回复' }] } }]; });
 
@@ -101,21 +110,94 @@ describe('Agent conversation', () => {
     expect(screen.getByText('一个很长的会话标题')).toHaveProperty('title', '一个很长的会话标题');
     expect(screen.queryByText('智能体对话')).toBeNull();
   });
-  it('shows a selected upload beside the add icon inside the composer', async () => {
-    let finishUpload!: (value: { path: string }) => void;
-    uploadUserFile.mockImplementationOnce(() => new Promise(resolve => { finishUpload = resolve; }));
+  it('uploads local files into composer cards and blocks send until ready', async () => {
+    let finishUpload!: (value: {
+      source: 'personal'; path: string; name: string; size: number; mimeType: string; etag: string;
+    }) => void;
+    uploadWorkspaceFile.mockImplementationOnce(() => new Promise(resolve => { finishUpload = resolve; }));
+    const onFilesChanged = vi.fn();
     const { container } = render(<AgentChat threadId="thread-1" resourceId="agent"
-      initialMessages={[]} onMessageSent={vi.fn()} models={models} />);
+      initialMessages={[]} onMessageSent={vi.fn()} models={models} onFilesChanged={onFilesChanged} />);
     const actions = container.querySelector('[data-slot="composer-actions"]')!;
-    const add = screen.getByRole('button', { name: '添加文件' });
+    const add = screen.getByRole('button', { name: '添加附件' });
     expect(actions.contains(add)).toBe(true);
-    expect(actions.contains(screen.getByRole('button', { name: '发送' }))).toBe(true);
-    const file = new File(['notes'], 'notes.txt', { type: 'text/plain' });
-    fireEvent.change(screen.getByLabelText('选择文件'), { target: { files: [file] } });
-    expect(screen.getByText('notes.txt')).toBeTruthy();
-    expect(screen.queryByText('上传到当前会话')).toBeNull();
-    finishUpload({ path: 'uploads/notes.txt' });
-    await waitFor(() => expect(screen.getByRole('button', { name: '下载 notes.txt' })).toBeTruthy());
+    fireEvent.click(add);
+    fireEvent.click(screen.getByRole('menuitem', { name: '上传文件' }));
+    const file = new File(['notes'], '报告 中文.md', { type: 'text/markdown' });
+    fireEvent.change(screen.getByLabelText('选择本地文件'), { target: { files: [file] } });
+    expect(screen.getByText('报告 中文.md')).toBeTruthy();
+    expect((screen.getByRole('button', { name: '发送' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(screen.getByRole('textbox', { name: '发送消息' }), { target: { value: '你好' } });
+    expect((screen.getByRole('button', { name: '发送' }) as HTMLButtonElement).disabled).toBe(true);
+    finishUpload({
+      source: 'personal', path: 'uploads/u1/报告 中文.md', name: '报告 中文.md',
+      size: 5, mimeType: 'text/markdown', etag: 'etag-1',
+    });
+    await waitFor(() => expect(screen.getByLabelText('附件 报告 中文.md')).toBeTruthy());
+    expect(onFilesChanged).toHaveBeenCalled();
+    expect((screen.getByRole('button', { name: '发送' }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('dedupes workspace picks by path, retries failed uploads, and remove never deletes', async () => {
+    listWorkspaceFiles.mockResolvedValue({
+      files: [
+        { path: 'docs', type: 'directory', size: 0 },
+        { path: 'docs/a.txt', type: 'file', size: 3 },
+        { path: 'docs/b.txt', type: 'file', size: 4 },
+      ],
+    });
+    uploadWorkspaceFile
+      .mockRejectedValueOnce(Object.assign(new Error('网络错误'), { code: 'UPLOAD_FAILED' }))
+      .mockResolvedValueOnce({
+        source: 'personal', path: 'uploads/u2/fail.txt', name: 'fail.txt',
+        size: 4, mimeType: 'text/plain', etag: 'e2',
+      });
+    render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}
+      onMessageSent={vi.fn()} models={models} />);
+
+    fireEvent.click(screen.getByRole('button', { name: '添加附件' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '选择工作区文件' }));
+    await waitFor(() => expect(screen.getByRole('dialog', { name: '选择工作区文件' })).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: '展开 docs' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: '选择 docs/a.txt' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: '选择 docs/b.txt' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认' }));
+    expect(await screen.findByLabelText('附件 a.txt')).toBeTruthy();
+    expect(screen.getByLabelText('附件 b.txt')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: '添加附件' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '选择工作区文件' }));
+    await waitFor(() => expect(screen.getByRole('dialog', { name: '选择工作区文件' })).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: '展开 docs' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: '选择 docs/a.txt' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认' }));
+    expect(screen.getAllByLabelText('附件 a.txt')).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole('button', { name: '添加附件' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '上传文件' }));
+    fireEvent.change(screen.getByLabelText('选择本地文件'), {
+      target: { files: [new File(['x'], 'fail.txt', { type: 'text/plain' })] },
+    });
+    await waitFor(() => expect(screen.getByRole('button', { name: '重试 fail.txt' })).toBeTruthy());
+    expect((screen.getByRole('button', { name: '发送' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: '重试 fail.txt' }));
+    await waitFor(() => expect(screen.getByLabelText('附件 fail.txt')).toBeTruthy());
+    expect(uploadWorkspaceFile).toHaveBeenCalledTimes(2);
+
+    fireEvent.click(screen.getByRole('button', { name: '从本次消息移除 a.txt' }));
+    expect(screen.queryByLabelText('附件 a.txt')).toBeNull();
+    expect(screen.getByLabelText('附件 b.txt')).toBeTruthy();
+  });
+
+  it('rejects oversized browser uploads with feedback but does not call delete APIs on remove', async () => {
+    render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}
+      onMessageSent={vi.fn()} models={models} />);
+    fireEvent.click(screen.getByRole('button', { name: '添加附件' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '上传文件' }));
+    const huge = new File([new Uint8Array(10 * 1024 * 1024 + 1)], 'huge.bin', { type: 'application/octet-stream' });
+    fireEvent.change(screen.getByLabelText('选择本地文件'), { target: { files: [huge] } });
+    expect(await screen.findByText(/10 MiB/)).toBeTruthy();
+    expect(uploadWorkspaceFile).not.toHaveBeenCalled();
   });
   it('follows a growing streamed reply only while the reader is at the bottom', () => {
     const observers: Array<{ target: Element; notify: () => void }> = [];
