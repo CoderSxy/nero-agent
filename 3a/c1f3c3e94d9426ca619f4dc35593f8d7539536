@@ -1,0 +1,21 @@
+src/mastra/files/workspace-service.ts
+  s_722e898b85bb09::t_fcf9166f648294 188
+tests/workspace-batch-delete.test.ts
+  s_722e898b85bb09::t_eb98808f3cb4de 138-157
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3ac1f3c3e94d9426ca619f4dc35593f8d7539536",
+  "prompts": {},
+  "sessions": {
+    "s_722e898b85bb09": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ee00b485-8361-4777-acac-777472100033",
+        "model": "composer-2.5-fast"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
