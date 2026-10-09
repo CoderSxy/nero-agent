@@ -9,7 +9,7 @@
     "dev:mastra": "mastra dev",
     "dev:web": "npm run dev --prefix web",
     "build": "npm run build:mastra && npm run build:web",
-    "build:mastra": "mastra build",
+    "build:mastra": "mastra build --studio",
     "build:web": "npm run build --prefix web",
     "start": "mastra start",
     "test": "node --import tsx --test tests/*.test.ts",
