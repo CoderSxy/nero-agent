@@ -138,6 +138,155 @@ test('reads and saves a Unicode filename and UTF-8 content', async () => {
   assert.equal(await readFile(join(root, '中文.md'), 'utf8'), '修改后 😀');
 });
 
+test('personal workspace upload uses unique safe paths and returns usage on list', async () => {
+  const app = await appWithWorkspace();
+  const headers = { authorization: 'Bearer user' };
+  const form = new FormData();
+  form.set('file', new File(['hello'], '说明 文档 #1%.txt', { type: 'text/plain' }));
+  const uploaded = await app.request('/current-workspace/upload', { method: 'POST', headers, body: form });
+  assert.equal(uploaded.status, 201);
+  const entry = await uploaded.json() as {
+    source: string; path: string; name: string; size: number; mimeType: string; etag: string;
+  };
+  assert.equal(entry.source, 'personal');
+  assert.equal(entry.name, '说明 文档 #1%.txt');
+  assert.match(entry.path, /^uploads\/[0-9a-f-]{36}\/说明 文档 #1%\.txt$/i);
+  assert.equal(entry.size, 5);
+  const again = new FormData();
+  again.set('file', new File(['hello'], '说明 文档 #1%.txt', { type: 'text/plain' }));
+  const second = await app.request('/current-workspace/upload', { method: 'POST', headers, body: again });
+  assert.equal(second.status, 201);
+  const secondEntry = await second.json() as { path: string };
+  assert.notEqual(secondEntry.path, entry.path);
+
+  const nested = join(process.env.WORKSPACE_ROOT!, 'users', USER_ID, 'workspace', 'projects', 'nested');
+  await mkdir(nested, { recursive: true });
+  await writeFile(join(nested, 'child.txt'), 'abcdefg');
+  const listed = await app.request('/current-workspace/files', { headers });
+  assert.equal(listed.status, 200);
+  const body = await listed.json() as {
+    files: Array<{ path: string; type: string; size: number }>;
+    usage?: { usedBytes: number; quotaBytes: number; fileCount: number };
+  };
+  const projects = body.files.find(file => file.path === 'projects');
+  const nestedDir = body.files.find(file => file.path === 'projects/nested');
+  assert.equal(projects?.type, 'directory');
+  assert.ok((projects?.size ?? 0) >= 7);
+  assert.equal(nestedDir?.size, 7);
+  assert.ok(body.usage);
+  assert.ok(body.usage.usedBytes >= 5 + 7);
+  assert.equal(body.usage.quotaBytes, 500 * 1024 * 1024);
+});
+
+test('agent workspace listing omits personal usage and stays admin-only', async () => {
+  const app = await appWithWorkspace();
+  const listed = await app.request('/current-workspace/files?source=agent', {
+    headers: { authorization: 'Bearer admin' },
+  });
+  assert.equal(listed.status, 200);
+  const body = await listed.json() as { usage?: unknown; files: Array<{ path: string; size: number; type: string }> };
+  assert.equal(body.usage, undefined);
+  const output = body.files.find(file => file.path === 'output');
+  assert.equal(output?.type, 'directory');
+  assert.ok((output?.size ?? 0) > 0);
+  assert.equal((await app.request('/current-workspace/upload?source=agent', {
+    method: 'POST',
+    headers: { authorization: 'Bearer admin' },
+    body: (() => { const form = new FormData(); form.set('file', new File(['x'], 'x.txt')); return form; })(),
+  })).status, 403);
+});
+
+test('workspace upload rejects anonymous, other users, oversized files, quota and symlinks', async () => {
+  const previousMax = process.env.WORKSPACE_MAX_FILE_SIZE_BYTES;
+  const previousQuota = process.env.WORKSPACE_DEFAULT_QUOTA_BYTES;
+  const previousDb = process.env.DATABASE_URL;
+  delete process.env.DATABASE_URL;
+  try {
+    const app = await appWithWorkspace();
+    const form = new FormData();
+    form.set('file', new File(['hello'], 'note.txt'));
+    assert.equal((await app.request('/current-workspace/upload', { method: 'POST', body: form })).status, 401);
+
+    const userHeaders = { authorization: 'Bearer user' };
+    const uploaded = await app.request('/current-workspace/upload', {
+      method: 'POST', headers: userHeaders, body: form,
+    });
+    assert.equal(uploaded.status, 201);
+    const other = await app.request('/current-workspace/files', { headers: { authorization: 'Bearer admin' } });
+    assert.equal(other.status, 200);
+    const otherBody = await other.json() as { files: Array<{ path: string }> };
+    assert.ok(!otherBody.files.some(file => file.path.includes('note.txt')));
+
+    process.env.WORKSPACE_MAX_FILE_SIZE_BYTES = '8';
+    const huge = new FormData();
+    huge.set('file', new File(['0123456789'], 'huge.bin'));
+    const tooLarge = await app.request('/current-workspace/upload', {
+      method: 'POST', headers: userHeaders, body: huge,
+    });
+    assert.equal(tooLarge.status, 413);
+    assert.equal((await tooLarge.json() as { code?: string }).code, 'FILE_TOO_LARGE');
+    delete process.env.WORKSPACE_MAX_FILE_SIZE_BYTES;
+
+    const outside = join(process.env.WORKSPACE_ROOT!, 'outside.txt');
+    await writeFile(outside, 'outside');
+    const root = join(process.env.WORKSPACE_ROOT!, 'users', USER_ID, 'workspace');
+    await symlink(outside, join(root, 'link.txt'));
+    const listed = await app.request('/current-workspace/files', { headers: userHeaders });
+    const listedBody = await listed.json() as { files: Array<{ path: string }>; usage?: { usedBytes: number } };
+    assert.ok(!listedBody.files.some(file => file.path === 'link.txt'));
+  } finally {
+    if (previousMax === undefined) delete process.env.WORKSPACE_MAX_FILE_SIZE_BYTES;
+    else process.env.WORKSPACE_MAX_FILE_SIZE_BYTES = previousMax;
+    if (previousQuota === undefined) delete process.env.WORKSPACE_DEFAULT_QUOTA_BYTES;
+    else process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = previousQuota;
+    if (previousDb === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = previousDb;
+  }
+});
+
+test('workspace upload maps quota failures to WORKSPACE_QUOTA_EXCEEDED', async () => {
+  const previous = {
+    quota: process.env.WORKSPACE_DEFAULT_QUOTA_BYTES,
+    database: process.env.DATABASE_URL,
+  };
+  delete process.env.DATABASE_URL;
+  process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = '4';
+  try {
+    const quotaUser = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+    process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'user-workspaces-'));
+    await mkdir(join(process.env.WORKSPACE_ROOT, 'users', quotaUser, 'workspace', 'uploads'), { recursive: true });
+    const app = new Hono();
+    const createRoutes = (fileRoutes as unknown as { createCurrentWorkspaceFileRoutes: () => ApiRoute[] })
+      .createCurrentWorkspaceFileRoutes;
+    for (const route of createRoutes()) {
+      if (!('handler' in route) || !route.handler) throw new Error(`Missing handler: ${route.path}`);
+      const handler = route.handler;
+      app.on(route.method, route.path, async (c, next) => {
+        const requestContext = new RequestContext();
+        requestContext.set('mastra__user',
+          { id: quotaUser, email: 'q@example.test', displayName: 'Q', roles: ['user'] });
+        c.set('requestContext', requestContext);
+        c.set('mastra', { getAgent: () => ({ getWorkspace: async () => undefined }) });
+        return handler(c, next);
+      });
+    }
+    const quotaForm = new FormData();
+    quotaForm.set('file', new File(['12345'], 'over.txt'));
+    const quota = await app.request('/current-workspace/upload', {
+      method: 'POST',
+      headers: { authorization: 'Bearer user' },
+      body: quotaForm,
+    });
+    assert.equal(quota.status, 413);
+    assert.equal((await quota.json() as { code?: string }).code, 'WORKSPACE_QUOTA_EXCEEDED');
+  } finally {
+    if (previous.quota === undefined) delete process.env.WORKSPACE_DEFAULT_QUOTA_BYTES;
+    else process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = previous.quota;
+    if (previous.database === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = previous.database;
+  }
+});
+
 test('save enforces Agent admin access and blocks traversal and symlinks', async () => {
   const app = await appWithWorkspace();
   const headers = { 'content-type': 'text/plain; charset=utf-8',

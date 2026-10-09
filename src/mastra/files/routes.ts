@@ -4,10 +4,58 @@ import type { RequestContext } from '@mastra/core/request-context';
 import { LocalFilesystem, type WorkspaceFilesystem } from '@mastra/core/workspace';
 import { trustedAuth } from '../auth/auth-context';
 import { ThreadGuardError, type ThreadLookup } from '../auth/thread-guard';
-import { FilePathError, isUserFilesEnabled, relativeFilePath } from './policy';
+import { FilePathError, isUserFilesEnabled, maxFileSizeBytes, relativeFilePath } from './policy';
 import { FileService, FileServiceError } from './service';
+import { addRecursiveDirectorySizes, WorkspaceFileService } from './workspace-service';
 import { ensureUserWorkspace } from '../workspace/manager';
+import { QuotaExceededError } from '../workspace/quota';
 import { readWorkspaceVersion, saveWorkspaceText, WorkspaceEditError } from './workspace-editor';
+
+const MULTIPART_OVERHEAD_BYTES = 64 * 1024;
+
+function jsonError(
+  c: Context,
+  error: { message: string; status: 400 | 401 | 403 | 404 | 409 | 412 | 413; code?: string },
+) {
+  const status = error.code === 'FILE_TOO_LARGE' || error.code === 'WORKSPACE_QUOTA_EXCEEDED'
+    ? 413 as const : error.status;
+  if (error.code) return c.json({ error: error.message, code: error.code }, status);
+  return c.json({ error: error.message }, error.status);
+}
+
+async function readLimitedFormData(c: Context): Promise<FormData> {
+  const maxBytes = maxFileSizeBytes() + MULTIPART_OVERHEAD_BYTES;
+  const lengthHeader = c.req.header('content-length');
+  if (lengthHeader) {
+    const length = Number(lengthHeader);
+    if (Number.isFinite(length) && length > maxBytes) {
+      throw new FileServiceError(413, '文件过大', 'FILE_TOO_LARGE');
+    }
+  }
+  const reader = c.req.raw.body?.getReader();
+  if (!reader) throw new FileServiceError(400, '缺少文件');
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel().catch(() => undefined);
+      throw new FileServiceError(413, '文件过大', 'FILE_TOO_LARGE');
+    }
+    chunks.push(value);
+  }
+  const body = Buffer.concat(chunks.map(chunk => Buffer.from(chunk)));
+  const contentType = c.req.header('content-type');
+  if (!contentType) throw new FileServiceError(400, '缺少文件');
+  return new Request('http://workspace.local/upload', {
+    method: 'POST',
+    headers: { 'content-type': contentType },
+    body,
+  }).formData();
+}
 
 function filePathFromRequest(c: Context, threadId: string): string {
   const prefix = `/user-files/${threadId}/`;
@@ -20,9 +68,12 @@ function filePathFromRequest(c: Context, threadId: string): string {
 }
 
 function respond(c: Context, error: unknown) {
+  if (error instanceof QuotaExceededError) {
+    return jsonError(c, error);
+  }
   if (error instanceof FilePathError || error instanceof FileServiceError || error instanceof ThreadGuardError ||
     error instanceof WorkspaceEditError) {
-    return c.json({ error: error.message }, error.status);
+    return jsonError(c, error);
   }
   if (error instanceof Error && /Authentication is required/i.test(error.message)) {
     return c.json({ error: error.message }, 401);
@@ -62,7 +113,7 @@ export function createFileRoutes(lookup?: ThreadLookup) {
       method: 'POST',
       handler: guarded(lookup, async (c, service) => {
         const auth = trustedAuth(c.get('requestContext'));
-        const form = await c.req.formData();
+        const form = await readLimitedFormData(c);
         const threadId = String(form.get('threadId') ?? '');
         const path = String(form.get('path') ?? '');
         const file = form.get('file');
@@ -139,14 +190,34 @@ export function createCurrentWorkspaceFileRoutes() {
     catch { throw new FilePathError(); }
   }
   return [
+    registerApiRoute('/current-workspace/upload', {
+      method: 'POST',
+      handler: async c => {
+        try {
+          const auth = trustedAuth(c.get('requestContext'));
+          if (c.req.query('source') === 'agent') throw new FileServiceError(403, '无权访问工作区');
+          const form = await readLimitedFormData(c);
+          const file = form.get('file');
+          if (!(file instanceof File)) return c.json({ error: '缺少文件' }, 400);
+          const entry = await new WorkspaceFileService().upload(auth, file);
+          return c.json(entry, 201);
+        } catch (error) { return respond(c, error); }
+      },
+    }),
     registerApiRoute('/current-workspace/files', {
       method: 'GET',
       handler: async c => {
         try {
+          const auth = trustedAuth(c.get('requestContext'));
+          if (!c.req.query('source')) {
+            const listed = await new WorkspaceFileService().list(auth);
+            return c.json({ workspaceId: `ws_${auth.userId}`, files: listed.files, usage: listed.usage });
+          }
           const workspace = await currentWorkspace(c);
           const entries = await workspace.filesystem.readdir('.', { recursive: true });
-          return c.json({ workspaceId: workspace.id, files: entries.filter(entry => !entry.isSymlink)
-            .map(entry => ({ path: entry.name, type: entry.type, size: entry.size ?? 0 })) });
+          const files = addRecursiveDirectorySizes(entries.filter(entry => !entry.isSymlink)
+            .map(entry => ({ path: entry.name, type: entry.type, size: entry.size ?? 0 })));
+          return c.json({ workspaceId: workspace.id, files });
         } catch (error) { return respond(c, error); }
       },
     }),

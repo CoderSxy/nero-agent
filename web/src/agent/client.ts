@@ -23,6 +23,15 @@ export function userFileUrl(threadId: string, relativePath: string): string {
 }
 
 export type UserFileEntry = { path: string; type: 'file' | 'directory'; size: number };
+export type WorkspaceUsage = { usedBytes: number; quotaBytes: number; fileCount: number };
+export type WorkspaceFileEntry = {
+  source: 'personal';
+  path: string;
+  name: string;
+  size: number;
+  mimeType: string;
+  etag: string;
+};
 
 export async function listUserFiles(threadId: string): Promise<UserFileEntry[]> {
   const response = await apiFetch(`/user-files/${encodeURIComponent(threadId)}`);
@@ -46,10 +55,23 @@ export async function listWorkspaceFiles(source: 'personal' | 'agent' = 'persona
   if (response.headers.get('content-type')?.includes('text/html')) {
     throw new Error('工作区接口返回了 HTML，请检查开发服务器代理');
   }
-  const body = await response.json() as { workspaceId?: string; files?: UserFileEntry[] };
+  const body = await response.json() as {
+    workspaceId?: string; files?: UserFileEntry[]; usage?: WorkspaceUsage;
+  };
   if ((expectedWorkspaceId && body.workspaceId !== expectedWorkspaceId) || !Array.isArray(body.files))
     throw new Error('工作区文件列表与当前用户不匹配');
   return body.files;
+}
+
+export async function uploadWorkspaceFile(file: File): Promise<WorkspaceFileEntry> {
+  const body = new FormData();
+  body.set('file', file);
+  const response = await apiFetch('/current-workspace/upload', { method: 'POST', body });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({})) as { error?: string; code?: string };
+    throw new Error(payload.error ?? '上传失败');
+  }
+  return response.json() as Promise<WorkspaceFileEntry>;
 }
 
 export async function fetchWorkspaceFile(relativePath: string,

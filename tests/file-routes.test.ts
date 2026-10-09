@@ -154,3 +154,87 @@ test('custom file routes stay outside Mastra reserved api prefix', () => {
     assert.ok(!route.path.startsWith('/api/'), route.path);
   }
 });
+
+test('thread upload rejects oversized bodies with FILE_TOO_LARGE before writing', async () => {
+  await withRoot(async app => {
+    const form = new FormData();
+    form.set('threadId', THREAD_A);
+    form.set('path', 'huge.bin');
+    form.set('file', new File(['x'.repeat(1025)], 'huge.bin'));
+    const response = await app.request('/user-files/upload', {
+      method: 'POST',
+      headers: { authorization: 'Bearer a' },
+      body: form,
+    });
+    assert.equal(response.status, 413);
+    const body = await response.json() as { error?: string; code?: string };
+    assert.equal(body.code, 'FILE_TOO_LARGE');
+    const leftover = await readdir(join(process.env.WORKSPACE_ROOT!, 'temp'), { recursive: true })
+      .catch((error: NodeJS.ErrnoException) => {
+        if (error.code === 'ENOENT') return [];
+        throw error;
+      });
+    assert.equal(leftover.filter(name => !String(name).endsWith('/')).length, 0);
+  });
+});
+
+test('thread upload maps quota failures to WORKSPACE_QUOTA_EXCEEDED JSON', async () => {
+  const previous = {
+    root: process.env.WORKSPACE_ROOT,
+    enabled: process.env.USER_FILES_ENABLED,
+    max: process.env.WORKSPACE_MAX_FILE_SIZE_BYTES,
+    quota: process.env.WORKSPACE_DEFAULT_QUOTA_BYTES,
+    database: process.env.DATABASE_URL,
+  };
+  const USER_Q = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+  const THREAD_Q = 'thread-q1';
+  process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'files-quota-'));
+  process.env.USER_FILES_ENABLED = 'true';
+  process.env.WORKSPACE_MAX_FILE_SIZE_BYTES = '1024';
+  process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = '8';
+  delete process.env.DATABASE_URL;
+  try {
+    const routes = createFileRoutes({
+      getThreadById: async ({ threadId }: { threadId: string }) =>
+        threadId === THREAD_Q ? { id: THREAD_Q, resourceId: USER_Q } : null,
+    });
+    const app = new Hono();
+    for (const route of routes) {
+      if (!('handler' in route) || !route.handler) throw new Error(`route ${route.path} has no handler`);
+      const handler = route.handler;
+      app.on(route.method, route.path, async (c, next) => {
+        const requestContext = new RequestContext();
+        c.set('requestContext', requestContext);
+        if (c.req.header('authorization') === 'Bearer q') {
+          requestContext.set(MASTRA_USER_KEY, user(USER_Q));
+        } else {
+          return c.json({ error: 'Unauthorized' }, 401);
+        }
+        return handler(c, next);
+      });
+    }
+    const form = new FormData();
+    form.set('threadId', THREAD_Q);
+    form.set('path', 'note.txt');
+    form.set('file', new File(['0123456789'], 'note.txt'));
+    const response = await app.request('/user-files/upload', {
+      method: 'POST',
+      headers: { authorization: 'Bearer q' },
+      body: form,
+    });
+    assert.equal(response.status, 413);
+    const body = await response.json() as { error?: string; code?: string };
+    assert.equal(body.code, 'WORKSPACE_QUOTA_EXCEEDED');
+  } finally {
+    if (previous.root === undefined) delete process.env.WORKSPACE_ROOT;
+    else process.env.WORKSPACE_ROOT = previous.root;
+    if (previous.enabled === undefined) delete process.env.USER_FILES_ENABLED;
+    else process.env.USER_FILES_ENABLED = previous.enabled;
+    if (previous.max === undefined) delete process.env.WORKSPACE_MAX_FILE_SIZE_BYTES;
+    else process.env.WORKSPACE_MAX_FILE_SIZE_BYTES = previous.max;
+    if (previous.quota === undefined) delete process.env.WORKSPACE_DEFAULT_QUOTA_BYTES;
+    else process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = previous.quota;
+    if (previous.database === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = previous.database;
+  }
+});
