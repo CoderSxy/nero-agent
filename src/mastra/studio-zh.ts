@@ -127,8 +127,19 @@ export function studioChineseClient() {
 
 // esbuild's keepNames helper may be emitted into toString() output under tsx; shim it for the browser.
 function studioSameOriginClient() {
-  if (location.port !== '4111') return;
+  const deployedStudio = location.pathname === '/studio' || location.pathname.startsWith('/studio/');
+  if (location.port !== '4111' && !deployedStudio) return;
   (window as Window & { MASTRA_AUTO_DETECT_URL?: string }).MASTRA_AUTO_DETECT_URL = 'true';
+  if (deployedStudio) {
+    const token = sessionStorage.getItem('nero-agent-session');
+    if (!token) {
+      location.replace('/agent/new?next=studio');
+      return;
+    }
+    const url = new URL(location.href);
+    url.searchParams.set('auth_header', `Bearer ${token}`);
+    history.replaceState(null, '', url.pathname + url.search + url.hash);
+  }
   try {
     const key = 'mastra-studio-config';
     const stored = localStorage.getItem(key);

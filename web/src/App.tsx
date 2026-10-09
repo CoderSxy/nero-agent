@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { MastraReactProvider } from '@mastra/react';
 import { AgentPage } from './agent/AgentPage';
 import { setAgentClientToken } from './agent/client';
@@ -38,6 +38,7 @@ function LoginPage({ onLogin }: { onLogin: (token: string, user: CurrentUser) =>
 }
 
 export function App() {
+  const routeLocation = useLocation();
   const [token, setToken] = useState<string | null>(() => sessionStorage.getItem(TOKEN_KEY));
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [checking, setChecking] = useState(Boolean(token));
@@ -65,6 +66,19 @@ export function App() {
   }
   if (checking) return <main className="login-page">正在验证登录…</main>;
   if (!token || !user) return <LoginPage onLogin={onLogin} />;
+  if (new URLSearchParams(routeLocation.search).get('next') === 'studio') {
+    return <main className="login-page"><div className="login-card">
+      <div className="login-brand">NERO <span>AGENT</span></div>
+      {user.roles.includes('admin') ? <>
+        <h1>进入 Mastra Studio</h1>
+        <p>使用当前管理员账号进入。</p>
+        <a href="/studio/">进入 Studio</a>
+      </> : <>
+        <h1>仅管理员可以进入 Studio</h1>
+        <a href="/agent/new">返回智能体</a>
+      </>}
+    </div></main>;
+  }
   return <MastraReactProvider baseUrl="" apiPrefix="/api"
     headers={{ Authorization: `Bearer ${token}` }}>
     <Routes>

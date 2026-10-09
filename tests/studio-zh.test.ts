@@ -45,6 +45,16 @@ test('Studio uses the page origin for API requests so login cookies stay on the 
   assert.equal((dom.window as Window & { MASTRA_AUTO_DETECT_URL?: string }).MASTRA_AUTO_DETECT_URL, 'true');
 });
 
+test('production Studio hands a tab session to Mastra without sending it in the HTTP URL', () => {
+  const dom = new JSDOM(localizeStudioHtml(STUDIO_HTML), {
+    url: 'https://agent.nerosun.cn/studio/', runScripts: 'dangerously', pretendToBeVisual: true,
+    beforeParse(window) { window.sessionStorage.setItem('nero-agent-session', 'admin-test-token'); },
+  });
+  assert.equal((dom.window as Window & { MASTRA_AUTO_DETECT_URL?: string }).MASTRA_AUTO_DETECT_URL, 'true');
+  assert.equal(dom.window.location.search, '?auth_header=Bearer+admin-test-token');
+  assert.equal(dom.window.localStorage.getItem('mastra-studio-config'), null);
+});
+
 test('Studio replaces an older saved API host with the current 4111 page origin', () => {
   const dom = new JSDOM(localizeStudioHtml(STUDIO_HTML), {
     url: 'http://127.0.0.1:4111/', runScripts: 'dangerously', pretendToBeVisual: true,
