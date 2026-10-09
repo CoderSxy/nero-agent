@@ -1,0 +1,42 @@
+web/src/agent/WorkspaceFileTree.tsx
+  s_2e3d2425e0a8e9::t_68b5b6a55014da 18
+src/mastra/workspace/quota.ts
+  s_2e3d2425e0a8e9::t_a54d7b91a0fe0e 65-85,88-92,99
+web/src/agent/WorkspaceFileTree.test.tsx
+  s_2e3d2425e0a8e9::t_5df8d3345f073c 18,31
+  s_2e3d2425e0a8e9::t_6a86f9ea4150f5 43
+web/src/agent/AgentPage.test.tsx
+  s_2e3d2425e0a8e9::t_fc35cece8f5bc8 35-36
+src/mastra/files/workspace-service.ts
+  s_2e3d2425e0a8e9::t_40dd5d6e2ce45b 81
+tests/workspace-quota.test.ts
+  s_2e3d2425e0a8e9::t_5899223f071d4d 207-223
+tests/workspace-service.test.ts
+  s_2e3d2425e0a8e9::t_26b8f7136f6c4e 10
+  s_2e3d2425e0a8e9::t_fc8b9bfcc297c5 108-124
+  s_2e3d2425e0a8e9::t_c061294f3968d7 128-130
+web/src/agent/client.ts
+  s_2e3d2425e0a8e9::t_35c6487488239b 48,63
+  s_2e3d2425e0a8e9::t_0dafa3d1e89efa 72-74
+web/src/agent/client.test.ts
+  s_2e3d2425e0a8e9::t_5036a058fdffd5 38-39,42-45
+  s_2e3d2425e0a8e9::t_b5f65ca476d677 65-75
+  s_2e3d2425e0a8e9::t_6ff08243e5500d 2-3
+  s_2e3d2425e0a8e9::t_be3908ef15b620 54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4895f1a134dd262677e8d3602590f10a6d258513",
+  "prompts": {},
+  "sessions": {
+    "s_2e3d2425e0a8e9": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b6ee7f88-5ea5-4320-81e8-4ed190fe201c",
+        "model": "cursor-grok-4.6-medium"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
