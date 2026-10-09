@@ -70,16 +70,31 @@ ECS 生产环境没有 Mastra EE 授权时，Studio 使用官方 `SimpleAuth` �
 
 每用户工作区根目录为 `$WORKSPACE_ROOT/users/<UUID>/workspace`（默认 `WORKSPACE_ROOT=/data/mastra`），线程文件在 `threads/<threadId>/{input,output,tmp}`。`WORKSPACE_RESOLVER_ENABLED=true` 时，管理员 Workspace 使用该用户目录上的 `LocalFilesystem({ contained: true })`。Mastra 原生命令与文件系统工具已关闭；受控文件工具走 `FileService`。
 
+### 容量与附件
+
+- **新上传单文件上限**：`10 MiB`（`10 × 1024 × 1024` 字节）。前后端均校验；超限错误码 `FILE_TOO_LARGE`，前端预检文案为「文件超过 10 MiB 上限：文件名」，服务端常见响应为「文件过大」。
+- **个人工作区上限**：每位用户整个个人工作区 `500 MiB`（`500 × 1024 × 1024` 字节）。超额错误码 `WORKSPACE_QUOTA_EXCEEDED`，默认文案「工作区配额已满」。容量以服务端扫描/对账为准；`source=agent` 旧工作区不计入个人配额。
+- **Composer 附件**：加号支持「上传文件」「选择工作区文件」「添加图片」；拖入/粘贴图片会先上传再加入本次消息。选择已有工作区文件只登记引用、不复制。从本次消息移除卡片**不删除**工作区原件。每条消息最多 10 个附件。
+- **删除**：右侧工作区支持单项与批量删除（仅个人来源）。确认后不可恢复；父子路径会折叠去重。工作区根及 `shared/`、`uploads/`、`projects/`、`threads/` 与线程 `input/`、`output/`、`tmp/` 目录本身受保护，不可删。历史消息仍显示当时的名称/大小；原件删除后显示「文件已删除」。
+- **视觉模型**：公共/私人模型目录有显式布尔字段 `supportsVision`（迁移后既有模型默认 `false`，不可按模型名猜测）。发送含图片附件时，Composer 在所选模型未开启视觉时阻断并提示「当前模型不支持图片，请切换支持图片的模型」；服务端 `read_attached_file` 同样核验该字段。管理员在公共模型管理、用户在私有模型设置中勾选「支持图片」。
+- **消息持久化**：消息与工具 transcript 只保存附件 ID/路径/元数据，不保存图片 base64。
+
+启用前先运行 `npm run db:migrate`（含 `app_workspaces`、附件引用表与 `supports_vision` 等）。列表/删除后服务端会扫描磁盘对账配额；上线前还需按部署文档检查宿主磁盘与 project quota，主机磁盘保护（使用率告警/阻断）独立于个人 500 MiB，不能绕过。
+
+### 文件 API 与部署门禁
+
 认证文件 API（`USER_FILES_ENABLED=true`）提供：
 
-- `POST /user-files/upload`（multipart：`threadId`、`path`、`file`）
-- `GET /user-files/:threadId` 列出当前会话文件
-- `GET /user-files/:threadId/*` 下载
-- `DELETE /user-files/:threadId/*` 删除
+- `POST /user-files/upload`（multipart：`threadId`、`path`、`file`）— 兼容旧线程路径
+- `POST /current-workspace/upload` — Composer 个人工作区上传（`uploads/<UUID>/<安全文件名>`）
+- `GET /user-files/:threadId` 列出当前会话文件；`GET|DELETE /user-files/:threadId/*`
+- `GET /current-workspace/files`（含目录递归大小与个人 `usage`）、附件准备/列表、`POST /current-workspace/files/batch-delete`
 
-路径相对该用户的 `threads/<threadId>`，服务端校验线程归属。独立页面可在对话区上传并下载。智能体应返回 `/user-files/...` 路径，不再生成宿主 `file:` URL。启用前先运行 `npm run db:migrate` 创建 `app_workspaces`。`execute_command` 需 `SANDBOX_COMMANDS_ENABLED=true`；Docker 实现还需 `SANDBOX_PROVIDER=docker` 与 digest 固定的 `SANDBOX_IMAGE`。宿主项目配额未实测前保持 `SANDBOX_FILE_WRITE_ENABLED=false`。部署说明见 [ECS 工作区与沙箱发布](docs/deployment/workspace-sandbox-ecs.md)。基线审计见 [工作区沙箱审计](docs/architecture/workspace-sandbox-audit.md)。
+路径经服务端校验线程归属与路径安全。独立页面可在对话区上传、引用并下载。智能体应返回 `/user-files/...` 或附件 ID，不再生成宿主 `file:` URL。
 
-独立页面右侧“工作区”展示当前 Agent 实际使用的工作区目录树，包含所有层级的目录和文件，并可刷新、下载。个人工作区使用 `GET /current-workspace/files` 和 `GET /current-workspace/files/*`；本地回退的 `agent-workspace` 使用相同路径加 `?source=agent`，仅管理员可访问。文件列表是整个工作区的内容，不局限于当前会话。启用个人工作区时应将 `WORKSPACE_ROOT` 指向服务进程可写的持久目录。
+**部署门禁不变**：本功能不自动开启未验证的沙箱文件写入。`USER_FILES_ENABLED`、`SANDBOX_COMMANDS_ENABLED`、`SANDBOX_FILE_WRITE_ENABLED` 仍须按 [ECS 工作区与沙箱发布](docs/deployment/workspace-sandbox-ecs.md) 完成宿主配额实测后再打开。`execute_command` 需 `SANDBOX_COMMANDS_ENABLED=true`；Docker 实现还需 `SANDBOX_PROVIDER=docker` 与 digest 固定的 `SANDBOX_IMAGE`。宿主项目配额未实测前保持 `SANDBOX_FILE_WRITE_ENABLED=false`。基线审计见 [工作区沙箱审计](docs/architecture/workspace-sandbox-audit.md)。
+
+独立页面右侧“工作区”展示当前 Agent 实际使用的工作区目录树，包含所有层级的目录和文件，并可刷新、下载、删除。个人工作区使用 `GET /current-workspace/files` 和 `GET /current-workspace/files/*`；本地回退的 `agent-workspace` 使用相同路径加 `?source=agent`，仅管理员可访问（只读文件管理，不可批量删除）。文件列表是整个工作区的内容，不局限于当前会话。启用个人工作区时应将 `WORKSPACE_ROOT` 指向服务进程可写的持久目录。
 
 本地开发要让 Agent 实际保存文件，可在被 Git 忽略的 `.env` 中设置 `WORKSPACE_ROOT=<项目绝对路径>/.local-workspaces`、`WORKSPACE_RESOLVER_ENABLED=true` 和 `USER_FILES_ENABLED=true`，然后重启 `npm run dev`。`write_file` 只需要相对路径和内容；会话 ID 从 Agent 运行上下文获取，文件保存到当前用户当前会话目录。部署环境应使用独立的持久化目录，并按 [ECS 工作区与沙箱发布](docs/deployment/workspace-sandbox-ecs.md) 完成门禁后再启用。
 
