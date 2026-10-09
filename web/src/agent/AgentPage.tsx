@@ -175,6 +175,7 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
         onAttachFile={(path, source) => {
           nextAttachId.current += 1;
           setAttachRequest({ id: nextAttachId.current, path, source });
-        }} />} />
+        }}
+        onFilesChanged={() => setFilesRefreshVersion(value => value + 1)} />} />
   </main>;
 }

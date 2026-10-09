@@ -228,16 +228,29 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .empty-chat button { background: var(--foreground); color: var(--background); padding: 10px 18px; border-radius: 9px; }
 .config-panel { overflow: auto; padding: 25px 18px; border-left: 1px solid var(--border); background: var(--sidebar); }
 .workspace-file-panel { height: 100%; overflow: auto; padding: 24px 12px; border-left: 1px solid var(--border); background: var(--sidebar); }
-.workspace-file-heading { display: flex; align-items: center; justify-content: space-between; padding: 0 8px; }
+.workspace-file-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 8px; }
 .workspace-file-heading h2 { margin: 0; font-size: 18px; font-weight: 650; }
-.workspace-file-heading button { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 7px; }
-.workspace-file-heading button:hover { background: var(--card); }
-.workspace-file-panel > .muted { margin: 4px 8px 20px; font-size: 12px; }
+.workspace-file-heading-actions { display: flex; align-items: center; gap: 4px; }
+.workspace-file-heading-actions > button { display: grid; place-items: center; min-width: 30px; height: 30px; padding: 0 8px; border-radius: 7px; font-size: 11px; color: var(--muted-foreground); }
+.workspace-file-heading-actions > button:hover:not(:disabled) { background: var(--card); color: var(--foreground); }
+.workspace-file-heading-actions > button:disabled { opacity: 0.45; }
+.workspace-file-panel > .muted { margin: 4px 8px 8px; font-size: 12px; }
+.workspace-file-usage, .workspace-file-selection-summary { margin: 0 8px 12px; font-size: 12px; }
+.workspace-file-selection-summary { color: var(--muted-foreground); }
 .workspace-file-list { list-style: none; padding: 0; margin: 0; }
 .workspace-file-list li button { display: flex; align-items: center; gap: 7px; width: 100%; min-width: 0; padding: 5px 7px; border-radius: 7px; color: var(--foreground); text-align: left; font-size: 12px; }
 .workspace-file-list li button:hover, .workspace-file-list li button:focus-visible { background: var(--card); }
-.workspace-file-list li button span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .workspace-file-list .tree-spacer { width: 14px; flex: none; }
+.workspace-file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workspace-file-row input[type="checkbox"] { flex: none; margin: 0 2px 0 4px; }
+.workspace-file-size { margin-left: auto; flex: none; color: var(--muted-foreground); font-size: 11px; }
+.workspace-file-panel .workspace-confirm-backdrop { position: fixed; z-index: 40; }
+.workspace-delete-dialog { width: min(360px, 92vw); padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--popover); box-shadow: 0 16px 40px #0005; }
+.workspace-delete-dialog p { margin: 0 0 10px; font-size: 13px; line-height: 1.45; }
+.workspace-delete-paths { margin: 0 0 14px; padding-left: 18px; color: var(--muted-foreground); font-size: 12px; }
+.workspace-delete-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.workspace-delete-actions button { padding: 7px 12px; border-radius: 8px; font-size: 12px; }
+.workspace-delete-actions button:last-child { background: var(--foreground); color: var(--background); }
 .config-panel h2 { font-size: 18px; font-weight: 650; }
 .config-sections { margin-top: 26px; display: grid; gap: 16px; }
 .config-sections dl { display: grid; grid-template-columns: 80px 1fr; gap: 10px; }

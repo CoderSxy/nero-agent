@@ -32,6 +32,13 @@ export type WorkspaceFileEntry = {
   mimeType: string;
   etag: string;
 };
+export type BatchDeleteItemResult = { path: string; ok: boolean; errorCode?: string };
+export type BatchDeleteResult = {
+  results: BatchDeleteItemResult[];
+  deletedFiles: number;
+  freedBytes: number;
+  usage: WorkspaceUsage;
+};
 
 export async function listUserFiles(threadId: string): Promise<UserFileEntry[]> {
   const response = await apiFetch(`/user-files/${encodeURIComponent(threadId)}`);
@@ -74,6 +81,19 @@ export async function uploadWorkspaceFile(file: File): Promise<WorkspaceFileEntr
     throw error;
   }
   return response.json() as Promise<WorkspaceFileEntry>;
+}
+
+export async function deleteWorkspaceFiles(paths: string[]): Promise<BatchDeleteResult> {
+  const response = await apiFetch('/current-workspace/files/batch-delete', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ paths }),
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({})) as { error?: string };
+    throw new Error(payload.error ?? '删除失败');
+  }
+  return response.json() as Promise<BatchDeleteResult>;
 }
 
 export async function fetchWorkspaceFile(relativePath: string,

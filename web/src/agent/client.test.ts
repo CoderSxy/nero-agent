@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { fetchUserFile, fetchWorkspaceFile, listUserFiles, listWorkspaceFiles, setAgentClientToken,
-  uploadWorkspaceFile } from './client';
+import { deleteWorkspaceFiles, fetchUserFile, fetchWorkspaceFile, listUserFiles, listWorkspaceFiles,
+  setAgentClientToken, uploadWorkspaceFile } from './client';
 
 afterEach(() => {
   setAgentClientToken(null);
@@ -81,4 +81,25 @@ it('downloads a nested Agent workspace file with an encoded path and bearer toke
   expect(fetch).toHaveBeenCalledWith('/current-workspace/files/docs/%E4%B8%AD%E6%96%87%20%E6%96%87%E6%A1%A3.md?source=agent',
     expect.objectContaining({ headers: expect.any(Headers) }));
   expect((fetch.mock.calls[0][1].headers as Headers).get('Authorization')).toBe('Bearer secret-session');
+});
+
+it('batch-deletes workspace files through the personal API', async () => {
+  const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    results: [{ path: 'uploads/a.txt', ok: true }],
+    deletedFiles: 1,
+    freedBytes: 12,
+    usage: { usedBytes: 0, quotaBytes: 500 * 1024 * 1024, fileCount: 0 },
+  }), { status: 200 }));
+  vi.stubGlobal('fetch', fetch);
+  setAgentClientToken('secret-session');
+  expect(await deleteWorkspaceFiles(['uploads/a.txt'])).toEqual({
+    results: [{ path: 'uploads/a.txt', ok: true }],
+    deletedFiles: 1,
+    freedBytes: 12,
+    usage: { usedBytes: 0, quotaBytes: 500 * 1024 * 1024, fileCount: 0 },
+  });
+  expect(fetch).toHaveBeenCalledWith('/current-workspace/files/batch-delete', expect.objectContaining({
+    method: 'POST',
+    body: JSON.stringify({ paths: ['uploads/a.txt'] }),
+  }));
 });

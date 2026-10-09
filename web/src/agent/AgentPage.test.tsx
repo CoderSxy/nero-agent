@@ -34,6 +34,11 @@ vi.mock('./client', () => ({ AGENT_ID: 'agent', client: {
   const response = await fetch('/current-workspace/files');
   const body = await response.json() as { files: unknown[]; usage?: unknown };
   return { files: body.files, usage: body.usage };
+}, deleteWorkspaceFiles: async (paths: string[]) => {
+  const response = await fetch('/current-workspace/files/batch-delete', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ paths }),
+  });
+  return response.json();
 } }));
 vi.mock('./model-catalog-client', () => ({ getSelectableModels: () => getSelectableModels() }));
 vi.mock('./use-thread-list', () => ({ useThreadList: () => ({
@@ -268,5 +273,39 @@ describe('Agent page model selection', () => {
     fireEvent.click(screen.getByRole('menuitem', { name: '加入当前对话' }));
     await waitFor(() => expect(screen.getByTestId('attach-request').textContent)
       .toBe('2|personal|docs/b.txt'));
+  });
+
+  it('shows personal usage and refreshes after a workspace file delete', async () => {
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        files: [
+          { path: 'docs', type: 'directory', size: 3 },
+          { path: 'docs/a.txt', type: 'file', size: 3 },
+        ],
+        usage: { usedBytes: 3, quotaBytes: 500 * 1024 * 1024, fileCount: 1 },
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        results: [{ path: 'docs/a.txt', ok: true }],
+        deletedFiles: 1,
+        freedBytes: 3,
+        usage: { usedBytes: 0, quotaBytes: 500 * 1024 * 1024, fileCount: 0 },
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        files: [{ path: 'docs', type: 'directory', size: 0 }],
+        usage: { usedBytes: 0, quotaBytes: 500 * 1024 * 1024, fileCount: 0 },
+      }), { status: 200 }));
+    vi.stubGlobal('fetch', fetch);
+    renderPage();
+    await screen.findByTestId('models');
+    fireEvent.click(screen.getByRole('button', { name: '打开文件管理面板' }));
+    expect(await screen.findByText(/已用 3 B \/ 500 MiB/)).toBeTruthy();
+    fireEvent.click(await screen.findByRole('button', { name: '展开 docs' }));
+    fireEvent.click(screen.getByRole('button', { name: 'docs/a.txt 的更多操作' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '删除' }));
+    fireEvent.click(within(await screen.findByRole('dialog', { name: '确认删除' }))
+      .getByRole('button', { name: '确认删除' }));
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith('/current-workspace/files/batch-delete',
+      expect.objectContaining({ method: 'POST' })));
+    expect(await screen.findByText(/已用 0 B \/ 500 MiB/)).toBeTruthy();
   });
 });
