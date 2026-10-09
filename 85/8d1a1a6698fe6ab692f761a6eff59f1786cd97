@@ -1,0 +1,26 @@
+tests/studio-zh.test.ts
+  s_3f0f872474eaa7::t_d8a442e15fa983 48-57
+web/src/App.tsx
+  s_3f0f872474eaa7::t_3361ff797b92eb 2,41,69-81
+web/src/App.test.tsx
+  s_3f0f872474eaa7::t_2b121b10debb7b 38-49
+  s_3f0f872474eaa7::t_d8a442e15fa983 26-37
+src/mastra/studio-zh.ts
+  s_3f0f872474eaa7::t_3361ff797b92eb 130-131,133-142
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "858d1a1a6698fe6ab692f761a6eff59f1786cd97",
+  "prompts": {},
+  "sessions": {
+    "s_3f0f872474eaa7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a119ff-11d9-7e10-a5bb-44247d0152fa",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
