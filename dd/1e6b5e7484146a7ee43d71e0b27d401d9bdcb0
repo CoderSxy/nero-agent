@@ -1,0 +1,145 @@
+tests/model-sync.test.ts
+  s_5913d7469e92d4::t_68c3494ec3625f 35
+  s_5913d7469e92d4::t_5e6c7d90bb2f1b 12-15,25-27,30-34,36-38
+  s_5913d7469e92d4::t_7780c2dc8fcf77 39,41-48,50-51,55-56,68-69
+  s_5913d7469e92d4::t_14e73c6bc2b9fb 52
+  s_5913d7469e92d4::t_fd43904110216b 79
+  s_5913d7469e92d4::t_4ce6c589d5f760 24,28-29,49,53-54,57-67
+  s_5913d7469e92d4::t_194f1b3171a84e 40
+docs/superpowers/plans/2026-10-09-agent-workspace-attachments-and-cleanup.md
+  s_5913d7469e92d4::t_0094f50894dd2b 74,78
+  s_5913d7469e92d4::t_4876441a93d1da 1-26,30-73,75-77,79-107,109-131,133-152
+  s_5913d7469e92d4::t_f3ae4db954fd50 27-29,108,132
+tests/workspace-service.test.ts
+  s_5913d7469e92d4::t_44c240c342c63b 108-115,118-120,123-129
+  s_5913d7469e92d4::t_309109810b984f 116-117
+  s_5913d7469e92d4::t_b4230d9c8af36b 121-122
+  s_5913d7469e92d4::t_34e3592bd132dd 130-148
+tests/attachment-routes.test.ts
+  s_5913d7469e92d4::t_ac9fc5eb7262dc 15,109-116
+  s_5913d7469e92d4::t_48d834c79594af 117
+tests/attached-file-tool.test.ts
+  s_5913d7469e92d4::t_7d5b3c3f6a78c0 8,405-407,432-435,437-439,445-464,466-467
+  s_5913d7469e92d4::t_bd600c004b303f 436,465
+src/mastra/models/service.ts
+  s_5913d7469e92d4::t_4d46592dd99d59 171
+  s_5913d7469e92d4::t_5c92993231d5d0 3,147-157,170
+tests/model-catalog-db.test.ts
+  s_5913d7469e92d4::t_f2f761d8d633b7 17,81-87
+web/src/agent/AgentComposer.tsx
+  s_5913d7469e92d4::t_5410a31e35514c 239-241
+  s_5913d7469e92d4::t_a0ed659747e146 238,242
+web/src/agent/model-catalog-client.ts
+  s_5913d7469e92d4::t_7780c2dc8fcf77 17-19
+  s_5913d7469e92d4::t_14e73c6bc2b9fb 13
+  s_5913d7469e92d4::t_31e66c8c35dc91 14
+  s_5913d7469e92d4::t_a0ed659747e146 7-12,15-16,20-21,34
+web/src/agent/AgentComposer.test.tsx
+  s_5913d7469e92d4::t_14aea296f79cd9 26,42,45
+src/mastra/files/tools.ts
+  s_5913d7469e92d4::t_5c92993231d5d0 7,57
+tests/model-vision-policy.test.ts
+  s_5913d7469e92d4::t_27924b4c839bdc 1-24
+web/src/agent/WorkspaceFilePicker.test.tsx
+  s_5913d7469e92d4::t_b7e084b5142894 19-34
+src/mastra/files/workspace-service.ts
+  s_5913d7469e92d4::t_309109810b984f 56,70-71,81,85,88-90
+  s_5913d7469e92d4::t_57e94b77cccdf7 105-107
+  s_5913d7469e92d4::t_07368563660848 57,72,75-80,82-84
+docs/superpowers/specs/2026-10-09-agent-workspace-attachments-and-cleanup-design.md
+  s_5913d7469e92d4::t_cc2a6f4b1d5d1e 1-27,29-39,41-50,53-60
+  s_5913d7469e92d4::t_0094f50894dd2b 40
+  s_5913d7469e92d4::t_e93b2b88ab4b80 51-52
+  s_5913d7469e92d4::t_f3ae4db954fd50 28
+src/mastra/files/service.ts
+  s_5913d7469e92d4::t_309109810b984f 62,74,78,81
+web/src/agent/WorkspaceFileTree.tsx
+  s_5913d7469e92d4::t_4b6b2f8e6cdb76 6,104,112-113,202-203,209
+web/src/agent/WorkspaceFilePicker.tsx
+  s_5913d7469e92d4::t_4b6b2f8e6cdb76 5,38,42-43,45,47,50-51,55,95
+tests/workspace-quota.test.ts
+  s_5913d7469e92d4::t_6e15144d98d3ed 261,284-285,325,380-406,414-418
+  s_5913d7469e92d4::t_44c240c342c63b 290-310
+  s_5913d7469e92d4::t_8bbd7b46adcf94 407-413
+  s_5913d7469e92d4::t_d6cf0cc05782c6 286-289
+  s_5913d7469e92d4::t_7ce32d779677a4 419-421
+  s_7fe43a166a77b4::t_3d924d4f3cea78 422
+web/src/styles.css
+  s_5913d7469e92d4::t_4b6b2f8e6cdb76 244-245
+src/mastra/models/gateway-sync.ts
+  s_5913d7469e92d4::t_14e73c6bc2b9fb 87-89
+  s_5913d7469e92d4::t_c38f1d88fcdc68 6,14,17-40,48,55-59,61-75,77-81,83-84,91-92,94,98-99,104,111-113,136
+  s_5913d7469e92d4::t_31e66c8c35dc91 60
+  s_5913d7469e92d4::t_63d55bfe3cd97d 102,105-110
+  s_5913d7469e92d4::t_8bd6ba41c4d648 3,150,219,235-236,244-246,249-260,263,267-268,272
+  s_5913d7469e92d4::t_593c99be164fd0 41-47,76,82,85-86,90,93,95-97,100-101
+  s_5913d7469e92d4::t_419c687447fd01 49-54,103
+migrations/008_model_catalog_metadata.sql
+  s_5913d7469e92d4::t_35746ed5b9e628 1-2
+src/mastra/models/admin-page.ts
+  s_5913d7469e92d4::t_c774c38651bc76 313
+  s_5913d7469e92d4::t_cadbaf0f6beeff 10,26-27,147-151,284,306-309,311,314,320-321,346-347,363,401-402,422,427
+  s_5913d7469e92d4::t_419c687447fd01 140
+  s_5913d7469e92d4::t_31e66c8c35dc91 141
+  s_5913d7469e92d4::t_e49b234ed6fe59 249
+  s_5913d7469e92d4::t_14e73c6bc2b9fb 310
+  s_5913d7469e92d4::t_01998879613800 250-251,255,258
+  s_5913d7469e92d4::t_4a90e5c3fa4321 144,371
+  s_5913d7469e92d4::t_f00c5707584f15 142-143,145-146,305,312
+src/mastra/files/attachment-persistence-processor.ts
+  s_5913d7469e92d4::t_1a33b06123f07a 36,60,77,126,132,134-143,145-146,148-152,154
+  s_5913d7469e92d4::t_bd600c004b303f 127-131,133,144,147,153
+src/mastra/files/attachments.ts
+  s_5913d7469e92d4::t_9f54f6a625ce2a 2,4,69-74,136-138,152,188-190,217,220,222,235,237
+web/src/agent/workspace-display.ts
+  s_5913d7469e92d4::t_4b6b2f8e6cdb76 1-32
+src/mastra/models/repository.ts
+  s_5913d7469e92d4::t_4d46592dd99d59 69
+  s_5913d7469e92d4::t_35746ed5b9e628 3,20,35,50,63,65-66,93,189-190,195,231-233
+  s_5913d7469e92d4::t_c32279e5ebcef2 234
+tests/workspace-editor.test.ts
+  s_5913d7469e92d4::t_b4230d9c8af36b 78,80,90-91
+  s_5913d7469e92d4::t_44c240c342c63b 73-77,79,81-89,92-93
+tests/model-admin-page.test.ts
+  s_5913d7469e92d4::t_10a53ea5f145a3 169-182
+  s_5913d7469e92d4::t_419c687447fd01 155
+  s_5913d7469e92d4::t_f383859a618cbf 243-264
+  s_5913d7469e92d4::t_fadd9a65c3ddd7 153-154,156-168
+web/src/agent/WorkspaceFileTree.test.tsx
+  s_5913d7469e92d4::t_b7e084b5142894 33-47
+src/mastra/files/workspace-editor.ts
+  s_5913d7469e92d4::t_309109810b984f 86,89
+migrations/007_workspace_reservations.sql
+  s_5913d7469e92d4::t_3454a6066b840a 1-3
+src/mastra/workspace/quota.ts
+  s_5913d7469e92d4::t_3454a6066b840a 16,18,28-29,39-40,64,68-69,73-74,78-79,91,96-113,116-139,146,148,152-154,174,179-182,185,189-193,196,204-205,208,213,226,231,235-236,251,254-256
+src/mastra/models/types.ts
+  s_5913d7469e92d4::t_7780c2dc8fcf77 17-19
+  s_5913d7469e92d4::t_412d3a4cdc3d46 7-12,15-16,20-21,34
+  s_5913d7469e92d4::t_14e73c6bc2b9fb 13
+  s_5913d7469e92d4::t_31e66c8c35dc91 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dd1e6b5e7484146a7ee43d71e0b27d401d9bdcb0",
+  "prompts": {},
+  "sessions": {
+    "s_5913d7469e92d4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11fa5-a9a6-7862-864c-dbb8389613d3",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_7fe43a166a77b4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11fab-42bb-74b1-b525-bd4d993535ed",
+        "model": "unknown"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
