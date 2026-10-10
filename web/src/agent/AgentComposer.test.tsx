@@ -23,7 +23,7 @@ describe('Composer run controls', () => {
     const catalog = [first, second].map((ref, index) => ({
       ref, scope: index === 0 ? 'public' : 'private', displayName: index === 0 ? '默认模型' : '个人模型',
       providerId: 'test', modelId: `m${index}`, enabled: true, baseUrl: 'https://example.test',
-      apiMode: 'chat', hasApiKey: true, keyHint: '1234', supportsVision: false,
+      apiMode: 'chat', hasApiKey: true, keyHint: '1234', supportsVision: index === 1,
     })) as SafeModel[];
     const change = vi.fn();
     const { container } = render(<AgentComposer draft="测试" onDraftChange={vi.fn()} isRunning={false}
@@ -39,8 +39,10 @@ describe('Composer run controls', () => {
     expect(send.textContent).toBe('');
     fireEvent.click(select);
     expect(screen.getByRole('listbox', { name: '选择模型' })).toBeTruthy();
+    expect(screen.getByRole('option', { name: /默认模型/ }).textContent).toContain('不支持图片');
     fireEvent.change(screen.getByRole('searchbox', { name: '搜索模型' }), { target: { value: '个人' } });
     expect(screen.queryByRole('option', { name: /默认模型/ })).toBeNull();
+    expect(screen.getByRole('option', { name: /个人模型/ }).textContent).toContain('支持图片');
     fireEvent.click(screen.getByRole('option', { name: /个人模型/ }));
     expect(change).toHaveBeenCalledWith(second);
   });

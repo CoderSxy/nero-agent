@@ -59,6 +59,7 @@ export class FileService {
     }
     const tempPath = join(workspaceBase(), 'temp', randomUUID());
     await mkdir(dirname(tempPath), { recursive: true });
+    let persisted = false;
     try {
       const handle = await open(tempPath, 'wx');
       try {
@@ -70,13 +71,14 @@ export class FileService {
       if (options.signal?.aborted) throw new FileServiceError(400, '上传已中断');
       await mkdir(dirname(hostPath), { recursive: true });
       await rename(tempPath, hostPath);
+      persisted = true;
       if (existed && data.byteLength < previousSize) {
         await workspaceQuota.release(auth.userId, previousSize - data.byteLength, 0);
       }
-      if (growth > 0 || newFiles > 0) await workspaceQuota.commit(auth.userId);
+      if (growth > 0 || newFiles > 0) await workspaceQuota.commit(auth.userId, growth, newFiles);
     } catch (error) {
       await unlink(tempPath).catch(() => undefined);
-      if (growth > 0 || newFiles > 0) {
+      if (!persisted && (growth > 0 || newFiles > 0)) {
         await workspaceQuota.releaseReserve(auth.userId, growth, newFiles).catch(() => undefined);
       }
       throw error;

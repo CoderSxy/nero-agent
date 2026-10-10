@@ -30,6 +30,21 @@ const personalFiles = [
 const usage = { usedBytes: 116, quotaBytes: 500 * 1024 * 1024, fileCount: 4 };
 
 describe('workspace file tree', () => {
+  it('shows uploaded files directly under uploads while preserving their real paths', async () => {
+    const path = 'uploads/132a8d7c-c0bf-4f4f-93e2-6e1f17a49abc/report.html';
+    listWorkspaceFiles.mockResolvedValue({ files: [
+      { path: 'uploads', type: 'directory', size: 18 },
+      { path: 'uploads/132a8d7c-c0bf-4f4f-93e2-6e1f17a49abc', type: 'directory', size: 18 },
+      { path, type: 'file', size: 18 },
+    ], usage: { usedBytes: 18, quotaBytes: 500 * 1024 * 1024, fileCount: 1 } });
+    const onOpenFile = vi.fn();
+    render(<WorkspaceFileTree source="personal" refreshVersion={0} onOpenFile={onOpenFile} />);
+    fireEvent.click(await screen.findByRole('button', { name: '展开 uploads' }));
+    expect(screen.queryByRole('button', { name: /展开 uploads\/132a8d7c/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: `打开 ${path}` }));
+    expect(onOpenFile).toHaveBeenCalledWith(path);
+  });
+
   it('expands nested folders and opens a file without downloading it', async () => {
     listWorkspaceFiles.mockResolvedValue({ files: personalFiles, usage });
     const onOpenFile = vi.fn();

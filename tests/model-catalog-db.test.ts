@@ -14,6 +14,7 @@ import {
 } from '../src/mastra/models/service';
 import { ModelCatalogError, type ModelInput, type ModelRef } from '../src/mastra/models/types';
 import { decryptApiKey } from '../src/mastra/models/crypto';
+import { updateRecord } from '../src/mastra/models/repository';
 
 const FIXTURE_ORIGIN = 'https://models.example.test';
 const FIXTURE_KEY = 'sk-test-1234';
@@ -77,6 +78,13 @@ test('model catalog enforces ownership, admin scope, and default invariants',
     const visionPublic = await updateModel('public', publicIds[0], admin, { supportsVision: true });
     assert.equal(visionPublic.supportsVision, true);
     assert.equal((await listSelectableModels(userB)).find(m => m.ref === publicModel.ref)?.supportsVision, true);
+    await updateRecord('public', publicIds[0], null, { catalogMetadata: {
+      contextWindow: 977000, maxOutputTokens: 128000, modality: 'multimodal',
+      providerName: '智谱 GLM',
+    } });
+    assert.deepEqual((await listSelectableModels(userB)).find(m => m.ref === publicModel.ref)?.catalogMetadata, {
+      contextWindow: 977000, maxOutputTokens: 128000, modality: 'multimodal', providerName: '智谱 GLM',
+    });
     await assertCode(updateModel('public', publicIds[0], userB, { supportsVision: false }), 'forbidden');
     await updateModel('public', publicIds[0], admin, { supportsVision: false });
 

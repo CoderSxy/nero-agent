@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight, File, FileCode2, FileImage, FileText, Folder
 import { formatBytes, WORKSPACE_FILE_MIME } from './attachment-types';
 import { deleteWorkspaceFiles, listWorkspaceFiles, type UserFileEntry, type WorkspaceUsage } from './client';
 import type { WorkspaceSource } from './workspace-files';
+import { workspaceDisplayEntries } from './workspace-display';
 
 const PROTECTED_TOP_ROOTS = new Set(['shared', 'uploads', 'projects', 'threads']);
 const PROTECTED_THREAD_LEAVES = new Set(['input', 'output', 'tmp']);
@@ -100,6 +101,7 @@ export function WorkspaceFileTree({ source, workspaceId, refreshVersion, onOpenF
     if (parentA === parentB && a.type !== b.type) return a.type === 'directory' ? -1 : 1;
     return a.path.localeCompare(b.path, 'zh');
   }), [entries]);
+  const displayEntries = useMemo(() => workspaceDisplayEntries(ordered, source), [ordered, source]);
 
   const summary = useMemo(() => selectionSummary(selectedPaths, entries), [selectedPaths, entries]);
   const confirmSummary = useMemo(
@@ -107,10 +109,8 @@ export function WorkspaceFileTree({ source, workspaceId, refreshVersion, onOpenF
     [pendingDelete, entries],
   );
 
-  function visible(entry: UserFileEntry) {
-    const parts = entry.path.split('/');
-    for (let i = 1; i < parts.length; i++) if (!expanded.has(parts.slice(0, i).join('/'))) return false;
-    return true;
+  function visible(ancestors: string[]) {
+    return ancestors.every(path => expanded.has(path));
   }
   function toggle(path: string) {
     setExpanded(previous => {
@@ -199,13 +199,14 @@ export function WorkspaceFileTree({ source, workspaceId, refreshVersion, onOpenF
     {error && <p role="alert" className="error">{error}</p>}
     {deleteFeedback && <p role="alert" className={deleteFeedback.includes('失败') ? 'error' : 'muted'}>{deleteFeedback}</p>}
     {!loading && !error && entries.length === 0 && <p className="muted">暂无文件</p>}
-    {!error && <ul className="workspace-file-list" aria-label="工作区目录树">{ordered.filter(visible).map(entry => {
+    {!error && <ul className="workspace-file-list" aria-label="工作区目录树">{displayEntries
+      .filter(item => visible(item.ancestors)).map(({ entry, depth }) => {
       const name = entry.path.split('/').at(-1);
       const isDirectory = entry.type === 'directory';
       const isExpanded = expanded.has(entry.path);
       const protectedPath = isProtectedWorkspacePath(entry.path);
       const showMenu = !selectionMode && !isDirectory && Boolean(onAttachFile || canManage);
-      return <li key={entry.path} style={{ paddingLeft: `${(entry.path.split('/').length - 1) * 14}px` }}
+      return <li key={entry.path} style={{ paddingLeft: `${depth * 14}px` }}
         className="workspace-file-row">
         {selectionMode && <input type="checkbox" aria-label={`选择 ${entry.path}`}
           checked={selectedPaths.has(entry.path)} disabled={protectedPath}

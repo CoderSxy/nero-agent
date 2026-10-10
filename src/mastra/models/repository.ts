@@ -1,6 +1,6 @@
 import type { Pool, PoolClient } from 'pg';
 import { getPool } from '../auth/db';
-import type { ApiMode, ModelScope } from './types';
+import type { ApiMode, CatalogMetadata, ModelScope } from './types';
 
 export type Queryable = Pick<Pool | PoolClient, 'query'>;
 
@@ -17,6 +17,7 @@ export type ModelRecord = {
   apiKeyCiphertext: string;
   enabled: boolean;
   supportsVision: boolean;
+  catalogMetadata: CatalogMetadata | null;
   isDefault: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -31,6 +32,7 @@ export type ModelColumns = {
   apiKeyCiphertext: string;
   enabled: boolean;
   supportsVision: boolean;
+  catalogMetadata?: CatalogMetadata | null;
   isDefault: boolean;
 };
 
@@ -45,6 +47,7 @@ type ModelRow = {
   api_key_ciphertext: string;
   enabled: boolean;
   supports_vision: boolean;
+  catalog_metadata: CatalogMetadata | null;
   is_default: boolean;
   created_at: Date;
   updated_at: Date;
@@ -57,12 +60,13 @@ const TABLES: Record<ModelScope, string> = {
 
 const SELECT_COLUMNS: Record<ModelScope, string> = {
   public: `id, NULL::uuid AS user_id, display_name, provider_id, model_id, base_url, api_mode,
-    api_key_ciphertext, enabled, supports_vision, is_default, created_at, updated_at`,
+    api_key_ciphertext, enabled, supports_vision, catalog_metadata, is_default, created_at, updated_at`,
   private: `id, user_id, display_name, provider_id, model_id, base_url, api_mode,
-    api_key_ciphertext, enabled, supports_vision, false AS is_default, created_at, updated_at`,
+    api_key_ciphertext, enabled, supports_vision, NULL::jsonb AS catalog_metadata,
+    false AS is_default, created_at, updated_at`,
 };
 
-const COLUMN_NAMES: Record<keyof Omit<ModelColumns, 'isDefault'>, string> = {
+const COLUMN_NAMES: Record<keyof Omit<ModelColumns, 'isDefault' | 'catalogMetadata'>, string> = {
   displayName: 'display_name',
   providerId: 'provider_id',
   modelId: 'model_id',
@@ -86,6 +90,7 @@ function toRecord(scope: ModelScope, row: ModelRow): ModelRecord {
     apiKeyCiphertext: row.api_key_ciphertext,
     enabled: row.enabled,
     supportsVision: row.supports_vision,
+    catalogMetadata: row.catalog_metadata,
     isDefault: row.is_default,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -181,13 +186,13 @@ export async function insertRecord(
       ? await db.query<ModelRow>(
           `INSERT INTO ${TABLES.public}
              (display_name, provider_id, model_id, base_url, api_mode, api_key_ciphertext, enabled,
-              supports_vision, is_default)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+              supports_vision, is_default, catalog_metadata)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
            RETURNING ${SELECT_COLUMNS.public}`,
           [
             columns.displayName, columns.providerId, columns.modelId, columns.baseUrl,
             columns.apiMode, columns.apiKeyCiphertext, columns.enabled, columns.supportsVision,
-            columns.isDefault,
+            columns.isDefault, columns.catalogMetadata ? JSON.stringify(columns.catalogMetadata) : null,
           ],
         )
       : await db.query<ModelRow>(
@@ -222,6 +227,10 @@ export async function updateRecord(
   if (scope === 'public' && changes.isDefault !== undefined) {
     values.push(changes.isDefault);
     assignments.push(`is_default = $${values.length}`);
+  }
+  if (scope === 'public' && changes.catalogMetadata !== undefined) {
+    values.push(changes.catalogMetadata ? JSON.stringify(changes.catalogMetadata) : null);
+    assignments.push(`catalog_metadata = $${values.length}`);
   }
   assignments.push('updated_at = now()');
 

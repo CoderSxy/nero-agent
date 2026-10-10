@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { RequestContext } from '@mastra/core/request-context';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { authContextFromUser } from '../src/mastra/auth/auth-context';
 import type { AuthUser } from '../src/mastra/auth/service';
 import { AttachmentService } from '../src/mastra/files/attachments';
@@ -401,8 +402,9 @@ test('processToolResult + processLLMRequest keep bytes off durable messages acro
   assert.doesNotMatch(durable, /imageBase64/);
   assert.match(durable, /workspace-attachment:/);
 
-  // Next LLM step (step>0): OM would see messageList — still clean — while processLLMRequest
-  // rehydrates media only into the non-persisted prompt.
+  // Next LLM step (step>0): OM sees only the clean messageList. The transient
+  // provider prompt must carry a real user image part, because OpenAI-compatible
+  // chat adapters JSON-stringify multimodal tool output.
   const prompt = [{
     role: 'tool' as const,
     content: [{
@@ -427,18 +429,42 @@ test('processToolResult + processLLMRequest keep bytes off durable messages acro
     retryCount: 0,
   } as never);
   assert.ok(llmResult && typeof llmResult === 'object' && 'prompt' in llmResult);
-  const rehydrated = JSON.stringify((llmResult as { prompt: unknown }).prompt);
-  assert.match(rehydrated, /iVBORw0KGgo/);
-  assert.match(rehydrated, /"type":"media"/);
+  const providerPrompt = (llmResult as { prompt: Array<{ role: string; content: unknown }> }).prompt;
+  const injected = providerPrompt.find(message => message.role === 'user');
+  assert.ok(injected);
+  assert.deepEqual(injected.content, [
+    { type: 'text', text: '以下是工具刚读取的图片附件 dot.png，请结合用户请求处理。' },
+    { type: 'file', data: pngB64, mediaType: 'image/png' },
+  ]);
+  assert.equal(providerPrompt.filter(message => message.role === 'user').length, 1);
 
   // Message list remains clean after rehydrate (prompt-only mutation).
   assert.doesNotMatch(JSON.stringify(messageList.get.all.db()), /iVBORw0KGgo/);
 
   // Explicit helper coverage for the rehydrate mapping.
-  const mapped = rehydratePromptImages(prompt, {
-    [toolCallId]: attachedFileModelOutputForTurn(rawResult),
-  });
-  assert.match(JSON.stringify(mapped), /iVBORw0KGgo/);
+  const mapped = rehydratePromptImages(prompt, { [toolCallId]: rawResult });
+  assert.deepEqual(mapped, providerPrompt);
+
+  let outbound: unknown;
+  const model = createOpenAICompatible({
+    name: 'test', baseURL: 'https://example.test/v1', apiKey: 'test',
+    fetch: async (_input, init) => {
+      outbound = JSON.parse(String(init?.body));
+      return new Response(JSON.stringify({
+        id: 'test', object: 'chat.completion', created: 0, model: 'test',
+        choices: [{ index: 0, message: { role: 'assistant', content: 'ok' }, finish_reason: 'stop' }],
+        usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+      }), { headers: { 'content-type': 'application/json' } });
+    },
+  }).chatModel('test');
+  await model.doGenerate({ prompt: providerPrompt as never, mode: { type: 'regular' } } as never);
+  const outboundMessages = (outbound as { messages: Array<{ role: string; content: unknown }> }).messages;
+  const imageMessage = outboundMessages.find(message => message.role === 'user');
+  assert.ok(imageMessage);
+  assert.deepEqual(imageMessage.content, [
+    { type: 'text', text: '以下是工具刚读取的图片附件 dot.png，请结合用户请求处理。' },
+    { type: 'image_url', image_url: { url: `data:image/png;base64,${pngB64}` } },
+  ]);
 
   stripStoredImageBytes(messageList as never);
   assert.doesNotMatch(JSON.stringify(messageList.get.all.db()), /iVBORw0KGgo/);

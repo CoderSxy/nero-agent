@@ -1,6 +1,7 @@
 import { lstat, readFile, realpath } from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
 import { join } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import type { AuthContext } from '../auth/auth-context';
 import { assertThreadOwned, ThreadGuardError, type ThreadLookup } from '../auth/thread-guard';
 import { ensureUserWorkspace } from '../workspace/manager';
@@ -65,6 +66,12 @@ type AgentWorkspaceResolver = () => Promise<{ filesystem: { basePath?: string } 
 
 const memoryStore: StoredRef[] = [];
 
+export async function hashWorkspaceFile(path: string): Promise<string> {
+  const hash = createHash('sha256');
+  for await (const chunk of createReadStream(path)) hash.update(chunk);
+  return `"${hash.digest('hex')}"`;
+}
+
 export class AttachmentService {
   constructor(
     private readonly lookup: ThreadLookup,
@@ -126,7 +133,9 @@ export class AttachmentService {
   async listForThread(auth: AuthContext, threadId: string): Promise<AttachmentRef[]> {
     await assertThreadOwned(auth, threadId, this.lookup);
     const records = await this.loadForThread(auth.userId, threadId);
-    return Promise.all(records.map(record => this.toRef(record)));
+    const refs: AttachmentRef[] = [];
+    for (const record of records) refs.push(await this.toRef(record));
+    return refs;
   }
 
   async readOwned(
@@ -140,7 +149,7 @@ export class AttachmentService {
     if (record.ownerId !== auth.userId || record.threadId !== threadId) {
       throw new ThreadGuardError(403, 'Access denied: thread belongs to a different resource');
     }
-    const live = await this.liveFile(auth, record);
+    const live = await this.liveFile(auth, record, true);
     const ref = this.refFrom(record, live.status);
     if (live.status === 'deleted' || !live.data) return { ref, data: Buffer.alloc(0) };
     return { ref, data: live.data };
@@ -176,7 +185,9 @@ export class AttachmentService {
     return removed;
   }
 
-  private async inspectExistingFile(auth: AuthContext, source: AttachmentSource, path: string) {
+  private async inspectExistingFile(
+    auth: AuthContext, source: AttachmentSource, path: string, includeData = false,
+  ) {
     if (source !== 'personal' && source !== 'agent') throw new FilePathError('工作区来源无效');
     if (source === 'agent' && !auth.roles.includes('admin')) {
       throw new FileServiceError(403, '无权访问工作区');
@@ -203,12 +214,12 @@ export class AttachmentService {
     } catch {
       throw new FilePathError();
     }
-    const data = await readFile(real);
+    const data = includeData ? await readFile(real) : undefined;
     return {
       name: rel.split('/').at(-1) ?? rel,
-      size: data.byteLength,
+      size: data?.byteLength ?? info.size,
       mimeType: mimeFromName(rel),
-      etag: readWorkspaceVersion(data),
+      etag: data ? readWorkspaceVersion(data) : await hashWorkspaceFile(real),
       hostPath: real,
       data,
     };
@@ -221,9 +232,9 @@ export class AttachmentService {
     return realpath(workspace.filesystem.basePath);
   }
 
-  private async liveFile(auth: AuthContext, record: StoredRef) {
+  private async liveFile(auth: AuthContext, record: StoredRef, includeData = false) {
     try {
-      const file = await this.inspectExistingFile(auth, record.source, record.path);
+      const file = await this.inspectExistingFile(auth, record.source, record.path, includeData);
       return {
         status: (file.etag === record.etag ? 'available' : 'changed') as AttachmentStatus,
         data: file.data,

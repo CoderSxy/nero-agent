@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, ChevronRight, File, Folder, X } from 'lucide-react';
 import { listWorkspaceFiles, type UserFileEntry } from './client';
 import type { WorkspaceSource } from './workspace-files';
+import { workspaceDisplayEntries, type DisplayEntry } from './workspace-display';
 
 export function WorkspaceFilePicker({ source, onConfirm, onClose }: {
   source: WorkspaceSource;
@@ -34,25 +35,24 @@ export function WorkspaceFilePicker({ source, onConfirm, onClose }: {
     if (parentA === parentB && a.type !== b.type) return a.type === 'directory' ? -1 : 1;
     return a.path.localeCompare(b.path, 'zh');
   }), [entries]);
+  const displayEntries = useMemo(() => workspaceDisplayEntries(ordered, source), [ordered, source]);
 
   const needle = query.trim().toLocaleLowerCase();
   const filtered = useMemo(() => {
-    if (!needle) return ordered;
-    return ordered.filter(entry => entry.path.toLocaleLowerCase().includes(needle)
+    if (!needle) return displayEntries;
+    return displayEntries.filter(({ entry }) => entry.path.toLocaleLowerCase().includes(needle)
       || (entry.path.split('/').at(-1) ?? '').toLocaleLowerCase().includes(needle));
-  }, [ordered, needle]);
+  }, [displayEntries, needle]);
 
-  function visible(entry: UserFileEntry) {
+  function visible({ entry, ancestors }: DisplayEntry<UserFileEntry>) {
     if (needle) {
       if (entry.type === 'directory') {
-        return filtered.some(item => item.type === 'file' && (item.path === entry.path
-          || item.path.startsWith(`${entry.path}/`)));
+        return filtered.some(item => item.entry.type === 'file' && (item.entry.path === entry.path
+          || item.entry.path.startsWith(`${entry.path}/`)));
       }
       return true;
     }
-    const parts = entry.path.split('/');
-    for (let i = 1; i < parts.length; i++) if (!expanded.has(parts.slice(0, i).join('/'))) return false;
-    return true;
+    return ancestors.every(path => expanded.has(path));
   }
 
   function toggleExpand(path: string) {
@@ -92,11 +92,10 @@ export function WorkspaceFilePicker({ source, onConfirm, onClose }: {
         {error && <p role="alert" className="error">{error}</p>}
         {!loading && !error && filtered.length === 0 && <p className="muted">暂无文件</p>}
         {!error && <ul className="workspace-file-picker-list" aria-label="可选文件">
-          {filtered.filter(visible).map(entry => {
+          {filtered.filter(visible).map(({ entry, depth }) => {
             const name = entry.path.split('/').at(-1) ?? entry.path;
             const isDirectory = entry.type === 'directory';
             const isExpanded = expanded.has(entry.path) || Boolean(needle);
-            const depth = entry.path.split('/').length - 1;
             return <li key={entry.path} style={{ paddingLeft: `${depth * 14}px` }}>
               {isDirectory ? <button type="button" aria-label={`${isExpanded ? '收起' : '展开'} ${entry.path}`}
                 aria-expanded={isExpanded} onClick={() => toggleExpand(entry.path)}>

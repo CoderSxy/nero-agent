@@ -1,5 +1,6 @@
 import type { AuthUser } from '../auth/service';
 import { decryptApiKey, encryptApiKey, keyHint } from './crypto';
+import { GATEWAY_BASE_URL } from './gateway-sync';
 import { assertAllowedEndpoint, normalizeModelEndpoint } from './endpoint-policy';
 import {
   clearPublicDefault,
@@ -143,6 +144,17 @@ function hintFor(ciphertext: string): string | null {
   }
 }
 
+export function effectiveModelSupportsVision(
+  record: Pick<ModelRecord, 'baseUrl' | 'supportsVision' | 'catalogMetadata'>,
+): boolean {
+  if (!record.supportsVision) return false;
+  if (record.baseUrl !== GATEWAY_BASE_URL) return true;
+  const metadata = record.catalogMetadata;
+  return metadata?.modality === 'multimodal'
+    && metadata.imageSupport === true
+    && metadata.imageInputConflict !== true;
+}
+
 function toSafeModel(record: ModelRecord): SafeModel {
   const safe: SafeModel = {
     ref: toModelRef(record.scope, record.id),
@@ -155,7 +167,8 @@ function toSafeModel(record: ModelRecord): SafeModel {
     enabled: record.enabled,
     hasApiKey: record.apiKeyCiphertext.length > 0,
     keyHint: record.apiKeyCiphertext ? hintFor(record.apiKeyCiphertext) : null,
-    supportsVision: record.supportsVision === true,
+    supportsVision: effectiveModelSupportsVision(record),
+    catalogMetadata: record.catalogMetadata,
   };
   if (record.scope === 'public') safe.isDefault = record.isDefault;
   return safe;

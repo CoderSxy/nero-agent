@@ -4,6 +4,21 @@ export type ModelRef = `public:${string}` | `private:${string}`;
 
 export type ApiMode = 'chat' | 'responses';
 
+export type CatalogMetadata = {
+  contextWindow?: number;
+  maxOutputTokens?: number;
+  reasoningEfforts?: string[];
+  defaultReasoningEffort?: string;
+  creditMultiplier?: number;
+  creditLabel?: string;
+  modality?: 'text' | 'multimodal' | 'unverified' | 'router';
+  providerName?: string;
+  inferenceOnly?: boolean;
+  description?: string;
+  imageInputConflict?: boolean;
+  imageSupport?: boolean | null;
+};
+
 export type SafeModel = {
   ref: ModelRef;
   scope: ModelScope;
@@ -16,6 +31,7 @@ export type SafeModel = {
   hasApiKey: boolean;
   keyHint: string | null;
   supportsVision: boolean;
+  catalogMetadata?: CatalogMetadata | null;
   isDefault?: boolean;
 };
 

@@ -33,7 +33,7 @@ type ToolInvocationPart = {
   providerMetadata?: { mastra?: { modelOutput?: unknown } };
 };
 
-type PendingImageOutputs = Record<string, unknown>;
+type PendingImageOutputs = Record<string, AttachedFileToolResult>;
 
 function pendingMap(state: Record<string, unknown>): PendingImageOutputs {
   const existing = state[PENDING_IMAGE_OUTPUTS_KEY];
@@ -57,7 +57,7 @@ function containsImagePayload(value: unknown): boolean {
 
 /**
  * Durable storage never retains raw image bytes. The current-turn model still
- * receives multimodal media via processLLMRequest (request-scoped state only).
+ * receives a native user image part via processLLMRequest (request-scoped state only).
  *
  * Why processLLMRequest: Mastra writes providerMetadata.mastra.modelOutput after
  * processToolResult, and Observational Memory can observe/persist on step>0
@@ -74,7 +74,7 @@ export const attachmentPersistenceProcessor: Processor = {
 
     const turnOutput = attachedFileModelOutputForTurn(typed);
     if (turnOutput != null) {
-      pendingMap(state)[toolCallId] = turnOutput;
+      pendingMap(state)[toolCallId] = typed;
     }
 
     const sanitized = sanitizeAttachedFileForPersistence(typed, turnOutput);
@@ -123,20 +123,35 @@ export function rehydratePromptImages(
   prompt: PromptMessage[],
   pending: PendingImageOutputs,
 ): PromptMessage[] {
-  return prompt.map(message => {
-    if (message.role !== 'tool' || !Array.isArray(message.content)) return message;
-    return {
-      ...message,
-      content: message.content.map((part: unknown) => {
-        if (!part || typeof part !== 'object') return part;
-        const typed = part as ToolResultPart;
-        if (typed.type !== 'tool-result') return part;
-        const replacement = pending[typed.toolCallId];
-        if (replacement == null) return part;
-        return { ...typed, output: replacement };
-      }),
-    };
-  });
+  const result: PromptMessage[] = [];
+  const imageMessages: PromptMessage[] = [];
+  const flushImages = () => {
+    result.push(...imageMessages);
+    imageMessages.length = 0;
+  };
+  for (const message of prompt) {
+    if (message.role !== 'tool') flushImages();
+    result.push(message);
+    if (message.role !== 'tool' || !Array.isArray(message.content)) continue;
+    for (const part of message.content) {
+      if (!part || typeof part !== 'object') continue;
+      const typed = part as ToolResultPart;
+      if (typed.type !== 'tool-result') continue;
+      const image = pending[typed.toolCallId];
+      if (!image?.imageBase64 || !image.mimeType.startsWith('image/')) continue;
+      // OpenAI-compatible chat serializes tool `content` as JSON text. A user
+      // file part becomes the image_url payload that the vision model accepts.
+      imageMessages.push({
+        role: 'user',
+        content: [
+          { type: 'text', text: `以下是工具刚读取的图片附件 ${image.name}，请结合用户请求处理。` },
+          { type: 'file', data: image.imageBase64, mediaType: image.mimeType },
+        ],
+      });
+    }
+  }
+  flushImages();
+  return result;
 }
 
 export function stripStoredImageBytes(messageList: {

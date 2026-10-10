@@ -258,7 +258,7 @@ test('reconcileForList replaces stale over-count when no in-flight reserve', asy
     const id = '15151515-1515-4151-8151-151515151515';
     await quota.reserve(id, 400, 2);
     // Simulate crash after reserve: settle inflight without file on disk, leaving stale bytes.
-    await quota.commit(id);
+    await quota.commit(id, 400, 2);
     assert.equal(quota.hasInflightReserve(id), false);
     assert.equal((await quota.usage(id)).usedBytes, 400);
     const usage = await quota.reconcileForList(id, 0, 0);
@@ -281,7 +281,33 @@ test('reconcileForList keeps in-flight reserve (max-only) and does not wipe it',
     const usage = await quota.reconcileForList(id, 0, 0);
     assert.equal(usage.usedBytes, 300);
     assert.equal(usage.fileCount, 1);
-    await quota.commit(id);
+    await quota.commit(id, 300, 1);
+  } finally {
+    restoreEnv(env);
+  }
+});
+
+test('disk reconcile retains other uploads still reserved before they reach disk', async () => {
+  const env = snapshotEnv(['DATABASE_URL', 'WORKSPACE_ROOT', 'WORKSPACE_DEFAULT_QUOTA_BYTES']);
+  delete process.env.DATABASE_URL;
+  process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'quota-overlap-'));
+  process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = '100';
+  const id = '17171717-1717-4171-8171-171717171717';
+  try {
+    const quota = new WorkspaceQuota();
+    await quota.reserve(id, 40, 1);
+    await quota.reserve(id, 40, 1);
+    const root = workspaceRoot(id);
+    await mkdir(root, { recursive: true });
+    await writeFile(join(root, 'first.bin'), Buffer.alloc(40));
+    await quota.commit(id, 40, 1);
+    const usage = await quota.reconcileFromDisk(id);
+    assert.equal(usage.usedBytes, 80);
+    assert.equal(usage.fileCount, 2);
+    await assert.rejects(() => quota.reserve(id, 30, 1), QuotaExceededError);
+    await writeFile(join(root, 'second.bin'), Buffer.alloc(40));
+    await quota.commit(id, 40, 1);
+    assert.equal((await quota.reconcileFromDisk(id)).usedBytes, 80);
   } finally {
     restoreEnv(env);
   }
@@ -296,6 +322,7 @@ test('reconcileFromDisk recounts regular files and skips symlinks outside the us
     const id = '13131313-1313-4131-8131-131313131313';
     const quota = new WorkspaceQuota();
     await quota.reserve(id, 999, 9);
+    await quota.commit(id, 999, 9);
     const root = workspaceRoot(id);
     await mkdir(join(root, 'uploads'), { recursive: true });
     await writeFile(join(root, 'uploads', 'a.txt'), Buffer.alloc(7));
@@ -346,6 +373,49 @@ test('database concurrent reserves that together exceed quota only commit one',
     assert.equal((await quota.usage(created.id)).usedBytes, 600);
   } finally {
     await getPool().query('DELETE FROM app_users WHERE id = $1', [created.id]);
+    if (DATABASE_URL === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = DATABASE_URL;
+  }
+});
+
+test('database disk reconcile preserves a reservation made by another quota instance',
+  { skip: !DATABASE_URL }, async () => {
+  process.env.DATABASE_URL = DATABASE_URL;
+  const { getPool } = await import('../src/mastra/auth/db');
+  const { createUser } = await import('../src/mastra/auth/service');
+  const previousRoot = process.env.WORKSPACE_ROOT;
+  process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'quota-db-overlap-'));
+  const created = await createUser({
+    email: `quota-overlap-${randomUUID()}@example.test`, displayName: 'Quota',
+    password: 'correct horse battery staple', role: 'user',
+  });
+  const first = new WorkspaceQuota();
+  const second = new WorkspaceQuota();
+  try {
+    await getPool().query(
+      `INSERT INTO app_workspaces (user_id, workspace_id, root_path, quota_bytes)
+       VALUES ($1, $2, $3, 100)`,
+      [created.id, `ws_${created.id}`, workspaceRoot(created.id)],
+    );
+    await first.reserve(created.id, 40, 1);
+    await second.reserve(created.id, 40, 1);
+    const root = workspaceRoot(created.id);
+    await mkdir(root, { recursive: true });
+    await writeFile(join(root, 'first.bin'), Buffer.alloc(40));
+    await first.commit(created.id, 40, 1);
+    assert.equal((await first.reconcileFromDisk(created.id)).usedBytes, 80);
+    const state = await getPool().query(
+      'SELECT used_bytes, pending_bytes, pending_files FROM app_workspaces WHERE user_id = $1',
+      [created.id],
+    );
+    assert.equal(Number(state.rows[0].used_bytes), 80);
+    assert.equal(Number(state.rows[0].pending_bytes), 40);
+    assert.equal(Number(state.rows[0].pending_files), 1);
+    await assert.rejects(() => second.reserve(created.id, 30, 1), QuotaExceededError);
+  } finally {
+    await getPool().query('DELETE FROM app_users WHERE id = $1', [created.id]);
+    if (previousRoot === undefined) delete process.env.WORKSPACE_ROOT;
+    else process.env.WORKSPACE_ROOT = previousRoot;
     if (DATABASE_URL === undefined) delete process.env.DATABASE_URL;
     else process.env.DATABASE_URL = DATABASE_URL;
   }

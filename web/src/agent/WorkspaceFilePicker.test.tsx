@@ -16,6 +16,22 @@ const files = [
 ];
 
 describe('WorkspaceFilePicker', () => {
+  it('lists uploaded file names without exposing their storage folders', async () => {
+    const path = 'uploads/132a8d7c-c0bf-4f4f-93e2-6e1f17a49abc/report.html';
+    listWorkspaceFiles.mockResolvedValue({ files: [
+      { path: 'uploads', type: 'directory', size: 18 },
+      { path: 'uploads/132a8d7c-c0bf-4f4f-93e2-6e1f17a49abc', type: 'directory', size: 18 },
+      { path, type: 'file', size: 18 },
+    ] });
+    const onConfirm = vi.fn();
+    render(<WorkspaceFilePicker source="personal" onConfirm={onConfirm} onClose={vi.fn()} />);
+    fireEvent.click(await screen.findByRole('button', { name: '展开 uploads' }));
+    expect(screen.queryByRole('button', { name: /展开 uploads\/132a8d7c/ })).toBeNull();
+    fireEvent.click(screen.getByRole('checkbox', { name: `选择 ${path}` }));
+    fireEvent.click(screen.getByRole('button', { name: '确认' }));
+    expect(onConfirm).toHaveBeenCalledWith([path]);
+  });
+
   it('lists files with tree sorting, expands directories, and searches by path or name', async () => {
     listWorkspaceFiles.mockResolvedValue({ files });
     render(<WorkspaceFilePicker source="personal" onConfirm={vi.fn()} onClose={vi.fn()} />);

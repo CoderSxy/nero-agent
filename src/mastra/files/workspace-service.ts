@@ -53,6 +53,8 @@ export class WorkspaceFileService {
     }
     const tempPath = join(workspaceBase(), 'temp', randomUUID());
     await mkdir(dirname(tempPath), { recursive: true });
+    let persisted = false;
+    let committed = false;
     try {
       const handle = await open(tempPath, 'wx');
       try {
@@ -65,13 +67,27 @@ export class WorkspaceFileService {
       await mkdir(dirname(hostPath), { recursive: true });
       await assertExistingRealPath(root, dirname(hostPath));
       await rename(tempPath, hostPath);
-      await workspaceQuota.commit(auth.userId);
-      await workspaceQuota.reconcileFromDisk(auth.userId);
+      persisted = true;
+      await workspaceQuota.commit(auth.userId, data.byteLength, 1);
+      committed = true;
     } catch (error) {
       await unlink(tempPath).catch(() => undefined);
-      await workspaceQuota.releaseReserve(auth.userId, data.byteLength, 1).catch(() => undefined);
+      if (persisted && !committed) {
+        try {
+          await unlink(hostPath);
+          persisted = false;
+        } catch { /* Keep the reserve charged if the file could not be removed. */ }
+      }
+      if (!persisted) {
+        await workspaceQuota.releaseReserve(auth.userId, data.byteLength, 1).catch(async () => {
+          await workspaceQuota.reconcileFromDisk(auth.userId).catch(() => undefined);
+        });
+      }
       throw error;
     }
+    // The committed reservation already charges this file. A failed audit must not
+    // turn a persisted upload into an apparent failure or release its quota.
+    await workspaceQuota.reconcileFromDisk(auth.userId).catch(() => undefined);
     return {
       source: 'personal',
       path: relativePath,
@@ -86,9 +102,9 @@ export class WorkspaceFileService {
     const root = await realpath(await ensureUserWorkspace(auth));
     const files: FileListEntry[] = [];
     await walkWorkspace(root, root, files);
-    const regular = files.filter(entry => entry.type === 'file');
-    const usedBytes = regular.reduce((sum, entry) => sum + entry.size, 0);
-    const usage = await workspaceQuota.reconcileForList(auth.userId, usedBytes, regular.length);
+    // Re-scan while holding the quota row lock. The tree traversal above can race
+    // a commit in another server process and must not replace its charged bytes.
+    const usage = await workspaceQuota.reconcileFromDisk(auth.userId);
     return {
       files,
       usage: { usedBytes: usage.usedBytes, quotaBytes: usage.quotaBytes, fileCount: usage.fileCount },

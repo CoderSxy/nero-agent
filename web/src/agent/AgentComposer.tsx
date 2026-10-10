@@ -235,7 +235,11 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
                   onClick={() => { onModelChange?.(model.ref); setOpen(false); }}>
                   <span className="composer-model-avatar" aria-hidden="true">{model.providerId.slice(0, 1).toUpperCase()}</span>
                   <span className="composer-model-detail"><strong>{model.displayName}</strong>
-                    <small>{model.providerId} / {model.modelId}</small></span>
+                    <small>{model.providerId} / {model.modelId}</small>
+                    <small>{model.supportsVision ? '支持图片'
+                      : (model.catalogMetadata?.modality === 'unverified' || model.catalogMetadata?.imageSupport === null)
+                        ? '图片待核实' : '不支持图片'}
+                      {model.catalogMetadata?.contextWindow ? ` · 上下文 ${Math.round(model.catalogMetadata.contextWindow / 1000)}K` : ''}</small></span>
                   {model.isDefault && <span className="composer-model-default">默认</span>}
                   {model.ref === modelRef && <Check size={15} aria-hidden="true" />}
                 </button>)}

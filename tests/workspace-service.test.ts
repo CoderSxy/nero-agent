@@ -105,6 +105,47 @@ test('uploads that exceed workspace quota return WORKSPACE_QUOTA_EXCEEDED', asyn
   });
 });
 
+test('a post-rename reconciliation failure keeps the persisted file charged', async () => {
+  await withWorkspace(async () => {
+    const id = 'acacacac-acac-4aca-8aca-acacacacacac';
+    const auth = authContextFromUser(user(id));
+    const service = new WorkspaceFileService();
+    const original = workspaceQuota.reconcileFromDisk;
+    workspaceQuota.reconcileFromDisk = async () => { throw new Error('scan failed'); };
+    try {
+      const uploaded = await service.upload(auth, new File(['hello'], 'note.txt'));
+      assert.ok(uploaded.path.endsWith('/note.txt'));
+    } finally {
+      workspaceQuota.reconcileFromDisk = original;
+    }
+    assert.equal((await workspaceQuota.usage(id)).usedBytes, 5);
+    assert.equal((await workspaceQuota.usage(id)).fileCount, 1);
+    const listed = await service.list(auth);
+    assert.equal(listed.files.filter(item => item.type === 'file' && item.path.endsWith('/note.txt')).length, 1);
+    assert.equal((await workspaceQuota.usage(id)).usedBytes, 5);
+    assert.equal((await workspaceQuota.usage(id)).fileCount, 1);
+  });
+});
+
+test('a failed quota commit removes a newly persisted upload and releases its reserve', async () => {
+  await withWorkspace(async () => {
+    const id = 'bcbcbcbc-bcbc-4bcb-8bcb-bcbcbcbcbcbc';
+    const auth = authContextFromUser(user(id));
+    const service = new WorkspaceFileService();
+    const original = workspaceQuota.commit;
+    workspaceQuota.commit = async () => { throw new Error('commit failed'); };
+    try {
+      await assert.rejects(() => service.upload(auth, new File(['hello'], 'note.txt')), /commit failed/);
+    } finally {
+      workspaceQuota.commit = original;
+    }
+    const listed = await service.list(auth);
+    assert.equal(listed.files.filter(item => item.type === 'file' && item.path.endsWith('/note.txt')).length, 0);
+    assert.equal((await workspaceQuota.usage(id)).usedBytes, 0);
+    assert.equal((await workspaceQuota.usage(id)).fileCount, 0);
+  });
+});
+
 test('list reconcile does not drop reserved-but-not-yet-on-disk quota', async () => {
   await withWorkspace(async () => {
     process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = '50';

@@ -12,7 +12,7 @@ import { authContextFromUser } from '../src/mastra/auth/auth-context';
 import type { AuthUser } from '../src/mastra/auth/service';
 import { FilePathError } from '../src/mastra/files/policy';
 import { FileServiceError } from '../src/mastra/files/service';
-import { AttachmentService, messageLookupFromRecall } from '../src/mastra/files/attachments';
+import { AttachmentService, hashWorkspaceFile, messageLookupFromRecall } from '../src/mastra/files/attachments';
 import * as fileRoutes from '../src/mastra/files/routes';
 import { WorkspaceFileService } from '../src/mastra/files/workspace-service';
 import { ThreadGuardError } from '../src/mastra/auth/thread-guard';
@@ -105,6 +105,15 @@ function service(agentRoot?: string) {
       : undefined,
   });
 }
+
+test('streamed workspace hash matches the attachment version for a large file', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'attachment-hash-'));
+  const path = join(root, 'large.bin');
+  const bytes = Buffer.alloc(12 * 1024 * 1024, 71);
+  await writeFile(path, bytes);
+  const { readWorkspaceVersion } = await import('../src/mastra/files/workspace-editor');
+  assert.equal(await hashWorkspaceFile(path), readWorkspaceVersion(bytes));
+});
 
 test('selecting the same workspace file twice is idempotent and does not copy or grow usage', async () => {
   await withMemory(async () => {

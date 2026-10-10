@@ -150,6 +150,36 @@ test('admin sees create/edit/replace-key/enable/default/delete controls and call
   assert.ok(calls.some(call => call.method === 'DELETE' && call.url === `/model-catalog/public/${id}`));
 });
 
+test('admin model list shows synchronized catalog metadata and image capability', async () => {
+  const { doc } = await openPage(() => response(200, { models: [{ ...PUBLIC_MODEL, supportsVision: true,
+    catalogMetadata: { contextWindow: 1000000, maxOutputTokens: 131072,
+      reasoningEfforts: ['low', 'high'], defaultReasoningEffort: 'high',
+      creditMultiplier: 0.79, modality: 'multimodal', inferenceOnly: true, providerName: '智谱 GLM' } }] }), 'admin-token');
+  const row = doc.querySelector('tr[data-ref]')!;
+  assert.match(row.textContent ?? '', /977K/);
+  assert.match(row.textContent ?? '', /128K/);
+  assert.match(row.textContent ?? '', /low/);
+  assert.match(row.textContent ?? '', /x0.79/);
+  assert.match(row.textContent ?? '', /多模态/);
+  assert.match(row.textContent ?? '', /仅推理/);
+  assert.match(row.textContent ?? '', /智谱 GLM/);
+  assert.match(row.textContent ?? '', /支持图片/);
+});
+
+test('gateway model image capability is managed by sync rather than the edit checkbox', async () => {
+  const gatewayModel = { ...PUBLIC_MODEL, baseUrl: 'https://api.nerosun.cn/v1',
+    catalogMetadata: { modality: 'text', imageSupport: false } };
+  const { doc, dom, calls } = await openPage(call => call.method === 'GET'
+    ? response(200, { models: [gatewayModel] }) : response(200, { model: gatewayModel }), 'admin-token');
+  (doc.querySelector('[data-action="edit"]') as HTMLElement).click();
+  const form = doc.querySelector('[data-form="edit"]') as HTMLFormElement;
+  assert.equal((form.elements.namedItem('supportsVision') as HTMLInputElement).disabled, true);
+  form.dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
+  await flush();
+  const patch = calls.find(call => call.method === 'PATCH');
+  assert.equal('supportsVision' in JSON.parse(patch!.body!), false);
+});
+
 test('login stores the token per tab and loads the list; edit submits a PATCH without apiKey', async () => {
   const { dom, calls, doc } = await openPage(call => {
     if (call.url === '/auth/login') return response(200, { token: 'fresh', user: { id: 'u', roles: ['admin'] } });
@@ -209,4 +239,26 @@ test('domestic catalog sync previews differences and submits only selected edite
   const applied = calls.find(call => call.url === '/model-catalog/public/sync/apply');
   assert.deepEqual(JSON.parse(applied!.body!), { items: [{ modelId: 'glm-5.2', displayName: '新 GLM' }], managementToken: 'wbt_readonly_example_token_123456789' });
   assert.match(doc.body.textContent ?? '', /已同步 1 个公共模型/);
+});
+
+test('catalog sync can refresh existing model capabilities with no new model selected', async () => {
+  const { calls, doc, dom } = await openPage(call => {
+    if (call.url.endsWith('/sync/preview')) return response(200, {
+      source: '已有网关模型',
+      incoming: [{ modelId: 'glm-5.3', displayName: 'GLM-5.3', status: 'existing', imageSupport: true }],
+      missing: [],
+    });
+    if (call.url.endsWith('/sync/apply')) return response(200, { created: 0, updated: 1 });
+    return response(200, { models: [PUBLIC_MODEL] });
+  }, 'admin-token');
+  const input = doc.querySelector('input[aria-label="模型中心只读管理 API Token"]') as HTMLInputElement;
+  input.value = 'wbt_readonly_example_token_123456789';
+  input.dispatchEvent(new dom.window.Event('input'));
+  (doc.querySelector('[data-action="preview-sync"]') as HTMLElement).click();
+  await flush();
+  (doc.querySelector('[data-action="apply-sync"]') as HTMLElement).click();
+  await flush();
+  const call = calls.find(item => item.url.endsWith('/sync/apply'));
+  assert.deepEqual(JSON.parse(call!.body!), { items: [], managementToken: 'wbt_readonly_example_token_123456789' });
+  assert.match(doc.body.textContent ?? '', /更新 1 个已有模型/);
 });

@@ -4,7 +4,7 @@ import { trustedAuth } from '../auth/auth-context';
 import type { ThreadLookup } from '../auth/thread-guard';
 import type { Mastra } from '@mastra/core/mastra';
 import type { RequestContext } from '@mastra/core/request-context';
-import { findAuthorizedModel } from '../models/service';
+import { effectiveModelSupportsVision, findAuthorizedModel } from '../models/service';
 import { resolveSelectedModel, trustedUserFrom } from '../models/resolver';
 import { AttachmentService, type AttachmentStatus } from './attachments';
 import { maxFileSizeBytes } from './policy';
@@ -54,7 +54,7 @@ async function defaultModelSupportsVision(requestContext: RequestContext): Promi
   const user = trustedUserFrom(requestContext);
   const { ref } = await resolveSelectedModel(requestContext, 'chat');
   const record = await findAuthorizedModel(ref, user);
-  return record.supportsVision === true;
+  return effectiveModelSupportsVision(record);
 }
 
 export type AttachedFileToolResult = {

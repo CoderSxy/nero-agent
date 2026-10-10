@@ -70,3 +70,24 @@ test('a larger edit respects the user workspace quota', async () => {
     else process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = previousQuota;
   }
 });
+
+test('successful growing edit settles its quota reservation', async () => {
+  const { filesystem } = await fixture();
+  const userId = '44444444-4444-4444-8444-444444444444';
+  const previousQuota = process.env.WORKSPACE_DEFAULT_QUOTA_BYTES;
+  const previousRoot = process.env.WORKSPACE_ROOT;
+  process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = '100';
+  process.env.WORKSPACE_ROOT = filesystem.basePath;
+  try {
+    await workspaceQuota.reconcileUsage(userId, 6, 1);
+    await saveWorkspaceText(filesystem, 'note.md', 'longer text',
+      readWorkspaceVersion(Buffer.from('before')), userId);
+    assert.equal(workspaceQuota.hasInflightReserve(userId), false);
+    assert.equal((await workspaceQuota.usage(userId)).usedBytes, 11);
+  } finally {
+    if (previousQuota === undefined) delete process.env.WORKSPACE_DEFAULT_QUOTA_BYTES;
+    else process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = previousQuota;
+    if (previousRoot === undefined) delete process.env.WORKSPACE_ROOT;
+    else process.env.WORKSPACE_ROOT = previousRoot;
+  }
+});

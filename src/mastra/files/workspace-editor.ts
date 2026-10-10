@@ -83,9 +83,10 @@ export async function saveWorkspaceText(
     }
     try { await filesystem.writeFile(path, next); }
     catch (error) {
-      if (userId && growth) await workspaceQuota.release(userId, growth, 0);
+      if (userId && growth) await workspaceQuota.releaseReserve(userId, growth, 0);
       throw error;
     }
+    if (userId && growth) await workspaceQuota.commit(userId, growth, 0);
     if (userId && next.length < current.length) await workspaceQuota.release(userId, current.length - next.length, 0);
     return readWorkspaceVersion(next);
   });
