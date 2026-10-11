@@ -1,0 +1,22 @@
+web/src/agent/history-search-index.ts
+  s_7509238bd7e4b7::t_d7e1cdb10ebde1 137
+  s_7509238bd7e4b7::t_3585c156584dc4 94,96-101,104-106
+  s_7509238bd7e4b7::t_163d44cb04e798 167
+  s_7509238bd7e4b7::t_7bd15cf066e810 107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "589fc14053052471b4a70e21801a41c3cea2e04c",
+  "prompts": {},
+  "sessions": {
+    "s_7509238bd7e4b7": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "184f2af9-6c46-4bec-9fee-0bc96b1234f6",
+        "model": "composer-2.5-fast"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
