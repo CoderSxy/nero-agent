@@ -1,0 +1,20 @@
+web/src/agent/history-search-index.ts
+  s_3122f2c32f77ac::t_256333c70a838b 41-42,44
+  s_3122f2c32f77ac::t_30a10eb4360961 59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "680f700a64e8339a869e16e12c5db44d3a2b5914",
+  "prompts": {},
+  "sessions": {
+    "s_3122f2c32f77ac": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "27c7d7a8-7e35-4494-add4-ce1957c3fe6f",
+        "model": "composer-2.5-fast"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
