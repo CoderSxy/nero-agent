@@ -1,0 +1,21 @@
+web/src/agent/use-history-search.ts
+  s_d7e221de427f65::t_89bb28027f3c6e 252
+web/src/agent/use-history-search.test.tsx
+  s_d7e221de427f65::t_7bd105f722ac83 250-287
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fabbf72791dce6e92790cb22e9b69fe3aa80f984",
+  "prompts": {},
+  "sessions": {
+    "s_d7e221de427f65": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ce14b2dd-db4c-476d-bb35-57f6f46ed0e5",
+        "model": "composer-2.5-fast"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
