@@ -1,0 +1,22 @@
+web/src/agent/history-search-index.ts
+  s_3b0488ccd6ccda::t_e281b78901157d 48
+web/src/agent/history-search-index.test.ts
+  s_3b0488ccd6ccda::t_4fe19ccba0bcf6 37
+  s_3b0488ccd6ccda::t_84850f7a65ac33 101
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "111020d2e0d046d1e457801b70e3332bd713aee7",
+  "prompts": {},
+  "sessions": {
+    "s_3b0488ccd6ccda": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9591083d-b97e-41f5-b38b-bdf24070ec9a",
+        "model": "composer-2.5-fast"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
