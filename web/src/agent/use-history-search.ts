@@ -249,9 +249,7 @@ export function useHistorySearch(options: {
   }, [recentStatus, runRecentBatch]);
 
   const cancelRecent = useCallback(() => {
-    if (!fullLoadActiveRef.current) {
-      generationRef.current += 1;
-    }
+    generationRef.current += 1;
     setRecentStatus('idle');
     setRecentProgress({ completed: 0, total: 0 });
     setRecentFailedCount(0);

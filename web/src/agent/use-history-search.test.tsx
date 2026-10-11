@@ -247,6 +247,44 @@ describe('useHistorySearch', () => {
     expect(hook2.result.current.documents).toHaveLength(0);
   });
 
+  it('does not apply in-flight loads from previous user after account switch', async () => {
+    const threadsA = makeThreads(2, 'user-a', 'user-a-thread');
+    const threadsB = makeThreads(2, 'user-b', 'user-b-thread');
+    let resolveLoads: (() => void) | undefined;
+    const block = new Promise<void>(resolve => {
+      resolveLoads = resolve;
+    });
+
+    loadThread.mockImplementation(async (threadId: string) => {
+      await block;
+      const thread = [...threadsA, ...threadsB].find(t => t.id === threadId);
+      if (!thread) throw new Error('missing');
+      return threadLoadResult(thread);
+    });
+
+    const cache = createHistorySearchCache();
+    const { result, rerender } = renderHook(
+      ({ userId, threads }) => useHistorySearch({ userId, threads, cache, loadThread }),
+      { initialProps: { userId: 'user-a', threads: threadsA } },
+    );
+
+    act(() => result.current.ensureRecent());
+    expect(result.current.recentStatus).toBe('loading');
+
+    rerender({ userId: 'user-b', threads: threadsB });
+    expect(result.current.documents).toHaveLength(0);
+
+    resolveLoads?.();
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 20));
+    });
+    expect(result.current.documents.some(d => threadsA.some(t => t.id === d.threadId))).toBe(false);
+
+    act(() => result.current.ensureRecent());
+    await waitFor(() => expect(result.current.recentStatus).toBe('ready'));
+    expect(result.current.documents.every(d => threadsB.some(t => t.id === d.threadId))).toBe(true);
+  });
+
   it('discards previous user documents on account switch', async () => {
     const threadsA = makeThreads(2, 'user-a', 'user-a-thread');
     const threadsB = makeThreads(2, 'user-b', 'user-b-thread');
