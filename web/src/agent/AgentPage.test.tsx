@@ -99,6 +99,7 @@ describe('Agent page model selection', () => {
   it('connects both bounded resize handles to the page layout', () => {
     const { container } = renderPage();
     const left = screen.getByRole('separator', { name: '调整左侧面板宽度' });
+    fireEvent.click(screen.getByRole('button', { name: '打开 Config 面板' }));
     const right = screen.getByRole('separator', { name: '调整右侧面板宽度' });
     fireEvent.keyDown(left, { key: 'End' });
     expect((container.querySelector('.agent-layout') as HTMLElement).style.getPropertyValue('--left-panel-width'))
@@ -110,6 +111,7 @@ describe('Agent page model selection', () => {
     vi.stubGlobal('innerWidth', 1400);
     const { container } = renderPage();
     const left = screen.getByRole('separator', { name: '调整左侧面板宽度' });
+    fireEvent.click(screen.getByRole('button', { name: '打开 Config 面板' }));
     const right = screen.getByRole('separator', { name: '调整右侧面板宽度' });
     fireEvent.keyDown(left, { key: 'End' });
     fireEvent.keyDown(right, { key: 'End' });

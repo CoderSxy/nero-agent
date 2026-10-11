@@ -120,6 +120,17 @@ describe('Agent conversation', () => {
     expect(screen.getByText('一个很长的会话标题')).toHaveProperty('title', '一个很长的会话标题');
     expect(screen.queryByText('智能体对话')).toBeNull();
   });
+  it('hides the top bar in a new empty conversation and shows it after the first send', async () => {
+    mockMessages = [];
+    sendMessage.mockResolvedValue(undefined);
+    const { container } = render(<AgentChat title="新会话" threadId="thread-1" resourceId="agent"
+      initialMessages={[]} onMessageSent={vi.fn()} models={models} />);
+    expect(container.querySelector('[data-slot="chat-shell-bar"]')).toBeNull();
+    fireEvent.change(screen.getByRole('textbox', { name: '发送消息' }), { target: { value: '你好' } });
+    fireEvent.click(screen.getByRole('button', { name: '发送' }));
+    await waitFor(() => expect(container.querySelector('[data-slot="chat-shell-bar"]')).toBeTruthy());
+    expect(screen.getByText('新会话')).toBeTruthy();
+  });
   it('uploads local files into composer cards and blocks send until ready', async () => {
     let finishUpload!: (value: {
       source: 'personal'; path: string; name: string; size: number; mimeType: string; etag: string;

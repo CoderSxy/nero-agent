@@ -95,7 +95,11 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
     </button>
   </li>;
   return <aside className="agent-sidebar">
-    <div className="brand">NERO <span>AGENT</span></div>
+    <div className="brand" aria-label="NERO AGENT">
+      <span className="brand-mark" aria-hidden="true">N</span>
+      <span className="brand-name">NERO</span>
+      <span className="brand-tag">AGENT</span>
+    </div>
     <div className="thread-scroll" onScroll={() => setMenuId(null)}>
     <ThreadList aria-label="会话列表" embedded>
       <ThreadListNewItem render={<button type="button" className="new-thread-button" onClick={onNew}

@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { FolderTree, Settings2 } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { PanelResizeHandle } from './PanelResizeHandle';
@@ -8,9 +8,12 @@ type Panel = 'config' | 'files';
 export function RightPanelDock({ config, files, width = 320, maxWidth = 620, onResize }: {
   config: ReactNode; files: ReactNode; width?: number; maxWidth?: number; onResize?: (width: number) => void;
 }) {
-  const [active, setActive] = useState<Panel | null>('config');
-  const [desired, setDesired] = useState<Panel | null>('config');
-  const desiredRef = useRef<Panel | null>('config');
+  const [active, setActive] = useState<Panel | null>(null);
+  const [desired, setDesired] = useState<Panel | null>(null);
+  const desiredRef = useRef<Panel | null>(null);
+  const previousWidth = useRef(width);
+  const widthChanged = previousWidth.current !== width;
+  useLayoutEffect(() => { previousWidth.current = width; }, [width]);
   const reducedMotion = useReducedMotion();
   const duration = reducedMotion ? 0 : 0.28;
 
@@ -25,7 +28,7 @@ export function RightPanelDock({ config, files, width = 320, maxWidth = 620, onR
   }
 
   return <motion.div className="right-panel-dock" initial={false}
-    animate={{ width: active || desired ? width : 0 }} transition={{ duration: active && desired ? 0 : duration }}>
+    animate={{ width: active || desired ? width : 0 }} transition={{ duration: widthChanged ? 0 : duration }}>
     {active && onResize && <PanelResizeHandle side="right" width={width} min={280} max={maxWidth}
       onResize={onResize} />}
     <div className="right-panel-toggles" role="group" aria-label="右侧面板">

@@ -383,7 +383,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   const visibleApprovals = Object.fromEntries(Object.entries(chat.toolCallApprovals)
     .filter(([id]) => !failedDecisions.has(id)));
   return <ChatShell className={`chat-shell ${isEmpty ? 'chat-shell--empty' : 'chat-shell--active'}`}>
-    <ChatShell.Bar><div className="chat-title text-label" title={title}>{title}</div></ChatShell.Bar>
+    {!isEmpty && <ChatShell.Bar><div className="chat-title text-label" title={title}>{title}</div></ChatShell.Bar>}
     <ChatShell.Stage><ChatShell.Viewport id={viewportId} onScroll={event => {
       const viewport = event.currentTarget;
       followRef.current = viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop <= 48;
@@ -395,7 +395,6 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     </ChatShell.Column></ChatShell.Content></ChatShell.Viewport></ChatShell.Stage>
     <ChatShell.Dock><ChatShell.Column>
       <div className="chat-welcome" aria-hidden={!isEmpty}>
-        <span className="chat-welcome-icon" aria-hidden="true">智</span>
         <h1>有什么可以帮你？</h1>
       </div>
       {blockedReason && <p className="notice" role="status">{blockedReason}</p>}
