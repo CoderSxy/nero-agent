@@ -44,6 +44,11 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
       if (event.key !== 'k' || (!event.metaKey && !event.ctrlKey) || event.altKey) return;
       const target = event.target;
       if (target instanceof HTMLElement && target.isContentEditable) return;
+      if (target instanceof HTMLElement && target.closest('.history-search-dialog')) {
+        event.preventDefault();
+        setSearchOpen(open => !open);
+        return;
+      }
       if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) {
         return;
       }

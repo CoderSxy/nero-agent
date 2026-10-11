@@ -133,3 +133,20 @@ it('toggles history search with Ctrl/Cmd+K at document level', async () => {
   fireEvent.keyDown(document, { key: 'k', metaKey: true });
   expect(screen.queryByRole('dialog', { name: '搜索历史对话' })).toBeNull();
 });
+
+it('closes history search with Ctrl/Cmd+K when focus is in the search input', async () => {
+  const threads = [{ id: 'a', title: '会话', resourceId: 'agent', updatedAt: '2026-10-05' }] as never;
+  render(<ThreadSidebar threads={threads} loading={false} error={null}
+    onNew={vi.fn()} onSelect={vi.fn()} theme="dark" onThemeChange={vi.fn()}
+    search={{
+      documents: [], scope: 'recent', recentStatus: 'ready', fullStatus: 'idle',
+      recentProgress: { completed: 0, total: 0 }, fullProgress: { completed: 0, total: 0 },
+      recentFailedCount: 0, fullFailedCount: 0, ensureRecent: vi.fn(), cancelRecent: vi.fn(),
+      loadAll: vi.fn(), retryRecent: vi.fn(), retryFull: vi.fn(), invalidateThread: vi.fn(),
+    }} onSearchSelect={vi.fn()} />);
+  fireEvent.keyDown(document, { key: 'k', ctrlKey: true });
+  const input = await screen.findByLabelText('搜索历史对话中的问题和回答');
+  input.focus();
+  fireEvent.keyDown(input, { key: 'k', ctrlKey: true, bubbles: true });
+  expect(screen.queryByRole('dialog', { name: '搜索历史对话' })).toBeNull();
+});

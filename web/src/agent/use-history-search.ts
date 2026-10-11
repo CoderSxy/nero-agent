@@ -173,7 +173,9 @@ export function useHistorySearch(options: {
       }
     }
 
-    void cache.removeMissing(userId, visibleIds).catch(() => undefined);
+    if (threads.length > 0) {
+      void cache.removeMissing(userId, visibleIds).catch(() => undefined);
+    }
     publishDocuments(generationRef.current);
   }, [userId, threads, cache, publishDocuments, resetForUser]);
 
@@ -250,20 +252,27 @@ export function useHistorySearch(options: {
 
   const cancelRecent = useCallback(() => {
     generationRef.current += 1;
-    setRecentStatus('idle');
-    setRecentProgress({ completed: 0, total: 0 });
-    setRecentFailedCount(0);
-    recentFailedRef.current.clear();
+    fullLoadActiveRef.current = false;
     docsByThreadRef.current.clear();
+    recentFailedRef.current.clear();
+    fullFailedRef.current.clear();
+    setRecentStatus('idle');
+    setFullStatus('idle');
+    setRecentProgress({ completed: 0, total: 0 });
+    setFullProgress({ completed: 0, total: 0 });
+    setRecentFailedCount(0);
+    setFullFailedCount(0);
+    setScope('recent');
     publishDocuments(generationRef.current);
   }, [publishDocuments]);
 
   const loadAll = useCallback(() => {
+    if (recentStatus !== 'ready' && recentStatus !== 'error') return;
     if (fullStatus === 'loading' || fullStatus === 'ready') return;
     const gen = generationRef.current;
     const remainder = threadsRef.current.slice(RECENT_HISTORY_LIMIT);
     void runFullBatch(gen, remainder).catch(() => undefined);
-  }, [fullStatus, runFullBatch]);
+  }, [fullStatus, recentStatus, runFullBatch]);
 
   const retryRecent = useCallback(() => {
     const failed = [...recentFailedRef.current];

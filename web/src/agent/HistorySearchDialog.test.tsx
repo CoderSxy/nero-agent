@@ -140,3 +140,15 @@ it('cancels recent loading when closed while recent batch is active', () => {
   rerender(<HistorySearchDialog open={false} search={search} onClose={vi.fn()} onSelect={vi.fn()} threadCount={3} />);
   expect(search.cancelRecent).toHaveBeenCalled();
 });
+
+it('does not loop ensureRecent when open with recent error state', () => {
+  const ensureRecent = vi.fn();
+  const search = mockSearch({ recentStatus: 'error', recentFailedCount: 1, ensureRecent });
+  const { rerender } = render(<HistorySearchDialog open={false} search={search}
+    onClose={vi.fn()} onSelect={vi.fn()} threadCount={3} />);
+  rerender(<HistorySearchDialog open search={search} onClose={vi.fn()} onSelect={vi.fn()} threadCount={3} />);
+  expect(ensureRecent).toHaveBeenCalledTimes(1);
+  rerender(<HistorySearchDialog open search={{ ...search, recentFailedCount: 2 }}
+    onClose={vi.fn()} onSelect={vi.fn()} threadCount={3} />);
+  expect(ensureRecent).toHaveBeenCalledTimes(1);
+});

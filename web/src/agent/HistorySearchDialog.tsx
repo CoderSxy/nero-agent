@@ -41,6 +41,9 @@ export function HistorySearchDialog({ open, search, onClose, onSelect, threadCou
 }) {
   const labelId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
+  const prevOpenRef = useRef(false);
+  const searchRef = useRef(search);
+  searchRef.current = search;
   const [query, setQuery] = useState('');
   const trimmedQuery = query.trim();
   const { results, total } = useMemo(
@@ -49,21 +52,24 @@ export function HistorySearchDialog({ open, search, onClose, onSelect, threadCou
   );
   const showLoadAll = threadCount > RECENT_HISTORY_LIMIT
     && search.scope !== 'all'
+    && (search.recentStatus === 'ready' || search.recentStatus === 'error')
     && search.fullStatus !== 'loading'
     && search.fullStatus !== 'ready';
 
   useEffect(() => {
+    const opened = open && !prevOpenRef.current;
+    prevOpenRef.current = open;
+    if (opened) search.ensureRecent();
     if (!open) return;
-    search.ensureRecent();
     const frame = requestAnimationFrame(() => inputRef.current?.focus());
     return () => cancelAnimationFrame(frame);
-  }, [open, search]);
+  }, [open, search.ensureRecent]);
 
   useEffect(() => {
     if (open) return;
-    if (search.recentStatus === 'loading') search.cancelRecent();
+    if (searchRef.current.recentStatus === 'loading') searchRef.current.cancelRecent();
     setQuery('');
-  }, [open, search]);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;

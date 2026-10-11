@@ -352,4 +352,29 @@ describe('useHistorySearch', () => {
     const updatedAt = new Date(threads[0].updatedAt).toISOString();
     expect(await cache.get('user-1', threads[0].id, updatedAt)).not.toBeNull();
   });
+
+  it('does not call removeMissing when thread list is initially empty', async () => {
+    const threads: Thread[] = [];
+    const cache = createHistorySearchCache();
+    const removeMissing = vi.spyOn(cache, 'removeMissing');
+    const { unmount } = renderHook(() => useHistorySearch({ userId: 'user-1', threads, cache, loadThread }));
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    expect(removeMissing).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  it('cancelRecent clears fullStatus back to idle', async () => {
+    const threads = makeThreads(3);
+    const cache = createHistorySearchCache();
+    const { result, unmount } = renderHook(() => useHistorySearch({ userId: 'user-1', threads, cache, loadThread }));
+    act(() => result.current.ensureRecent());
+    await waitFor(() => expect(result.current.recentStatus).toBe('ready'));
+    act(() => result.current.cancelRecent());
+    expect(result.current.recentStatus).toBe('idle');
+    expect(result.current.fullStatus).toBe('idle');
+    expect(result.current.documents).toHaveLength(0);
+    unmount();
+  });
 });

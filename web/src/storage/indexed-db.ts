@@ -17,6 +17,7 @@ function attachVersionChangeHandler(db: IDBDatabase): void {
 function openDatabaseRequest(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     if (typeof indexedDB === 'undefined') {
+      openPromise = null;
       reject(new Error('IndexedDB is not available'));
       return;
     }
