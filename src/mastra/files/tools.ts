@@ -1,4 +1,5 @@
 import { createTool } from '@mastra/core/tools';
+import { LocalFilesystem } from '@mastra/core/workspace';
 import { z } from 'zod';
 import { trustedAuth } from '../auth/auth-context';
 import type { ThreadLookup } from '../auth/thread-guard';
@@ -7,10 +8,14 @@ import type { RequestContext } from '@mastra/core/request-context';
 import { effectiveModelSupportsVision, findAuthorizedModel } from '../models/service';
 import { resolveSelectedModel, trustedUserFrom } from '../models/resolver';
 import { AttachmentService, type AttachmentStatus } from './attachments';
-import { maxFileSizeBytes } from './policy';
+import { type FileToolScope, resolveFileToolRoot, resolveScopedPath } from './file-scope';
+import { globFiles, grepFiles } from './file-search';
+import { maxFileSizeBytes, relativeFilePath } from './policy';
 import { FileService } from './service';
+import { replaceWorkspaceText } from './workspace-editor';
 
 const pathInput = z.object({ path: z.string().min(1) });
+const scopeInput = z.enum(['thread', 'workspace']).optional();
 const TEXT_BYTE_LIMIT = 64 * 1024;
 const IMAGE_MIME = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
 const TEXT_MIME = /^(text\/|application\/(json|xml|javascript|x-javascript|yaml|x-yaml|toml|csv|sql))/i;
@@ -21,14 +26,30 @@ function agentThreadId(context: { agent?: { threadId?: string } }): string {
   return threadId;
 }
 
-function serviceFrom(context: { mastra?: unknown; requestContext?: unknown }) {
+async function threadLookupFrom(context: {
+  mastra?: unknown;
+  requestContext?: unknown;
+}): Promise<ThreadLookup> {
   if (!context.mastra || !context.requestContext) throw new Error('Authentication is required');
-  return (context.mastra as Mastra).getAgent('agent')
-    .getMemory({ requestContext: context.requestContext as RequestContext })
-    .then(memory => {
-      if (!memory) throw new Error('Agent memory is unavailable');
-      return new FileService(memory as ThreadLookup);
-    });
+  const memory = await (context.mastra as Mastra)
+    .getAgent('agent')
+    .getMemory({ requestContext: context.requestContext as RequestContext });
+  if (!memory) throw new Error('Agent memory is unavailable');
+  return memory as ThreadLookup;
+}
+
+function serviceFrom(context: { mastra?: unknown; requestContext?: unknown }) {
+  return threadLookupFrom(context).then(lookup => new FileService(lookup));
+}
+
+function fileToolScope(scope: FileToolScope | undefined): FileToolScope {
+  return scope ?? 'thread';
+}
+
+function encodeApplicationPath(scope: FileToolScope, threadId: string, relativePath: string): string {
+  const encoded = relativePath.split('/').filter(Boolean).map(encodeURIComponent).join('/');
+  if (scope === 'workspace') return `/current-workspace/files/${encoded}`;
+  return `/user-files/${encodeURIComponent(threadId)}/${encoded}`;
 }
 
 async function defaultAttachmentsFrom(context: {
@@ -294,8 +315,8 @@ export const userFileTools = {
     execute: async (input, context) => {
       const auth = trustedAuth(context.requestContext);
       const service = await serviceFrom(context);
-      const { data, name } = await service.read(auth, agentThreadId(context), input.path);
-      return { path: input.path, name, content: data.toString('utf8') };
+      const { data, name, etag, size } = await service.read(auth, agentThreadId(context), input.path);
+      return { path: input.path, name, content: data.toString('utf8'), etag, size };
     },
   }),
   write_file: createTool({
@@ -329,6 +350,97 @@ export const userFileTools = {
       const service = await serviceFrom(context);
       await service.delete(auth, agentThreadId(context), input.path);
       return { ok: true, path: input.path };
+    },
+  }),
+  glob: createTool({
+    id: 'glob',
+    description:
+      '在当前会话目录（默认）或个人工作区中按 glob 模式查找普通文件。仅支持 * ? **；返回相对路径与 size，可能因预算截断。',
+    inputSchema: z.object({
+      pattern: z.string().min(1).describe('glob 模式，仅 * ? **'),
+      scope: scopeInput.describe('thread 为默认会话目录；workspace 为个人工作区'),
+      basePath: z.string().optional().describe('相对 scope 根的搜索起点，默认根目录'),
+    }),
+    execute: async (input, context) => {
+      const auth = trustedAuth(context.requestContext);
+      const threadId = agentThreadId(context);
+      const scope = fileToolScope(input.scope);
+      const lookup = await threadLookupFrom(context);
+      const root = await resolveFileToolRoot(auth, threadId, lookup, scope);
+      return globFiles({
+        root,
+        scope,
+        threadId,
+        basePath: input.basePath,
+        pattern: input.pattern,
+        signal: context?.abortSignal,
+      });
+    },
+  }),
+  grep: createTool({
+    id: 'grep',
+    description:
+      '在当前会话目录（默认）或个人工作区中按字面文本搜索。默认大小写敏感；filePattern 默认 **/*。返回行号、截断后的行与 ETag，可能因预算截断。',
+    inputSchema: z.object({
+      query: z.string().min(1).describe('非空字面查询，最长 256 个 Unicode 字符'),
+      scope: scopeInput.describe('thread 为默认会话目录；workspace 为个人工作区'),
+      basePath: z.string().optional().describe('相对 scope 根的搜索起点，默认根目录'),
+      filePattern: z.string().optional().describe('限制扫描文件的 glob，默认 **/*'),
+      caseSensitive: z.boolean().optional().describe('默认 true；false 时忽略大小写'),
+    }),
+    execute: async (input, context) => {
+      const auth = trustedAuth(context.requestContext);
+      const threadId = agentThreadId(context);
+      const scope = fileToolScope(input.scope);
+      const lookup = await threadLookupFrom(context);
+      const root = await resolveFileToolRoot(auth, threadId, lookup, scope);
+      return grepFiles({
+        root,
+        scope,
+        threadId,
+        basePath: input.basePath,
+        filePattern: input.filePattern,
+        query: input.query,
+        caseSensitive: input.caseSensitive,
+        signal: context?.abortSignal,
+      });
+    },
+  }),
+  edit: createTool({
+    id: 'edit',
+    description:
+      '对已存在的 UTF-8 文本文件做一次版本校验的精确替换。oldText 须在文件中恰好出现一次（含重叠）；expectedEtag 来自 read_file 或 grep。冲突时重新读取，勿盲目重试。',
+    inputSchema: z.object({
+      path: z.string().min(1).describe('相对 scope 根的已存在文件路径'),
+      oldText: z.string().min(1).describe('非空原文，最长 64 KiB'),
+      newText: z.string().describe('替换文本，可为空白，最长 64 KiB'),
+      expectedEtag: z.string().min(1).describe('带引号的 SHA-256 ETag'),
+      scope: scopeInput.describe('thread 为默认会话目录；workspace 为个人工作区'),
+    }),
+    execute: async (input, context) => {
+      const auth = trustedAuth(context.requestContext);
+      const threadId = agentThreadId(context);
+      const scope = fileToolScope(input.scope);
+      const lookup = await threadLookupFrom(context);
+      const root = await resolveFileToolRoot(auth, threadId, lookup, scope);
+      const relativePath = relativeFilePath(input.path);
+      await resolveScopedPath(root, relativePath, scope, threadId);
+      const filesystem = new LocalFilesystem({ basePath: root, contained: true });
+      const { etag, size } = await replaceWorkspaceText(
+        filesystem,
+        relativePath,
+        input.oldText,
+        input.newText,
+        input.expectedEtag,
+        auth.userId,
+      );
+      return {
+        path: relativePath,
+        etag,
+        size,
+        applicationPath: encodeApplicationPath(scope, threadId, relativePath),
+        replacements: 1 as const,
+      };
     },
   }),
   read_attached_file,

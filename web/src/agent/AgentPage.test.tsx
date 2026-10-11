@@ -96,6 +96,33 @@ function renderPage(path = '/agent/thread-1') {
 }
 
 describe('Agent page model selection', () => {
+  it('connects both bounded resize handles to the page layout', () => {
+    const { container } = renderPage();
+    const left = screen.getByRole('separator', { name: '调整左侧面板宽度' });
+    const right = screen.getByRole('separator', { name: '调整右侧面板宽度' });
+    fireEvent.keyDown(left, { key: 'End' });
+    expect((container.querySelector('.agent-layout') as HTMLElement).style.getPropertyValue('--left-panel-width'))
+      .toBe('420px');
+    fireEvent.keyDown(right, { key: 'End' });
+    expect(right.getAttribute('aria-valuenow')).toBe('620');
+  });
+  it('restores chosen widths after a narrow viewport is widened again', () => {
+    vi.stubGlobal('innerWidth', 1400);
+    const { container } = renderPage();
+    const left = screen.getByRole('separator', { name: '调整左侧面板宽度' });
+    const right = screen.getByRole('separator', { name: '调整右侧面板宽度' });
+    fireEvent.keyDown(left, { key: 'End' });
+    fireEvent.keyDown(right, { key: 'End' });
+    vi.stubGlobal('innerWidth', 1051);
+    fireEvent(window, new Event('resize'));
+    expect((container.querySelector('.agent-layout') as HTMLElement).style.getPropertyValue('--left-panel-width'))
+      .not.toBe('420px');
+    vi.stubGlobal('innerWidth', 1400);
+    fireEvent(window, new Event('resize'));
+    expect((container.querySelector('.agent-layout') as HTMLElement).style.getPropertyValue('--left-panel-width'))
+      .toBe('420px');
+    expect(right.getAttribute('aria-valuenow')).toBe('620');
+  });
   it('passes the selected sidebar title to the conversation header', async () => {
     threadItems = [{ id: 'thread-1', title: '和左侧一致的会话标题', resourceId: 'agent', updatedAt: '' }];
     renderPage();

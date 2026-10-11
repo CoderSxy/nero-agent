@@ -1,10 +1,13 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { FolderTree, Settings2 } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { PanelResizeHandle } from './PanelResizeHandle';
 
 type Panel = 'config' | 'files';
 
-export function RightPanelDock({ config, files }: { config: ReactNode; files: ReactNode }) {
+export function RightPanelDock({ config, files, width = 320, maxWidth = 620, onResize }: {
+  config: ReactNode; files: ReactNode; width?: number; maxWidth?: number; onResize?: (width: number) => void;
+}) {
   const [active, setActive] = useState<Panel | null>('config');
   const [desired, setDesired] = useState<Panel | null>('config');
   const desiredRef = useRef<Panel | null>('config');
@@ -22,7 +25,9 @@ export function RightPanelDock({ config, files }: { config: ReactNode; files: Re
   }
 
   return <motion.div className="right-panel-dock" initial={false}
-    animate={{ width: active || desired ? 320 : 0 }} transition={{ duration }}>
+    animate={{ width: active || desired ? width : 0 }} transition={{ duration: active && desired ? 0 : duration }}>
+    {active && onResize && <PanelResizeHandle side="right" width={width} min={280} max={maxWidth}
+      onResize={onResize} />}
     <div className="right-panel-toggles" role="group" aria-label="右侧面板">
       <button type="button" aria-label={desired === 'config' ? '收起 Config 面板' : '打开 Config 面板'}
         title="Config" aria-expanded={active === 'config'} aria-pressed={desired === 'config'}

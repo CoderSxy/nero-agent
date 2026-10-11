@@ -6,6 +6,7 @@ import type { ThreadLookup } from '../auth/thread-guard';
 import { ensureThreadDirectory } from '../workspace/manager';
 import { assertContained, workspaceBase } from '../workspace/path';
 import { FilePathError, maxFileSizeBytes, relativeFilePath } from './policy';
+import { readWorkspaceVersion } from './workspace-editor';
 import { workspaceQuota } from '../workspace/quota';
 import { assertHostWritable } from '../workspace/disk-protection';
 
@@ -25,7 +26,13 @@ export class FileService {
     const { hostPath, name } = await this.resolveOwnedPath(auth, threadId, relativePath);
     try {
       const data = await readFile(hostPath);
-      return { data, name, hostPath };
+      return {
+        data,
+        name,
+        hostPath,
+        etag: readWorkspaceVersion(data),
+        size: data.byteLength,
+      };
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new FileServiceError(404, '文件不存在');
       throw error;

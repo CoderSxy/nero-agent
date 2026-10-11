@@ -203,7 +203,12 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
     <ComposerRing busy={isRunning}><ComposerBox>
       <ComposerInput aria-label="发送消息" placeholder="向智能体发送消息…" value={draft}
         onChange={event => onDraftChange(event.target.value)}
-        onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); if (canSend) onSend(); } }} />
+        onKeyDown={event => {
+          if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing
+            || event.nativeEvent.keyCode === 229) return;
+          event.preventDefault();
+          if (canSend) onSend();
+        }} />
       <ComposerActions>
         <button type="button" className="composer-model-trigger" role="combobox" aria-label="模型"
           aria-haspopup="listbox" aria-expanded={open} aria-controls={open ? 'composer-model-options' : undefined}

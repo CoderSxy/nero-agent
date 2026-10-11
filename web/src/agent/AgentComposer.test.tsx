@@ -17,6 +17,24 @@ const readyFile = (overrides: Partial<ComposerAttachment> = {}): ComposerAttachm
 });
 
 describe('Composer run controls', () => {
+  it('does not send when Enter confirms IME text, then sends on a later Enter', () => {
+    const send = vi.fn();
+    render(<AgentComposer draft="你好" onDraftChange={vi.fn()} isRunning={false}
+      onSend={send} onStop={vi.fn()} />);
+    const input = screen.getByRole('textbox', { name: '发送消息' });
+    fireEvent.keyDown(input, { key: 'Enter', isComposing: true });
+    expect(send).not.toHaveBeenCalled();
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+  it('does not send for an IME Enter reported with keyCode 229', () => {
+    const send = vi.fn();
+    render(<AgentComposer draft="你好" onDraftChange={vi.fn()} isRunning={false}
+      onSend={send} onStop={vi.fn()} />);
+    fireEvent.keyDown(screen.getByRole('textbox', { name: '发送消息' }),
+      { key: 'Enter', keyCode: 229 });
+    expect(send).not.toHaveBeenCalled();
+  });
   it('shows the selected default model at bottom left and icon send control at bottom right', () => {
     const first = 'public:11111111-1111-4111-8111-111111111111';
     const second = 'private:22222222-2222-4222-8222-222222222222';

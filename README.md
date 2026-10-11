@@ -92,11 +92,21 @@ ECS 生产环境没有 Mastra EE 授权时，Studio 使用官方 `SimpleAuth` �
 
 路径经服务端校验线程归属与路径安全。独立页面可在对话区上传、引用并下载。智能体应返回 `/user-files/...` 或附件 ID，不再生成宿主 `file:` URL。
 
+**Agent 文件搜索与精确编辑**（同样受 `USER_FILES_ENABLED` 门禁）在会话工具中额外提供 `glob`、`grep`、`edit`（以及原有 `read_file` / `write_file` / `list_files` / `delete_file` / `read_attached_file`）：
+
+- **范围**：默认 `scope: "thread"`（当前会话目录）。仅当用户明确要处理个人工作区文件时使用 `scope: "workspace"`（相对个人根，如 `uploads/<UUID>/note.txt`）。`workspace` 下不可穿越其他会话的 `threads/<其他 threadId>`。路径均为应用相对路径，不接受宿主绝对路径或 `file:` URL。
+- **glob**：模式仅 `*`、`?`、`**`。最多遍历 20,000 个条目、返回 200 条、序列化结果 ≤32 KiB；超限时 `truncated: true` 并带 `reason`。
+- **grep**：字面文本搜索（非正则），查询最长 256 个 Unicode 字符；默认大小写敏感。最多扫描 500 个普通文件、单文件 2 MiB、合计 20 MiB、返回 100 行、输出 ≤32 KiB；命中行附带与 `read_file` 相同格式的 ETag。
+- **edit**：对已有 UTF-8 文本做恰好一次精确替换，需传入 `expectedEtag`（来自 `read_file` 或 `grep`，原样传递）。零次/多次匹配、版本冲突（`STALE_VERSION`）、二进制/超大文件等会失败且不写盘；冲突时应重新读取后再改，不可用旧 ETag 覆盖。成功返回应用内 `applicationPath`（无宿主路径）。
+- **附件**：消息中的附件 ID 用 `read_attached_file({ attachmentId })`，不要把附件 ID 当作 `glob`/`grep`/`edit` 的 path。
+
+示例：在当前会话找 `reports/*.md` → `grep` 定位行与 ETag → `edit` 替换一处；处理上传文件时显式 `scope: "workspace"` 与 `uploads/<UUID>/...`。
+
 **部署门禁不变**：本功能不自动开启未验证的沙箱文件写入。`USER_FILES_ENABLED`、`SANDBOX_COMMANDS_ENABLED`、`SANDBOX_FILE_WRITE_ENABLED` 仍须按 [ECS 工作区与沙箱发布](docs/deployment/workspace-sandbox-ecs.md) 完成宿主配额实测后再打开。`execute_command` 需 `SANDBOX_COMMANDS_ENABLED=true`；Docker 实现还需 `SANDBOX_PROVIDER=docker` 与 digest 固定的 `SANDBOX_IMAGE`。宿主项目配额未实测前保持 `SANDBOX_FILE_WRITE_ENABLED=false`。基线审计见 [工作区沙箱审计](docs/architecture/workspace-sandbox-audit.md)。
 
 独立页面右侧“工作区”展示当前 Agent 实际使用的工作区目录树，包含所有层级的目录和文件，并可刷新、下载、删除。个人工作区使用 `GET /current-workspace/files` 和 `GET /current-workspace/files/*`；本地回退的 `agent-workspace` 使用相同路径加 `?source=agent`，仅管理员可访问（只读文件管理，不可批量删除）。文件列表是整个工作区的内容，不局限于当前会话。启用个人工作区时应将 `WORKSPACE_ROOT` 指向服务进程可写的持久目录。
 
-本地开发要让 Agent 实际保存文件，可在被 Git 忽略的 `.env` 中设置 `WORKSPACE_ROOT=<项目绝对路径>/.local-workspaces`、`WORKSPACE_RESOLVER_ENABLED=true` 和 `USER_FILES_ENABLED=true`，然后重启 `npm run dev`。`write_file` 只需要相对路径和内容；会话 ID 从 Agent 运行上下文获取，文件保存到当前用户当前会话目录。部署环境应使用独立的持久化目录，并按 [ECS 工作区与沙箱发布](docs/deployment/workspace-sandbox-ecs.md) 完成门禁后再启用。
+本地开发要让 Agent 实际保存文件，可在被 Git 忽略的 `.env` 中设置 `WORKSPACE_ROOT=<项目绝对路径>/.local-workspaces`、`WORKSPACE_RESOLVER_ENABLED=true` 和 `USER_FILES_ENABLED=true`，然后重启 `npm run dev`。`write_file` 只需要相对路径和内容；会话 ID 从 Agent 运行上下文获取，文件保存到当前用户当前会话目录。查找/编辑可走 `glob` → `grep`/`read_file` → `edit`。部署环境应使用独立的持久化目录，并按 [ECS 工作区与沙箱发布](docs/deployment/workspace-sandbox-ecs.md) 完成门禁后再启用。
 
 PostgreSQL 保存用户、角色、权限、登录会话，以及 Mastra 的会话记忆等数据。`app_permissions` 与 `app_role_permissions` 目前只建表，细粒度权限数据留待后续迭代。开发环境的可观测性仍使用 DuckDB；正式部署时应按流量改为 PostgreSQL 或 ClickHouse。定时任务会持续消耗模型用量，直到暂停。
 

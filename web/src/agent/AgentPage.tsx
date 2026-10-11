@@ -9,6 +9,7 @@ import { ThreadSidebar } from './ThreadSidebar';
 import { AgentChat } from './AgentChat';
 import { ConfigPanel } from './ConfigPanel';
 import { RightPanelDock } from './RightPanelDock';
+import { PanelResizeHandle } from './PanelResizeHandle';
 import { WorkspaceFileTree } from './WorkspaceFileTree';
 import { WorkspaceFileOverlay } from './WorkspaceFileOverlay';
 import { getSelectableModels, type ModelRef, type SafeModel } from './model-catalog-client';
@@ -52,6 +53,14 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [theme, setTheme] = useState<Theme>(initialTheme);
+  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+  const [leftPreferredWidth, setLeftPreferredWidth] = useState(() => window.innerWidth <= 1050 ? 210 : 260);
+  const [rightPreferredWidth, setRightPreferredWidth] = useState(320);
+  const compactPanels = viewportWidth <= 1050;
+  const leftMax = Math.max(200, Math.min(420, viewportWidth - (compactPanels ? 360 : 640)));
+  const leftWidth = Math.min(leftPreferredWidth, leftMax);
+  const rightMax = Math.max(280, Math.min(620, viewportWidth - (compactPanels ? 40 : leftWidth + 360)));
+  const rightWidth = Math.min(rightPreferredWidth, rightMax);
   const defaults = useMemo(() => catalog ? getDefaultModels(catalog) : null, [catalog]);
   const available = useMemo(() => new Set((catalog ?? []).map(model => model.ref)), [catalog]);
   const threadRead = useMemo(() => threadId && catalog ? readThreadModels(threadMetadata, catalog) : null,
@@ -75,6 +84,11 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
     document.documentElement.classList.toggle('light', theme === 'light');
     try { localStorage.setItem('nero-agent-theme', theme); } catch { /* Storage may be disabled. */ }
   }, [theme]);
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
   useEffect(() => {
     let active = true;
     Promise.allSettled([client.getAgent(AGENT_ID).details(), client.getMemoryConfig({ agentId: AGENT_ID }),
@@ -130,12 +144,15 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
     setNotice(null);
     navigate(nextId ? `/agent/${nextId}` : '/agent/new', { replace: true });
   }
-  return <main className="agent-layout">
+  return <main className="agent-layout" style={{ '--left-panel-width': `${leftWidth}px` } as React.CSSProperties}>
+    <div className="left-panel-dock">
     <ThreadSidebar threads={list.threads} currentId={threadId} loading={list.loading} error={list.error}
       onNew={() => void create()} onSelect={id => navigate(`/agent/${id}`)} onDelete={deleteThread}
       onRename={list.renameThread}
       theme={theme} onThemeChange={setTheme}
       canCreate={canCreate} user={user} onLogout={onLogout} />
+      <PanelResizeHandle side="left" width={leftWidth} min={200} max={leftMax} onResize={setLeftPreferredWidth} />
+    </div>
     <section className="agent-center">
       {notice && <div role="alert" className="notice">{notice}</div>}
       {loadingThread ? <div className="empty-chat">加载会话中…</div> : threadId && !notice ?
@@ -167,7 +184,8 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
       {fileRequest && <WorkspaceFileOverlay request={fileRequest} source={workspaceSource}
         onClosed={() => setFileRequest(null)} onSaved={() => setFilesRefreshVersion(value => value + 1)} />}
     </section>
-    <RightPanelDock config={<ConfigPanel agent={agent} memory={memory} loading={configLoading} error={configError}
+    <RightPanelDock width={rightWidth} maxWidth={rightMax} onResize={setRightPreferredWidth}
+      config={<ConfigPanel agent={agent} memory={memory} loading={configLoading} error={configError}
       models={configModels} />}
       files={<WorkspaceFileTree source={workspaceSource}
         workspaceId={workspaceSource === 'agent' ? agent?.workspaceId : undefined}
