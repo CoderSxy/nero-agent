@@ -38,8 +38,10 @@ function visibleTextFromMessage(message: MastraDBMessage): string {
   return chunks.join('');
 }
 
+type HistorySearchThreadInput = Pick<Thread, 'id' | 'title'> & { updatedAt: string | Date };
+
 function flushTurn(
-  thread: Pick<Thread, 'id' | 'title' | 'updatedAt'>,
+  thread: HistorySearchThreadInput,
   turn: { userMessageId: string; questionText: string },
   answerChunks: string[],
 ): HistorySearchDocument {
@@ -54,7 +56,7 @@ function flushTurn(
 }
 
 export function buildHistorySearchDocuments(
-  thread: Pick<Thread, 'id' | 'title' | 'updatedAt'>,
+  thread: HistorySearchThreadInput,
   messages: MastraDBMessage[],
 ): HistorySearchDocument[] {
   const documents: HistorySearchDocument[] = [];
