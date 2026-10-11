@@ -91,8 +91,8 @@ export function HistorySearchDialog({ open, search, onClose, onSelect, threadCou
   }
 
   function onInputKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
-    if (event.key === 'Enter' && event.nativeEvent.isComposing) {
-      event.preventDefault();
+    if (event.key === 'Enter'
+      && (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229)) {
       event.stopPropagation();
     }
   }

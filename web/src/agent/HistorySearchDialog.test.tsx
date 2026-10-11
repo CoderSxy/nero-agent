@@ -127,6 +127,8 @@ it('selects with Enter but ignores Enter during IME composition', () => {
   fireEvent.keyDown(input, { key: 'ArrowDown' });
   fireEvent.keyDown(input, { key: 'Enter', isComposing: true });
   expect(onSelect).not.toHaveBeenCalled();
+  fireEvent.keyDown(input, { key: 'Enter', keyCode: 229 });
+  expect(onSelect).not.toHaveBeenCalled();
   fireEvent.keyDown(input, { key: 'Enter' });
   expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ userMessageId: 'pick-me' }));
   expect(onClose).toHaveBeenCalled();
