@@ -73,7 +73,8 @@ vi.mock('./use-history-search', () => ({
 }));
 vi.mock('./history-search-cache', () => ({ createHistorySearchCache: () => ({}) }));
 vi.mock('./AgentChat', () => ({ AgentChat: ({ title, models, sendBlockedReason, catalog, modelRef, onModelChange,
-  modelError, pendingUserMessages, onMessageSubmitted, onFilesChanged, attachRequest, attachmentRefreshVersion }: {
+  modelError, pendingUserMessages, onMessageSubmitted, onFilesChanged, attachRequest, attachmentRefreshVersion,
+  targetMessageId }: {
   title?: string;
   models: { chatModel: string; memoryModel: string } | null; sendBlockedReason?: string | null;
   catalog?: Array<{ ref: string; displayName: string }>; modelRef?: string; onModelChange?: (ref: string) => void;
@@ -82,6 +83,7 @@ vi.mock('./AgentChat', () => ({ AgentChat: ({ title, models, sendBlockedReason, 
   onFilesChanged?: () => void;
   attachRequest?: { id: number; path: string; source: 'personal' | 'agent' } | null;
   attachmentRefreshVersion?: number;
+  targetMessageId?: string;
 }) => <div data-testid="models">{models ? `${models.chatModel}|${models.memoryModel}` : 'none'}
   <span data-testid="chat-title">{title}</span>
   <span data-testid="blocked">{sendBlockedReason ?? ''}</span>
@@ -89,6 +91,7 @@ vi.mock('./AgentChat', () => ({ AgentChat: ({ title, models, sendBlockedReason, 
   <span data-testid="attach-request">{attachRequest
     ? `${attachRequest.id}|${attachRequest.source}|${attachRequest.path}` : ''}</span>
   <span data-testid="attachment-refresh">{String(attachmentRefreshVersion ?? 0)}</span>
+  <span data-testid="target-message">{targetMessageId ?? ''}</span>
   <button type="button" onClick={() => onMessageSubmitted?.({ id: 'local', text: '刚发送的消息',
     createdAt: new Date(), occurrence: 1 })}>模拟发送</button>
   <button type="button" onClick={() => onFilesChanged?.()}>模拟文件生成</button>
@@ -376,6 +379,12 @@ describe('history search', () => {
       unobserve() {}
       disconnect() {}
     });
+  });
+  it('passes targetMessageId from the query string into AgentChat', async () => {
+    threadItems = [{ id: 'thread-1', title: '当前', resourceId: 'agent', updatedAt: '2026-10-11' }];
+    renderPage('/agent/thread-1?targetMessageId=msg%3Fid%3D1');
+    await screen.findByTestId('models');
+    expect(screen.getByTestId('target-message').textContent).toBe('msg?id=1');
   });
   it('opens from Ctrl/Cmd+K and navigates with encoded thread and message ids', async () => {
     threadItems = [{ id: 'thread-1', title: '当前', resourceId: 'agent', updatedAt: '2026-10-11' }];

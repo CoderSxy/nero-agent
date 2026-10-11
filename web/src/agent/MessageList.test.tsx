@@ -20,6 +20,19 @@ const pendingMessage = { id: 'a', role: 'assistant', content: { format: 2, parts
   { type: 'tool-invocation', toolInvocation: { state: 'approval-requested', toolCallId: 'tool-1', toolName: 'search', args: { query: 'hello' } } },
 ] } };
 
+describe('message anchors', () => {
+  it('renders persisted message ids on each message row', () => {
+    const messages = [
+      { id: 'user/1', role: 'user', content: { format: 2, parts: [{ type: 'text', text: '问题' }] } },
+      { id: 'msg?id=2', role: 'assistant', content: { format: 2, parts: [{ type: 'text', text: '回答' }] } },
+    ];
+    const { container } = render(<MessageList messages={messages as never} isRunning={false} error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+    const anchors = [...container.querySelectorAll('[data-message-id]')];
+    expect(anchors.map(node => node.getAttribute('data-message-id'))).toEqual(['user/1', 'msg?id=2']);
+  });
+});
+
 describe('message tools and stream state', () => {
   it('shows live reasoning and a bordered running process', () => {
     const message = { id: 'live', role: 'assistant', content: { format: 2, parts: [

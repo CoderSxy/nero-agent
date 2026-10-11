@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import type { GetAgentResponse, GetMemoryConfigResponse } from '@mastra/client-js';
 import type { MastraDBMessage } from '@mastra/core/agent/message-list';
 import { AGENT_ID, client } from './client';
@@ -35,6 +35,8 @@ function completeModels(models: Partial<ModelSettings>): ModelSettings | null {
 export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () => void }) {
   const { threadId: routeThreadId } = useParams();
   const threadId = routeThreadId === 'new' ? undefined : routeThreadId;
+  const [searchParams] = useSearchParams();
+  const targetMessageId = searchParams.get('targetMessageId') ?? undefined;
   const navigate = useNavigate();
   const list = useThreadList(user.id);
   const historySearchCache = useMemo(() => createHistorySearchCache(), []);
@@ -187,7 +189,8 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
             list.discardFirstMessageTitle(threadId, message.text);
             setPendingByThread(current => ({ ...current,
               [threadId]: (current[threadId] ?? []).filter(item => item.id !== message.id) }));
-          }} /> :
+          }}
+          targetMessageId={targetMessageId} /> :
         <div className="empty-chat"><h1>智能体</h1><p>开始一段新对话</p><button type="button"
           disabled={!canCreate} onClick={() => void create()}>新建会话</button></div>}
       {fileRequest && <WorkspaceFileOverlay request={fileRequest} source={workspaceSource}

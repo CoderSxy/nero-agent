@@ -168,6 +168,7 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
       const runningProcess = isRunning && message === messages.at(-1) &&
         parts.some(part => part.kind === 'reasoning' || part.kind === 'tool' || part.kind === 'observation');
       return <Message key={message.id} from={isUserMessage(message) ? 'user' : 'assistant'}
+        data-message-id={message.id}
         className={runningProcess ? 'process-message process-message--running' : undefined}>
         {attachments.length > 0 && <div className="message-attachment-row" aria-label="消息附件">
           {attachments.map(item => <HistoryAttachmentCard key={item.attachmentId} attachment={item} />)}

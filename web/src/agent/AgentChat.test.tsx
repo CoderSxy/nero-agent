@@ -696,3 +696,136 @@ describe('Agent conversation', () => {
     });
   });
 });
+
+describe('history search message targeting', () => {
+  function setupViewport(container: HTMLElement) {
+    const viewport = container.querySelector('[data-slot="message-scroller-viewport"]') as HTMLElement;
+    const content = container.querySelector('[data-slot="message-scroller-content"]') as HTMLElement;
+    let height = 800;
+    Object.defineProperty(viewport, 'clientHeight', { configurable: true, value: 200 });
+    Object.defineProperty(viewport, 'scrollHeight', { configurable: true, get: () => height });
+    viewport.getBoundingClientRect = () => ({
+      top: 0, left: 0, right: 400, bottom: 200, width: 400, height: 200, x: 0, y: 0, toJSON: () => ({}),
+    });
+    return { viewport, content, setHeight: (next: number) => { height = next; } };
+  }
+
+  function mockMessageLayout(container: HTMLElement, viewport: HTMLElement, positions: Record<string, number>) {
+    for (const [id, top] of Object.entries(positions)) {
+      const element = container.querySelector(`[data-message-id="${id}"]`) as HTMLElement | null;
+      if (!element) continue;
+      Object.defineProperty(element, 'offsetTop', { configurable: true, value: top });
+      element.getBoundingClientRect = () => {
+        const visualTop = top - viewport.scrollTop;
+        return {
+          top: visualTop, left: 0, right: 100, bottom: visualTop + 40, width: 100, height: 40,
+          x: 0, y: visualTop, toJSON: () => ({}),
+        };
+      };
+    }
+  }
+
+  function conversationMessages() {
+    return [
+      { id: 'first', role: 'user', content: { format: 2, parts: [{ type: 'text', text: '较早' }] } },
+      { id: 'msg?id=1', role: 'user', content: { format: 2, parts: [{ type: 'text', text: '目标问题' }] } },
+      { id: 'tail', role: 'assistant', content: { format: 2, parts: [{ type: 'text', text: '最新回复' }] } },
+    ];
+  }
+
+  function chatProps() {
+    return {
+      threadId: 'thread-1', resourceId: 'agent',
+      initialMessages: mockMessages as never,
+      onMessageSent: vi.fn(), models,
+    };
+  }
+
+  function mountTargeted(targetMessageId: string) {
+    mockMessages = conversationMessages();
+    const props = chatProps();
+    const view = render(<AgentChat {...props} />);
+    const layout = setupViewport(view.container);
+    mockMessageLayout(view.container, layout.viewport, { first: 0, 'msg?id=1': 400, tail: 600 });
+    view.rerender(<AgentChat {...props} targetMessageId={targetMessageId} />);
+    return { ...view, ...layout, props };
+  }
+
+  beforeEach(() => {
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      disconnect() {}
+    });
+  });
+
+  it('scrolls the chat viewport to a targeted message id with punctuation', () => {
+    const { container, viewport } = mountTargeted('msg?id=1');
+    const target = container.querySelector('[data-message-id="msg?id=1"]') as HTMLElement;
+    expect(target).toBeTruthy();
+    const before = viewport.scrollTop;
+    const offset = target.offsetTop;
+    expect(before).toBeGreaterThanOrEqual(Math.max(0, offset - 48));
+    expect(before).toBeLessThanOrEqual(offset + 8);
+    expect(target.classList.contains('message-search-target')).toBe(true);
+  });
+
+  it('does not re-scroll when the conversation grows after targeting', () => {
+    const observers: Array<{ target: Element; notify: () => void }> = [];
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(private notify: () => void) {}
+      observe(target: Element) { observers.push({ target, notify: this.notify }); }
+      disconnect() {}
+    });
+    const { container, rerender, viewport, content, setHeight, props } = mountTargeted('msg?id=1');
+    const scrollAfterTarget = viewport.scrollTop;
+    setHeight(1200);
+    observers.filter(item => item.target === content).forEach(item => item.notify());
+    expect(viewport.scrollTop).toBe(scrollAfterTarget);
+    mockMessages = [...conversationMessages(),
+      { id: 'stream', role: 'assistant', content: { format: 2, parts: [{ type: 'text', text: '追加' }] } }];
+    rerender(<AgentChat {...props} targetMessageId="msg?id=1" />);
+    expect(viewport.scrollTop).toBe(scrollAfterTarget);
+  });
+
+  it('scrolls again when another result is selected in the same thread', () => {
+    const { container, rerender, viewport, props } = mountTargeted('msg?id=1');
+    const firstTop = viewport.scrollTop;
+    rerender(<AgentChat {...props} targetMessageId="first" />);
+    const firstTarget = container.querySelector('[data-message-id="first"]') as HTMLElement;
+    expect(viewport.scrollTop).toBeLessThan(firstTop);
+    expect(viewport.scrollTop).toBeGreaterThanOrEqual(Math.max(0, firstTarget.offsetTop - 48));
+  });
+
+  it('clears highlight after the timer elapses', () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    Element.prototype.getAnimations = () => [];
+    const { container } = mountTargeted('msg?id=1');
+    const target = container.querySelector('[data-message-id="msg?id=1"]') as HTMLElement;
+    expect(target.classList.contains('message-search-target')).toBe(true);
+    vi.advanceTimersByTime(2500);
+    expect(target.classList.contains('message-search-target')).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it('leaves scrolling alone when the target message is missing', () => {
+    mockMessages = conversationMessages();
+    const { container, rerender } = render(<AgentChat threadId="thread-1" resourceId="agent"
+      initialMessages={mockMessages as never} onMessageSent={vi.fn()} models={models}
+      targetMessageId="missing" />);
+    const { viewport } = setupViewport(container);
+    viewport.scrollTop = 42;
+    mockMessages = [...conversationMessages(),
+      { id: 'stream', role: 'assistant', content: { format: 2, parts: [{ type: 'text', text: '追加' }] } }];
+    rerender(<AgentChat threadId="thread-1" resourceId="agent"
+      initialMessages={mockMessages as never} onMessageSent={vi.fn()} models={models}
+      targetMessageId="missing" />);
+    expect(viewport.scrollTop).toBe(42);
+  });
+
+  it('does not scroll when the target query param is removed', () => {
+    const { rerender, viewport, props } = mountTargeted('msg?id=1');
+    viewport.scrollTop = 99;
+    rerender(<AgentChat {...props} />);
+    expect(viewport.scrollTop).toBe(99);
+  });
+});

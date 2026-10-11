@@ -19,6 +19,22 @@ import { WorkspaceFilePicker } from './WorkspaceFilePicker';
 
 type PendingUpload = { key: string; file: File };
 
+const MESSAGE_TARGET_HIGHLIGHT_MS = 2500;
+
+function findMessageInViewport(viewport: HTMLElement, messageId: string): HTMLElement | null {
+  for (const node of viewport.querySelectorAll('[data-message-id]')) {
+    if (node.getAttribute('data-message-id') === messageId) return node as HTMLElement;
+  }
+  return null;
+}
+
+function scrollMessageIntoViewport(viewport: HTMLElement, element: HTMLElement) {
+  const viewportRect = viewport.getBoundingClientRect();
+  const elementRect = element.getBoundingClientRect();
+  const top = elementRect.top - viewportRect.top + viewport.scrollTop - 12;
+  viewport.scrollTop = Math.max(0, top);
+}
+
 export type AttachRequest = {
   id: number;
   path: string;
@@ -28,7 +44,7 @@ export type AttachRequest = {
 export function AgentChat({ title = '未命名会话', threadId, resourceId, initialMessages, onMessageSent, models, catalog = [],
   onModelChange, modelRef, modelDisabled = false, modelError, sendBlockedReason,
   pendingUserMessages = [], onMessageSubmitted, onMessageFailed, onFilesChanged, attachRequest,
-  attachmentRefreshVersion = 0 }: {
+  attachmentRefreshVersion = 0, targetMessageId }: {
   title?: string; threadId: string; resourceId: string; initialMessages: MastraDBMessage[];
   onMessageSent: (message: PendingUserMessage) => void;
   models: ModelSettings | null; catalog?: SafeModel[]; modelRef?: ModelRef;
@@ -40,6 +56,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   onFilesChanged?: () => void;
   attachRequest?: AttachRequest | null;
   attachmentRefreshVersion?: number;
+  targetMessageId?: string;
 }) {
   const [draft, setDraft] = useState('');
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -58,6 +75,10 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   const prepareEpoch = useRef(0);
   const viewportId = useId();
   const followRef = useRef(true);
+  const [handledTargetKey, setHandledTargetKey] = useState<string | null>(null);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingTargetKey = targetMessageId ? `${threadId}:${targetMessageId}` : null;
+  const targetingPending = pendingTargetKey !== null && handledTargetKey !== pendingTargetKey;
   const chatModel = models?.chatModel;
   const memoryModel = models?.memoryModel;
   const requestContext = useMemo(() => chatModel && memoryModel
@@ -130,10 +151,40 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
 
   const visibleMessages = withPendingUserMessages(chat.messages, pendingUserMessages);
   const isEmpty = !hasSubmitted && initialMessages.length === 0 && visibleMessages.length === 0;
+  useEffect(() => {
+    setHandledTargetKey(null);
+  }, [threadId, targetMessageId]);
+  useEffect(() => () => {
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+  }, []);
   useLayoutEffect(() => {
     const viewport = document.getElementById(viewportId);
-    if (viewport && followRef.current) viewport.scrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
-  }, [viewportId, visibleMessages]);
+    if (viewport && followRef.current && !targetingPending) {
+      viewport.scrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
+    }
+  }, [viewportId, visibleMessages, targetingPending]);
+  useLayoutEffect(() => {
+    if (!targetMessageId || !pendingTargetKey || handledTargetKey === pendingTargetKey) return;
+    const viewport = document.getElementById(viewportId);
+    if (!viewport) return;
+    followRef.current = false;
+    const element = findMessageInViewport(viewport, targetMessageId);
+    if (!element) {
+      if (visibleMessages.length > 0 || initialMessages.length > 0) {
+        setHandledTargetKey(pendingTargetKey);
+      }
+      return;
+    }
+    scrollMessageIntoViewport(viewport, element);
+    element.classList.add('message-search-target');
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    highlightTimerRef.current = setTimeout(() => {
+      element.classList.remove('message-search-target');
+      highlightTimerRef.current = null;
+    }, MESSAGE_TARGET_HIGHLIGHT_MS);
+    setHandledTargetKey(pendingTargetKey);
+  }, [viewportId, visibleMessages, targetMessageId, threadId, initialMessages.length,
+    pendingTargetKey, handledTargetKey]);
   useEffect(() => {
     const viewport = document.getElementById(viewportId);
     const content = viewport?.querySelector('[data-slot="message-scroller-content"]');

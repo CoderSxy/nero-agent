@@ -177,6 +177,10 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .light .chat-title { color: #111827; }
 .message-list { padding: 28px 0 24px; display: flex; flex-direction: column; gap: 24px; min-width: 0; max-width: 100%; }
 .chat-shell--active .message-list { padding-top: 65px; }
+.message-search-target { border-radius: 12px; outline: 2px solid color-mix(in srgb, var(--primary, #6b7cff) 55%, var(--border)); outline-offset: 2px;
+  background: color-mix(in srgb, var(--primary, #6b7cff) 12%, transparent); transition: outline-color .2s, background-color .2s; }
+.light .message-search-target { outline-color: color-mix(in srgb, #6b7cff 45%, var(--border));
+  background: color-mix(in srgb, #6b7cff 10%, var(--card)); }
 .agent-composer { margin-bottom: 24px; }
 .composer-model-trigger { display: flex; align-items: center; gap: 7px; max-width: min(65%, 240px); min-width: 0; height: 34px; padding: 3px 9px 3px 5px; border-radius: 9px; color: var(--foreground); font-size: 12px; }
 .composer-model-trigger:hover, .composer-model-trigger[aria-expanded='true'] { background: var(--card); }
