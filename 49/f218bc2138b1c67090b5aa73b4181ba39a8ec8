@@ -1,0 +1,44 @@
+web/src/agent/HistorySearchDialog.test.tsx
+  s_84032be74c5485::t_a1c0c97f59b670 143-154
+web/src/agent/ThreadSidebar.test.tsx
+  s_84032be74c5485::t_15f42cbf5aabdc 136-148,150-152
+  s_d2e85634f09eaf::t_92ce7602dc97f0 149
+web/src/storage/indexed-db.ts
+  s_d2e85634f09eaf::t_05b059ce4455d9 20
+web/src/agent/HistorySearchDialog.tsx
+  s_84032be74c5485::t_1e2557890cc4b9 44-46
+  s_d2e85634f09eaf::t_c339e3b8b16725 55
+  s_84032be74c5485::t_619afcb45ca115 60-62,66,70,72
+web/src/agent/use-history-search.test.tsx
+  s_d2e85634f09eaf::t_9503ca72f59c98 355-356,358-359,361-379
+  s_d2e85634f09eaf::t_8584c851677de3 357,360
+web/src/agent/ThreadSidebar.tsx
+  s_84032be74c5485::t_0aa5a04116a968 47-51
+web/src/agent/use-history-search.ts
+  s_d2e85634f09eaf::t_5fee85e92f072b 255-258,260,262,264-265,270,275
+  s_d2e85634f09eaf::t_388284a1b81028 176-178
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "49f218bc2138b1c67090b5aa73b4181ba39a8ec8",
+  "prompts": {},
+  "sessions": {
+    "s_84032be74c5485": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e423fd48-14cb-4953-b79a-3c4ae714c610",
+        "model": "composer-2.5"
+      },
+      "human_author": null
+    },
+    "s_d2e85634f09eaf": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "abb5dabc-2346-40b8-9acf-c01fbf3998c7",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
