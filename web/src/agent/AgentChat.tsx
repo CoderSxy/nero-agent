@@ -167,13 +167,16 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     if (!targetMessageId || !pendingTargetKey || handledTargetKey === pendingTargetKey) return;
     const viewport = document.getElementById(viewportId);
     if (!viewport) return;
-    followRef.current = false;
     const element = findMessageInViewport(viewport, targetMessageId);
     if (!element) {
       if (visibleMessages.length > 0 || initialMessages.length > 0) {
         setHandledTargetKey(pendingTargetKey);
       }
       return;
+    }
+    followRef.current = false;
+    for (const node of viewport.querySelectorAll('.message-search-target')) {
+      node.classList.remove('message-search-target');
     }
     scrollMessageIntoViewport(viewport, element);
     element.classList.add('message-search-target');

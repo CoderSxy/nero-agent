@@ -807,19 +807,20 @@ describe('history search message targeting', () => {
     vi.useRealTimers();
   });
 
-  it('leaves scrolling alone when the target message is missing', () => {
+  it('keeps auto-follow when the target message is missing', () => {
     mockMessages = conversationMessages();
     const { container, rerender } = render(<AgentChat threadId="thread-1" resourceId="agent"
       initialMessages={mockMessages as never} onMessageSent={vi.fn()} models={models}
       targetMessageId="missing" />);
-    const { viewport } = setupViewport(container);
+    const { viewport, setHeight } = setupViewport(container);
     viewport.scrollTop = 42;
+    setHeight(1200);
     mockMessages = [...conversationMessages(),
       { id: 'stream', role: 'assistant', content: { format: 2, parts: [{ type: 'text', text: '追加' }] } }];
     rerender(<AgentChat threadId="thread-1" resourceId="agent"
       initialMessages={mockMessages as never} onMessageSent={vi.fn()} models={models}
       targetMessageId="missing" />);
-    expect(viewport.scrollTop).toBe(42);
+    expect(viewport.scrollTop).toBe(1000);
   });
 
   it('does not scroll when the target query param is removed', () => {
