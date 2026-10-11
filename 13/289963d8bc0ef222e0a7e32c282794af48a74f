@@ -1,0 +1,57 @@
+web/src/agent/AgentPage.test.tsx
+  s_823a6e1b440470::t_7add28fe9a2bb8 382-387,394-397
+  s_823a6e1b440470::t_fcebb26aa66f74 2
+  s_823a6e1b440470::t_3be9331db988ef 371-372,380-381,388-389,391-393,398-399
+  s_823a6e1b440470::t_3e151e77e24146 390
+  s_823a6e1b440470::t_1b3ba4717b4683 48-74
+  s_823a6e1b440470::t_c938416fa4bae0 373-379
+web/src/agent/ThreadSidebar.tsx
+  s_823a6e1b440470::t_83f46efa788cdc 42-55
+  s_823a6e1b440470::t_147fc22f3ca8b3 3-6
+  s_823a6e1b440470::t_a1cf76bff392c8 36-37,39
+  s_823a6e1b440470::t_13702e1b0fb017 15,23-24
+  s_823a6e1b440470::t_aa8e0dea780d83 192-194
+  s_823a6e1b440470::t_637e0a7f516af6 131-143
+  s_823a6e1b440470::t_66ac29f087aa5f 41
+web/src/agent/AgentPage.tsx
+  s_823a6e1b440470::t_0d61e1226b5ce1 161-162
+  s_823a6e1b440470::t_0bc13eb4ea8fe6 21-23
+  s_823a6e1b440470::t_2e9637d9d307f4 40-41
+  s_823a6e1b440470::t_ced4bf89de2cb7 145-147
+web/src/styles.css
+  s_823a6e1b440470::t_85e94de79cbeb1 44,47-64
+web/src/agent/ThreadSidebar.test.tsx
+  s_823a6e1b440470::t_cf8cb6100861dc 102-114,116-135
+  s_823a6e1b440470::t_b5302c131eb33f 115
+  s_823a6e1b440470::t_a99f72cbda32ae 2-10
+web/src/agent/HistorySearchDialog.tsx
+  s_823a6e1b440470::t_e5b06e1204e58b 1-77,79-162
+  s_823a6e1b440470::t_9451a7e9fe0a53 78
+web/package.json
+  s_823a6e1b440470::t_dd168105dc2759 21
+web/src/agent/HistorySearchDialog.test.tsx
+  s_823a6e1b440470::t_149dd436f4f2ce 124
+  s_823a6e1b440470::t_5fcb10269b41f8 1,11-55,57-71,73-111,113-123,125-140
+  s_823a6e1b440470::t_8d90185a0ff207 72
+  s_823a6e1b440470::t_b76965d354cec4 2-10
+  s_823a6e1b440470::t_2199f180d1596a 56
+  s_823a6e1b440470::t_473d237ee565d6 112
+web/package-lock.json
+  s_823a6e1b440470::t_c7d5882d31437b 19,3907
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "13289963d8bc0ef222e0a7e32c282794af48a74f",
+  "prompts": {},
+  "sessions": {
+    "s_823a6e1b440470": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "79b77e30-ca2b-4e6e-bce2-f25ad9b14326",
+        "model": "composer-2.5"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
