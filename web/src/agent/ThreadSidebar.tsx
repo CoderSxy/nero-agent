@@ -49,9 +49,6 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
         setSearchOpen(open => !open);
         return;
       }
-      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) {
-        return;
-      }
       event.preventDefault();
       setSearchOpen(open => !open);
     };

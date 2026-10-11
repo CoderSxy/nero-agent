@@ -150,3 +150,24 @@ it('closes history search with Ctrl/Cmd+K when focus is in the search input', as
   fireEvent.keyDown(input, { key: 'k', ctrlKey: true, bubbles: true });
   expect(screen.queryByRole('dialog', { name: '搜索历史对话' })).toBeNull();
 });
+
+it('opens history search with Ctrl/Cmd+K while the chat composer has focus', async () => {
+  const threads = [{ id: 'a', title: '会话', resourceId: 'agent', updatedAt: '2026-10-05' }] as never;
+  const composer = document.createElement('textarea');
+  document.body.append(composer);
+  render(<ThreadSidebar threads={threads} loading={false} error={null}
+    onNew={vi.fn()} onSelect={vi.fn()} theme="dark" onThemeChange={vi.fn()}
+    search={{
+      documents: [], scope: 'recent', recentStatus: 'ready', fullStatus: 'idle',
+      recentProgress: { completed: 0, total: 0 }, fullProgress: { completed: 0, total: 0 },
+      recentFailedCount: 0, fullFailedCount: 0, ensureRecent: vi.fn(), cancelRecent: vi.fn(),
+      loadAll: vi.fn(), retryRecent: vi.fn(), retryFull: vi.fn(), invalidateThread: vi.fn(),
+    }} onSearchSelect={vi.fn()} />);
+  try {
+    composer.focus();
+    fireEvent.keyDown(composer, { key: 'k', metaKey: true, bubbles: true });
+    expect(await screen.findByRole('dialog', { name: '搜索历史对话' })).toBeTruthy();
+  } finally {
+    composer.remove();
+  }
+});

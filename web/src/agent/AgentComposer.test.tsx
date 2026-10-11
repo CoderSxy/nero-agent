@@ -64,6 +64,20 @@ describe('Composer run controls', () => {
     fireEvent.click(screen.getByRole('option', { name: /个人模型/ }));
     expect(change).toHaveBeenCalledWith(second);
   });
+  it('closes an open model menu when model changes become disabled', () => {
+    const catalog = [{
+      ref: 'public:11111111-1111-4111-8111-111111111111', scope: 'public', displayName: '默认模型',
+      providerId: 'test', modelId: 'm1', enabled: true, baseUrl: 'https://example.test',
+      apiMode: 'chat', hasApiKey: true, keyHint: '1234', supportsVision: false,
+    }] as SafeModel[];
+    const props = { draft: '', onDraftChange: vi.fn(), isRunning: false, onSend: vi.fn(), onStop: vi.fn(),
+      catalog, modelRef: catalog[0].ref };
+    const { rerender } = render(<AgentComposer {...props} />);
+    fireEvent.click(screen.getByRole('combobox', { name: '模型' }));
+    expect(screen.getByRole('listbox', { name: '选择模型' })).toBeTruthy();
+    rerender(<AgentComposer {...props} modelDisabled />);
+    expect(screen.queryByRole('listbox', { name: '选择模型' })).toBeNull();
+  });
   it('prevents duplicate sends while a run is active and exposes stop', () => {
     const send = vi.fn(); const stop = vi.fn();
     render(<AgentComposer draft="测试" onDraftChange={vi.fn()} isRunning={true} onSend={send} onStop={stop} />);

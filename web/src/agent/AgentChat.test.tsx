@@ -52,6 +52,14 @@ afterEach(() => { cleanup(); vi.clearAllMocks(); vi.unstubAllGlobals(); mockRunn
 });
 
 describe('Agent conversation', () => {
+  it('restores the landing draft and focuses the composer after creating a conversation', () => {
+    mockMessages = [];
+    render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}
+      initialDraft="创建期间输入的问题" focusComposer onMessageSent={vi.fn()} models={models} />);
+    const input = screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement;
+    expect(input.value).toBe('创建期间输入的问题');
+    expect(document.activeElement).toBe(input);
+  });
   it('notifies the workspace file list when a run finishes', () => {
     const changed = vi.fn();
     mockRunning = true;

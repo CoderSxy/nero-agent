@@ -20,7 +20,8 @@ describe('agent login', () => {
     fireEvent.change(screen.getByLabelText('邮箱'), { target: { value: 'user@example.com' } });
     fireEvent.change(screen.getByLabelText('密码'), { target: { value: 'correct horse battery staple' } });
     fireEvent.click(screen.getByRole('button', { name: '登录' }));
-    expect(await screen.findByText('开始一段新对话')).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: '有什么可以帮你？' })).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: '发送消息' })).toBeTruthy();
     expect(sessionStorage.getItem('nero-agent-session')).toBe('test-token');
   });
 

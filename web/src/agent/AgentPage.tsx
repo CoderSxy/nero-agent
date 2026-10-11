@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { ChatShell } from '@mastra/playground-ui/components/ChatShell';
 import type { GetAgentResponse, GetMemoryConfigResponse } from '@mastra/client-js';
 import type { MastraDBMessage } from '@mastra/core/agent/message-list';
 import { AGENT_ID, client } from './client';
@@ -7,6 +8,7 @@ import { useThreadList } from './use-thread-list';
 import { loadScopedThread, neighborAfterDeletion } from './thread-scope';
 import { ThreadSidebar } from './ThreadSidebar';
 import { AgentChat } from './AgentChat';
+import { AgentComposer } from './AgentComposer';
 import { ConfigPanel } from './ConfigPanel';
 import { RightPanelDock } from './RightPanelDock';
 import { PanelResizeHandle } from './PanelResizeHandle';
@@ -42,10 +44,20 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
   const historySearchCache = useMemo(() => createHistorySearchCache(), []);
   const historySearch = useHistorySearch({ userId: user.id, threads: list.threads, cache: historySearchCache });
   const [messages, setMessages] = useState<MastraDBMessage[]>([]);
+  const [landingDraft, setLandingDraft] = useState('');
+  const [landingFocused, setLandingFocused] = useState(false);
+  const [creatingThread, setCreatingThread] = useState(false);
+  const [handoffThreadId, setHandoffThreadId] = useState<string | null>(null);
+  const creatingThreadRef = useRef(false);
+  const landingCreationStartedRef = useRef(false);
+  const routeThreadIdRef = useRef(routeThreadId);
+  routeThreadIdRef.current = routeThreadId;
   const [pendingByThread, setPendingByThread] = useState<Record<string, PendingUserMessage[]>>({});
   const [filesRefreshVersion, setFilesRefreshVersion] = useState(0);
   const [fileRequest, setFileRequest] = useState<{ path: string; id: number } | null>(null);
-  const [attachRequest, setAttachRequest] = useState<{ id: number; path: string; source: 'personal' | 'agent' } | null>(null);
+  const [attachRequest, setAttachRequest] = useState<{
+    id: number; threadId: string; path: string; source: 'personal' | 'agent';
+  } | null>(null);
   const nextAttachId = useRef(0);
   const [loadingThread, setLoadingThread] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -123,10 +135,43 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
     });
     return () => { active = false; };
   }, [threadId, navigate, user.id]);
-  async function create() {
+  useEffect(() => {
+    if (threadId) { setLandingFocused(false); return; }
+    landingCreationStartedRef.current = false;
+    setLandingFocused(false);
+    setLandingDraft('');
+    setHandoffThreadId(null);
+  }, [threadId]);
+  useEffect(() => {
+    if (handoffThreadId && threadId && threadId !== handoffThreadId) setHandoffThreadId(null);
+  }, [handoffThreadId, threadId]);
+  useEffect(() => {
+    setAttachRequest(current => current?.threadId === threadId ? current : null);
+  }, [threadId]);
+  useEffect(() => {
+    if (!threadId && landingFocused && canCreate && !landingCreationStartedRef.current) {
+      void create(true);
+    }
+  }, [threadId, landingFocused, canCreate]);
+  async function create(fromLanding = false) {
+    if (creatingThreadRef.current || (fromLanding && landingCreationStartedRef.current)) return;
     if (!canCreate || !newThreadModels) { setNotice(catalog ? '请先配置公共默认模型' : '模型列表尚未加载，请稍后重试'); return; }
-    try { const thread = await list.createThread(newThreadModels); setNotice(null); navigate(`/agent/${thread.id}`); }
-    catch (cause) { setNotice(cause instanceof Error ? cause.message : '新建会话失败'); }
+    creatingThreadRef.current = true;
+    if (fromLanding) landingCreationStartedRef.current = true;
+    setCreatingThread(true);
+    try {
+      const thread = await list.createThread(newThreadModels);
+      if (fromLanding && routeThreadIdRef.current !== 'new') return;
+      setHandoffThreadId(fromLanding ? thread.id : null);
+      setNotice(null);
+      navigate(`/agent/${thread.id}`);
+    } catch (cause) {
+      if (fromLanding) landingCreationStartedRef.current = false;
+      setNotice(cause instanceof Error ? cause.message : '新建会话失败');
+    } finally {
+      creatingThreadRef.current = false;
+      setCreatingThread(false);
+    }
   }
   async function changeModels(next: ModelSettings) {
     if (!available.has(next.chatModel) || !available.has(next.memoryModel)) {
@@ -157,7 +202,7 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
   return <main className="agent-layout" style={{ '--left-panel-width': `${leftWidth}px` } as React.CSSProperties}>
     <div className="left-panel-dock">
     <ThreadSidebar threads={list.threads} currentId={threadId} loading={list.loading} error={list.error}
-      onNew={() => void create()} onSelect={id => navigate(`/agent/${id}`)} onDelete={deleteThread}
+      onNew={() => void create(!threadId)} onSelect={id => navigate(`/agent/${id}`)} onDelete={deleteThread}
       onRename={list.renameThread}
       theme={theme} onThemeChange={setTheme}
       canCreate={canCreate} user={user} onLogout={onLogout}
@@ -169,6 +214,8 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
       {loadingThread ? <div className="empty-chat">加载会话中…</div> : threadId && !notice ?
         <AgentChat key={threadId} title={list.threads.find(thread => thread.id === threadId)?.title || '未命名会话'}
           threadId={threadId} resourceId={user.id} initialMessages={messages} models={selected}
+          initialDraft={handoffThreadId === threadId ? landingDraft : ''}
+          focusComposer={handoffThreadId === threadId}
           catalog={catalog ?? []} modelRef={selected?.chatModel} onModelChange={selectComposerModel}
           modelDisabled={settingsSaving} modelError={settingsError}
           sendBlockedReason={sendBlockedReason} onMessageSent={message => {
@@ -184,7 +231,7 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
           onFilesChanged={() => setFilesRefreshVersion(value => value + 1)}
           attachmentRefreshVersion={filesRefreshVersion}
           pendingUserMessages={pendingByThread[threadId] ?? []}
-          attachRequest={attachRequest}
+          attachRequest={attachRequest?.threadId === threadId ? attachRequest : null}
           onMessageSubmitted={message => {
             list.previewFirstMessageTitle(threadId, message.text);
             setPendingByThread(current => ({ ...current,
@@ -196,8 +243,19 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
               [threadId]: (current[threadId] ?? []).filter(item => item.id !== message.id) }));
           }}
           targetMessageId={targetMessageId} /> :
-        <div className="empty-chat"><h1>智能体</h1><p>开始一段新对话</p><button type="button"
-          disabled={!canCreate} onClick={() => void create()}>新建会话</button></div>}
+        <ChatShell className="chat-shell chat-shell--empty">
+          <ChatShell.Stage><ChatShell.Viewport><ChatShell.Content><ChatShell.Column />
+          </ChatShell.Content></ChatShell.Viewport></ChatShell.Stage>
+          <ChatShell.Dock><ChatShell.Column>
+            <div className="chat-welcome"><h1>有什么可以帮你？</h1></div>
+            <AgentComposer draft={landingDraft} onDraftChange={setLandingDraft}
+              onInputFocus={() => { setLandingFocused(true); if (canCreate) void create(true); }}
+              isRunning={false} sendDisabled={!canCreate || creatingThread} attachmentsDisabled
+              onSend={() => void create(true)} onStop={() => undefined}
+              catalog={catalog ?? []} modelRef={selected?.chatModel} onModelChange={selectComposerModel}
+              modelDisabled={creatingThread} />
+          </ChatShell.Column></ChatShell.Dock>
+        </ChatShell>}
       {fileRequest && <WorkspaceFileOverlay request={fileRequest} source={workspaceSource}
         onClosed={() => setFileRequest(null)} onSaved={() => setFilesRefreshVersion(value => value + 1)} />}
     </section>
@@ -208,10 +266,10 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
         workspaceId={workspaceSource === 'agent' ? agent?.workspaceId : undefined}
         refreshVersion={filesRefreshVersion}
         onOpenFile={path => setFileRequest(current => ({ path, id: (current?.id ?? 0) + 1 }))}
-        onAttachFile={(path, source) => {
+        onAttachFile={threadId ? (path, source) => {
           nextAttachId.current += 1;
-          setAttachRequest({ id: nextAttachId.current, path, source });
-        }}
+          setAttachRequest({ id: nextAttachId.current, threadId, path, source });
+        } : undefined}
         onFilesChanged={() => setFilesRefreshVersion(value => value + 1)} />} />
   </main>;
 }

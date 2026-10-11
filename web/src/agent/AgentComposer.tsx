@@ -70,9 +70,10 @@ function dragHasFiles(transfer: DataTransfer | null | undefined): boolean {
 export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop, sendDisabled = false,
   catalog = [], modelRef, onModelChange, modelDisabled = false,
   attachments = [], onChooseWorkspaceFiles, onUploadFiles, onRemoveAttachment, onRetryAttachment,
-  onWorkspaceDrop }: {
+  onWorkspaceDrop, onInputFocus, autoFocus = false, attachmentsDisabled = false }: {
   sendDisabled?: boolean; draft: string; onDraftChange: (value: string) => void; isRunning: boolean;
   onSend: () => void; onStop: () => void;
+  onInputFocus?: () => void; autoFocus?: boolean; attachmentsDisabled?: boolean;
   catalog?: SafeModel[]; modelRef?: ModelRef; onModelChange?: (ref: ModelRef) => void; modelDisabled?: boolean;
   attachments?: ComposerAttachment[];
   onChooseWorkspaceFiles?: () => void;
@@ -98,11 +99,13 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
     && (Boolean(draft.trim()) || hasReadyAttachment);
 
   function onDragOver(event: DragEvent<HTMLDivElement>) {
+    if (attachmentsDisabled) return;
     if (!dragHasFiles(event.dataTransfer)) return;
     event.preventDefault();
   }
 
   function onDrop(event: DragEvent<HTMLDivElement>) {
+    if (attachmentsDisabled) return;
     if (!dragHasFiles(event.dataTransfer)) return;
     event.preventDefault();
     const workspaceRaw = event.dataTransfer.getData(WORKSPACE_FILE_MIME);
@@ -124,6 +127,7 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
   }
 
   function onPaste(event: ClipboardEvent<HTMLDivElement>) {
+    if (attachmentsDisabled) return;
     const items = event.clipboardData?.items;
     if (!items) return;
     const images: File[] = [];
@@ -139,6 +143,7 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
   }
 
   useEffect(() => { if (open) searchRef.current?.focus(); }, [open]);
+  useEffect(() => { if (modelDisabled) setOpen(false); }, [modelDisabled]);
   useEffect(() => {
     if (!open) return;
     const closeOutside = (event: PointerEvent) => {
@@ -202,6 +207,7 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
     </div>}
     <ComposerRing busy={isRunning}><ComposerBox>
       <ComposerInput aria-label="发送消息" placeholder="向智能体发送消息…" value={draft}
+        autoFocus={autoFocus} onFocus={onInputFocus}
         onChange={event => onDraftChange(event.target.value)}
         onKeyDown={event => {
           if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing
@@ -255,11 +261,11 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
         </div>, document.body)}
         <div className="composer-file-controls">
           <input ref={fileInputRef} className="composer-file-input" type="file" multiple
-            aria-label="选择本地文件" onChange={event => onFileInput('file', event)} />
+            aria-label="选择本地文件" disabled={attachmentsDisabled} onChange={event => onFileInput('file', event)} />
           <input ref={imageInputRef} className="composer-file-input" type="file" multiple accept={IMAGE_ACCEPT}
-            aria-label="选择图片" onChange={event => onFileInput('image', event)} />
+            aria-label="选择图片" disabled={attachmentsDisabled} onChange={event => onFileInput('image', event)} />
           <button type="button" className="composer-add-button" aria-label="添加附件" title="添加附件"
-            aria-haspopup="menu" aria-expanded={addOpen}
+            aria-haspopup="menu" aria-expanded={addOpen} disabled={attachmentsDisabled}
             onClick={event => {
               if (addOpen) { setAddOpen(false); return; }
               const rect = event.currentTarget.getBoundingClientRect();

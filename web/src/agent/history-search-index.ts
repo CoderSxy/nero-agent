@@ -81,7 +81,7 @@ export function buildHistorySearchDocuments(
       }
       continue;
     }
-    if (!current) continue;
+    if (!current || message.role !== 'assistant') continue;
     const answerText = visibleTextFromMessage(message);
     if (answerText) answerChunks.push(answerText);
   }
@@ -95,26 +95,23 @@ type NormalizedMap = { normalized: string; indexToOriginal: number[] };
 function buildNormalizedMap(original: string): NormalizedMap {
   const normalized = original.normalize('NFKC').toLocaleLowerCase();
   const indexToOriginal: number[] = [];
-  let normCursor = 0;
-  for (let i = 0; i < original.length && normCursor < normalized.length; i++) {
-    const after = original.slice(0, i + 1).normalize('NFKC').toLocaleLowerCase();
-    while (normCursor < after.length && normCursor < normalized.length) {
-      indexToOriginal[normCursor] = i;
-      normCursor++;
-    }
+  let piecewiseNormalized = '';
+  for (let i = 0; i < original.length;) {
+    const character = String.fromCodePoint(original.codePointAt(i)!);
+    const piece = character.normalize('NFKC').toLocaleLowerCase();
+    piecewiseNormalized += piece;
+    for (let j = 0; j < piece.length; j++) indexToOriginal.push(i);
+    i += character.length;
   }
-  while (normCursor < normalized.length) {
-    indexToOriginal[normCursor] = Math.max(0, original.length - 1);
-    normCursor++;
-  }
-  return { normalized, indexToOriginal };
+  // Some combining sequences normalize across code-point boundaries. In that
+  // case the normalized text is still searchable, but has no reliable map.
+  return { normalized, indexToOriginal: piecewiseNormalized === normalized ? indexToOriginal : [] };
 }
 
 function findNormalizedIndex(haystack: string, needle: string): number {
-  const map = buildNormalizedMap(haystack);
   const normalizedNeedle = normalizeSearchText(needle);
   if (!normalizedNeedle) return -1;
-  return map.normalized.indexOf(normalizedNeedle);
+  return haystack.normalize('NFKC').toLocaleLowerCase().indexOf(normalizedNeedle);
 }
 
 function sliceOriginalByNormalizedRange(
@@ -127,7 +124,8 @@ function sliceOriginalByNormalizedRange(
   const startOriginal = map.indexToOriginal[startNorm];
   const endOriginal = map.indexToOriginal[endNorm - 1];
   if (startOriginal === undefined || endOriginal === undefined) return null;
-  return original.slice(startOriginal, endOriginal + 1);
+  const endCodePoint = original.codePointAt(endOriginal);
+  return original.slice(startOriginal, endOriginal + (endCodePoint && endCodePoint > 0xffff ? 2 : 1));
 }
 
 function buildMatchedSnippet(original: string, query: string): string {
@@ -136,7 +134,7 @@ function buildMatchedSnippet(original: string, query: string): string {
   const map = buildNormalizedMap(trimmed);
   const needle = normalizeSearchText(query);
   if (!needle) return trimmed.slice(0, SNIPPET_MAX);
-  const matchIndex = findNormalizedIndex(trimmed, query);
+  const matchIndex = map.normalized.indexOf(needle);
   if (matchIndex < 0) {
     const lower = trimmed.toLocaleLowerCase();
     const literal = lower.indexOf(needle);
@@ -156,6 +154,10 @@ function buildMatchedSnippet(original: string, query: string): string {
   const mapped = sliceOriginalByNormalizedRange(trimmed, windowStart, windowEnd, map);
   if (mapped && mapped.length > 0) {
     return mapped.length > SNIPPET_MAX ? mapped.slice(0, SNIPPET_MAX) : mapped;
+  }
+
+  if (map.indexToOriginal.length === 0) {
+    return map.normalized.slice(windowStart, windowEnd).slice(0, SNIPPET_MAX);
   }
 
   const startOriginal = map.indexToOriginal[windowStart] ?? 0;

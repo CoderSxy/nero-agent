@@ -38,6 +38,20 @@ const thread = {
 };
 
 describe('buildHistorySearchDocuments', () => {
+  it('ignores system and notification text between a question and the assistant answer', () => {
+    const messages = [
+      textMessage('u1', 'user', '问题'),
+      { id: 'notice', role: 'signal', createdAt: new Date('2026-10-06T01:00:01Z'),
+        content: { format: 2, parts: [{ type: 'text', text: '系统通知里的秘密词' }] } },
+      { id: 'system', role: 'system', createdAt: new Date('2026-10-06T01:00:02Z'),
+        content: { format: 2, parts: [{ type: 'text', text: '系统提示里的秘密词' }] } },
+      textMessage('a1', 'assistant', '真正的回答'),
+    ] as MastraDBMessage[];
+    const docs = buildHistorySearchDocuments(thread, messages);
+    expect(docs).toHaveLength(1);
+    expect(docs[0].answerText).toBe('真正的回答');
+    expect(searchHistoryDocuments(docs, '秘密词').total).toBe(0);
+  });
   it('indexes one document per nonempty user turn and groups assistant text', () => {
     const messages: MastraDBMessage[] = [
       textMessage('u1', 'user', '第一个问题', '2026-10-06T01:00:00Z'),
@@ -114,6 +128,15 @@ describe('buildHistorySearchDocuments', () => {
 });
 
 describe('searchHistoryDocuments', () => {
+  it('keeps searching 50 long history turns responsive', () => {
+    const documents: HistorySearchDocument[] = Array.from({ length: 50 }, (_, index) => ({
+      threadId: `t-${index}`, threadTitle: '长会话', threadUpdatedAt: '2026-10-11T00:00:00.000Z',
+      userMessageId: `u-${index}`, questionText: '甲'.repeat(20_000), answerText: '',
+    }));
+    const start = performance.now();
+    expect(searchHistoryDocuments(documents, '不存在的词').total).toBe(0);
+    expect(performance.now() - start).toBeLessThan(2_000);
+  });
   it('prefers question matches when both question and answer match', () => {
     const documents: HistorySearchDocument[] = [{
       threadId: 't1',

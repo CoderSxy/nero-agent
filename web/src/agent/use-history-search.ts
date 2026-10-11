@@ -61,14 +61,18 @@ async function loadThreadsWithConcurrency(
       if ((options.invalidationEpoch.get(threadId) ?? 0) !== epochAtStart) return;
 
       if (cached) {
-        options.docsByThread.set(threadId, cached);
+        options.docsByThread.set(threadId, cached.map(document => ({
+          ...document,
+          threadTitle: thread.title ?? '',
+          threadUpdatedAt: updatedAt,
+        })));
         options.failedIds.delete(threadId);
       } else {
         const result = await options.loadThread(threadId, options.userId);
         if (options.isStale()) return;
         if ((options.invalidationEpoch.get(threadId) ?? 0) !== epochAtStart) return;
 
-        const docs = buildHistorySearchDocuments(result.thread, result.messages);
+        const docs = buildHistorySearchDocuments(thread, result.messages);
         await options.cache.put(options.userId, threadId, updatedAt, docs);
         if (options.isStale()) return;
         if ((options.invalidationEpoch.get(threadId) ?? 0) !== epochAtStart) return;
@@ -127,8 +131,15 @@ export function useHistorySearch(options: {
   const fullFailedRef = useRef(new Set<string>());
   const invalidationEpochRef = useRef(new Map<string, number>());
   const prevUserIdRef = useRef(userId);
+  const activeIndexRef = useRef(false);
+  const threadListKeyRef = useRef<string | null>(null);
+  const threadVersionsRef = useRef(new Map<string, string>());
   const threadsRef = useRef(threads);
   threadsRef.current = threads;
+  const threadListKey = JSON.stringify([
+    userId,
+    threads.map(thread => [thread.id, threadUpdatedAtIso(thread), thread.title]),
+  ]);
 
   const publishDocuments = useCallback((gen: number) => {
     if (gen !== generationRef.current) return;
@@ -140,6 +151,7 @@ export function useHistorySearch(options: {
     recentFailedRef.current.clear();
     fullFailedRef.current.clear();
     invalidationEpochRef.current.clear();
+    threadVersionsRef.current.clear();
     fullLoadActiveRef.current = false;
     setDocuments([]);
     setScope('recent');
@@ -243,7 +255,47 @@ export function useHistorySearch(options: {
     [cache, loadThread, publishDocuments, userId],
   );
 
+  useEffect(() => {
+    const previousKey = threadListKeyRef.current;
+    threadListKeyRef.current = threadListKey;
+    if (previousKey === threadListKey) return;
+
+    const previousVersions = threadVersionsRef.current;
+    const nextVersions = new Map(threads.map(thread => [
+      thread.id,
+      JSON.stringify([threadUpdatedAtIso(thread), thread.title]),
+    ]));
+    threadVersionsRef.current = nextVersions;
+    if (previousKey === null || !activeIndexRef.current) return;
+
+    const changedIds = threads
+      .filter(thread => previousVersions.get(thread.id) !== nextVersions.get(thread.id))
+      .map(thread => thread.id);
+    if (changedIds.length === 0) return;
+
+    // A list can arrive after an empty first batch or contain newer thread
+    // versions. Keep unaffected results while rechecking cache versions.
+    const gen = ++generationRef.current;
+    const reloadFull = fullStatus === 'ready' || fullStatus === 'loading';
+    for (const threadId of changedIds) docsByThreadRef.current.delete(threadId);
+    recentFailedRef.current.clear();
+    fullFailedRef.current.clear();
+    fullLoadActiveRef.current = false;
+    publishDocuments(gen);
+    setRecentFailedCount(0);
+    setFullFailedCount(0);
+    setFullStatus('idle');
+    setScope('recent');
+    void runRecentBatch(gen, threads.slice(0, RECENT_HISTORY_LIMIT))
+      .then(() => {
+        if (gen !== generationRef.current || !reloadFull || recentFailedRef.current.size > 0) return;
+        return runFullBatch(gen, threads.slice(RECENT_HISTORY_LIMIT));
+      })
+      .catch(() => undefined);
+  }, [threadListKey, threads, fullStatus, publishDocuments, runRecentBatch, runFullBatch]);
+
   const ensureRecent = useCallback(() => {
+    activeIndexRef.current = true;
     if (recentStatus === 'loading' || recentStatus === 'ready') return;
     const gen = generationRef.current;
     const recentThreads = threadsRef.current.slice(0, RECENT_HISTORY_LIMIT);
@@ -251,6 +303,7 @@ export function useHistorySearch(options: {
   }, [recentStatus, runRecentBatch]);
 
   const cancelRecent = useCallback(() => {
+    activeIndexRef.current = false;
     generationRef.current += 1;
     fullLoadActiveRef.current = false;
     docsByThreadRef.current.clear();

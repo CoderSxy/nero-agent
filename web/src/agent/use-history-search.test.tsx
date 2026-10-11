@@ -62,6 +62,65 @@ beforeEach(() => {
 });
 
 describe('useHistorySearch', () => {
+  it('loads conversations that arrive after search was opened during the initial list fetch', async () => {
+    const cache = createHistorySearchCache();
+    const threads = makeThreads(2);
+    const { result, rerender } = renderHook(
+      ({ list }) => useHistorySearch({ userId: 'user-1', threads: list, cache, loadThread }),
+      { initialProps: { list: [] as Thread[] } },
+    );
+
+    act(() => result.current.ensureRecent());
+    await waitFor(() => expect(result.current.recentStatus).toBe('ready'));
+    rerender({ list: threads });
+
+    await waitFor(() => expect(result.current.documents).toHaveLength(2));
+    expect(result.current.documents.map(document => document.threadId)).toEqual(threads.map(thread => thread.id));
+  });
+
+  it('refreshes an indexed conversation when its updatedAt changes', async () => {
+    const cache = createHistorySearchCache();
+    const thread = makeThreads(1)[0];
+    const { result, rerender } = renderHook(
+      ({ list }) => useHistorySearch({ userId: 'user-1', threads: list, cache, loadThread }),
+      { initialProps: { list: [thread] } },
+    );
+
+    act(() => result.current.ensureRecent());
+    await waitFor(() => expect(result.current.documents[0]?.questionText).toBe('q-thread-00'));
+    const updated = { ...thread, updatedAt: '2026-10-12T00:00:00.000Z' } as Thread;
+    loadThread.mockResolvedValue(threadLoadResult(updated, '其他标签页的新问题'));
+    rerender({ list: [updated] });
+
+    await waitFor(() => expect(result.current.documents[0]?.questionText).toBe('其他标签页的新问题'));
+  });
+
+  it('keeps the all-history scope current when an older conversation changes', async () => {
+    const cache = createHistorySearchCache();
+    const threads = makeThreads(51);
+    loadThread.mockImplementation(async (threadId: string) =>
+      threadLoadResult(threads.find(thread => thread.id === threadId)!, `q-${threadId}`));
+    const { result, rerender } = renderHook(
+      ({ list }) => useHistorySearch({ userId: 'user-1', threads: list, cache, loadThread }),
+      { initialProps: { list: threads } },
+    );
+
+    act(() => result.current.ensureRecent());
+    await waitFor(() => expect(result.current.recentStatus).toBe('ready'));
+    act(() => result.current.loadAll());
+    await waitFor(() => expect(result.current.scope).toBe('all'));
+
+    const older = { ...threads[50], updatedAt: '2026-10-12T00:00:00.000Z' } as Thread;
+    loadThread.mockImplementation(async (threadId: string) =>
+      threadLoadResult(threadId === older.id ? older : threads.find(thread => thread.id === threadId)!,
+        threadId === older.id ? '旧会话的新问题' : `q-${threadId}`));
+    rerender({ list: [...threads.slice(0, 50), older] });
+
+    await waitFor(() => expect(result.current.scope).toBe('all'));
+    await waitFor(() => expect(result.current.documents.find(doc => doc.threadId === older.id)?.questionText)
+      .toBe('旧会话的新问题'));
+  });
+
   it('loads the newest 50 threads with bounded concurrency, then loadAll fetches only the rest', async () => {
     const threads = makeThreads(55);
     let active = 0;

@@ -44,8 +44,9 @@ export type AttachRequest = {
 export function AgentChat({ title = '未命名会话', threadId, resourceId, initialMessages, onMessageSent, models, catalog = [],
   onModelChange, modelRef, modelDisabled = false, modelError, sendBlockedReason,
   pendingUserMessages = [], onMessageSubmitted, onMessageFailed, onResponseSettled, onFilesChanged, attachRequest,
-  attachmentRefreshVersion = 0, targetMessageId }: {
+  attachmentRefreshVersion = 0, targetMessageId, initialDraft = '', focusComposer = false }: {
   title?: string; threadId: string; resourceId: string; initialMessages: MastraDBMessage[];
+  initialDraft?: string; focusComposer?: boolean;
   onMessageSent: (message: PendingUserMessage) => void;
   models: ModelSettings | null; catalog?: SafeModel[]; modelRef?: ModelRef;
   onModelChange?: (ref: ModelRef) => void; modelDisabled?: boolean; modelError?: string | null;
@@ -59,7 +60,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   attachmentRefreshVersion?: number;
   targetMessageId?: string;
 }) {
-  const [draft, setDraft] = useState('');
+  const [draft, setDraft] = useState(initialDraft);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [failedDecisions, setFailedDecisions] = useState<Set<string>>(new Set());
@@ -456,6 +457,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
       {blockedReason && <p className="notice" role="status">{blockedReason}</p>}
       {modelError && <p className="error" role="alert">{modelError}</p>}
       <AgentComposer draft={draft} sendDisabled={Boolean(blockedReason) || modelDisabled} onDraftChange={setDraft}
+      autoFocus={focusComposer}
       catalog={catalog} modelRef={modelRef ?? models?.chatModel} onModelChange={onModelChange} modelDisabled={modelDisabled}
       isRunning={chat.isRunning || chat.isAwaitingToolApproval} onSend={() => void send()}
       attachments={attachments}
