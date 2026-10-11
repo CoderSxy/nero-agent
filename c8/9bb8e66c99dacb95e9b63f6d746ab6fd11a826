@@ -1,0 +1,38 @@
+web/package.json
+  s_f4604866bdb518::t_86ea6e95f10863 39
+  s_f4604866bdb518::t_f196424849ba56 7
+web/src/storage/indexed-db-guard.test.ts
+  s_f4604866bdb518::t_6d6dd2fe7260c4 1-2,4-7,9-47
+  s_f4604866bdb518::t_db92db628d1ed1 3,8
+web/src/storage/indexed-db.test.ts
+  s_f4604866bdb518::t_434a141e1458d9 45-47
+  s_f4604866bdb518::t_d2da72e3c43b7b 1-44,48-77
+web/src/storage/indexed-db.ts
+  s_f4604866bdb518::t_2bbc551341f55d 1-72
+web/scripts/check-indexed-db.mjs
+  s_f4604866bdb518::t_701b4d4331bcb6 1-69
+web/src/agent/history-search-cache.test.ts
+  s_f4604866bdb518::t_3fd603ce8ba4e8 83-85,88-89
+  s_f4604866bdb518::t_af23e9244127ac 1-82,86-87,90-102
+web/src/agent/history-search-cache.ts
+  s_f4604866bdb518::t_2f567241df595c 1-45,47-159
+  s_f4604866bdb518::t_3f448d25182ad9 46
+web/package-lock.json
+  s_f4604866bdb518::t_1ff29c6db91dcb 37,1338-1397,1555-1557,1560,1572-1582,1586-1588,1597,1607-1609,1618,1628-1630,1639,1649-1651,1660,1670-1672,1681,1691-1693,1702,1712-1714,1723,1733-1735,1744,1754-1756,1765,1775-1777,1786,1796-1798,1807,3172,3636-3645,4700-4709,5015-5024,5826-5832,6976-7016,7234-7483,7639-7660,8266-8275,8486-8512
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c89bb8e66c99dacb95e9b63f6d746ab6fd11a826",
+  "prompts": {},
+  "sessions": {
+    "s_f4604866bdb518": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "bf87fea0-1eba-422d-b454-abb2c432f59f",
+        "model": "composer-2.5"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
