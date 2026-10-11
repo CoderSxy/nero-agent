@@ -34,7 +34,7 @@ function partsMessage(
 const thread = {
   id: 'thread-1',
   title: '测试会话',
-  updatedAt: new Date('2026-10-11T12:00:00.000Z'),
+  updatedAt: '2026-10-11T12:00:00.000Z',
 };
 
 describe('buildHistorySearchDocuments', () => {
@@ -98,7 +98,7 @@ describe('buildHistorySearchDocuments', () => {
         } },
         { type: 'text', text: '可见回答' },
         { type: 'text', text: '{"name":"Error","message":"流式错误","code":"E"}' },
-      ]),
+      ] as never),
       partsMessage('u2', 'user', [
         { type: 'tool-invocation', toolInvocation: {
           state: 'call', toolCallId: 'c2', toolName: 'x', args: {},

@@ -45,7 +45,7 @@ function flushTurn(
 ): HistorySearchDocument {
   return {
     threadId: thread.id,
-    threadTitle: thread.title,
+    threadTitle: thread.title ?? '',
     threadUpdatedAt: new Date(thread.updatedAt).toISOString(),
     userMessageId: turn.userMessageId,
     questionText: turn.questionText,
