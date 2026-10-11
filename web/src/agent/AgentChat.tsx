@@ -43,7 +43,7 @@ export type AttachRequest = {
 
 export function AgentChat({ title = '未命名会话', threadId, resourceId, initialMessages, onMessageSent, models, catalog = [],
   onModelChange, modelRef, modelDisabled = false, modelError, sendBlockedReason,
-  pendingUserMessages = [], onMessageSubmitted, onMessageFailed, onFilesChanged, attachRequest,
+  pendingUserMessages = [], onMessageSubmitted, onMessageFailed, onResponseSettled, onFilesChanged, attachRequest,
   attachmentRefreshVersion = 0, targetMessageId }: {
   title?: string; threadId: string; resourceId: string; initialMessages: MastraDBMessage[];
   onMessageSent: (message: PendingUserMessage) => void;
@@ -53,6 +53,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   pendingUserMessages?: PendingUserMessage[];
   onMessageSubmitted?: (message: PendingUserMessage) => void;
   onMessageFailed?: (message: PendingUserMessage) => void;
+  onResponseSettled?: () => void;
   onFilesChanged?: () => void;
   attachRequest?: AttachRequest | null;
   attachmentRefreshVersion?: number;
@@ -115,11 +116,12 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
 
   useEffect(() => {
     if (wasRunning.current && !chat.isRunning) {
+      onResponseSettled?.();
       onFilesChanged?.();
       refreshThreadAttachments();
     }
     wasRunning.current = chat.isRunning;
-  }, [chat.isRunning, onFilesChanged, threadId]);
+  }, [chat.isRunning, onFilesChanged, onResponseSettled, threadId]);
   useEffect(() => {
     refreshThreadAttachments();
     return () => { invalidateAttachmentList(); };

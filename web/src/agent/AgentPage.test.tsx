@@ -41,11 +41,13 @@ vi.mock('./client', () => ({ AGENT_ID: 'agent', client: {
   return response.json();
 } }));
 vi.mock('./model-catalog-client', () => ({ getSelectableModels: () => getSelectableModels() }));
+const refreshThreadList = vi.fn();
 vi.mock('./use-thread-list', () => ({ useThreadList: () => ({
-  threads: threadItems, loading: false, error: null, refresh: vi.fn(), createThread, deleteThread,
+  threads: threadItems, loading: false, error: null, refresh: refreshThreadList, createThread, deleteThread,
   previewFirstMessageTitle, confirmFirstMessageTitle, discardFirstMessageTitle,
 }) }));
 const ensureRecent = vi.fn();
+const invalidateThread = vi.fn();
 vi.mock('./use-history-search', () => ({
   useHistorySearch: () => ({
     documents: [{
@@ -68,18 +70,22 @@ vi.mock('./use-history-search', () => ({
     loadAll: vi.fn(),
     retryRecent: vi.fn(),
     retryFull: vi.fn(),
-    invalidateThread: vi.fn(),
+    invalidateThread,
   }),
 }));
 vi.mock('./history-search-cache', () => ({ createHistorySearchCache: () => ({}) }));
 vi.mock('./AgentChat', () => ({ AgentChat: ({ title, models, sendBlockedReason, catalog, modelRef, onModelChange,
-  modelError, pendingUserMessages, onMessageSubmitted, onFilesChanged, attachRequest, attachmentRefreshVersion,
+  modelError, pendingUserMessages, onMessageSubmitted, onMessageSent, onMessageFailed, onResponseSettled,
+  onFilesChanged, attachRequest, attachmentRefreshVersion,
   targetMessageId }: {
   title?: string;
   models: { chatModel: string; memoryModel: string } | null; sendBlockedReason?: string | null;
   catalog?: Array<{ ref: string; displayName: string }>; modelRef?: string; onModelChange?: (ref: string) => void;
   modelError?: string | null; pendingUserMessages?: PendingUserMessage[];
   onMessageSubmitted?: (message: PendingUserMessage) => void;
+  onMessageSent?: (message: PendingUserMessage) => void;
+  onMessageFailed?: (message: PendingUserMessage) => void;
+  onResponseSettled?: () => void;
   onFilesChanged?: () => void;
   attachRequest?: { id: number; path: string; source: 'personal' | 'agent' } | null;
   attachmentRefreshVersion?: number;
@@ -94,6 +100,11 @@ vi.mock('./AgentChat', () => ({ AgentChat: ({ title, models, sendBlockedReason, 
   <span data-testid="target-message">{targetMessageId ?? ''}</span>
   <button type="button" onClick={() => onMessageSubmitted?.({ id: 'local', text: '刚发送的消息',
     createdAt: new Date(), occurrence: 1 })}>模拟发送</button>
+  <button type="button" onClick={() => onMessageSent?.({ id: 'local', text: '刚发送的消息',
+    createdAt: new Date(), occurrence: 1 })}>模拟发送成功</button>
+  <button type="button" onClick={() => onMessageFailed?.({ id: 'local', text: '失败的消息',
+    createdAt: new Date(), occurrence: 1 })}>模拟发送失败</button>
+  <button type="button" onClick={() => onResponseSettled?.()}>模拟回复结束</button>
   <button type="button" onClick={() => onFilesChanged?.()}>模拟文件生成</button>
   {modelError && <span role="alert">{modelError}</span>}
   <select aria-label="模型" value={modelRef ?? ''} onChange={event => onModelChange?.(event.target.value)}>
@@ -386,9 +397,34 @@ describe('history search', () => {
     await screen.findByTestId('models');
     expect(screen.getByTestId('target-message').textContent).toBe('msg?id=1');
   });
+  it('invalidates history search after a successful message send', async () => {
+    threadItems = [{ id: 'thread-1', title: '当前', resourceId: 'agent', updatedAt: '2026-10-11' }];
+    renderPage();
+    await screen.findByTestId('models');
+    fireEvent.click(screen.getByRole('button', { name: '模拟发送成功' }));
+    expect(invalidateThread).toHaveBeenCalledWith('thread-1');
+    expect(refreshThreadList).toHaveBeenCalled();
+  });
+  it('does not invalidate history search after a failed message send', async () => {
+    threadItems = [{ id: 'thread-1', title: '当前', resourceId: 'agent', updatedAt: '2026-10-11' }];
+    renderPage();
+    await screen.findByTestId('models');
+    fireEvent.click(screen.getByRole('button', { name: '模拟发送失败' }));
+    expect(invalidateThread).not.toHaveBeenCalled();
+  });
+  it('invalidates history search when the assistant reply settles', async () => {
+    threadItems = [{ id: 'thread-1', title: '当前', resourceId: 'agent', updatedAt: '2026-10-11' }];
+    renderPage();
+    await screen.findByTestId('models');
+    invalidateThread.mockClear();
+    refreshThreadList.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: '模拟回复结束' }));
+    expect(invalidateThread).toHaveBeenCalledWith('thread-1');
+    expect(refreshThreadList).toHaveBeenCalled();
+  });
   it('opens from Ctrl/Cmd+K and navigates with encoded thread and message ids', async () => {
     threadItems = [{ id: 'thread-1', title: '当前', resourceId: 'agent', updatedAt: '2026-10-11' }];
-    const user = { id: 'agent', email: 'test@example.com', displayName: 'Test', roles: ['user'] as const };
+    const user = { id: 'agent', email: 'test@example.com', displayName: 'Test', roles: ['user'] as Array<'user' | 'admin'> };
     const router = createMemoryRouter([{
       path: '/agent/:threadId',
       element: <AgentPage user={user} onLogout={vi.fn()} />,

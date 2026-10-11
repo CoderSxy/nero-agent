@@ -62,6 +62,16 @@ describe('Agent conversation', () => {
       onMessageSent={vi.fn()} onFilesChanged={changed} models={models} />);
     expect(changed).toHaveBeenCalledTimes(1);
   });
+  it('notifies when a running reply settles', () => {
+    const settled = vi.fn();
+    mockRunning = true;
+    const { rerender } = render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}
+      onMessageSent={vi.fn()} onResponseSettled={settled} models={models} />);
+    mockRunning = false;
+    rerender(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}
+      onMessageSent={vi.fn()} onResponseSettled={settled} models={models} />);
+    expect(settled).toHaveBeenCalledTimes(1);
+  });
   it('resumes ask_user with the selected option instead of a bare approval', async () => {
     vi.stubGlobal('PointerEvent', MouseEvent);
     approveToolCall.mockResolvedValue(undefined);

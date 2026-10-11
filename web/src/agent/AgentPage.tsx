@@ -172,9 +172,14 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
           catalog={catalog ?? []} modelRef={selected?.chatModel} onModelChange={selectComposerModel}
           modelDisabled={settingsSaving} modelError={settingsError}
           sendBlockedReason={sendBlockedReason} onMessageSent={message => {
+            void historySearch.invalidateThread(threadId);
             void list.confirmFirstMessageTitle(threadId, message.text).catch(() => void list.refresh());
             void list.refresh();
             setFilesRefreshVersion(value => value + 1);
+          }}
+          onResponseSettled={() => {
+            void historySearch.invalidateThread(threadId);
+            void list.refresh();
           }}
           onFilesChanged={() => setFilesRefreshVersion(value => value + 1)}
           attachmentRefreshVersion={filesRefreshVersion}
