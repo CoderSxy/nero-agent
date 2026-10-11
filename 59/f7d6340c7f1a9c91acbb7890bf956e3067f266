@@ -1,0 +1,47 @@
+web/src/agent/AgentPage.tsx
+  s_22f4ce7e630dbe::t_e180ce93cce145 2
+  s_22f4ce7e630dbe::t_2cdd5124d58a14 38-39
+  s_22f4ce7e630dbe::t_3909d0e5d2a6e8 192-193
+web/src/styles.css
+  s_22f4ce7e630dbe::t_af4a0c4ad8aeb2 180-183
+web/src/agent/MessageList.test.tsx
+  s_22f4ce7e630dbe::t_d8d1e928124a91 23-35
+web/src/agent/AgentPage.test.tsx
+  s_22f4ce7e630dbe::t_1ebe594dd20136 383-388
+  s_22f4ce7e630dbe::t_5af778114af73d 76-77,86
+  s_22f4ce7e630dbe::t_2d6733643ca3d8 94
+web/src/agent/AgentChat.tsx
+  s_22f4ce7e630dbe::t_1a8aa15dd0ca1a 47
+  s_22f4ce7e630dbe::t_474af58090292a 22-37
+  s_22f4ce7e630dbe::t_0e54366141e8db 59
+  s_22f4ce7e630dbe::t_f90b8a59f489e7 78-81
+  s_22f4ce7e630dbe::t_2b9e2181336f8f 154-159,162-187
+web/src/agent/MessageList.tsx
+  s_22f4ce7e630dbe::t_25357ec89148f2 171
+web/src/agent/AgentChat.test.tsx
+  s_22f4ce7e630dbe::t_f47ea10a7584ab 749
+  s_22f4ce7e630dbe::t_ea8dcd67e735bd 801
+  s_22f4ce7e630dbe::t_cd201dd7276a25 699-706,710,726-735,754-761,763-778,780-785,787-790,792,794-799,803-825,827,829-831
+  s_22f4ce7e630dbe::t_4ba8857d687e1a 713,718-724
+  s_22f4ce7e630dbe::t_c8be191d297fd5 786,791,793,802
+  s_22f4ce7e630dbe::t_1959c4398ad67b 826,828
+  s_22f4ce7e630dbe::t_1d9414417ba436 800
+  s_22f4ce7e630dbe::t_0026af8203417b 707-709,711-712,714-717,725
+  s_22f4ce7e630dbe::t_0263aefa3c41f6 736-748,750-753,762,779
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "59f7d6340c7f1a9c91acbb7890bf956e3067f266",
+  "prompts": {},
+  "sessions": {
+    "s_22f4ce7e630dbe": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "24cbc5e8-5c81-4caa-b001-d3ac81fdd3b4",
+        "model": "composer-2.5"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
