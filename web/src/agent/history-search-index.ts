@@ -91,15 +91,19 @@ export function buildHistorySearchDocuments(
 type NormalizedMap = { normalized: string; indexToOriginal: number[] };
 
 function buildNormalizedMap(original: string): NormalizedMap {
+  const normalized = original.normalize('NFKC').toLocaleLowerCase();
   const indexToOriginal: number[] = [];
-  let normalized = '';
-  for (let i = 0; i < original.length; i++) {
-    const piece = original[i].normalize('NFKC').toLocaleLowerCase();
-    if (!piece) continue;
-    for (let j = 0; j < piece.length; j++) {
-      normalized += piece[j];
-      indexToOriginal.push(i);
+  let normCursor = 0;
+  for (let i = 0; i < original.length && normCursor < normalized.length; i++) {
+    const after = original.slice(0, i + 1).normalize('NFKC').toLocaleLowerCase();
+    while (normCursor < after.length && normCursor < normalized.length) {
+      indexToOriginal[normCursor] = i;
+      normCursor++;
     }
+  }
+  while (normCursor < normalized.length) {
+    indexToOriginal[normCursor] = Math.max(0, original.length - 1);
+    normCursor++;
   }
   return { normalized, indexToOriginal };
 }
@@ -130,7 +134,7 @@ function buildMatchedSnippet(original: string, query: string): string {
   const map = buildNormalizedMap(trimmed);
   const needle = normalizeSearchText(query);
   if (!needle) return trimmed.slice(0, SNIPPET_MAX);
-  const matchIndex = map.normalized.indexOf(needle);
+  const matchIndex = findNormalizedIndex(trimmed, query);
   if (matchIndex < 0) {
     const lower = trimmed.toLocaleLowerCase();
     const literal = lower.indexOf(needle);
@@ -160,9 +164,7 @@ function buildMatchedSnippet(original: string, query: string): string {
 
 function fieldMatches(field: string, query: string): boolean {
   if (!field) return false;
-  const haystack = field.normalize('NFKC').toLocaleLowerCase();
-  const needle = normalizeSearchText(query);
-  return Boolean(needle) && haystack.includes(needle);
+  return findNormalizedIndex(field, query) >= 0;
 }
 
 export function searchHistoryDocuments(
