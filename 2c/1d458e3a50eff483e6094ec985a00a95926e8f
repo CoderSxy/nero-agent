@@ -1,0 +1,80 @@
+web/src/agent/ThreadSidebar.test.tsx
+  s_afdc2a397a04f5::t_8b7007f30de093 166-172
+  s_afdc2a397a04f5::t_f058d8837688d3 153-165,173
+web/src/agent/AgentComposer.tsx
+  s_afdc2a397a04f5::t_80d12c94c332b7 73,76,102,108,130,264,266,268
+  s_afdc2a397a04f5::t_e87eb6221afd04 146
+  s_afdc2a397a04f5::t_35bec451aa4a21 210
+docs/superpowers/plans/2026-10-11-agent-history-search.md
+  s_afdc2a397a04f5::t_7c56ca8f1ef1d2 1-6,8-18,21-25,27,31-41,43-52,54-60,62,64,66,72-76,78,80,82-92,94-104,106-112,114-120
+  s_afdc2a397a04f5::t_8470abcaae38b4 20,26,53,105,113
+  s_afdc2a397a04f5::t_de50159d1dd5cc 63,67-68,71
+  s_afdc2a397a04f5::t_6c10a989066613 69
+  s_afdc2a397a04f5::t_8346ef401dbb30 77,79,81,93
+  s_afdc2a397a04f5::t_999d039ad8e633 7,19,28-30,42,61,65,70
+web/src/agent/use-history-search.ts
+  s_afdc2a397a04f5::t_c7090569610e39 136,154
+  s_afdc2a397a04f5::t_5ee831e9648fe4 134-135,139-142,298,306
+  s_afdc2a397a04f5::t_c953140520d11f 64-68,75
+  s_afdc2a397a04f5::t_38affd6be6d6ea 258-295
+  s_afdc2a397a04f5::t_a1e1f4cebca124 296
+web/src/agent/AgentPage.test.tsx
+  s_afdc2a397a04f5::t_6c646918521f39 167-184
+  s_afdc2a397a04f5::t_623ee8819a9c9e 432-453
+  s_afdc2a397a04f5::t_f902f6fba65582 206-220
+  s_afdc2a397a04f5::t_4dab0b34280399 185-195
+  s_afdc2a397a04f5::t_1e246a00ae764f 146
+  s_afdc2a397a04f5::t_6b724bc88f929e 196-205
+  s_afdc2a397a04f5::t_c3ee8079a353c6 322-323
+  s_afdc2a397a04f5::t_e71c476bc97847 80,82,95,148-165
+  s_afdc2a397a04f5::t_49de7514c19075 142-145,147,166
+web/src/agent/AgentPage.tsx
+  s_afdc2a397a04f5::t_87a84e262b0052 253
+  s_afdc2a397a04f5::t_aee83dbdc2ee92 255-256
+  s_afdc2a397a04f5::t_30b4c3c306dd07 205
+  s_afdc2a397a04f5::t_1b79c09dfe36ac 139,157
+  s_afdc2a397a04f5::t_4a472ee82b0357 3,11,47,246-251,257-258
+  s_afdc2a397a04f5::t_1918e8fab3abb1 252
+  s_afdc2a397a04f5::t_d77e14d6909569 48-54,138,140-148,152-156,159-174,217-218,254
+  s_afdc2a397a04f5::t_e509da91eb6945 58-60,149-151,234,269,271-272
+web/src/agent/AgentComposer.test.tsx
+  s_afdc2a397a04f5::t_454883692c04e9 67-80
+web/src/agent/AgentChat.tsx
+  s_afdc2a397a04f5::t_13c3dcc5011a0d 47,49,63,460
+web/src/agent/use-history-search.test.tsx
+  s_afdc2a397a04f5::t_c63e95408bfe8b 98-123
+  s_afdc2a397a04f5::t_2672588fdf6eb7 65-97
+web/src/agent/AgentChat.test.tsx
+  s_afdc2a397a04f5::t_577d4f61cb2556 55-62
+web/src/agent/history-search-index.test.ts
+  s_afdc2a397a04f5::t_2672588fdf6eb7 41-43,48-54
+  s_afdc2a397a04f5::t_f058d8837688d3 131-139
+  s_afdc2a397a04f5::t_49ad38fcdfcdd1 44-47
+docs/superpowers/specs/2026-10-11-agent-history-search-design.md
+  s_afdc2a397a04f5::t_8470abcaae38b4 29,43
+  s_afdc2a397a04f5::t_999d039ad8e633 31-36,38,51-52
+  s_afdc2a397a04f5::t_6c10a989066613 37
+  s_afdc2a397a04f5::t_7c56ca8f1ef1d2 1-28,30,39-42,44-50
+web/src/agent/history-search-index.ts
+  s_afdc2a397a04f5::t_2cb18d565d9c70 84,98-104,106-108,114,137,159-160
+  s_afdc2a397a04f5::t_7804686a0a21b6 127-128
+  s_afdc2a397a04f5::t_062489f7548d8a 161-162
+web/src/App.test.tsx
+  s_afdc2a397a04f5::t_cd39bb01f539f6 23-24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2c1d458e3a50eff483e6094ec985a00a95926e8f",
+  "prompts": {},
+  "sessions": {
+    "s_afdc2a397a04f5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a129ee-b0df-7213-8b16-f7df6155953e",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
