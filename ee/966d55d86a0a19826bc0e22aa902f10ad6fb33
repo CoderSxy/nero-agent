@@ -1,0 +1,21 @@
+web/src/agent/HistorySearchDialog.tsx
+  s_7a9d91822727d5::t_58032c03ed5643 94-95
+web/src/agent/HistorySearchDialog.test.tsx
+  s_7a9d91822727d5::t_a49037ee530fdf 130-131
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ee966d55d86a0a19826bc0e22aa902f10ad6fb33",
+  "prompts": {},
+  "sessions": {
+    "s_7a9d91822727d5": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ff6f9be7-6b10-4897-a4cd-40ab4dc3aee1",
+        "model": "composer-2.5-fast"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
