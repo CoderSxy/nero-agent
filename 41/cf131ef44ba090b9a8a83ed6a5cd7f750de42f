@@ -1,0 +1,22 @@
+web/src/agent/AgentChat.test.tsx
+  s_8dad417e0d0861::t_c4af6407e568a2 810,815,817,823
+web/src/agent/AgentChat.tsx
+  s_8dad417e0d0861::t_79faf32a5287f2 177-179
+  s_8dad417e0d0861::t_0793ae6c7051f1 180
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "41cf131ef44ba090b9a8a83ed6a5cd7f750de42f",
+  "prompts": {},
+  "sessions": {
+    "s_8dad417e0d0861": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9316f14f-4d24-498d-8214-8c4cb63b6beb",
+        "model": "composer-2.5-fast"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
