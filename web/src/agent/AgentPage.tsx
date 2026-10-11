@@ -18,6 +18,9 @@ import { getDefaultModels, readThreadModels, saveThreadModels, withThreadModels,
 import type { Theme } from './ModelSettingsMenu';
 import type { CurrentUser } from '../App';
 import type { PendingUserMessage } from './pending-user-message';
+import { createHistorySearchCache } from './history-search-cache';
+import type { HistorySearchResult } from './history-search-index';
+import { useHistorySearch } from './use-history-search';
 
 function initialTheme(): Theme {
   try { return localStorage.getItem('nero-agent-theme') === 'light' ? 'light' : 'dark'; }
@@ -34,6 +37,8 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
   const threadId = routeThreadId === 'new' ? undefined : routeThreadId;
   const navigate = useNavigate();
   const list = useThreadList(user.id);
+  const historySearchCache = useMemo(() => createHistorySearchCache(), []);
+  const historySearch = useHistorySearch({ userId: user.id, threads: list.threads, cache: historySearchCache });
   const [messages, setMessages] = useState<MastraDBMessage[]>([]);
   const [pendingByThread, setPendingByThread] = useState<Record<string, PendingUserMessage[]>>({});
   const [filesRefreshVersion, setFilesRefreshVersion] = useState(0);
@@ -137,6 +142,9 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
   function selectComposerModel(ref: ModelRef) {
     void changeModels({ chatModel: ref, memoryModel: ref });
   }
+  function selectHistorySearchResult(result: HistorySearchResult) {
+    navigate(`/agent/${encodeURIComponent(result.threadId)}?targetMessageId=${encodeURIComponent(result.userMessageId)}`);
+  }
   async function deleteThread(id: string) {
     const nextId = neighborAfterDeletion(list.threads, id);
     await list.deleteThread(id);
@@ -150,7 +158,8 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
       onNew={() => void create()} onSelect={id => navigate(`/agent/${id}`)} onDelete={deleteThread}
       onRename={list.renameThread}
       theme={theme} onThemeChange={setTheme}
-      canCreate={canCreate} user={user} onLogout={onLogout} />
+      canCreate={canCreate} user={user} onLogout={onLogout}
+      search={historySearch} onSearchSelect={selectHistorySearchResult} />
       <PanelResizeHandle side="left" width={leftWidth} min={200} max={leftMax} onResize={setLeftPreferredWidth} />
     </div>
     <section className="agent-center">

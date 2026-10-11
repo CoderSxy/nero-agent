@@ -1,6 +1,9 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { CalendarDays, List, MoreVertical } from 'lucide-react';
+import { CalendarDays, List, MoreVertical, Search } from 'lucide-react';
+import { HistorySearchDialog } from './HistorySearchDialog';
+import type { HistorySearchResult } from './history-search-index';
+import type { useHistorySearch } from './use-history-search';
 import { ThreadList, ThreadListEmpty, ThreadListItems, ThreadListNewItem } from '@mastra/playground-ui/components/ThreadList';
 import type { Thread } from './thread-scope';
 import { ModelSettingsMenu, type Theme } from './ModelSettingsMenu';
@@ -9,7 +12,7 @@ import type { CurrentUser } from '../App';
 
 export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSelect,
   onDelete, onRename, theme, onThemeChange,
-  canCreate = true, user, onLogout }: {
+  canCreate = true, user, onLogout, search, onSearchSelect }: {
   threads: Thread[]; currentId?: string; loading: boolean; error: string | null;
   onNew: () => void; onSelect: (id: string) => void;
   onDelete?: (id: string) => Promise<void>;
@@ -17,6 +20,8 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
   theme: Theme; onThemeChange: (theme: Theme) => void;
   canCreate?: boolean;
   user?: CurrentUser; onLogout?: () => void;
+  search?: ReturnType<typeof useHistorySearch>;
+  onSearchSelect?: (result: HistorySearchResult) => void;
 }) {
   const [menuId, setMenuId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
@@ -28,8 +33,26 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
   const [renameError, setRenameError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [historyMode, setHistoryMode] = useState<'grouped' | 'flat'>('grouped');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchLauncherRef = useRef<HTMLButtonElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const searchEnabled = Boolean(search && onSearchSelect);
   useEffect(() => { if (confirmId) cancelRef.current?.focus(); }, [confirmId]);
+  useEffect(() => {
+    if (!searchEnabled) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'k' || (!event.metaKey && !event.ctrlKey) || event.altKey) return;
+      const target = event.target;
+      if (target instanceof HTMLElement && target.isContentEditable) return;
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) {
+        return;
+      }
+      event.preventDefault();
+      setSearchOpen(open => !open);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [searchEnabled]);
   useEffect(() => {
     if (!menuId && !confirmId && !renameId) return;
     const onKeyDown = (event: KeyboardEvent) => {
@@ -105,12 +128,19 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
       <ThreadListNewItem render={<button type="button" className="new-thread-button" onClick={onNew}
         disabled={!canCreate} />}>新建会话</ThreadListNewItem>
       <div className="thread-history-heading"><span>历史对话</span>
-        <button type="button" className="thread-history-toggle"
-          aria-label={historyMode === 'grouped' ? '切换为普通列表' : '切换为时间分组'}
-          title={historyMode === 'grouped' ? '切换为普通列表' : '切换为时间分组'}
-          onClick={() => setHistoryMode(mode => mode === 'grouped' ? 'flat' : 'grouped')}>
-          {historyMode === 'grouped' ? <List size={16} aria-hidden="true" /> : <CalendarDays size={16} aria-hidden="true" />}
-        </button>
+        <div className="thread-history-actions">
+          {searchEnabled && <button ref={searchLauncherRef} type="button" className="thread-history-toggle"
+            aria-label="搜索历史对话" title="搜索历史对话"
+            onClick={() => setSearchOpen(true)}>
+            <Search size={16} aria-hidden="true" />
+          </button>}
+          <button type="button" className="thread-history-toggle"
+            aria-label={historyMode === 'grouped' ? '切换为普通列表' : '切换为时间分组'}
+            title={historyMode === 'grouped' ? '切换为普通列表' : '切换为时间分组'}
+            onClick={() => setHistoryMode(mode => mode === 'grouped' ? 'flat' : 'grouped')}>
+            {historyMode === 'grouped' ? <List size={16} aria-hidden="true" /> : <CalendarDays size={16} aria-hidden="true" />}
+          </button>
+        </div>
       </div>
       <ThreadListItems>
         {historyMode === 'flat' ? threads.map(thread => renderThread(thread, true))
@@ -159,6 +189,9 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
         </div>
       </div>
     </div>}
+    {searchEnabled && search && onSearchSelect && <HistorySearchDialog open={searchOpen} search={search}
+      threadCount={threads.length} returnFocusRef={searchLauncherRef}
+      onClose={() => setSearchOpen(false)} onSelect={onSearchSelect} />}
     <ModelSettingsMenu theme={theme} onThemeChange={onThemeChange} user={user} onLogout={onLogout} />
   </aside>;
 }

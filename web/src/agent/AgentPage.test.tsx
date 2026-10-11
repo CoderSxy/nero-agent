@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { createMemoryRouter, MemoryRouter, Route, RouterProvider, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentPage } from './AgentPage';
 import type { PendingUserMessage } from './pending-user-message';
@@ -45,6 +45,33 @@ vi.mock('./use-thread-list', () => ({ useThreadList: () => ({
   threads: threadItems, loading: false, error: null, refresh: vi.fn(), createThread, deleteThread,
   previewFirstMessageTitle, confirmFirstMessageTitle, discardFirstMessageTitle,
 }) }));
+const ensureRecent = vi.fn();
+vi.mock('./use-history-search', () => ({
+  useHistorySearch: () => ({
+    documents: [{
+      threadId: 'thread/special',
+      threadTitle: 'T',
+      threadUpdatedAt: '2026-10-11T00:00:00.000Z',
+      userMessageId: 'msg?id=1',
+      questionText: 'find me',
+      answerText: 'ok',
+    }],
+    scope: 'recent',
+    recentStatus: 'ready',
+    fullStatus: 'idle',
+    recentProgress: { completed: 1, total: 1 },
+    fullProgress: { completed: 0, total: 0 },
+    recentFailedCount: 0,
+    fullFailedCount: 0,
+    ensureRecent,
+    cancelRecent: vi.fn(),
+    loadAll: vi.fn(),
+    retryRecent: vi.fn(),
+    retryFull: vi.fn(),
+    invalidateThread: vi.fn(),
+  }),
+}));
+vi.mock('./history-search-cache', () => ({ createHistorySearchCache: () => ({}) }));
 vi.mock('./AgentChat', () => ({ AgentChat: ({ title, models, sendBlockedReason, catalog, modelRef, onModelChange,
   modelError, pendingUserMessages, onMessageSubmitted, onFilesChanged, attachRequest, attachmentRefreshVersion }: {
   title?: string;
@@ -339,5 +366,34 @@ describe('Agent page model selection', () => {
       expect.objectContaining({ method: 'POST' })));
     expect(await screen.findByText(/已用 0 B \/ 500 MiB/)).toBeTruthy();
     await waitFor(() => expect(screen.getByTestId('attachment-refresh').textContent).not.toBe('0'));
+  });
+});
+
+describe('history search', () => {
+  beforeEach(() => {
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    });
+  });
+  it('opens from Ctrl/Cmd+K and navigates with encoded thread and message ids', async () => {
+    threadItems = [{ id: 'thread-1', title: '当前', resourceId: 'agent', updatedAt: '2026-10-11' }];
+    const user = { id: 'agent', email: 'test@example.com', displayName: 'Test', roles: ['user'] as const };
+    const router = createMemoryRouter([{
+      path: '/agent/:threadId',
+      element: <AgentPage user={user} onLogout={vi.fn()} />,
+    }], { initialEntries: ['/agent/thread-1'] });
+    render(<RouterProvider router={router} />);
+    await screen.findByTestId('models');
+    fireEvent.keyDown(document, { key: 'k', ctrlKey: true });
+    const input = await screen.findByLabelText('搜索历史对话中的问题和回答');
+    fireEvent.change(input, { target: { value: 'find' } });
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(`/agent/${encodeURIComponent('thread/special')}`);
+      expect(router.state.location.search).toBe(`?targetMessageId=${encodeURIComponent('msg?id=1')}`);
+    });
   });
 });

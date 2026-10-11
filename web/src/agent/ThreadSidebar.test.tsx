@@ -1,5 +1,13 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, expect, it, vi } from 'vitest';
+
+beforeAll(() => {
+  vi.stubGlobal('ResizeObserver', class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  });
+});
 import { ThreadSidebar } from './ThreadSidebar';
 
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -90,4 +98,38 @@ it('shows rename above delete and saves a nonempty edited title', async () => {
   fireEvent.change(input, { target: { value: '  新标题  ' } });
   fireEvent.click(screen.getByRole('button', { name: '保存' }));
   await waitFor(() => expect(onRename).toHaveBeenCalledWith('a', '新标题'));
+});
+
+it('shows history search beside the heading and opens the dialog from the icon', async () => {
+  const ensureRecent = vi.fn();
+  const threads = [{ id: 'a', title: '会话', resourceId: 'agent', updatedAt: '2026-10-05' }] as never;
+  render(<ThreadSidebar threads={threads} loading={false} error={null}
+    onNew={vi.fn()} onSelect={vi.fn()} theme="dark" onThemeChange={vi.fn()}
+    search={{
+      documents: [], scope: 'recent', recentStatus: 'ready', fullStatus: 'idle',
+      recentProgress: { completed: 0, total: 0 }, fullProgress: { completed: 0, total: 0 },
+      recentFailedCount: 0, fullFailedCount: 0, ensureRecent, cancelRecent: vi.fn(),
+      loadAll: vi.fn(), retryRecent: vi.fn(), retryFull: vi.fn(), invalidateThread: vi.fn(),
+    }} onSearchSelect={vi.fn()} />);
+  const launcher = screen.getByRole('button', { name: '搜索历史对话' });
+  expect(launcher.closest('.thread-history-heading')).toBeTruthy();
+  fireEvent.click(launcher);
+  expect(await screen.findByRole('dialog', { name: '搜索历史对话' })).toBeTruthy();
+  expect(ensureRecent).toHaveBeenCalled();
+});
+
+it('toggles history search with Ctrl/Cmd+K at document level', async () => {
+  const threads = [{ id: 'a', title: '会话', resourceId: 'agent', updatedAt: '2026-10-05' }] as never;
+  render(<ThreadSidebar threads={threads} loading={false} error={null}
+    onNew={vi.fn()} onSelect={vi.fn()} theme="dark" onThemeChange={vi.fn()}
+    search={{
+      documents: [], scope: 'recent', recentStatus: 'ready', fullStatus: 'idle',
+      recentProgress: { completed: 0, total: 0 }, fullProgress: { completed: 0, total: 0 },
+      recentFailedCount: 0, fullFailedCount: 0, ensureRecent: vi.fn(), cancelRecent: vi.fn(),
+      loadAll: vi.fn(), retryRecent: vi.fn(), retryFull: vi.fn(), invalidateThread: vi.fn(),
+    }} onSearchSelect={vi.fn()} />);
+  fireEvent.keyDown(document, { key: 'k', ctrlKey: true });
+  expect(await screen.findByRole('dialog', { name: '搜索历史对话' })).toBeTruthy();
+  fireEvent.keyDown(document, { key: 'k', metaKey: true });
+  expect(screen.queryByRole('dialog', { name: '搜索历史对话' })).toBeNull();
 });
