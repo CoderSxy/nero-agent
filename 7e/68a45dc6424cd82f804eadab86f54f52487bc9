@@ -1,0 +1,44 @@
+Dockerfile.mastra-build
+  s_afdc2a397a04f5::t_38b8da1b9ed833 15-16,18-19,23
+  s_afdc2a397a04f5::t_756c19398b461e 3
+  s_afdc2a397a04f5::t_303b303ad650b7 1-2,4-14,17,20-22,24-27
+docs/deployment/local-mastra-build.md
+  s_afdc2a397a04f5::t_d55bc1321828b9 1,3,6,9,11
+  s_afdc2a397a04f5::t_756c19398b461e 2,4-5,7-8,10
+.dockerignore
+  s_afdc2a397a04f5::t_303b303ad650b7 1-19
+scripts/build-release-macos.sh
+  s_afdc2a397a04f5::t_68074fe821d72d 1-81,86-97
+  s_afdc2a397a04f5::t_9054afa75dd252 82-85
+docs/deployment/ecs-release-from-local-build.md
+  s_afdc2a397a04f5::t_624602f79f35d5 9-18,34,36,38,40,42,44,46,48-49,51,53,55,64-65,67-68,70,72,74,76,78,80,84,86,88,90,92-95,97-101,105,107,109,111,113,115-122
+  s_afdc2a397a04f5::t_15f8ceb4f5fa65 24,27,32
+  s_afdc2a397a04f5::t_9054afa75dd252 30
+  s_afdc2a397a04f5::t_8ad290a21b5902 52
+  s_afdc2a397a04f5::t_336e0a44fd2ff0 61-63
+  s_afdc2a397a04f5::t_533bf29ff0da88 22-23,25-26,28-29,85,87,89
+  s_afdc2a397a04f5::t_5351b7743aba5d 7,19-21,41,43
+  s_afdc2a397a04f5::t_3cd98f7410f031 58
+  s_afdc2a397a04f5::t_9babd52c1bbc81 66
+  s_afdc2a397a04f5::t_2b47bf0789930f 110
+  s_afdc2a397a04f5::t_86275fea6090d2 81-83
+  s_afdc2a397a04f5::t_7bfc3df100184d 1-4,6,8,31,33,35,37,45,47,50,54,56-57,59-60,69,71,73,75,77,79,91,96,102-104,106,108,112,114
+  s_afdc2a397a04f5::t_804f8d9c4b809e 5
+  s_afdc2a397a04f5::t_c53135ad1e9cf9 39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7e68a45dc6424cd82f804eadab86f54f52487bc9",
+  "prompts": {},
+  "sessions": {
+    "s_afdc2a397a04f5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a129ee-b0df-7213-8b16-f7df6155953e",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
