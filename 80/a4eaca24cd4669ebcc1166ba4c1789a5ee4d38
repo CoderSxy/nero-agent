@@ -1,0 +1,123 @@
+web/src/agent/markdown/chart-load-error.test.tsx
+  s_e9b4a5b54e4edd::t_c8535c32ae0379 1-19
+web/src/agent/markdown/echarts-option.ts
+  s_e9b4a5b54e4edd::t_44e3abdd2da06b 1-20
+web/src/agent/markdown/EChartsBlock.tsx
+  s_e9b4a5b54e4edd::t_819bbbafd89b88 7,17-28,30,34-37
+  s_e9b4a5b54e4edd::t_44e3abdd2da06b 2,6
+  s_e9b4a5b54e4edd::t_1c5fbae5d9f054 8,11,32,39-45
+docs/superpowers/plans/2026-10-13-akshare-finance-tool.md
+  s_fc5815964fa0a0::t_c10d295e7fb06b 1-27,29-31,33-56,58-62,64-66,70-78,80-84,86-88,90,92-114
+  s_fc5815964fa0a0::t_0f351ddfd65111 89
+  s_fc5815964fa0a0::t_da40963b97165f 28,32,63,67-69,79,85,91
+  s_fc5815964fa0a0::t_a3996abd4d7006 57
+web/src/agent/markdown/MermaidBlock.tsx
+  s_e9b4a5b54e4edd::t_819bbbafd89b88 7,13,15-22,26-29
+  s_e9b4a5b54e4edd::t_1c5fbae5d9f054 8,31-38
+src/mastra/finance/scope.ts
+  s_fc5815964fa0a0::t_392e4c30ef164d 1-23
+src/mastra/index.ts
+  s_fc5815964fa0a0::t_50590e241f4c75 27-28,49,59-60
+web/src/agent/finance-category.ts
+  s_fc5815964fa0a0::t_760e6f69f58dd9 1-2,4-30
+  s_fc5815964fa0a0::t_f109e55ecc71a5 3
+web/src/agent/model-settings.ts
+  s_fc5815964fa0a0::t_760e6f69f58dd9 3,63-68
+  s_fc5815964fa0a0::t_f109e55ecc71a5 60,62
+web/src/agent/finance-category.test.ts
+  s_fc5815964fa0a0::t_c507a054389c4a 1-23
+docs/deployment/workspace-sandbox-ecs.md
+  s_86d4b4dd13dd17::t_ce2fa49a953102 3,7,14,16,20
+src/mastra/finance/aktools-client.ts
+  s_fc5815964fa0a0::t_78070db7e41f1a 18,20-24,59-61
+  s_fc5815964fa0a0::t_50590e241f4c75 1-17,19,25-58,62-64,66-70
+  s_fc5815964fa0a0::t_df0f9480ed7db6 65
+web/src/agent/AgentPage.tsx
+  s_fc5815964fa0a0::t_5f58912d9d0ca0 73,93-94,141,147-148,154,234-237
+  s_fc5815964fa0a0::t_3681f97bd14bb5 6,26,53,74-76,136-140,143,182-188,194-195,202-203,206-224,232,266,274-275,307-308
+  s_fc5815964fa0a0::t_8613c24420bde3 205
+  s_fc5815964fa0a0::t_5d26d8e29bed2b 204
+  s_fc5815964fa0a0::t_52ae8e8641a8df 142
+web/src/agent/AgentPage.test.tsx
+  s_fc5815964fa0a0::t_2475241092fef4 25
+docs/superpowers/specs/2026-10-13-akshare-finance-tool-design.md
+  s_fc5815964fa0a0::t_0f351ddfd65111 24
+  s_fc5815964fa0a0::t_12a6cf89d7707f 1-23,25-49
+src/mastra/finance/tools.ts
+  s_fc5815964fa0a0::t_50590e241f4c75 1-47
+docs/deployment/aktools-ecs.md
+  s_fc5815964fa0a0::t_83886535d214f6 1-14,17-20,22-35
+  s_fc5815964fa0a0::t_eb96cfc3326e5a 15-16,21
+web/src/agent/markdown/markdown-renderer.tsx
+  s_e9b4a5b54e4edd::t_44e3abdd2da06b 15
+  s_e9b4a5b54e4edd::t_1c5fbae5d9f054 182-186
+web/src/agent/client.ts
+  s_fc5815964fa0a0::t_760e6f69f58dd9 21-27
+web/src/agent/AgentChat.tsx
+  s_fc5815964fa0a0::t_710dda5d9d772c 19,47,56-57,92,464-465
+deploy/aktools/aktools.service
+  s_fc5815964fa0a0::t_5a4d4f3774cba7 1-7,11-22
+  s_fc5815964fa0a0::t_2251f025371225 8
+  s_fc5815964fa0a0::t_eb96cfc3326e5a 9-10
+tests/finance.test.ts
+  s_fc5815964fa0a0::t_c507a054389c4a 1-12,14-56
+  s_fc5815964fa0a0::t_df0f9480ed7db6 13
+web/src/agent/MessageList.test.tsx
+  s_e9b4a5b54e4edd::t_a9e234b11cc925 37-55,97,99-101
+  s_e9b4a5b54e4edd::t_0617b0acfc76e3 56-65
+  s_e9b4a5b54e4edd::t_c454e12117f1e0 98
+web/src/agent/AgentComposer.tsx
+  s_fc5815964fa0a0::t_710dda5d9d772c 10,73,77-78,93,103,209-215,217-223
+  s_fc5815964fa0a0::t_5d26d8e29bed2b 207-208,216,224
+src/mastra/finance/catalog.ts
+  s_fc5815964fa0a0::t_226efc54d494a4 14-22,82
+  s_fc5815964fa0a0::t_df0f9480ed7db6 55-61,64
+  s_fc5815964fa0a0::t_3adfd7e565b3ff 1-13,23-54,62-63,65-81,83-96
+src/mastra/auth/thread-guard.ts
+  s_fc5815964fa0a0::t_392e4c30ef164d 3,9,32
+web/src/agent/thread-metadata-update.ts
+  s_fc5815964fa0a0::t_760e6f69f58dd9 1-20
+web/src/styles.css
+  s_e9b4a5b54e4edd::t_1c5fbae5d9f054 363-364,366
+  s_fc5815964fa0a0::t_0bbe4adeab06dc 185-193
+  s_e9b4a5b54e4edd::t_4d683ad1979a5b 365,367
+  s_e9b4a5b54e4edd::t_819bbbafd89b88 369-370
+src/mastra/auth/authorization.ts
+  s_fc5815964fa0a0::t_392e4c30ef164d 7,120,124-125
+src/mastra/finance/routes.ts
+  s_fc5815964fa0a0::t_50590e241f4c75 1-13
+src/mastra/agents/agent.ts
+  s_fc5815964fa0a0::t_50590e241f4c75 18-19,111-115
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "80a4eaca24cd4669ebcc1166ba4c1789a5ee4d38",
+  "prompts": {},
+  "sessions": {
+    "s_86d4b4dd13dd17": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12b8d-db59-76f2-9cb5-6ddb103a6387",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_e9b4a5b54e4edd": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13418-12f6-7151-adc2-179c51ae926d",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_fc5815964fa0a0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1343b-8bb5-7cf0-b0d2-a37f41f6f2a3",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
