@@ -34,6 +34,35 @@ describe('message anchors', () => {
 });
 
 describe('message tools and stream state', () => {
+  it('turns a completed JSON chart fence into a chart and switches both ways', async () => {
+    const option = '{"xAxis":{"type":"category","data":["周一","周二"]},"yAxis":{"type":"value"},"series":[{"type":"line","data":[26,28]}]}';
+    const text = (end: string) => `趋势如下：\n\n\`\`\`json\n${option}${end}\n\n最高温先升后降。`;
+    const message = (value: string) => ({ id: 'json-chart', role: 'assistant', content: { format: 2, parts: [
+      { type: 'text', text: value },
+    ] } });
+    const props = { isRunning: true, error: null, onApprove: vi.fn(), onDecline: vi.fn(), onAnswer: vi.fn() };
+    const view = render(<MessageList messages={[message(text(''))] as never} {...props} />);
+    expect(view.container.querySelector('[data-chart="echarts"]')).toBeNull();
+    view.rerender(<MessageList messages={[message(text('\n```'))] as never} {...props} />);
+    expect(await screen.findByRole('img', { name: 'ECharts 图表' })).toBeTruthy();
+    expect(screen.getByText('最高温先升后降。')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '源码' }));
+    expect(screen.getByText(option)).toBeTruthy();
+    expect(screen.queryByRole('img', { name: 'ECharts 图表' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '图形' }));
+    expect(screen.getByRole('img', { name: 'ECharts 图表' })).toBeTruthy();
+  });
+
+  it('keeps ordinary JSON as code', () => {
+    const message = { id: 'plain-json', role: 'assistant', content: { format: 2, parts: [
+      { type: 'text', text: '```json\n{"series":[{"name":"记录","data":[1,2]}]}\n```' },
+    ] } };
+    const view = render(<MessageList messages={[message] as never} isRunning={false} error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+    expect(view.container.querySelector('[data-chart="echarts"]')).toBeNull();
+    expect(view.container.textContent).toContain('"series"');
+  });
+
   it('shows an unfinished ECharts fence as code until the closing marker arrives', () => {
     const unfinished = { id: 'chart', role: 'assistant', content: { format: 2, parts: [
       { type: 'text', text: '```echarts\n{"series":[{"type":"bar","data":[2,3]}]}' },
@@ -65,6 +94,11 @@ describe('message tools and stream state', () => {
         onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
       expect(await screen.findByRole('img', { name: 'Mermaid 流程图' })).toBeTruthy();
       await waitFor(() => expect(view.container.querySelector('.agent-chart__diagram svg')).toBeTruthy());
+      fireEvent.click(screen.getByRole('button', { name: '源码' }));
+      expect(view.container.querySelector('.chart-source')?.textContent).toBe('flowchart LR\nA --> B');
+      expect(screen.queryByRole('img', { name: 'Mermaid 流程图' })).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: '图形' }));
+      expect(screen.getByRole('img', { name: 'Mermaid 流程图' })).toBeTruthy();
     } finally {
       if (originalMeasure) Object.defineProperty(SVGElement.prototype, 'getComputedTextLength', originalMeasure);
       else Reflect.deleteProperty(SVGElement.prototype, 'getComputedTextLength');

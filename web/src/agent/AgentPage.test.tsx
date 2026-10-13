@@ -22,7 +22,7 @@ const model = (ref: string, modelId: string, extra = {}) => ({ ref, scope: 'publ
   providerId: 'deepseek', modelId, baseUrl: 'https://api.example.com', apiMode: 'chat', enabled: true,
   hasApiKey: true, keyHint: '1234', supportsVision: false, ...extra });
 
-vi.mock('./client', () => ({ AGENT_ID: 'agent', client: {
+vi.mock('./client', () => ({ AGENT_ID: 'agent', getFinanceCapabilities: async () => ({ enabled: false, categories: [] }), client: {
   getAgent: () => ({ details: () => Promise.resolve({ name: '智能体', modelId: 'openai/gpt-5.6-terra', tools: {} }) }),
   getMemoryConfig: () => Promise.resolve({ config: { observationalMemory: { observationModel: 'deepseek/deepseek-v4-flash' } } }),
   listAgentsModelProviders: () => listAgentsModelProviders(),

@@ -1,5 +1,6 @@
 import { RequestContext } from '@mastra/core/request-context';
 import type { ModelRef, SafeModel } from './model-catalog-client';
+import { updateOwnedThreadMetadata } from './thread-metadata-update';
 
 export interface ModelSettings {
   chatModel: ModelRef;
@@ -56,11 +57,15 @@ export function withThreadModels(metadata: unknown, settings: ModelSettings): Re
 export async function saveThreadModels(thread: {
   get: () => Promise<{ resourceId: string; metadata?: unknown }>;
   update: (params: { metadata: Record<string, unknown> }) => Promise<unknown>;
-}, settings: ModelSettings, resourceId: string): Promise<void> {
+}, settings: ModelSettings, resourceId: string, threadId?: string): Promise<void> {
   if (!isModelRef(settings.chatModel) || !isModelRef(settings.memoryModel)) throw new Error('模型引用无效，请从列表中重新选择');
-  const current = await thread.get();
-  if (current.resourceId !== resourceId) throw new Error('会话不存在或无权访问');
-  await thread.update({ metadata: withThreadModels(current.metadata, settings) });
+  if (threadId) await updateOwnedThreadMetadata(threadId, thread, resourceId,
+    metadata => withThreadModels(metadata, settings));
+  else {
+    const current = await thread.get();
+    if (current.resourceId !== resourceId) throw new Error('会话不存在或无权访问');
+    await thread.update({ metadata: withThreadModels(current.metadata, settings) });
+  }
 }
 
 export function createModelRequestContext(settings: ModelSettings): RequestContext {

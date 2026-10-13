@@ -7,6 +7,7 @@ import {
   formatBytes, IMAGE_ACCEPT, IMAGE_MIME, isImageAttachment, WORKSPACE_FILE_MIME, type ComposerAttachment,
 } from './attachment-types';
 import type { ModelRef, SafeModel } from './model-catalog-client';
+import { financeCategoryOptions, type FinanceCategory } from './finance-category';
 
 function AttachmentCard({ attachment, onRemove, onRetry, onPreview }: {
   attachment: ComposerAttachment;
@@ -69,9 +70,12 @@ function dragHasFiles(transfer: DataTransfer | null | undefined): boolean {
 
 export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop, sendDisabled = false,
   catalog = [], modelRef, onModelChange, modelDisabled = false,
+  financeCategory = null, financeEnabled = false, financeSaving = false, onFinanceCategoryChange,
   attachments = [], onChooseWorkspaceFiles, onUploadFiles, onRemoveAttachment, onRetryAttachment,
   onWorkspaceDrop, onInputFocus, autoFocus = false, attachmentsDisabled = false }: {
   sendDisabled?: boolean; draft: string; onDraftChange: (value: string) => void; isRunning: boolean;
+  financeCategory?: FinanceCategory | null; financeEnabled?: boolean; financeSaving?: boolean;
+  onFinanceCategoryChange?: (value: FinanceCategory | null) => void;
   onSend: () => void; onStop: () => void;
   onInputFocus?: () => void; autoFocus?: boolean; attachmentsDisabled?: boolean;
   catalog?: SafeModel[]; modelRef?: ModelRef; onModelChange?: (ref: ModelRef) => void; modelDisabled?: boolean;
@@ -86,6 +90,7 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
   const selected = available ? catalog.find(model => model.ref === modelRef) : undefined;
   const [open, setOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [financeOpen, setFinanceOpen] = useState(false);
   const [addPosition, setAddPosition] = useState({ top: 0, left: 0 });
   const [query, setQuery] = useState('');
   const [position, setPosition] = useState({ top: 0, left: 0, width: 360 });
@@ -95,7 +100,7 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
   const imageInputRef = useRef<HTMLInputElement>(null);
   const attachmentBusy = attachments.some(item => item.state === 'uploading' || item.state === 'failed');
   const hasReadyAttachment = attachments.some(item => item.state === 'ready');
-  const canSend = !isRunning && !sendDisabled && !attachmentBusy
+  const canSend = !isRunning && !sendDisabled && !financeSaving && !attachmentBusy
     && (Boolean(draft.trim()) || hasReadyAttachment);
 
   function onDragOver(event: DragEvent<HTMLDivElement>) {
@@ -199,6 +204,24 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
   }
 
   return <div className="agent-composer" onDragOver={onDragOver} onDrop={onDrop} onPaste={onPaste}>
+    <div className="composer-finance-row">
+      <div className="composer-finance-picker">
+        <button type="button" aria-label="财经数据" aria-expanded={financeOpen} disabled={financeSaving || isRunning}
+          onClick={() => setFinanceOpen(value => !value)}>财经数据 <ChevronDown size={14} aria-hidden="true" /></button>
+        {financeOpen && <div className="composer-finance-menu" role="menu" aria-label="财经数据分类">
+          {financeCategoryOptions.map(option => <button key={option.value} type="button" role="menuitem"
+            disabled={financeSaving} onClick={() => { setFinanceOpen(false); onFinanceCategoryChange?.(option.value); }}>
+            {option.label}</button>)}
+        </div>}
+      </div>
+      {financeCategory && <span className={`composer-finance-chip${financeEnabled ? '' : ' is-inactive'}`}>
+        财经数据 · {financeCategoryOptions.find(option => option.value === financeCategory)?.label}
+        {!financeEnabled && '（暂不可用）'}
+        <button type="button" aria-label="移除财经分类" disabled={financeSaving || isRunning}
+          onClick={() => onFinanceCategoryChange?.(null)}><X size={13} aria-hidden="true" /></button>
+      </span>}
+      {financeSaving && <span role="status">保存分类中…</span>}
+    </div>
     <Composer onSubmit={event => { event.preventDefault(); if (canSend) onSend(); }}>
     {attachments.length > 0 && <div className="composer-attachment-row" aria-label="已选择的文件">
       {attachments.map(file => <AttachmentCard key={file.key} attachment={file}

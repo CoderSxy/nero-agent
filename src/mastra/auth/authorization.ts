@@ -4,6 +4,7 @@ import { getUserByToken, type AuthUser } from './service';
 import { studioAuth } from './studio';
 import type { Context, Next } from 'hono';
 import { RequestContext } from '@mastra/core/request-context';
+import { readFinanceCategory, setVerifiedFinanceCategory } from '../finance/scope';
 
 type GuardRequest = {
   method: string;
@@ -116,10 +117,12 @@ export const authorizeThreadRoute = {
       const isInitialStream = method === 'POST' && /^\/api\/agents\/[^/]+\/stream$/.test(path);
       if (isInitialStream && !(await threadLookup.getThreadById({ threadId }))) {
         // Mastra creates this thread during the first stream and binds its resource to the authenticated user.
+        setVerifiedFinanceCategory(requestContext, null);
         await next();
         return;
       }
-      await assertThreadOwned(auth, threadId, threadLookup);
+      const owned = await assertThreadOwned(auth, threadId, threadLookup);
+      setVerifiedFinanceCategory(requestContext, readFinanceCategory(owned.metadata));
       await next();
     } catch (error) {
       if (error instanceof ThreadGuardError) {

@@ -15,6 +15,8 @@ import { attachmentPersistenceProcessor } from '../files/attachment-persistence-
 import { userFileTools } from '../files/tools';
 import { disabledNativeWorkspaceTools } from '../sandbox/native-tools';
 import { sandboxTools } from '../sandbox/tool';
+import { financeSearchTool, financeInterfaceInfoTool, financeFetchTool } from '../finance/tools';
+import { isFinanceEnabled, trustedFinanceCategory } from '../finance/scope';
 
 const workspacePath = 'workspace';
 
@@ -106,6 +108,11 @@ function resolveAgentTools(requestContext: RequestContext): ToolsInput {
     web_search: tavilySearchTool,
     ...(isUserFilesEnabled() ? userFileTools : {}),
     ...sandboxTools(),
+    ...(isFinanceEnabled() && trustedFinanceCategory(requestContext) ? {
+      finance_search: financeSearchTool,
+      finance_interface_info: financeInterfaceInfoTool,
+      finance_fetch: financeFetchTool,
+    } : {}),
   };
   if (isAdmin(requestContext)) {
     return { ...common, start_schedule: startScheduleTool, stop_schedule: stopScheduleTool } as ToolsInput;

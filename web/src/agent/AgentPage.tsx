@@ -3,7 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ChatShell } from '@mastra/playground-ui/components/ChatShell';
 import type { GetAgentResponse, GetMemoryConfigResponse } from '@mastra/client-js';
 import type { MastraDBMessage } from '@mastra/core/agent/message-list';
-import { AGENT_ID, client } from './client';
+import { AGENT_ID, client, getFinanceCapabilities } from './client';
 import { useThreadList } from './use-thread-list';
 import { loadScopedThread, neighborAfterDeletion } from './thread-scope';
 import { ThreadSidebar } from './ThreadSidebar';
@@ -23,6 +23,7 @@ import type { PendingUserMessage } from './pending-user-message';
 import { createHistorySearchCache } from './history-search-cache';
 import type { HistorySearchResult } from './history-search-index';
 import { useHistorySearch } from './use-history-search';
+import { readThreadFinanceCategory, saveThreadFinanceCategory, type FinanceCategory } from './finance-category';
 
 function initialTheme(): Theme {
   try { return localStorage.getItem('nero-agent-theme') === 'light' ? 'light' : 'dark'; }
@@ -49,6 +50,7 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
   const [creatingThread, setCreatingThread] = useState(false);
   const [handoffThreadId, setHandoffThreadId] = useState<string | null>(null);
   const creatingThreadRef = useRef(false);
+  const pendingFinanceCategoryRef = useRef<FinanceCategory | null>(null);
   const landingCreationStartedRef = useRef(false);
   const routeThreadIdRef = useRef(routeThreadId);
   routeThreadIdRef.current = routeThreadId;
@@ -68,6 +70,10 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
   const [catalog, setCatalog] = useState<SafeModel[] | null>(null);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [threadMetadata, setThreadMetadata] = useState<unknown>(null);
+  const [metadataThreadId, setMetadataThreadId] = useState<string | null>(null);
+  const [financeEnabled, setFinanceEnabled] = useState(false);
+  const [financeSaving, setFinanceSaving] = useState(false);
+  const [financeError, setFinanceError] = useState<string | null>(null);
   const [draftModels, setDraftModels] = useState<Partial<ModelSettings>>({});
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [settingsSaving, setSettingsSaving] = useState(false);
@@ -84,6 +90,8 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
   const available = useMemo(() => new Set((catalog ?? []).map(model => model.ref)), [catalog]);
   const threadRead = useMemo(() => threadId && catalog ? readThreadModels(threadMetadata, catalog) : null,
     [threadId, threadMetadata, catalog]);
+  const financeCategory = threadId && metadataThreadId === threadId
+    ? readThreadFinanceCategory(threadMetadata) : null;
   const models: Partial<ModelSettings> = threadId
     ? threadRead ? (threadRead.invalid ? threadRead.settings : { ...defaults, ...threadRead.settings }) : {}
     : { ...defaults, ...Object.fromEntries(Object.entries(draftModels).filter(([, ref]) => available.has(ref))) };
@@ -124,17 +132,26 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
     return () => { active = false; };
   }, []);
   useEffect(() => {
-    if (!threadId) { setMessages([]); setThreadMetadata(null); return; }
     let active = true;
+    void getFinanceCapabilities().then(result => { if (active) setFinanceEnabled(result.enabled); })
+      .catch(() => { if (active) setFinanceEnabled(false); });
+    return () => { active = false; };
+  }, []);
+  useEffect(() => {
+    if (!threadId) { setMessages([]); setThreadMetadata(null); setMetadataThreadId(null); return; }
+    let active = true;
+    setFinanceError(null);
     setLoadingThread(true); setMessages([]); setThreadMetadata(null);
     loadScopedThread(threadId, user.id).then(result => {
       if (active) { setMessages(result.messages as MastraDBMessage[]);
-        setThreadMetadata(result.thread.metadata); setNotice(null); setLoadingThread(false); }
+        setThreadMetadata(result.thread.metadata); setMetadataThreadId(threadId);
+        setNotice(null); setLoadingThread(false); }
     }).catch(() => {
       if (active) { setMessages([]); setLoadingThread(false); setNotice('会话不存在或无权访问'); navigate('/agent/new', { replace: true }); }
     });
     return () => { active = false; };
   }, [threadId, navigate, user.id]);
+  useEffect(() => { setFinanceSaving(false); setFinanceError(null); }, [threadId]);
   useEffect(() => {
     if (threadId) { setLandingFocused(false); return; }
     landingCreationStartedRef.current = false;
@@ -162,15 +179,47 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
     try {
       const thread = await list.createThread(newThreadModels);
       if (fromLanding && routeThreadIdRef.current !== 'new') return;
+      if (pendingFinanceCategoryRef.current) {
+        const category = pendingFinanceCategoryRef.current;
+        await saveThreadFinanceCategory(thread.id, client.getMemoryThread({ threadId: thread.id, agentId: AGENT_ID }),
+          category, user.id);
+        pendingFinanceCategoryRef.current = null;
+        setFinanceSaving(false);
+      }
       setHandoffThreadId(fromLanding ? thread.id : null);
       setNotice(null);
       navigate(`/agent/${thread.id}`);
     } catch (cause) {
       if (fromLanding) landingCreationStartedRef.current = false;
+      pendingFinanceCategoryRef.current = null;
+      setFinanceSaving(false);
       setNotice(cause instanceof Error ? cause.message : '新建会话失败');
     } finally {
       creatingThreadRef.current = false;
       setCreatingThread(false);
+    }
+  }
+  async function changeFinanceCategory(next: FinanceCategory | null) {
+    if (!threadId) {
+      if (!next) return;
+      if (!canCreate) { setFinanceError('模型列表尚未加载，请稍后重试'); return; }
+      pendingFinanceCategoryRef.current = next;
+      setFinanceSaving(true); setFinanceError(null);
+      if (!creatingThreadRef.current) await create(true);
+      return;
+    }
+    const currentThreadId = threadId;
+    setFinanceSaving(true); setFinanceError(null);
+    try {
+      const metadata = await saveThreadFinanceCategory(currentThreadId,
+        client.getMemoryThread({ threadId: currentThreadId, agentId: AGENT_ID }), next, user.id);
+      if (routeThreadIdRef.current === currentThreadId) setThreadMetadata(metadata);
+      await list.refresh();
+    } catch (cause) {
+      if (routeThreadIdRef.current === currentThreadId)
+        setFinanceError(cause instanceof Error ? cause.message : '保存财经分类失败');
+    } finally {
+      if (routeThreadIdRef.current === currentThreadId) setFinanceSaving(false);
     }
   }
   async function changeModels(next: ModelSettings) {
@@ -180,9 +229,12 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
     if (!threadId) { setDraftModels(next); setSettingsError(null); return; }
     const previous = threadMetadata;
     setThreadMetadata(withThreadModels(previous, next)); setSettingsSaving(true); setSettingsError(null);
-    try { await saveThreadModels(client.getMemoryThread({ threadId, agentId: AGENT_ID }), next, user.id);
+    try { await saveThreadModels(client.getMemoryThread({ threadId, agentId: AGENT_ID }), next, user.id, threadId);
       await list.refresh(); }
-    catch (cause) { setThreadMetadata(previous);
+    catch (cause) { try {
+      const latest = await client.getMemoryThread({ threadId, agentId: AGENT_ID }).get();
+      if (routeThreadIdRef.current === threadId) setThreadMetadata(latest.metadata);
+    } catch { if (routeThreadIdRef.current === threadId) setThreadMetadata(previous); }
       setSettingsError(cause instanceof Error ? cause.message : '保存模型配置失败'); }
     finally { setSettingsSaving(false); }
   }
@@ -211,6 +263,7 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
     </div>
     <section className="agent-center">
       {notice && <div role="alert" className="notice">{notice}</div>}
+      {financeError && <div role="alert" className="notice">{financeError}</div>}
       {loadingThread ? <div className="empty-chat">加载会话中…</div> : threadId && !notice ?
         <AgentChat key={threadId} title={list.threads.find(thread => thread.id === threadId)?.title || '未命名会话'}
           threadId={threadId} resourceId={user.id} initialMessages={messages} models={selected}
@@ -218,6 +271,8 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
           focusComposer={handoffThreadId === threadId}
           catalog={catalog ?? []} modelRef={selected?.chatModel} onModelChange={selectComposerModel}
           modelDisabled={settingsSaving} modelError={settingsError}
+          financeCategory={financeCategory} financeEnabled={financeEnabled} financeSaving={financeSaving}
+          onFinanceCategoryChange={value => void changeFinanceCategory(value)}
           sendBlockedReason={sendBlockedReason} onMessageSent={message => {
             void historySearch.invalidateThread(threadId);
             void list.confirmFirstMessageTitle(threadId, message.text).catch(() => void list.refresh());
@@ -249,6 +304,8 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
           <ChatShell.Dock><ChatShell.Column>
             <div className="chat-welcome"><h1>有什么可以帮你？</h1></div>
             <AgentComposer draft={landingDraft} onDraftChange={setLandingDraft}
+              financeCategory={null} financeEnabled={financeEnabled} financeSaving={financeSaving}
+              onFinanceCategoryChange={value => void changeFinanceCategory(value)}
               onInputFocus={() => { setLandingFocused(true); if (canCreate) void create(true); }}
               isRunning={false} sendDisabled={!canCreate || creatingThread} attachmentsDisabled
               onSend={() => void create(true)} onStop={() => undefined}

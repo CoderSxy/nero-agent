@@ -12,6 +12,7 @@ import { splitBlocks } from './blocks';
 import { useSettledWords } from './use-settled';
 import { CodeBlock } from '@mastra/playground-ui/components/CodeBlock';
 import { EChartsBlock } from './EChartsBlock';
+import { isEChartsCode } from './echarts-option';
 import { MermaidBlock } from './MermaidBlock';
 
 export type MarkdownExternalLinkTarget = 'tab' | 'window';
@@ -178,9 +179,11 @@ function MarkdownCodeBlock({
   if (!fenced) return <pre className={className}>{children}</pre>;
 
   const language = fenced.language?.toLowerCase();
-  if ((language === 'echarts' || language === 'mermaid') && isFenceClosed(rawContent, node?.position?.start.offset)) {
-    if (language === 'echarts') return <EChartsBlock code={fenced.code} />;
-    return <MermaidBlock code={fenced.code} />;
+  if (isFenceClosed(rawContent, node?.position?.start.offset)) {
+    if (language === 'echarts' || ((language === 'json' || !language) && isEChartsCode(fenced.code))) {
+      return <EChartsBlock code={fenced.code} />;
+    }
+    if (language === 'mermaid') return <MermaidBlock code={fenced.code} />;
   }
 
   return (

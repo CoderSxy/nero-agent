@@ -1,0 +1,22 @@
+[Unit]
+Description=AKTools HTTP service for nero-agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+StateDirectory=aktools
+WorkingDirectory=/var/lib/aktools
+ExecStart=/opt/aktools/venv/bin/python -m aktools --host 127.0.0.1 --port 18080
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+MemoryMax=600M
+TasksMax=80
+
+[Install]
+WantedBy=multi-user.target

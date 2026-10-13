@@ -182,6 +182,15 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .light .message-search-target { outline-color: color-mix(in srgb, #6b7cff 45%, var(--border));
   background: color-mix(in srgb, #6b7cff 10%, var(--card)); }
 .agent-composer { margin-bottom: 24px; }
+.composer-finance-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 8px 4px; font-size: 12px; }
+.composer-finance-picker { position: relative; }
+.composer-finance-picker > button, .composer-finance-chip { display: inline-flex; align-items: center; gap: 5px; min-height: 28px; padding: 3px 9px; border: 1px solid var(--border); border-radius: 999px; background: var(--card); color: var(--foreground); }
+.composer-finance-picker > button:hover, .composer-finance-menu button:hover { background: var(--popover); }
+.composer-finance-menu { position: absolute; bottom: calc(100% + 6px); left: 0; z-index: 60; display: grid; min-width: 118px; padding: 5px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); box-shadow: 0 8px 30px #0003; }
+.composer-finance-menu button { padding: 7px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--foreground); text-align: left; }
+.composer-finance-chip { background: var(--popover); }
+.composer-finance-chip.is-inactive { opacity: .65; }
+.composer-finance-chip button { display: inline-grid; place-items: center; padding: 1px; border: 0; background: transparent; color: inherit; }
 .composer-model-trigger { display: flex; align-items: center; gap: 7px; max-width: min(65%, 240px); min-width: 0; height: 34px; padding: 3px 9px 3px 5px; border-radius: 9px; color: var(--foreground); font-size: 12px; }
 .composer-model-trigger:hover, .composer-model-trigger[aria-expanded='true'] { background: var(--card); }
 .composer-model-trigger:focus-visible, .composer-send-button:focus-visible { outline: 2px solid var(--foreground); outline-offset: 2px; }
@@ -351,9 +360,14 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .agent-chart__canvas { width: 100%; height: 360px; }
 .agent-chart__diagram { max-width: 100%; overflow: auto; text-align: center; }
 .agent-chart__diagram svg { max-width: 100%; height: auto; }
-.agent-chart details { margin-top: 8px; color: var(--muted-foreground); font-size: 12px; }
-.agent-chart summary { cursor: pointer; }
+.agent-chart__toolbar { display: flex; justify-content: flex-end; gap: 4px; margin-bottom: 8px; }
+.agent-chart__toolbar button { padding: 4px 10px; border-radius: 6px; color: var(--muted-foreground); font-size: 12px; cursor: pointer; }
+.agent-chart__toolbar button[aria-pressed="true"] { background: color-mix(in srgb, var(--foreground) 10%, var(--card)); color: var(--foreground); }
+.agent-chart__toolbar button:hover { color: var(--foreground); }
+.agent-chart__toolbar button:focus-visible { outline: 2px solid var(--foreground); outline-offset: 2px; }
 .chart-source { max-width: 100%; overflow: auto; white-space: pre; font-size: 12px; }
+.chart-fallback { max-width: 100%; min-width: 0; }
+.chart-fallback p { margin: 0 0 6px; color: var(--muted-foreground); }
 .process-reasoning { min-width: 0; margin: 4px 0; color: var(--muted-foreground); }
 .process-reasoning summary { display: flex; align-items: center; gap: 10px; width: fit-content; cursor: pointer; list-style: none; }
 .process-reasoning summary::-webkit-details-marker { display: none; }

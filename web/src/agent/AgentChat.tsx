@@ -16,6 +16,7 @@ import { createModelRequestContext, type ModelSettings } from './model-settings'
 import type { ModelRef, SafeModel } from './model-catalog-client';
 import { nextPendingUserMessage, withPendingUserMessages, type PendingUserMessage } from './pending-user-message';
 import { WorkspaceFilePicker } from './WorkspaceFilePicker';
+import type { FinanceCategory } from './finance-category';
 
 type PendingUpload = { key: string; file: File };
 
@@ -43,6 +44,7 @@ export type AttachRequest = {
 
 export function AgentChat({ title = '未命名会话', threadId, resourceId, initialMessages, onMessageSent, models, catalog = [],
   onModelChange, modelRef, modelDisabled = false, modelError, sendBlockedReason,
+  financeCategory = null, financeEnabled = false, financeSaving = false, onFinanceCategoryChange,
   pendingUserMessages = [], onMessageSubmitted, onMessageFailed, onResponseSettled, onFilesChanged, attachRequest,
   attachmentRefreshVersion = 0, targetMessageId, initialDraft = '', focusComposer = false }: {
   title?: string; threadId: string; resourceId: string; initialMessages: MastraDBMessage[];
@@ -51,6 +53,8 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   models: ModelSettings | null; catalog?: SafeModel[]; modelRef?: ModelRef;
   onModelChange?: (ref: ModelRef) => void; modelDisabled?: boolean; modelError?: string | null;
   sendBlockedReason?: string | null;
+  financeCategory?: FinanceCategory | null; financeEnabled?: boolean; financeSaving?: boolean;
+  onFinanceCategoryChange?: (category: FinanceCategory | null) => void;
   pendingUserMessages?: PendingUserMessage[];
   onMessageSubmitted?: (message: PendingUserMessage) => void;
   onMessageFailed?: (message: PendingUserMessage) => void;
@@ -85,7 +89,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   const memoryModel = models?.memoryModel;
   const requestContext = useMemo(() => chatModel && memoryModel
     ? createModelRequestContext({ chatModel, memoryModel }) : undefined, [chatModel, memoryModel]);
-  const blockedReason = sendBlockedReason ?? (models ? null : '请先配置可用模型');
+  const blockedReason = financeSaving ? '正在保存财经分类…' : sendBlockedReason ?? (models ? null : '请先配置可用模型');
   const selectedModel = catalog.find(model => model.ref === (modelRef ?? chatModel));
   const chat = useChat({ agentId: AGENT_ID, resourceId, threadId, initialMessages, requestContext,
     enableThreadSignals: true });
@@ -457,6 +461,8 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
       {blockedReason && <p className="notice" role="status">{blockedReason}</p>}
       {modelError && <p className="error" role="alert">{modelError}</p>}
       <AgentComposer draft={draft} sendDisabled={Boolean(blockedReason) || modelDisabled} onDraftChange={setDraft}
+      financeCategory={financeCategory} financeEnabled={financeEnabled} financeSaving={financeSaving}
+      onFinanceCategoryChange={onFinanceCategoryChange}
       autoFocus={focusComposer}
       catalog={catalog} modelRef={modelRef ?? models?.chatModel} onModelChange={onModelChange} modelDisabled={modelDisabled}
       isRunning={chat.isRunning || chat.isAwaitingToolApproval} onSend={() => void send()}

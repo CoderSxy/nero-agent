@@ -1,12 +1,12 @@
 import type { AuthContext } from './auth-context';
 
-export type ThreadRecord = { id: string; resourceId?: string | null };
+export type ThreadRecord = { id: string; resourceId?: string | null; metadata?: unknown };
 
 export type ThreadLookup = {
   getThreadById(args: { threadId: string }): Promise<ThreadRecord | null>;
 };
 
-export type OwnedThread = { id: string; resourceId: string };
+export type OwnedThread = { id: string; resourceId: string; metadata?: unknown };
 
 export class ThreadGuardError extends Error {
   readonly status: 401 | 403 | 404;
@@ -29,5 +29,5 @@ export async function assertThreadOwned(
   if (!thread.resourceId || thread.resourceId !== auth.userId) {
     throw new ThreadGuardError(403, 'Access denied: thread belongs to a different resource');
   }
-  return { id: thread.id, resourceId: thread.resourceId };
+  return { id: thread.id, resourceId: thread.resourceId, metadata: thread.metadata };
 }

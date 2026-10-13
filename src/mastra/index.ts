@@ -24,6 +24,8 @@ import { authContextFromUser, resourceIdFor } from './auth/auth-context';
 import { getUserByToken } from './auth/service';
 import { studioAuth } from './auth/studio';
 import { createStudioProxyAuth } from './auth/studio-proxy';
+import { financeRoutes } from './finance/routes';
+import { financeSearchTool, financeInterfaceInfoTool, financeFetchTool } from './finance/tools';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error('DATABASE_URL 未配置，请先运行 npm run db:local:setup');
@@ -44,7 +46,7 @@ export const mastra = new Mastra({
     studioBase: process.env.MASTRA_STUDIO_BASE || '/',
     middleware: [agentModelLockMiddleware, authorizeThreadRoute, studioChineseMiddleware],
     apiRoutes: [...authRoutes, ...modelRoutes, ...modelAdminRoutes, ...fileRoutes,
-      ...currentWorkspaceFileRoutes],
+      ...currentWorkspaceFileRoutes, ...financeRoutes],
     auth: {
       authenticateToken: async token => getUserByToken(token),
       mapUserToResourceId: user => resourceIdFor(authContextFromUser(user)),
@@ -54,7 +56,8 @@ export const mastra = new Mastra({
     externals: ['@duckdb/node-bindings'],
   },
   agents: { agent },
-  tools: { startScheduleTool, stopScheduleTool, tavilySearchTool, executeCommandTool, ...userFileTools },
+  tools: { startScheduleTool, stopScheduleTool, tavilySearchTool, executeCommandTool, ...userFileTools,
+    financeSearchTool, financeInterfaceInfoTool, financeFetchTool },
   storage: new MastraCompositeStore({
     id: 'composite-storage',
     default: new PostgresStore({

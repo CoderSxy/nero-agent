@@ -18,6 +18,13 @@ export function apiFetch(path: string, init: RequestInit = {}): Promise<Response
   return fetch(path, { ...init, headers });
 }
 
+export async function getFinanceCapabilities(): Promise<{ enabled: boolean }> {
+  const response = await apiFetch('/finance/capabilities');
+  if (!response.ok) return { enabled: false };
+  const body = await response.json() as { enabled?: unknown };
+  return { enabled: body.enabled === true };
+}
+
 export function userFileUrl(threadId: string, relativePath: string): string {
   return `/user-files/${threadId}/${relativePath.split('/').map(encodeURIComponent).join('/')}`;
 }
