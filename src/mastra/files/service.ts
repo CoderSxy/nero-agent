@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import type { AuthContext } from '../auth/auth-context';
 import type { ThreadLookup } from '../auth/thread-guard';
 import { ensureThreadDirectory } from '../workspace/manager';
-import { assertContained, workspaceBase } from '../workspace/path';
+import { assertContained } from '../workspace/path';
 import { FilePathError, maxFileSizeBytes, relativeFilePath } from './policy';
 import { readWorkspaceVersion } from './workspace-editor';
 import { workspaceQuota } from '../workspace/quota';
@@ -64,10 +64,12 @@ export class FileService {
       if (growth > 0 || newFiles > 0) await workspaceQuota.releaseReserve(auth.userId, growth, newFiles);
       throw new FileServiceError(400, '上传已中断');
     }
-    const tempPath = join(workspaceBase(), 'temp', randomUUID());
-    await mkdir(dirname(tempPath), { recursive: true });
+    // XFS project quotas reject renames between different project IDs with EXDEV.
+    // Stage within the destination directory so the temporary file inherits its quota.
+    const tempPath = join(dirname(hostPath), `.${randomUUID()}.tmp`);
     let persisted = false;
     try {
+      await mkdir(dirname(hostPath), { recursive: true });
       const handle = await open(tempPath, 'wx');
       try {
         if (options.signal?.aborted) throw new FileServiceError(400, '上传已中断');
@@ -76,7 +78,6 @@ export class FileService {
         await handle.close();
       }
       if (options.signal?.aborted) throw new FileServiceError(400, '上传已中断');
-      await mkdir(dirname(hostPath), { recursive: true });
       await rename(tempPath, hostPath);
       persisted = true;
       if (existed && data.byteLength < previousSize) {

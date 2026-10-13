@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { MastraDBMessage } from '@mastra/core/agent/message-list';
 import { Message } from '@mastra/playground-ui/components/Message';
 import { MarkdownRenderer } from '@mastra/playground-ui/components/MarkdownRenderer';
+import { RichMarkdownRenderer } from './markdown/markdown-renderer';
 import { ToolCall, ToolCallTrigger, ToolCallHeader, ToolCallContent, ToolCallMono } from '@mastra/playground-ui/components/ai/tool-call';
 import { ToolApproval } from '@mastra/playground-ui/components/ai/tool-approval';
 import { AskUser } from '@mastra/playground-ui/components/ai/ask-user';
@@ -186,7 +187,7 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
           if (part.kind === 'text') {
             const errorText = message.role === 'assistant' ? streamError(part.text) : null;
             return errorText ? <p key={index} role="alert" className="error">回复未完成：{errorText}</p> :
-              <MarkdownRenderer key={index} streaming={isRunning && message === messages.at(-1)}>{part.text}</MarkdownRenderer>;
+              <RichMarkdownRenderer key={index} streaming={isRunning && message === messages.at(-1)}>{part.text}</RichMarkdownRenderer>;
           }
           const tool = part.tool;
           const suspension = interaction(message, 'suspendedTools', tool);

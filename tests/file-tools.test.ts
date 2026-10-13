@@ -506,16 +506,30 @@ test('resolveAgentTools gates glob/grep/edit behind USER_FILES_ENABLED for regul
   }
 });
 
-test('agent instructions guide glob→grep/read_file→edit, ETag reuse, STALE_VERSION and attachments', async () => {
-  const instructions = String(await agent.getInstructions());
-  assert.match(instructions, /glob/i);
-  assert.match(instructions, /grep/i);
-  assert.match(instructions, /\bedit\b/i);
-  assert.match(instructions, /ETag|etag/i);
-  assert.match(instructions, /STALE_VERSION|版本冲突|重新读/i);
-  assert.match(instructions, /read_attached_file/);
-  assert.match(instructions, /workspace|个人工作区/);
-  assert.match(instructions, /宿主|绝对路径|file:/);
+test('agent instructions match the available file tools', async () => {
+  const previous = process.env.USER_FILES_ENABLED;
+  try {
+    process.env.USER_FILES_ENABLED = 'false';
+    const disabled = String(await agent.getInstructions({ requestContext: regularUserContext() }));
+    assert.doesNotMatch(disabled, /使用 write_file 工具写入/);
+    assert.match(disabled, /文件功能未开放/);
+    assert.match(disabled, /不要调用无关工具/);
+
+    process.env.USER_FILES_ENABLED = 'true';
+    const instructions = String(await agent.getInstructions({ requestContext: regularUserContext() }));
+    assert.match(instructions, /使用 write_file 工具写入/);
+    assert.match(instructions, /glob/i);
+    assert.match(instructions, /grep/i);
+    assert.match(instructions, /\bedit\b/i);
+    assert.match(instructions, /ETag|etag/i);
+    assert.match(instructions, /STALE_VERSION|版本冲突|重新读/i);
+    assert.match(instructions, /read_attached_file/);
+    assert.match(instructions, /workspace|个人工作区/);
+    assert.match(instructions, /宿主|绝对路径|file:/);
+  } finally {
+    if (previous === undefined) delete process.env.USER_FILES_ENABLED;
+    else process.env.USER_FILES_ENABLED = previous;
+  }
 });
 
 test('end-to-end file flow: glob → grep → edit → re-read, then workspace upload search', async () => {

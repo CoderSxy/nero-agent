@@ -316,6 +316,8 @@ export function createCurrentWorkspaceFileRoutes(lookup?: ThreadLookup) {
       method: 'PUT',
       handler: async c => {
         try {
+          const gated = requireUserFilesEnabled(c);
+          if (gated) return gated;
           const workspace = await currentWorkspace(c);
           const path = workspacePath(c);
           const contentType = c.req.header('content-type') ?? '';

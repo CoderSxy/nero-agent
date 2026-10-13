@@ -292,7 +292,7 @@ test('workspace upload maps quota failures to WORKSPACE_QUOTA_EXCEEDED', async (
   }
 });
 
-test('USER_FILES_ENABLED=false rejects workspace upload/delete/prepare but GET list stays open', async () => {
+test('USER_FILES_ENABLED=false rejects workspace writes but GET list stays open', async () => {
   const previous = process.env.USER_FILES_ENABLED;
   try {
     const app = await appWithWorkspace();
@@ -307,6 +307,12 @@ test('USER_FILES_ENABLED=false rejects workspace upload/delete/prepare but GET l
       method: 'POST',
       headers: { ...headers, 'content-type': 'application/json' },
       body: JSON.stringify({ paths: ['projects/own.md'] }),
+    })).status, 404);
+    assert.equal((await app.request('/current-workspace/files/projects/own.md', {
+      method: 'PUT',
+      headers: { ...headers, 'content-type': 'text/plain; charset=utf-8',
+        'if-match': readWorkspaceVersion(Buffer.from('# Own')) },
+      body: '# Changed',
     })).status, 404);
     assert.equal((await app.request('/current-workspace/attachments', {
       method: 'POST',

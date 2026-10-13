@@ -347,6 +347,13 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .process-message--running [data-slot='message-content'] > * { min-width: 0; }
 .message-list .mastra-markdown table { width: 100%; max-width: 100%; }
 .message-list .mastra-markdown :is(th, td) { overflow-wrap: anywhere; word-break: break-word; }
+.agent-chart { max-width: 100%; min-width: 0; margin: 12px 0; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
+.agent-chart__canvas { width: 100%; height: 360px; }
+.agent-chart__diagram { max-width: 100%; overflow: auto; text-align: center; }
+.agent-chart__diagram svg { max-width: 100%; height: auto; }
+.agent-chart details { margin-top: 8px; color: var(--muted-foreground); font-size: 12px; }
+.agent-chart summary { cursor: pointer; }
+.chart-source { max-width: 100%; overflow: auto; white-space: pre; font-size: 12px; }
 .process-reasoning { min-width: 0; margin: 4px 0; color: var(--muted-foreground); }
 .process-reasoning summary { display: flex; align-items: center; gap: 10px; width: fit-content; cursor: pointer; list-style: none; }
 .process-reasoning summary::-webkit-details-marker { display: none; }

@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { AuthContext } from '../auth/auth-context';
 import { ensureUserWorkspace } from '../workspace/manager';
-import { assertContained, workspaceBase } from '../workspace/path';
+import { assertContained } from '../workspace/path';
 import { workspaceQuota, type QuotaState } from '../workspace/quota';
 import { assertHostWritable } from '../workspace/disk-protection';
 import { FilePathError, maxFileSizeBytes, relativeFilePath } from './policy';
@@ -51,11 +51,14 @@ export class WorkspaceFileService {
       await workspaceQuota.releaseReserve(auth.userId, data.byteLength, 1);
       throw new FileServiceError(400, '上传已中断');
     }
-    const tempPath = join(workspaceBase(), 'temp', randomUUID());
-    await mkdir(dirname(tempPath), { recursive: true });
+    // XFS project quotas reject renames between different project IDs with EXDEV.
+    // Stage within the destination directory so the temporary file inherits its quota.
+    const tempPath = join(dirname(hostPath), `.${randomUUID()}.tmp`);
     let persisted = false;
     let committed = false;
     try {
+      await mkdir(dirname(hostPath), { recursive: true });
+      await assertExistingRealPath(root, dirname(hostPath));
       const handle = await open(tempPath, 'wx');
       try {
         if (signal?.aborted) throw new FileServiceError(400, '上传已中断');
@@ -64,7 +67,6 @@ export class WorkspaceFileService {
         await handle.close();
       }
       if (signal?.aborted) throw new FileServiceError(400, '上传已中断');
-      await mkdir(dirname(hostPath), { recursive: true });
       await assertExistingRealPath(root, dirname(hostPath));
       await rename(tempPath, hostPath);
       persisted = true;

@@ -34,6 +34,55 @@ describe('message anchors', () => {
 });
 
 describe('message tools and stream state', () => {
+  it('shows an unfinished ECharts fence as code until the closing marker arrives', () => {
+    const unfinished = { id: 'chart', role: 'assistant', content: { format: 2, parts: [
+      { type: 'text', text: '```echarts\n{"series":[{"type":"bar","data":[2,3]}]}' },
+    ] } };
+    const props = { isRunning: true, error: null, onApprove: vi.fn(), onDecline: vi.fn(), onAnswer: vi.fn() };
+    const view = render(<MessageList messages={[unfinished] as never} {...props} />);
+    expect(view.container.querySelector('[data-chart="echarts"]')).toBeNull();
+    expect(view.container.textContent).toContain('"series"');
+
+    const finished = { ...unfinished, content: { format: 2, parts: [
+      { type: 'text', text: '```echarts\n{"series":[{"type":"bar","data":[2,3]}]}\n```' },
+    ] } };
+    view.rerender(<MessageList messages={[finished] as never} {...props} />);
+    expect(view.container.querySelector('[data-chart="echarts"]')).toBeTruthy();
+  });
+
+  it('renders a completed Mermaid fence as a diagram', async () => {
+    const originalMeasure = Object.getOwnPropertyDescriptor(SVGElement.prototype, 'getComputedTextLength');
+    const originalBox = Object.getOwnPropertyDescriptor(SVGElement.prototype, 'getBBox');
+    Object.defineProperty(SVGElement.prototype, 'getComputedTextLength', { configurable: true, value: () => 80 });
+    Object.defineProperty(SVGElement.prototype, 'getBBox', {
+      configurable: true, value: () => ({ x: 0, y: 0, width: 80, height: 20 }),
+    });
+    const message = { id: 'diagram', role: 'assistant', content: { format: 2, parts: [
+      { type: 'text', text: '```mermaid\nflowchart LR\nA --> B\n```' },
+    ] } };
+    try {
+      const view = render(<MessageList messages={[message] as never} isRunning={false} error={null}
+        onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+      expect(await screen.findByRole('img', { name: 'Mermaid 流程图' })).toBeTruthy();
+      await waitFor(() => expect(view.container.querySelector('.agent-chart__diagram svg')).toBeTruthy());
+    } finally {
+      if (originalMeasure) Object.defineProperty(SVGElement.prototype, 'getComputedTextLength', originalMeasure);
+      else Reflect.deleteProperty(SVGElement.prototype, 'getComputedTextLength');
+      if (originalBox) Object.defineProperty(SVGElement.prototype, 'getBBox', originalBox);
+      else Reflect.deleteProperty(SVGElement.prototype, 'getBBox');
+    }
+  });
+  it('shows invalid ECharts content as source without executing it', () => {
+    const marker = '__nero_chart_side_effect__';
+    const message = { id: 'unsafe-chart', role: 'assistant', content: { format: 2, parts: [
+      { type: 'text', text: `\`\`\`echarts\n(()=>{globalThis.${marker}=true;return {}})()\n\`\`\`` },
+    ] } };
+    const view = render(<MessageList messages={[message] as never} isRunning={false} error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+    expect(view.container.querySelector('[data-chart="echarts"]')).toBeNull();
+    expect(screen.getByRole('alert').textContent).toContain('图表配置无效');
+    expect((globalThis as Record<string, unknown>)[marker]).toBeUndefined();
+  });
   it('shows live reasoning and a bordered running process', () => {
     const message = { id: 'live', role: 'assistant', content: { format: 2, parts: [
       { type: 'reasoning', reasoning: '正在规划搜索', state: 'streaming' },
