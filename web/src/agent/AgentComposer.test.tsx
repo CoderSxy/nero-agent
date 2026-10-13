@@ -17,6 +17,20 @@ const readyFile = (overrides: Partial<ComposerAttachment> = {}): ComposerAttachm
 });
 
 describe('Composer run controls', () => {
+  it('shows finance categories without enabling tools, and keeps a removable category chip', () => {
+    const change = vi.fn();
+    const props = { draft: '', onDraftChange: vi.fn(), isRunning: false,
+      onSend: vi.fn(), onStop: vi.fn(), financeEnabled: false, onFinanceCategoryChange: change };
+    const { rerender } = render(<AgentComposer {...props} />);
+    fireEvent.click(screen.getByRole('button', { name: '财经数据' }));
+    expect(screen.getByRole('menu', { name: '财经数据分类' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('menuitem', { name: '基金' }));
+    expect(change).toHaveBeenCalledWith('fund');
+    rerender(<AgentComposer {...props} financeCategory="fund" />);
+    expect(screen.getByText(/财经数据 · 基金/).textContent).toContain('暂不可用');
+    fireEvent.click(screen.getByRole('button', { name: '移除财经分类' }));
+    expect(change).toHaveBeenCalledWith(null);
+  });
   it('does not send when Enter confirms IME text, then sends on a later Enter', () => {
     const send = vi.fn();
     render(<AgentComposer draft="你好" onDraftChange={vi.fn()} isRunning={false}

@@ -125,7 +125,7 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
       <span className="brand-name">NERO</span>
       <span className="brand-tag">AGENT</span>
     </div>
-    <div className="thread-scroll" onScroll={() => setMenuId(null)}>
+    <div className="thread-scroll">
     <ThreadList aria-label="会话列表" embedded>
       <ThreadListNewItem render={<button type="button" className="new-thread-button" onClick={onNew}
         disabled={!canCreate} />}>新建会话</ThreadListNewItem>
@@ -144,17 +144,19 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
           </button>
         </div>
       </div>
-      <ThreadListItems>
-        {historyMode === 'flat' ? threads.map(thread => renderThread(thread, true))
-          : groupThreadsByTime(threads, now).map(group => <Fragment key={group.key}>
-            <li className="thread-group-heading">{group.label}</li>
-            {group.items.map(thread => renderThread(thread, false))}
-          </Fragment>)}
-      </ThreadListItems>
-      {!loading && threads.length === 0 && <ThreadListEmpty>暂无会话</ThreadListEmpty>}
+      <div className="thread-list-scroll" onScroll={() => setMenuId(null)}>
+        <ThreadListItems>
+          {historyMode === 'flat' ? threads.map(thread => renderThread(thread, true))
+            : groupThreadsByTime(threads, now).map(group => <Fragment key={group.key}>
+              <li className="thread-group-heading">{group.label}</li>
+              {group.items.map(thread => renderThread(thread, false))}
+            </Fragment>)}
+        </ThreadListItems>
+        {!loading && threads.length === 0 && <ThreadListEmpty>暂无会话</ThreadListEmpty>}
+        {loading && <p className="muted sidebar-note">加载会话中…</p>}
+        {error && <p role="alert" className="error sidebar-note">{error}</p>}
+      </div>
     </ThreadList>
-    {loading && <p className="muted sidebar-note">加载会话中…</p>}
-    {error && <p role="alert" className="error sidebar-note">{error}</p>}
     </div>
     {menuThread && createPortal(<div className="thread-menu" role="menu"
       aria-label={`${menuThread.title || '未命名会话'} 操作`} style={menuPosition}>

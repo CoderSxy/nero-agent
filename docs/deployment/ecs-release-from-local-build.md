@@ -2,7 +2,7 @@
 
 适用范围：本仓库的 ECS 部署。Mastra 继续由 `nero-agent.service` 在宿主机运行，Web 继续由 Nginx 提供；本地 Docker 只生成 Linux/amd64 后端产物。此流程不在 ECS 执行 `npm install`，也不重建、清理线上沙箱容器。
 
-本简化流程适用于已经配置好发布入口的现有 ECS：systemd 从 `/opt/nero-agent/current/mastra/index.mjs` 启动，Nginx 从 `/opt/nero-agent/current/web` 提供静态文件。服务器沿用现有 `.env`、PostgreSQL、DuckDB、工作区与沙箱。切换前任一检查失败就停止；切换后的验收失败时不要将发布视为完成。
+本简化流程适用于已经配置好发布入口的现有 ECS：systemd 从 `/opt/nero-agent/current/mastra/index.mjs` 启动，Nginx 从 `/opt/nero-agent/current/web` 提供静态文件。服务器沿用现有 PostgreSQL、DuckDB、工作区与沙箱。新功能需要环境变量或 API 路由时，按下文先更新 `.env` 与 Nginx 配置。切换前任一检查失败就停止；切换后的验收失败时不要将发布视为完成。
 
 ## 执行位置与文件去向
 
@@ -11,7 +11,7 @@
 | 1 | 本地 Mac 项目根目录 | 构建两个 tar.gz 包 |
 | 2 | 本地 Mac 或 Workbench 文件传输 | 上传到 ECS 的 /tmp |
 | 3 | ECS Workbench 终端 | 校验并解压到新 release |
-| 4 | ECS Workbench 终端 | 仅有 PostgreSQL 结构变动时运行迁移 |
+| 4 | ECS Workbench 终端 | 按需配置环境变量与 Nginx API 路由；仅有 PostgreSQL 结构变动时运行迁移 |
 | 5 | ECS Workbench 终端 | 切换 current 并重启服务 |
 | 6 | ECS Workbench 终端及浏览器 | 验证线上服务 |
 
@@ -69,7 +69,23 @@ sudo find "$RELEASE_DIR/mastra" "$RELEASE_DIR/web" -type f -name '*.duckdb' -pri
 
 最后两条 find 应无输出。macOS tar 的目录元数据可能把 mastra 目录覆盖为 0700，导致服务用户无法读取入口文件；因此必须执行 chgrp、chmod 和服务用户读取检查。tar 输出的 LIBARCHIVE.xattr 警告可以忽略，但 test 失败、出现 ._* 文件或 DuckDB 数据文件时应停止切换。
 
-## 4.【ECS Workbench 终端】按需迁移 PostgreSQL
+## 4.【ECS Workbench 终端】按需配置并迁移
+
+首次启用财经工具时，先确认同机的 `aktools.service` 正常，并且 AKTools 只监听本机地址。备份现有 `.env` 后加入以下两项；已有配置时修改原有行，不要重复追加。`.env` 应保持为 `root:nero-agent`、权限 `0640`，以便 systemd 服务用户读取且避免其他本机用户读取密钥。
+
+~~~bash
+sudo systemctl show aktools -p ActiveState -p NRestarts --no-pager
+curl -fsS http://127.0.0.1:18080/docs >/dev/null
+sudo cp -p /opt/nero-agent/.env /opt/nero-agent/.env.before-finance
+sudo chmod 640 /opt/nero-agent/.env /opt/nero-agent/.env.before-finance
+sudo sh -c 'echo AKTOOLS_BASE_URL=http://127.0.0.1:18080/ >> /opt/nero-agent/.env'
+sudo sh -c 'echo FINANCE_TOOL_ENABLED=true >> /opt/nero-agent/.env'
+sudo grep -E '^(AKTOOLS_BASE_URL|FINANCE_TOOL_ENABLED)=' /opt/nero-agent/.env
+~~~
+
+当前 Nginx 仅将已列出的 API 路径代理到 Mastra。首次发布财经功能时，还要把 `/finance` 加入 `/etc/nginx/sites-available/nero-agent` 中现有的 API `location` 正则，例如将 `api|auth|model-catalog` 改成 `api|auth|finance|model-catalog`。先备份配置，再执行 `sudo nginx -t`；测试通过后才 `sudo systemctl reload nginx`。`/finance/capabilities` 未登录时应返回 `401 application/json`，不能返回前端首页的 `200 text/html`。AKTools 的 18080 端口无需对公网开放。后续发布无需重复添加环境变量或路由。
+
+### 按需迁移 PostgreSQL
 
 **本次没有 PostgreSQL 表、字段、索引或约束变动，也没有新增迁移 SQL 时，整步跳过。** 不需要每次发布都运行 migrate.mjs。
 
@@ -106,7 +122,7 @@ sudo nginx -t
 sudo systemctl reload nginx
 ~~~
 
-这里不改变服务器上的 .env、PostgreSQL、DuckDB 工作目录、/data/mastra/users 或沙箱容器。后端的 systemd WorkingDirectory 继续使用 /var/lib/nero-agent。
+除第 4 步明确需要的配置外，这里不改变 PostgreSQL、DuckDB 工作目录、/data/mastra/users 或沙箱容器。后端的 systemd WorkingDirectory 继续使用 /var/lib/nero-agent。
 
 ## 6.【ECS Workbench 终端及浏览器】验收
 
@@ -117,6 +133,7 @@ sudo journalctl -u nero-agent --since '2 minutes ago' --no-pager -n 30
 sudo docker inspect -f '{{.State.Health.Status}}' nero-agent-postgres
 curl -fsS https://agent.nerosun.cn/ | cmp - /opt/nero-agent/current/web/index.html
 curl -sS -o /dev/null -w '%{http_code} %{content_type}\n' https://agent.nerosun.cn/auth/me
+curl -sS -o /dev/null -w '%{http_code} %{content_type}\n' https://agent.nerosun.cn/finance/capabilities
 ~~~
 
-核对 readlink 指向本次 RELEASE_DIR、ActiveState=active、NRestarts 不增长且近期日志没有启动错误。首页 HTML 应与本次产物完全相同；未登录时 /auth/me 返回 401 application/json 属于正常响应，说明 API 已经通过 Nginx 到达后端。再在浏览器打开 https://agent.nerosun.cn/，检查页面、登录及需要的会话功能。
+核对 readlink 指向本次 RELEASE_DIR、ActiveState=active、NRestarts 不增长且近期日志没有启动错误。首页 HTML 应与本次产物完全相同；未登录时 `/auth/me` 和 `/finance/capabilities` 返回 `401 application/json` 属于正常响应，说明 API 已经通过 Nginx 到达后端。再在浏览器打开 https://agent.nerosun.cn/，检查页面、登录及需要的会话功能。财经功能还应在已登录会话中检查“财经数据”分类菜单、选择后标签和移除操作。
