@@ -1,0 +1,33 @@
+web/src/agent/ThreadSidebar.tsx
+  s_81656977d7a4eb::t_b993c23946c798 128,147-158
+web/src/styles.css
+  s_81656977d7a4eb::t_b993c23946c798 41-43
+docs/deployment/ecs-release-from-local-build.md
+  s_fc5815964fa0a0::t_1d85d31e833d25 5,14,72-88,125,136,139
+web/src/agent/AgentComposer.test.tsx
+  s_fc5815964fa0a0::t_bd9fe7a36964a7 20-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5ba0714d702d8edcd360085c7cf8e0a81626143e",
+  "prompts": {},
+  "sessions": {
+    "s_81656977d7a4eb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13525-074a-7c01-88bd-5b003594a9a6",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_fc5815964fa0a0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1343b-8bb5-7cf0-b0d2-a37f41f6f2a3",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
