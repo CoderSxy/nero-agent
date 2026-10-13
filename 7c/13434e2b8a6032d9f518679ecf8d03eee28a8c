@@ -1,0 +1,85 @@
+web/src/agent/markdown/markdown-renderer.tsx
+  s_86d4b4dd13dd17::t_b7d69326e95890 181-184
+  s_86d4b4dd13dd17::t_fed579fc69679e 1-2
+  s_86d4b4dd13dd17::t_c4baf65779fde5 4-12,16-45,47-67,69-73,75,77-84,86-88,90,92-94,96-102,112-115,117-175,177-178,185-190,192-194,207-249
+  s_86d4b4dd13dd17::t_96034fcc689562 3,103-111,116,176,250-254
+  s_86d4b4dd13dd17::t_fa5e8b3eb012cb 13-15,46,68,74,76,85,89,91,95,179-180,191,195-206
+src/mastra/files/workspace-service.ts
+  s_86d4b4dd13dd17::t_ed65f7f1e6dec0 6,54-56
+  s_86d4b4dd13dd17::t_dc25e2e8327e21 60-61
+src/mastra/files/routes.ts
+  s_86d4b4dd13dd17::t_dc9e26d5b9e396 319-320
+src/mastra/files/service.ts
+  s_86d4b4dd13dd17::t_ed65f7f1e6dec0 7,67-69
+  s_86d4b4dd13dd17::t_dc25e2e8327e21 72
+web/src/agent/markdown/arriving.ts
+  s_86d4b4dd13dd17::t_fed579fc69679e 1-2
+  s_86d4b4dd13dd17::t_c4baf65779fde5 3-4,6-70
+  s_86d4b4dd13dd17::t_fa5e8b3eb012cb 5
+web/src/styles.css
+  s_86d4b4dd13dd17::t_fed579fc69679e 350-356
+web/src/agent/markdown/use-settled.ts
+  s_86d4b4dd13dd17::t_fed579fc69679e 1-2
+  s_86d4b4dd13dd17::t_fa5e8b3eb012cb 5-6
+  s_86d4b4dd13dd17::t_c4baf65779fde5 3-4,7-59
+web/src/agent/MessageList.tsx
+  s_86d4b4dd13dd17::t_d1c5ebf0b6d170 5,190
+web/src/agent/markdown/MermaidBlock.tsx
+  s_86d4b4dd13dd17::t_1fffb79b3d9f6f 17
+  s_86d4b4dd13dd17::t_ba1801ba8d263f 1-16,18-27
+docs/deployment/workspace-sandbox-ecs.md
+  s_86d4b4dd13dd17::t_987794fca878c4 34
+  s_86d4b4dd13dd17::t_0a8993cdb98ef2 3,9-15,17-18,20,23
+  s_86d4b4dd13dd17::t_74a6a7aa87bfb4 16
+  s_86d4b4dd13dd17::t_f68e830624f5eb 5
+  s_86d4b4dd13dd17::t_73cc90d9395158 4
+tests/file-tools.test.ts
+  s_86d4b4dd13dd17::t_26553bb215539d 521-528
+  s_86d4b4dd13dd17::t_f120116e4f6359 509-520,529-532
+web/src/agent/markdown/UPSTREAM-LICENSE.md
+  s_86d4b4dd13dd17::t_9704587a89afce 1-32
+web/src/agent/markdown/blocks.ts
+  s_86d4b4dd13dd17::t_fed579fc69679e 1-2
+  s_86d4b4dd13dd17::t_c4baf65779fde5 3-73
+web/src/agent/markdown/EChartsBlock.tsx
+  s_86d4b4dd13dd17::t_ba1801ba8d263f 1-44
+src/mastra/agents/agent.ts
+  s_86d4b4dd13dd17::t_d1c5ebf0b6d170 73-84
+  s_86d4b4dd13dd17::t_dc9e26d5b9e396 60,66,72
+web/src/agent/MessageList.test.tsx
+  s_86d4b4dd13dd17::t_1fffb79b3d9f6f 63-68,73
+  s_86d4b4dd13dd17::t_0feb83445b4deb 37-53,60-62,74
+  s_86d4b4dd13dd17::t_673003b65cf000 75-85
+  s_86d4b4dd13dd17::t_eeff41d92b8381 54-59,69-72
+web/package.json
+  s_86d4b4dd13dd17::t_d1c5ebf0b6d170 22,24,33
+tests/workspace-file-routes.test.ts
+  s_86d4b4dd13dd17::t_f120116e4f6359 295,311-315
+  s_9f010e352c77d3::t_c51b57905b386e 316
+web/package-lock.json
+  s_86d4b4dd13dd17::t_0444ae1c857e96 20,22,31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7c13434e2b8a6032d9f518679ecf8d03eee28a8c",
+  "prompts": {},
+  "sessions": {
+    "s_86d4b4dd13dd17": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12b8d-db59-76f2-9cb5-6ddb103a6387",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_9f010e352c77d3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12f52-75ab-7520-ab6d-e2071c57534f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
