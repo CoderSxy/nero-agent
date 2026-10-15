@@ -1,0 +1,19 @@
+docs/superpowers/specs/2026-10-15-scheduled-tasks-and-conversation-sources-design.md
+  s_87f1287fe23cca::t_18297c0f127561 1-69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2619e99eeec77fe914d695659847332787981042",
+  "prompts": {},
+  "sessions": {
+    "s_87f1287fe23cca": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13d48-075b-7bf3-a961-a73b39e29e62",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
