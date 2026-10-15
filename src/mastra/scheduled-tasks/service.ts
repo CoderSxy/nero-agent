@@ -121,6 +121,9 @@ export function createScheduledTaskService(driverOrDeps: ScheduleDriver | Schedu
 
   async function loadOwned(owner: AuthUser, id: string): Promise<ScheduledTask> {
     assertAdmin(owner);
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+      throw new ScheduledTaskError('not_found', '任务不存在');
+    }
     const row = await repo.getTask(id, owner.id);
     requireOwned(row);
     return row;
