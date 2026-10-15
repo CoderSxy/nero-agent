@@ -53,7 +53,7 @@ export function getFinanceInterface(name: string, category: FinanceCategory): Fi
 export function searchFinanceCatalog(query: string, category: FinanceCategory, limit = 5): FinanceInterface[] {
   const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const aliases: Record<Exclude<FinanceCategory, 'all'>, string> = {
-    a_stock: '股票 股价 个股 a股 股票代码 股市',
+    a_stock: '股票 股价 个股 a股 股票代码 股市 A股',
     fund: '基金 净值 基金代码',
     index: '指数 大盘 沪指 深指',
     macro: '宏观 cpi 物价 通胀 消费者价格',

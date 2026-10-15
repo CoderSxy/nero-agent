@@ -9,6 +9,21 @@ import {
 import type { ModelRef, SafeModel } from './model-catalog-client';
 import { financeCategoryOptions, type FinanceCategory } from './finance-category';
 
+function modelFacts(model: SafeModel): string {
+  const meta = model.catalogMetadata;
+  const credit = meta?.creditLabel ?? (meta?.creditMultiplier === undefined ? null : `x${meta.creditMultiplier.toFixed(2)}`);
+  const modality = model.supportsVision
+    ? '支持图片'
+    : meta?.modality === 'unverified' || meta?.imageSupport === null
+      ? '图片待核实'
+      : meta?.modality === 'router'
+        ? '自动路由'
+        : '文本';
+  return [credit, modality, meta?.inferenceOnly ? '仅推理' : null, meta?.providerName ?? model.providerId]
+    .filter(Boolean)
+    .join(' · ');
+}
+
 function AttachmentCard({ attachment, onRemove, onRetry, onPreview }: {
   attachment: ComposerAttachment;
   onRemove?: (key: string) => void;
@@ -100,7 +115,8 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
   const imageInputRef = useRef<HTMLInputElement>(null);
   const attachmentBusy = attachments.some(item => item.state === 'uploading' || item.state === 'failed');
   const hasReadyAttachment = attachments.some(item => item.state === 'ready');
-  const canSend = !isRunning && !sendDisabled && !financeSaving && !attachmentBusy
+  const imageUnsupported = attachments.some(isImageAttachment) && selected?.supportsVision === false;
+  const canSend = !isRunning && !sendDisabled && !financeSaving && !attachmentBusy && !imageUnsupported
     && (Boolean(draft.trim()) || hasReadyAttachment);
 
   function onDragOver(event: DragEvent<HTMLDivElement>) {
@@ -228,6 +244,9 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
         onRemove={removeAttachment} onRetry={onRetryAttachment}
         onPreview={(item, url) => setPreview({ key: item.key, name: item.name, url })} />)}
     </div>}
+    {imageUnsupported && <p className="composer-image-warning" role="status">
+      当前模型不支持图片，请切换支持图片的模型
+    </p>}
     <ComposerRing busy={isRunning}><ComposerBox>
       <ComposerInput aria-label="发送消息" placeholder="向智能体发送消息…" value={draft}
         autoFocus={autoFocus} onFocus={onInputFocus}
@@ -269,11 +288,7 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
                   onClick={() => { onModelChange?.(model.ref); setOpen(false); }}>
                   <span className="composer-model-avatar" aria-hidden="true">{model.providerId.slice(0, 1).toUpperCase()}</span>
                   <span className="composer-model-detail"><strong>{model.displayName}</strong>
-                    <small>{model.providerId} / {model.modelId}</small>
-                    <small>{model.supportsVision ? '支持图片'
-                      : (model.catalogMetadata?.modality === 'unverified' || model.catalogMetadata?.imageSupport === null)
-                        ? '图片待核实' : '不支持图片'}
-                      {model.catalogMetadata?.contextWindow ? ` · 上下文 ${Math.round(model.catalogMetadata.contextWindow / 1000)}K` : ''}</small></span>
+                    <small>{modelFacts(model)}</small></span>
                   {model.isDefault && <span className="composer-model-default">默认</span>}
                   {model.ref === modelRef && <Check size={15} aria-hidden="true" />}
                 </button>)}

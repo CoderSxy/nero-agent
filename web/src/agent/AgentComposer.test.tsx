@@ -71,12 +71,48 @@ describe('Composer run controls', () => {
     expect(send.textContent).toBe('');
     fireEvent.click(select);
     expect(screen.getByRole('listbox', { name: '选择模型' })).toBeTruthy();
-    expect(screen.getByRole('option', { name: /默认模型/ }).textContent).toContain('不支持图片');
+    expect(screen.getByRole('option', { name: /默认模型/ }).textContent).toContain('文本');
     fireEvent.change(screen.getByRole('searchbox', { name: '搜索模型' }), { target: { value: '个人' } });
     expect(screen.queryByRole('option', { name: /默认模型/ })).toBeNull();
     expect(screen.getByRole('option', { name: /个人模型/ }).textContent).toContain('支持图片');
     fireEvent.click(screen.getByRole('option', { name: /个人模型/ }));
     expect(change).toHaveBeenCalledWith(second);
+  });
+  it('shows catalog facts on one line beneath the model name', () => {
+    const catalog = [{
+      ref: 'public:11111111-1111-4111-8111-111111111111', scope: 'public', displayName: 'Deepseek-V4.1-Flash',
+      providerId: 'workbuddy', modelId: 'deepseek-v4.1-flash', enabled: true, baseUrl: 'https://example.test',
+      apiMode: 'chat', hasApiKey: true, keyHint: '1234', supportsVision: true,
+      catalogMetadata: { creditLabel: 'x0.11', modality: 'multimodal', inferenceOnly: true,
+        providerName: 'DeepSeek' },
+    }] as SafeModel[];
+    render(<AgentComposer draft="" onDraftChange={vi.fn()} isRunning={false}
+      onSend={vi.fn()} onStop={vi.fn()} catalog={catalog} modelRef={catalog[0].ref} />);
+    fireEvent.click(screen.getByRole('combobox', { name: '模型' }));
+    const option = screen.getByRole('option', { name: /Deepseek-V4\.1-Flash/ });
+    expect(option.querySelectorAll('small')).toHaveLength(1);
+    expect(option.querySelector('small')?.textContent).toBe('x0.11 · 支持图片 · 仅推理 · DeepSeek');
+    expect(option.textContent).not.toContain('workbuddy / deepseek-v4.1-flash');
+  });
+  it('disables sending an attached image with a model that cannot read images', () => {
+    fetchWorkspaceFile.mockResolvedValue(new Blob(['img'], { type: 'image/png' }));
+    const catalog = [false, true].map((supportsVision, index) => ({
+      ref: `public:${index + 1}1111111-1111-4111-8111-111111111111`, scope: 'public',
+      displayName: supportsVision ? '视觉模型' : '文本模型', providerId: 'test', modelId: `m${index}`,
+      enabled: true, baseUrl: 'https://example.test', apiMode: 'chat', hasApiKey: true,
+      keyHint: '1234', supportsVision,
+    })) as SafeModel[];
+    const onSend = vi.fn();
+    const props = { draft: '看看这张图', onDraftChange: vi.fn(), isRunning: false,
+      onSend, onStop: vi.fn(), catalog, attachments: [readyFile({ name: 'shot.png', mimeType: 'image/png' })] };
+    const { rerender } = render(<AgentComposer {...props} modelRef={catalog[0].ref} />);
+    expect((screen.getByRole('button', { name: '发送' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText('当前模型不支持图片，请切换支持图片的模型')).toBeTruthy();
+    fireEvent.keyDown(screen.getByRole('textbox', { name: '发送消息' }), { key: 'Enter' });
+    expect(onSend).not.toHaveBeenCalled();
+    rerender(<AgentComposer {...props} modelRef={catalog[1].ref} />);
+    expect((screen.getByRole('button', { name: '发送' }) as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.queryByText('当前模型不支持图片，请切换支持图片的模型')).toBeNull();
   });
   it('closes an open model menu when model changes become disabled', () => {
     const catalog = [{
