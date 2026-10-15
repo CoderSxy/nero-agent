@@ -9,10 +9,12 @@ import type { Thread } from './thread-scope';
 import { ModelSettingsMenu, type Theme } from './ModelSettingsMenu';
 import { formatThreadTime, groupThreadsByTime } from './thread-history';
 import type { CurrentUser } from '../App';
+import type { ThreadSource } from './thread-source';
 
 export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSelect,
   onDelete, onRename, theme, onThemeChange,
-  canCreate = true, user, onLogout, search, onSearchSelect }: {
+  canCreate = true, user, onLogout, search, onSearchSelect,
+  source = 'default', onSourceChange }: {
   threads: Thread[]; currentId?: string; loading: boolean; error: string | null;
   onNew: () => void; onSelect: (id: string) => void;
   onDelete?: (id: string) => Promise<void>;
@@ -22,6 +24,8 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
   user?: CurrentUser; onLogout?: () => void;
   search?: ReturnType<typeof useHistorySearch>;
   onSearchSelect?: (result: HistorySearchResult) => void;
+  source?: ThreadSource;
+  onSourceChange?: (source: ThreadSource) => void;
 }) {
   const [menuId, setMenuId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
@@ -129,10 +133,20 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
     <ThreadList aria-label="会话列表" embedded>
       <ThreadListNewItem render={<button type="button" className="new-thread-button" onClick={onNew}
         disabled={!canCreate} />}>新建会话</ThreadListNewItem>
-      <div className="thread-history-heading"><span>历史对话</span>
+      {onSourceChange && <div className="thread-source-tabs" role="tablist" aria-label="会话来源">
+        <button type="button" role="tab" aria-selected={source === 'default'}
+          className={source === 'default' ? 'active' : undefined}
+          onClick={() => onSourceChange('default')}>历史</button>
+        <button type="button" role="tab" aria-selected={source === 'schedule'}
+          className={source === 'schedule' ? 'active' : undefined}
+          onClick={() => onSourceChange('schedule')}>调度</button>
+      </div>}
+      <div className="thread-history-heading">
+        <span>{source === 'schedule' ? '调度会话' : '历史对话'}</span>
         <div className="thread-history-actions">
           {searchEnabled && <button ref={searchLauncherRef} type="button" className="thread-history-toggle"
-            aria-label="搜索历史对话" title="搜索历史对话"
+            aria-label={source === 'schedule' ? '搜索调度会话' : '搜索历史对话'}
+            title={source === 'schedule' ? '搜索调度会话' : '搜索历史对话'}
             onClick={() => setSearchOpen(true)}>
             <Search size={16} aria-hidden="true" />
           </button>}
@@ -152,7 +166,9 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
               {group.items.map(thread => renderThread(thread, false))}
             </Fragment>)}
         </ThreadListItems>
-        {!loading && threads.length === 0 && <ThreadListEmpty>暂无会话</ThreadListEmpty>}
+        {!loading && threads.length === 0 && <ThreadListEmpty>
+          {source === 'schedule' ? '暂无调度会话' : '暂无会话'}
+        </ThreadListEmpty>}
         {loading && <p className="muted sidebar-note">加载会话中…</p>}
         {error && <p role="alert" className="error sidebar-note">{error}</p>}
       </div>

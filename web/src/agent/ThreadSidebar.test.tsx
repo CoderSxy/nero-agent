@@ -171,3 +171,18 @@ it('opens history search with Ctrl/Cmd+K while the chat composer has focus', asy
     composer.remove();
   }
 });
+
+it('switches history and schedule sources via tabs', () => {
+  const onSourceChange = vi.fn();
+  render(<ThreadSidebar threads={[]} loading={false} error={null}
+    onNew={vi.fn()} onSelect={vi.fn()} theme="dark" onThemeChange={vi.fn()}
+    source="default" onSourceChange={onSourceChange} />);
+  expect(screen.getByRole('tab', { name: '历史' }).getAttribute('aria-selected')).toBe('true');
+  fireEvent.click(screen.getByRole('tab', { name: '调度' }));
+  expect(onSourceChange).toHaveBeenCalledWith('schedule');
+  cleanup();
+  render(<ThreadSidebar threads={[]} loading={false} error={null}
+    onNew={vi.fn()} onSelect={vi.fn()} theme="dark" onThemeChange={vi.fn()}
+    source="schedule" onSourceChange={onSourceChange} />);
+  expect(screen.getByText('暂无调度会话')).toBeTruthy();
+});

@@ -3,6 +3,7 @@ import { AGENT_ID, client } from './client';
 import { deleteScopedThread, listScopedThreads, promptTitle, renameScopedThread,
   setInitialThreadTitle, type Thread } from './thread-scope';
 import { withThreadModels, type ModelSettings } from './model-settings';
+import { withThreadSource } from './thread-source';
 
 export function useThreadList(resourceId: string) {
   // resourceId is the authenticated user UUID from /auth/me, not a client-chosen owner.
@@ -34,7 +35,7 @@ export function useThreadList(resourceId: string) {
   useEffect(() => { void refresh(); }, [refresh]);
   const createThread = useCallback(async (models: ModelSettings) => {
     const thread = await client.createMemoryThread({ agentId: AGENT_ID, resourceId,
-      title: '新会话', metadata: withThreadModels(null, models) });
+      title: '新会话', metadata: withThreadSource(withThreadModels(null, models), 'default') });
     await refresh();
     return thread;
   }, [refresh, resourceId]);

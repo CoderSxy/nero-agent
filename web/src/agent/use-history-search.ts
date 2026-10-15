@@ -112,8 +112,10 @@ export function useHistorySearch(options: {
   threads: Thread[];
   cache: HistorySearchCache;
   loadThread?: LoadThreadFn;
+  /** When this changes, in-flight loads from the previous scope are ignored. */
+  scopeKey?: string;
 }) {
-  const { userId, threads, cache, loadThread = loadScopedThread } = options;
+  const { userId, threads, cache, loadThread = loadScopedThread, scopeKey = 'default' } = options;
 
   const [documents, setDocuments] = useState<HistorySearchDocument[]>([]);
   const [scope, setScope] = useState<'recent' | 'all'>('recent');
@@ -131,6 +133,7 @@ export function useHistorySearch(options: {
   const fullFailedRef = useRef(new Set<string>());
   const invalidationEpochRef = useRef(new Map<string, number>());
   const prevUserIdRef = useRef(userId);
+  const prevScopeKeyRef = useRef(scopeKey);
   const activeIndexRef = useRef(false);
   const threadListKeyRef = useRef<string | null>(null);
   const threadVersionsRef = useRef(new Map<string, string>());
@@ -138,6 +141,7 @@ export function useHistorySearch(options: {
   threadsRef.current = threads;
   const threadListKey = JSON.stringify([
     userId,
+    scopeKey,
     threads.map(thread => [thread.id, threadUpdatedAtIso(thread), thread.title]),
   ]);
 
@@ -172,8 +176,10 @@ export function useHistorySearch(options: {
 
   useEffect(() => {
     const userChanged = prevUserIdRef.current !== userId;
+    const scopeChanged = prevScopeKeyRef.current !== scopeKey;
     prevUserIdRef.current = userId;
-    if (userChanged) {
+    prevScopeKeyRef.current = scopeKey;
+    if (userChanged || scopeChanged) {
       generationRef.current += 1;
       resetForUser(generationRef.current);
     }
@@ -189,7 +195,7 @@ export function useHistorySearch(options: {
       void cache.removeMissing(userId, visibleIds).catch(() => undefined);
     }
     publishDocuments(generationRef.current);
-  }, [userId, threads, cache, publishDocuments, resetForUser]);
+  }, [userId, scopeKey, threads, cache, publishDocuments, resetForUser]);
 
   const runRecentBatch = useCallback(
     async (gen: number, targetThreads: Thread[]) => {

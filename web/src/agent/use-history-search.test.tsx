@@ -436,4 +436,34 @@ describe('useHistorySearch', () => {
     expect(result.current.documents).toHaveLength(0);
     unmount();
   });
+
+  it('ignores stale search loads after switching source scope', async () => {
+    let resolveDefault: ((value: ReturnType<typeof threadLoadResult>) => void) | undefined;
+    const defaultThread = makeThreads(1)[0]!;
+    const scheduleThread = {
+      ...makeThreads(1, 'user-1', 'sched')[0]!,
+      metadata: { neroAgentSourceType: 'schedule' },
+    } as Thread;
+    loadThread.mockImplementation((threadId: string) => {
+      if (threadId === defaultThread.id) {
+        return new Promise(resolve => { resolveDefault = resolve; });
+      }
+      return Promise.resolve(threadLoadResult(scheduleThread, '调度问题'));
+    });
+    const cache = createHistorySearchCache();
+    const { result, rerender } = renderHook(
+      ({ threads, scopeKey }) => useHistorySearch({ userId: 'user-1', threads, cache, loadThread, scopeKey }),
+      { initialProps: { threads: [defaultThread], scopeKey: 'default' } },
+    );
+    act(() => result.current.ensureRecent());
+    rerender({ threads: [scheduleThread], scopeKey: 'schedule' });
+    act(() => result.current.ensureRecent());
+    await waitFor(() => expect(result.current.documents.some(doc => doc.threadId === scheduleThread.id)).toBe(true));
+    await act(async () => {
+      resolveDefault?.(threadLoadResult(defaultThread, '历史迟到结果'));
+      await Promise.resolve();
+    });
+    expect(result.current.documents.some(doc => doc.questionText === '历史迟到结果')).toBe(false);
+    expect(result.current.documents.every(doc => doc.threadId === scheduleThread.id)).toBe(true);
+  });
 });

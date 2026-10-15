@@ -24,6 +24,7 @@ import { createHistorySearchCache } from './history-search-cache';
 import type { HistorySearchResult } from './history-search-index';
 import { useHistorySearch } from './use-history-search';
 import { readThreadFinanceCategory, saveThreadFinanceCategory, type FinanceCategory } from './finance-category';
+import { filterThreadsBySource, type ThreadSource } from './thread-source';
 
 function initialTheme(): Theme {
   try { return localStorage.getItem('nero-agent-theme') === 'light' ? 'light' : 'dark'; }
@@ -42,8 +43,18 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
   const targetMessageId = searchParams.get('targetMessageId') ?? undefined;
   const navigate = useNavigate();
   const list = useThreadList(user.id);
+  const [threadSource, setThreadSource] = useState<ThreadSource>('default');
+  const visibleThreads = useMemo(
+    () => filterThreadsBySource(list.threads, threadSource),
+    [list.threads, threadSource],
+  );
   const historySearchCache = useMemo(() => createHistorySearchCache(), []);
-  const historySearch = useHistorySearch({ userId: user.id, threads: list.threads, cache: historySearchCache });
+  const historySearch = useHistorySearch({
+    userId: user.id,
+    threads: visibleThreads,
+    cache: historySearchCache,
+    scopeKey: threadSource,
+  });
   const [messages, setMessages] = useState<MastraDBMessage[]>([]);
   const [landingDraft, setLandingDraft] = useState('');
   const [landingFocused, setLandingFocused] = useState(false);
@@ -245,7 +256,7 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
     navigate(`/agent/${encodeURIComponent(result.threadId)}?targetMessageId=${encodeURIComponent(result.userMessageId)}`);
   }
   async function deleteThread(id: string) {
-    const nextId = neighborAfterDeletion(list.threads, id);
+    const nextId = neighborAfterDeletion(visibleThreads, id);
     await list.deleteThread(id);
     setPendingByThread(current => { const next = { ...current }; delete next[id]; return next; });
     setNotice(null);
@@ -253,12 +264,13 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
   }
   return <main className="agent-layout" style={{ '--left-panel-width': `${leftWidth}px` } as React.CSSProperties}>
     <div className="left-panel-dock">
-    <ThreadSidebar threads={list.threads} currentId={threadId} loading={list.loading} error={list.error}
+    <ThreadSidebar threads={visibleThreads} currentId={threadId} loading={list.loading} error={list.error}
       onNew={() => void create(!threadId)} onSelect={id => navigate(`/agent/${id}`)} onDelete={deleteThread}
       onRename={list.renameThread}
       theme={theme} onThemeChange={setTheme}
       canCreate={canCreate} user={user} onLogout={onLogout}
-      search={historySearch} onSearchSelect={selectHistorySearchResult} />
+      search={historySearch} onSearchSelect={selectHistorySearchResult}
+      source={threadSource} onSourceChange={setThreadSource} />
       <PanelResizeHandle side="left" width={leftWidth} min={200} max={leftMax} onResize={setLeftPreferredWidth} />
     </div>
     <section className="agent-center">
