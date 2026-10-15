@@ -1,0 +1,30 @@
+tests/scheduled-tasks-legacy.test.ts
+  s_73e70484bd90f5::t_a81fe4aabd06fd 1-59
+src/mastra/scheduled-tasks/service.ts
+  s_73e70484bd90f5::t_c5220be7d82850 124-126
+src/mastra/scheduled-tasks/legacy.ts
+  s_73e70484bd90f5::t_691aef146432f3 1-52
+tests/schedule-tools.test.ts
+  s_73e70484bd90f5::t_73db50ba2d3cf8 5-6,9,17-29,46,48,50-51,54-55,57,61-67,72,77-122
+  s_73e70484bd90f5::t_2eb250d5f86202 1-4,7-8,10-16,30-45,47,49,52-53,56,58-60,68-71,73-76,123
+src/mastra/tools/schedule-tools.ts
+  s_73e70484bd90f5::t_e3a88c22458ed9 9
+  s_73e70484bd90f5::t_72ce76d5cbfb8a 3-8,11-14,18,22-23,25-38,45,47,49-86
+  s_73e70484bd90f5::t_b8a2692ab5f392 10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7317d98dfddf15cb9e7b2cf642767aac0f6c4111",
+  "prompts": {},
+  "sessions": {
+    "s_73e70484bd90f5": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4848ff13-c2a5-4ff9-b27e-2e4f0eff2dd3",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
