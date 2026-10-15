@@ -1,0 +1,52 @@
+web/src/agent/ThreadSidebar.test.tsx
+  s_73e70484bd90f5::t_45a7888a815a9b 27
+  s_73e70484bd90f5::t_9469ea92cbdfda 2,4,16-18
+  s_73e70484bd90f5::t_cae36754f63f05 21,33,48,64,83,96,111,128,144,163,182,189
+  s_73e70484bd90f5::t_a01d0efc2461ce 19
+web/src/agent/AgentShell.tsx
+  s_73e70484bd90f5::t_cb7da03c889be1 1-114
+web/src/agent/AgentPage.test.tsx
+  s_73e70484bd90f5::t_af31bec89c21eb 140-142
+  s_73e70484bd90f5::t_1e4a245777bc76 408,411-412
+  s_73e70484bd90f5::t_72d5b096863eed 538-539
+  s_73e70484bd90f5::t_d670e3b1580968 50
+  s_73e70484bd90f5::t_0a3f96afc6e8fc 5,8
+  s_73e70484bd90f5::t_5caccf7ead6818 354
+  s_73e70484bd90f5::t_62e2e0de2ac1b2 9
+web/src/agent/ModelSettingsMenu.test.tsx
+  s_73e70484bd90f5::t_5828dc117a8283 2,4,8-29,32,34-36,41,43,46-47,52
+web/src/App.tsx
+  s_73e70484bd90f5::t_d417cca4b78340 104-107
+  s_73e70484bd90f5::t_06759420a0e47f 5-6
+web/src/styles.css
+  s_73e70484bd90f5::t_f7ccb4c5dac233 45-48
+web/src/agent/ThreadSidebar.tsx
+  s_73e70484bd90f5::t_7f3060f7718458 9-10,18,30
+  s_73e70484bd90f5::t_b843176994f678 217
+web/src/agent/ScheduledTasksPage.tsx
+  s_73e70484bd90f5::t_366a326f8f2a80 1-19
+web/src/agent/AgentPage.tsx
+  s_73e70484bd90f5::t_b5feba0e444cce 2,7,19,26-27
+  s_73e70484bd90f5::t_1351a710cd6a50 233-236
+  s_73e70484bd90f5::t_0dcf1382edc393 304
+  s_73e70484bd90f5::t_d3cf38a17d2bb6 69
+  s_73e70484bd90f5::t_774c379967d607 97-107
+web/src/agent/ManageMenu.tsx
+  s_73e70484bd90f5::t_a0a641aa190f28 1-78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3893fc5116765056e0ca25c3bd2024162af00464",
+  "prompts": {},
+  "sessions": {
+    "s_73e70484bd90f5": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4848ff13-c2a5-4ff9-b27e-2e4f0eff2dd3",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
