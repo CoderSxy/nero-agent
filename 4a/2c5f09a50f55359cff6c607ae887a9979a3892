@@ -1,0 +1,25 @@
+tests/scheduled-tasks-repository.test.ts
+  s_73e70484bd90f5::t_cf73ebe48eb738 1-153
+migrations/009_agent_scheduled_tasks.sql
+  s_73e70484bd90f5::t_85a693898ad1cb 1-53
+src/mastra/scheduled-tasks/types.ts
+  s_73e70484bd90f5::t_f14f2bdf31b965 1-98
+src/mastra/scheduled-tasks/repository.ts
+  s_73e70484bd90f5::t_108f09fa469e4c 1-380
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4a2c5f09a50f55359cff6c607ae887a9979a3892",
+  "prompts": {},
+  "sessions": {
+    "s_73e70484bd90f5": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4848ff13-c2a5-4ff9-b27e-2e4f0eff2dd3",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
