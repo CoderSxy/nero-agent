@@ -1,0 +1,36 @@
+src/mastra/scheduled-tasks/types.ts
+  s_73e70484bd90f5::t_0db9ff79096cb1 81
+web/src/agent/scheduled-tasks-api.ts
+  s_73e70484bd90f5::t_ddea056b23703e 1-10,12-106
+  s_73e70484bd90f5::t_df04c78cafa707 11
+web/src/agent/ScheduledTasksPage.tsx
+  s_73e70484bd90f5::t_cb9e93bc457e44 1-2,4-92,96-125,130-167,170-177,179-281
+web/src/agent/task-cron.ts
+  s_73e70484bd90f5::t_c4649316923fa5 1-58
+web/src/agent/task-cron.test.ts
+  s_73e70484bd90f5::t_aa0cba3ec37599 1-24
+web/src/styles.css
+  s_73e70484bd90f5::t_c71c7dbdbc3a12 48,50-58
+src/mastra/scheduled-tasks/service.ts
+  s_73e70484bd90f5::t_adc48c3c704953 88
+web/src/agent/ScheduledTasksPage.test.tsx
+  s_73e70484bd90f5::t_33684aec45cf40 2,73
+  s_73e70484bd90f5::t_502d777f196385 96
+  s_73e70484bd90f5::t_f3bd24614fedf6 1,3-72,74-95,97-118
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9a410632256f29aa73f78bbe1111a605005a8a39",
+  "prompts": {},
+  "sessions": {
+    "s_73e70484bd90f5": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4848ff13-c2a5-4ff9-b27e-2e4f0eff2dd3",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
