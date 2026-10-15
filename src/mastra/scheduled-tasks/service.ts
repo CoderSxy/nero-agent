@@ -84,9 +84,8 @@ async function toTaskDto(
   task: ScheduledTask,
   stats: { lastFireAt: string | null; execCount: number },
 ): Promise<TaskDto> {
-  const { prompt: _prompt, ...rest } = task;
   return {
-    ...rest,
+    ...task,
     nextFireAt: task.status === 'active'
       ? computeNextFireAt(task.cron, task.timezone)
       : null,

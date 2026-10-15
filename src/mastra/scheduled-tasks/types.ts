@@ -78,7 +78,7 @@ export type RunFinishPatch = Partial<{
 }>;
 
 /** Safe DTO for management pages — includes derived schedule stats. */
-export type TaskDto = Omit<ScheduledTask, 'prompt'> & {
+export type TaskDto = ScheduledTask & {
   nextFireAt: string | null;
   lastFireAt: string | null;
   execCount: number;

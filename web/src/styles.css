@@ -45,7 +45,17 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .manage-popover a, .manage-popover button[role="menuitem"] { display: block; width: 100%; text-align: left; padding: 8px 10px; border: 0; background: transparent; color: var(--foreground); text-decoration: none; border-radius: 8px; cursor: pointer; font-size: 13px; }
 .manage-popover a.active, .manage-popover button[role="menuitem"].active { background: var(--card); }
 .scheduled-tasks-page { padding: 24px 28px; overflow: auto; }
+.scheduled-tasks-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
 .scheduled-tasks-header h1 { margin: 0 0 6px; font-size: 22px; }
+.scheduled-tasks-actions, .scheduled-tasks-search, .scheduled-task-card-actions, .scheduled-tasks-pagination { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.scheduled-tasks-search { margin-bottom: 16px; }
+.scheduled-task-list { display: grid; gap: 12px; }
+.scheduled-task-card { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; background: var(--card); }
+.scheduled-task-card-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.scheduled-task-card h2 { margin: 0; font-size: 16px; }
+.task-status { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--fill-subtle); }
+.scheduled-task-editor label, .scheduled-task-logs li { display: block; margin: 8px 0; }
+.scheduled-task-editor input, .scheduled-task-editor textarea, .scheduled-task-editor select { width: 100%; margin-top: 4px; }
 .thread-source-tabs { display: flex; gap: 4px; padding: 4px 8px 2px; }
 .thread-source-tabs button { flex: 1; height: 28px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--muted-foreground); font-size: 12px; font-weight: 600; cursor: pointer; }
 .thread-source-tabs button.active, .thread-source-tabs button[aria-selected="true"] { background: var(--card); color: var(--foreground); border-color: var(--border); }
