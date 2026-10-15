@@ -26,6 +26,7 @@ import { studioAuth } from './auth/studio';
 import { createStudioProxyAuth } from './auth/studio-proxy';
 import { financeRoutes } from './finance/routes';
 import { financeSearchTool, financeInterfaceInfoTool, financeFetchTool } from './finance/tools';
+import { createScheduledTaskHooks } from './scheduled-tasks/hooks';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error('DATABASE_URL 未配置，请先运行 npm run db:local:setup');
@@ -58,6 +59,7 @@ export const mastra = new Mastra({
   agents: { agent },
   tools: { startScheduleTool, stopScheduleTool, tavilySearchTool, executeCommandTool, ...userFileTools,
     financeSearchTool, financeInterfaceInfoTool, financeFetchTool },
+  schedules: createScheduledTaskHooks(),
   storage: new MastraCompositeStore({
     id: 'composite-storage',
     default: new PostgresStore({

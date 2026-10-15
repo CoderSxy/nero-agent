@@ -132,10 +132,21 @@ test('agent memory resolves observation, reflection and title models from the au
         [FORGED_TRUSTED_USER_KEY]: userB,
         [memoryModelRefContextKey]: foreign.ref,
     }));
-    await assertModelUnavailable(contextOf({ [FORGED_TRUSTED_USER_KEY]: userB, [memoryModelRefContextKey]: foreign.ref }));
 
-    // No trusted identity means no model and no provider credentials at all.
-    await assertModelUnavailable(contextOf({ user: userA }));
+    // Missing mastra__user (schedule worker pre-check) uses the public default
+    // memory path and must not honor forged identity keys or private model refs.
+    const missingTrusted = await memoryForRequest({
+      requestContext: contextOf({
+        [FORGED_TRUSTED_USER_KEY]: userB,
+        [memoryModelRefContextKey]: foreign.ref,
+      }),
+    });
+    assert.notDeepEqual(memoryModels(missingTrusted).observation, configOf('mem-b'));
+    const untrustedUserKey = await memoryForRequest({
+      requestContext: contextOf({ user: userA }),
+    });
+    assert.notDeepEqual(memoryModels(untrustedUserKey).observation, configOf('mem-a'));
+    assert.notDeepEqual(memoryModels(untrustedUserKey).observation, configOf('chat-a'));
 
     // A selected record that becomes unusable is never swapped for another model.
     await updateModel('private', memoryId, userA, { enabled: false });
