@@ -6,7 +6,8 @@ import type { HistorySearchResult } from './history-search-index';
 import type { useHistorySearch } from './use-history-search';
 import { ThreadList, ThreadListEmpty, ThreadListItems, ThreadListNewItem } from '@mastra/playground-ui/components/ThreadList';
 import type { Thread } from './thread-scope';
-import { ModelSettingsMenu, type Theme } from './ModelSettingsMenu';
+import { ManageMenu } from './ManageMenu';
+import type { Theme } from './ModelSettingsMenu';
 import { formatThreadTime, groupThreadsByTime } from './thread-history';
 import type { CurrentUser } from '../App';
 import type { ThreadSource } from './thread-source';
@@ -14,7 +15,7 @@ import type { ThreadSource } from './thread-source';
 export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSelect,
   onDelete, onRename, theme, onThemeChange,
   canCreate = true, user, onLogout, search, onSearchSelect,
-  source = 'default', onSourceChange }: {
+  source = 'default', onSourceChange, isAdmin = false }: {
   threads: Thread[]; currentId?: string; loading: boolean; error: string | null;
   onNew: () => void; onSelect: (id: string) => void;
   onDelete?: (id: string) => Promise<void>;
@@ -26,6 +27,7 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
   onSearchSelect?: (result: HistorySearchResult) => void;
   source?: ThreadSource;
   onSourceChange?: (source: ThreadSource) => void;
+  isAdmin?: boolean;
 }) {
   const [menuId, setMenuId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
@@ -212,6 +214,6 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
     {searchEnabled && search && onSearchSelect && <HistorySearchDialog open={searchOpen} search={search}
       threadCount={threads.length} returnFocusRef={searchLauncherRef}
       onClose={() => setSearchOpen(false)} onSelect={onSearchSelect} />}
-    <ModelSettingsMenu theme={theme} onThemeChange={onThemeChange} user={user} onLogout={onLogout} />
+    <ManageMenu theme={theme} onThemeChange={onThemeChange} user={user} onLogout={onLogout} isAdmin={isAdmin} />
   </aside>;
 }

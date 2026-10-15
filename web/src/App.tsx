@@ -2,6 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { MastraReactProvider } from '@mastra/react';
 import { AgentPage } from './agent/AgentPage';
+import { AgentShell } from './agent/AgentShell';
+import { ScheduledTasksPage } from './agent/ScheduledTasksPage';
 import { setAgentClientToken } from './agent/client';
 
 export type CurrentUser = { id: string; email: string; displayName: string; roles: ('admin' | 'user')[] };
@@ -99,7 +101,10 @@ export function App() {
   return <MastraReactProvider baseUrl="" apiPrefix="/api"
     headers={{ Authorization: `Bearer ${token}` }}>
     <Routes>
-      <Route path="/agent/:threadId" element={<AgentPage user={user} onLogout={onLogout} />} />
+      <Route element={<AgentShell user={user} onLogout={onLogout} />}>
+        <Route path="/agent/:threadId" element={<AgentPage />} />
+        <Route path="/scheduled-tasks" element={<ScheduledTasksPage />} />
+      </Route>
       <Route path="*" element={<Navigate to="/agent/new" replace />} />
     </Routes>
   </MastraReactProvider>;

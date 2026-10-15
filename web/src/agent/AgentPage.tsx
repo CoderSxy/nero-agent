@@ -1,60 +1,35 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
 import { ChatShell } from '@mastra/playground-ui/components/ChatShell';
 import type { GetAgentResponse, GetMemoryConfigResponse } from '@mastra/client-js';
 import type { MastraDBMessage } from '@mastra/core/agent/message-list';
 import { AGENT_ID, client, getFinanceCapabilities } from './client';
-import { useThreadList } from './use-thread-list';
-import { loadScopedThread, neighborAfterDeletion } from './thread-scope';
-import { ThreadSidebar } from './ThreadSidebar';
+import { loadScopedThread } from './thread-scope';
 import { AgentChat } from './AgentChat';
 import { AgentComposer } from './AgentComposer';
 import { ConfigPanel } from './ConfigPanel';
 import { RightPanelDock } from './RightPanelDock';
-import { PanelResizeHandle } from './PanelResizeHandle';
 import { WorkspaceFileTree } from './WorkspaceFileTree';
 import { WorkspaceFileOverlay } from './WorkspaceFileOverlay';
 import { getSelectableModels, type ModelRef, type SafeModel } from './model-catalog-client';
 import { getDefaultModels, readThreadModels, saveThreadModels, withThreadModels,
   type ModelSettings } from './model-settings';
-import type { Theme } from './ModelSettingsMenu';
-import type { CurrentUser } from '../App';
 import type { PendingUserMessage } from './pending-user-message';
-import { createHistorySearchCache } from './history-search-cache';
-import type { HistorySearchResult } from './history-search-index';
-import { useHistorySearch } from './use-history-search';
 import { readThreadFinanceCategory, saveThreadFinanceCategory, type FinanceCategory } from './finance-category';
-import { filterThreadsBySource, type ThreadSource } from './thread-source';
-
-function initialTheme(): Theme {
-  try { return localStorage.getItem('nero-agent-theme') === 'light' ? 'light' : 'dark'; }
-  catch { return 'dark'; }
-}
+import type { AgentShellContextValue } from './AgentShell';
 
 function completeModels(models: Partial<ModelSettings>): ModelSettings | null {
   return models.chatModel && models.memoryModel
     ? { chatModel: models.chatModel, memoryModel: models.memoryModel } : null;
 }
 
-export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () => void }) {
+export function AgentPage() {
+  const { user, list, historySearch, setChatActions } = useOutletContext<AgentShellContextValue>();
   const { threadId: routeThreadId } = useParams();
   const threadId = routeThreadId === 'new' ? undefined : routeThreadId;
   const [searchParams] = useSearchParams();
   const targetMessageId = searchParams.get('targetMessageId') ?? undefined;
   const navigate = useNavigate();
-  const list = useThreadList(user.id);
-  const [threadSource, setThreadSource] = useState<ThreadSource>('default');
-  const visibleThreads = useMemo(
-    () => filterThreadsBySource(list.threads, threadSource),
-    [list.threads, threadSource],
-  );
-  const historySearchCache = useMemo(() => createHistorySearchCache(), []);
-  const historySearch = useHistorySearch({
-    userId: user.id,
-    threads: visibleThreads,
-    cache: historySearchCache,
-    scopeKey: threadSource,
-  });
   const [messages, setMessages] = useState<MastraDBMessage[]>([]);
   const [landingDraft, setLandingDraft] = useState('');
   const [landingFocused, setLandingFocused] = useState(false);
@@ -88,14 +63,10 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
   const [draftModels, setDraftModels] = useState<Partial<ModelSettings>>({});
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [settingsSaving, setSettingsSaving] = useState(false);
-  const [theme, setTheme] = useState<Theme>(initialTheme);
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
-  const [leftPreferredWidth, setLeftPreferredWidth] = useState(() => window.innerWidth <= 1050 ? 210 : 260);
   const [rightPreferredWidth, setRightPreferredWidth] = useState(320);
   const compactPanels = viewportWidth <= 1050;
-  const leftMax = Math.max(200, Math.min(420, viewportWidth - (compactPanels ? 360 : 640)));
-  const leftWidth = Math.min(leftPreferredWidth, leftMax);
-  const rightMax = Math.max(280, Math.min(620, viewportWidth - (compactPanels ? 40 : leftWidth + 360)));
+  const rightMax = Math.max(280, Math.min(620, viewportWidth - (compactPanels ? 40 : 600)));
   const rightWidth = Math.min(rightPreferredWidth, rightMax);
   const defaults = useMemo(() => catalog ? getDefaultModels(catalog) : null, [catalog]);
   const available = useMemo(() => new Set((catalog ?? []).map(model => model.ref)), [catalog]);
@@ -119,14 +90,21 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
       memoryModel: names.get(selected.memoryModel) ?? selected.memoryModel } : undefined;
   const workspaceSource = agent?.workspaceId && agent.workspaceId !== 'user-workspace' ? 'agent' : 'personal';
   useEffect(() => {
-    document.documentElement.classList.toggle('light', theme === 'light');
-    try { localStorage.setItem('nero-agent-theme', theme); } catch { /* Storage may be disabled. */ }
-  }, [theme]);
-  useEffect(() => {
     const onResize = () => setViewportWidth(window.innerWidth);
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
+  useEffect(() => {
+    const ids = new Set(list.threads.map((thread) => thread.id));
+    setPendingByThread((current) => {
+      const next = { ...current };
+      let changed = false;
+      for (const id of Object.keys(next)) {
+        if (!ids.has(id)) { delete next[id]; changed = true; }
+      }
+      return changed ? next : current;
+    });
+  }, [list.threads]);
   useEffect(() => {
     let active = true;
     Promise.allSettled([client.getAgent(AGENT_ID).details(), client.getMemoryConfig({ agentId: AGENT_ID }),
@@ -252,27 +230,10 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
   function selectComposerModel(ref: ModelRef) {
     void changeModels({ chatModel: ref, memoryModel: ref });
   }
-  function selectHistorySearchResult(result: HistorySearchResult) {
-    navigate(`/agent/${encodeURIComponent(result.threadId)}?targetMessageId=${encodeURIComponent(result.userMessageId)}`);
-  }
-  async function deleteThread(id: string) {
-    const nextId = neighborAfterDeletion(visibleThreads, id);
-    await list.deleteThread(id);
-    setPendingByThread(current => { const next = { ...current }; delete next[id]; return next; });
-    setNotice(null);
-    navigate(nextId ? `/agent/${nextId}` : '/agent/new', { replace: true });
-  }
-  return <main className="agent-layout" style={{ '--left-panel-width': `${leftWidth}px` } as React.CSSProperties}>
-    <div className="left-panel-dock">
-    <ThreadSidebar threads={visibleThreads} currentId={threadId} loading={list.loading} error={list.error}
-      onNew={() => void create(!threadId)} onSelect={id => navigate(`/agent/${id}`)} onDelete={deleteThread}
-      onRename={list.renameThread}
-      theme={theme} onThemeChange={setTheme}
-      canCreate={canCreate} user={user} onLogout={onLogout}
-      search={historySearch} onSearchSelect={selectHistorySearchResult}
-      source={threadSource} onSourceChange={setThreadSource} />
-      <PanelResizeHandle side="left" width={leftWidth} min={200} max={leftMax} onResize={setLeftPreferredWidth} />
-    </div>
+  useEffect(() => {
+    setChatActions({ onNew: () => void create(!threadId), canCreate });
+  }, [canCreate, threadId, setChatActions]);
+  return <>
     <section className="agent-center">
       {notice && <div role="alert" className="notice">{notice}</div>}
       {financeError && <div role="alert" className="notice">{financeError}</div>}
@@ -340,5 +301,5 @@ export function AgentPage({ user, onLogout }: { user: CurrentUser; onLogout: () 
           setAttachRequest({ id: nextAttachId.current, threadId, path, source });
         } : undefined}
         onFilesChanged={() => setFilesRefreshVersion(value => value + 1)} />} />
-  </main>;
+  </>;
 }

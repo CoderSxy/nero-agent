@@ -2,7 +2,10 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { createMemoryRouter, MemoryRouter, Route, RouterProvider, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentPage } from './AgentPage';
+import { AgentShell } from './AgentShell';
 import type { PendingUserMessage } from './pending-user-message';
+
+const testUser = { id: 'agent', email: 'test@example.com', displayName: 'Test', roles: ['user'] as Array<'user' | 'admin'> };
 
 const flash = 'public:11111111-1111-4111-8111-111111111111';
 const pro = 'public:22222222-2222-4222-8222-222222222222';
@@ -44,6 +47,7 @@ vi.mock('./model-catalog-client', () => ({ getSelectableModels: () => getSelecta
 const refreshThreadList = vi.fn();
 vi.mock('./use-thread-list', () => ({ useThreadList: () => ({
   threads: threadItems, loading: false, error: null, refresh: refreshThreadList, createThread, deleteThread,
+  renameThread: vi.fn(),
   previewFirstMessageTitle, confirmFirstMessageTitle, discardFirstMessageTitle,
 }) }));
 const ensureRecent = vi.fn();
@@ -133,8 +137,9 @@ afterEach(() => { cleanup(); vi.clearAllMocks(); vi.unstubAllGlobals();
 
 function renderPage(path = '/agent/thread-1') {
   return render(<MemoryRouter initialEntries={[path]}><Routes>
-    <Route path="/agent/:threadId" element={<AgentPage user={{ id: 'agent', email: 'test@example.com',
-      displayName: 'Test', roles: ['user'] }} onLogout={vi.fn()} />} />
+    <Route element={<AgentShell user={testUser} onLogout={vi.fn()} />}>
+      <Route path="/agent/:threadId" element={<AgentPage />} />
+    </Route>
   </Routes></MemoryRouter>);
 }
 
@@ -346,7 +351,7 @@ describe('Agent page model selection', () => {
       expect(within(select).getAllByRole('option').map(option => option.getAttribute('value')))
         .toEqual(['', flash, mine]);
       expect(listAgentsModelProviders).not.toHaveBeenCalled();
-      fireEvent.click(screen.getByRole('button', { name: '设置' }));
+      fireEvent.click(screen.getByRole('button', { name: '管理' }));
       expect(screen.queryByRole('button', { name: 'API Key 管理' })).toBeNull();
       expect(screen.queryByRole('combobox', { name: '会话模型' })).toBeNull();
     } finally { vi.unstubAllEnvs(); }
@@ -400,10 +405,11 @@ describe('Agent page model selection', () => {
     expect(createThread).not.toHaveBeenCalled();
   });
 
-  it('keeps theme switching in Settings', async () => {
+  it('keeps theme switching in Manage', async () => {
     renderPage();
     await screen.findByTestId('models');
-    fireEvent.click(screen.getByRole('button', { name: '设置' }));
+    fireEvent.click(screen.getByRole('button', { name: '管理' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '外观' }));
     fireEvent.click(screen.getByRole('button', { name: '浅色' }));
     expect(document.documentElement.classList.contains('light')).toBe(true);
   });
@@ -528,10 +534,9 @@ describe('history search', () => {
   });
   it('opens from Ctrl/Cmd+K and navigates with encoded thread and message ids', async () => {
     threadItems = [{ id: 'thread-1', title: '当前', resourceId: 'agent', updatedAt: '2026-10-11' }];
-    const user = { id: 'agent', email: 'test@example.com', displayName: 'Test', roles: ['user'] as Array<'user' | 'admin'> };
     const router = createMemoryRouter([{
-      path: '/agent/:threadId',
-      element: <AgentPage user={user} onLogout={vi.fn()} />,
+      element: <AgentShell user={testUser} onLogout={vi.fn()} />,
+      children: [{ path: '/agent/:threadId', element: <AgentPage /> }],
     }], { initialEntries: ['/agent/thread-1'] });
     render(<RouterProvider router={router} />);
     await screen.findByTestId('models');

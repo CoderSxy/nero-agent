@@ -42,6 +42,10 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .thread-scroll nav { min-height: 0; overflow: hidden; }
 .thread-list-scroll { flex: 1; min-height: 0; overflow-y: auto; }
 .sidebar-note { padding: 8px 14px; }
+.manage-popover a, .manage-popover button[role="menuitem"] { display: block; width: 100%; text-align: left; padding: 8px 10px; border: 0; background: transparent; color: var(--foreground); text-decoration: none; border-radius: 8px; cursor: pointer; font-size: 13px; }
+.manage-popover a.active, .manage-popover button[role="menuitem"].active { background: var(--card); }
+.scheduled-tasks-page { padding: 24px 28px; overflow: auto; }
+.scheduled-tasks-header h1 { margin: 0 0 6px; font-size: 22px; }
 .thread-source-tabs { display: flex; gap: 4px; padding: 4px 8px 2px; }
 .thread-source-tabs button { flex: 1; height: 28px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--muted-foreground); font-size: 12px; font-weight: 600; cursor: pointer; }
 .thread-source-tabs button.active, .thread-source-tabs button[aria-selected="true"] { background: var(--card); color: var(--foreground); border-color: var(--border); }

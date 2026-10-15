@@ -1,5 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeAll, expect, it, vi } from 'vitest';
+import { ThreadSidebar } from './ThreadSidebar';
 
 beforeAll(() => {
   vi.stubGlobal('ResizeObserver', class {
@@ -8,24 +10,27 @@ beforeAll(() => {
     disconnect() {}
   });
 });
-import { ThreadSidebar } from './ThreadSidebar';
 
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 
+function renderSidebar(ui: React.ReactElement) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
+}
+
 it('keeps the logo and settings outside the scrolling conversation list', () => {
-  const { container } = render(<ThreadSidebar threads={[]} loading={false} error={null}
+  const { container } = renderSidebar(<ThreadSidebar threads={[]} loading={false} error={null}
     onNew={vi.fn()} onSelect={vi.fn()}
     theme="dark" onThemeChange={vi.fn()} />);
   const scroll = container.querySelector('.thread-scroll');
   expect(scroll).toBeTruthy();
   expect(scroll?.contains(container.querySelector('.brand'))).toBe(false);
-  expect(scroll?.contains(screen.getByRole('button', { name: '设置' }))).toBe(false);
+  expect(scroll?.contains(screen.getByRole('button', { name: '管理' }))).toBe(false);
 });
 
 it('shows a clean new-conversation action and marks the active thread', () => {
   const threads = [{ id: 'a', title: '当前会话', resourceId: 'agent', updatedAt: '2026-10-05' },
     { id: 'b', title: '其他会话', resourceId: 'agent', updatedAt: '2026-10-04' }] as never;
-  render(<ThreadSidebar threads={threads} currentId="a" loading={false} error={null}
+  renderSidebar(<ThreadSidebar threads={threads} currentId="a" loading={false} error={null}
     onNew={vi.fn()} onSelect={vi.fn()} theme="dark" onThemeChange={vi.fn()} />);
   expect(screen.getByRole('button', { name: '新建会话' })).toBeTruthy();
   expect(screen.queryByRole('button', { name: '＋ 新建会话' })).toBeNull();
@@ -40,7 +45,7 @@ it('starts grouped and switches between time groups and the ordinary list', () =
     { id: 'a', title: '今天的会话', resourceId: 'agent', updatedAt: '2026-10-07T11:45:00' },
     { id: 'b', title: '较早的会话', resourceId: 'agent', updatedAt: '2026-08-01T09:00:00' },
   ] as never;
-  render(<ThreadSidebar threads={threads} currentId="a" loading={false} error={null}
+  renderSidebar(<ThreadSidebar threads={threads} currentId="a" loading={false} error={null}
     onNew={vi.fn()} onSelect={vi.fn()} theme="dark" onThemeChange={vi.fn()} />);
   expect(screen.getByText('今天')).toBeTruthy();
   expect(screen.getByText('2026-08')).toBeTruthy();
@@ -56,7 +61,7 @@ it('starts grouped and switches between time groups and the ordinary list', () =
 it('shows a per-thread menu and requires confirmation before deletion', async () => {
   const onDelete = vi.fn().mockResolvedValue(undefined);
   const threads = [{ id: 'a', title: '会话 A', resourceId: 'agent', updatedAt: '2026-10-05' }] as never;
-  render(<ThreadSidebar threads={threads} currentId="a" loading={false} error={null}
+  renderSidebar(<ThreadSidebar threads={threads} currentId="a" loading={false} error={null}
     onNew={vi.fn()} onSelect={vi.fn()} onDelete={onDelete}
     theme="dark" onThemeChange={vi.fn()} />);
   fireEvent.click(screen.getByRole('button', { name: '会话 A 的更多操作' }));
@@ -75,7 +80,7 @@ it('shows a per-thread menu and requires confirmation before deletion', async ()
 it('keeps confirmation open and shows the error when deletion fails', async () => {
   const onDelete = vi.fn().mockRejectedValue(new Error('删除失败，请重试'));
   const threads = [{ id: 'a', title: '会话 A', resourceId: 'agent', updatedAt: '2026-10-05' }] as never;
-  render(<ThreadSidebar threads={threads} currentId="a" loading={false} error={null}
+  renderSidebar(<ThreadSidebar threads={threads} currentId="a" loading={false} error={null}
     onNew={vi.fn()} onSelect={vi.fn()} onDelete={onDelete}
     theme="dark" onThemeChange={vi.fn()} />);
   fireEvent.click(screen.getByRole('button', { name: '会话 A 的更多操作' }));
@@ -88,7 +93,7 @@ it('keeps confirmation open and shows the error when deletion fails', async () =
 it('shows rename above delete and saves a nonempty edited title', async () => {
   const onRename = vi.fn().mockResolvedValue(undefined);
   const threads = [{ id: 'a', title: '原会话', resourceId: 'agent', updatedAt: '2026-10-05' }] as never;
-  render(<ThreadSidebar threads={threads} loading={false} error={null}
+  renderSidebar(<ThreadSidebar threads={threads} loading={false} error={null}
     onNew={vi.fn()} onSelect={vi.fn()} onRename={onRename}
     theme="dark" onThemeChange={vi.fn()} />);
   fireEvent.click(screen.getByRole('button', { name: '原会话 的更多操作' }));
@@ -103,7 +108,7 @@ it('shows rename above delete and saves a nonempty edited title', async () => {
 it('shows history search beside the heading and opens the dialog from the icon', async () => {
   const ensureRecent = vi.fn();
   const threads = [{ id: 'a', title: '会话', resourceId: 'agent', updatedAt: '2026-10-05' }] as never;
-  render(<ThreadSidebar threads={threads} loading={false} error={null}
+  renderSidebar(<ThreadSidebar threads={threads} loading={false} error={null}
     onNew={vi.fn()} onSelect={vi.fn()} theme="dark" onThemeChange={vi.fn()}
     search={{
       documents: [], scope: 'recent', recentStatus: 'ready', fullStatus: 'idle',
@@ -120,7 +125,7 @@ it('shows history search beside the heading and opens the dialog from the icon',
 
 it('toggles history search with Ctrl/Cmd+K at document level', async () => {
   const threads = [{ id: 'a', title: '会话', resourceId: 'agent', updatedAt: '2026-10-05' }] as never;
-  render(<ThreadSidebar threads={threads} loading={false} error={null}
+  renderSidebar(<ThreadSidebar threads={threads} loading={false} error={null}
     onNew={vi.fn()} onSelect={vi.fn()} theme="dark" onThemeChange={vi.fn()}
     search={{
       documents: [], scope: 'recent', recentStatus: 'ready', fullStatus: 'idle',
@@ -136,7 +141,7 @@ it('toggles history search with Ctrl/Cmd+K at document level', async () => {
 
 it('closes history search with Ctrl/Cmd+K when focus is in the search input', async () => {
   const threads = [{ id: 'a', title: '会话', resourceId: 'agent', updatedAt: '2026-10-05' }] as never;
-  render(<ThreadSidebar threads={threads} loading={false} error={null}
+  renderSidebar(<ThreadSidebar threads={threads} loading={false} error={null}
     onNew={vi.fn()} onSelect={vi.fn()} theme="dark" onThemeChange={vi.fn()}
     search={{
       documents: [], scope: 'recent', recentStatus: 'ready', fullStatus: 'idle',
@@ -155,7 +160,7 @@ it('opens history search with Ctrl/Cmd+K while the chat composer has focus', asy
   const threads = [{ id: 'a', title: '会话', resourceId: 'agent', updatedAt: '2026-10-05' }] as never;
   const composer = document.createElement('textarea');
   document.body.append(composer);
-  render(<ThreadSidebar threads={threads} loading={false} error={null}
+  renderSidebar(<ThreadSidebar threads={threads} loading={false} error={null}
     onNew={vi.fn()} onSelect={vi.fn()} theme="dark" onThemeChange={vi.fn()}
     search={{
       documents: [], scope: 'recent', recentStatus: 'ready', fullStatus: 'idle',
@@ -174,14 +179,14 @@ it('opens history search with Ctrl/Cmd+K while the chat composer has focus', asy
 
 it('switches history and schedule sources via tabs', () => {
   const onSourceChange = vi.fn();
-  render(<ThreadSidebar threads={[]} loading={false} error={null}
+  renderSidebar(<ThreadSidebar threads={[]} loading={false} error={null}
     onNew={vi.fn()} onSelect={vi.fn()} theme="dark" onThemeChange={vi.fn()}
     source="default" onSourceChange={onSourceChange} />);
   expect(screen.getByRole('tab', { name: '历史' }).getAttribute('aria-selected')).toBe('true');
   fireEvent.click(screen.getByRole('tab', { name: '调度' }));
   expect(onSourceChange).toHaveBeenCalledWith('schedule');
   cleanup();
-  render(<ThreadSidebar threads={[]} loading={false} error={null}
+  renderSidebar(<ThreadSidebar threads={[]} loading={false} error={null}
     onNew={vi.fn()} onSelect={vi.fn()} theme="dark" onThemeChange={vi.fn()}
     source="schedule" onSourceChange={onSourceChange} />);
   expect(screen.getByText('暂无调度会话')).toBeTruthy();
