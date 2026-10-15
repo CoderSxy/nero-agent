@@ -64,6 +64,16 @@ export async function getUserByToken(token: string): Promise<AuthUser | null> {
   return result.rows[0] ? withRoles(result.rows[0]) : null;
 }
 
+export async function getActiveUserById(id: string): Promise<AuthUser | null> {
+  if (!id || typeof id !== 'string') return null;
+  const result = await getPool().query<{ id: string; email: string; display_name: string }>(
+    `SELECT id, email, display_name FROM app_users
+     WHERE id = $1 AND status = 'active'`,
+    [id],
+  );
+  return result.rows[0] ? withRoles(result.rows[0]) : null;
+}
+
 export async function logout(token: string): Promise<void> {
   if (token) await getPool().query(
     'UPDATE app_sessions SET revoked_at = now() WHERE token_hash = $1 AND revoked_at IS NULL',
