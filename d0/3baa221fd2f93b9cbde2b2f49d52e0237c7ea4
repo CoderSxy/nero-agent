@@ -1,0 +1,28 @@
+tests/scheduled-tasks-hooks.test.ts
+  s_73e70484bd90f5::t_d9083295a40dca 1-255
+src/mastra/scheduled-tasks/hooks.ts
+  s_73e70484bd90f5::t_f98722be59bb0c 1-275
+tests/agent-memory-model.test.ts
+  s_73e70484bd90f5::t_241d5340ecf295 136-149
+src/mastra/agents/memory-model.ts
+  s_73e70484bd90f5::t_38fc3a2dd5ab22 5-7,10,14,45-66
+src/mastra/index.ts
+  s_73e70484bd90f5::t_54bf986f460632 29
+  s_73e70484bd90f5::t_1ae29fc1eb471f 62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d03baa221fd2f93b9cbde2b2f49d52e0237c7ea4",
+  "prompts": {},
+  "sessions": {
+    "s_73e70484bd90f5": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4848ff13-c2a5-4ff9-b27e-2e4f0eff2dd3",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
