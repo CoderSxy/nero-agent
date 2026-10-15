@@ -28,6 +28,7 @@ import { financeRoutes } from './finance/routes';
 import { financeSearchTool, financeInterfaceInfoTool, financeFetchTool } from './finance/tools';
 import { createScheduledTaskHooks } from './scheduled-tasks/hooks';
 import { nativeScheduleGuardMiddleware } from './scheduled-tasks/native-guard';
+import { startScheduledTaskReconcile } from './scheduled-tasks/reconcile';
 import { scheduledTaskRoutes } from './scheduled-tasks/routes';
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -87,3 +88,5 @@ export const mastra = new Mastra({
     },
   }),
 });
+
+startScheduledTaskReconcile(mastra.schedules);

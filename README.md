@@ -66,6 +66,10 @@ ECS 生产环境没有 Mastra EE 授权时，Studio 使用官方 `SimpleAuth` �
 
 `web_search` 使用 Tavily 搜索，`web_fetch` 用于读取已知网址。普通用户默认仍只有聊天和网络工具。用户文件 API、每用户工作区和 `execute_command` 均有独立开关，默认关闭。管理员修改文件或运行命令前会请求批准。
 
+## 定时任务
+
+管理员可在左侧「管理 → 定时任务」创建 Cron 任务（`GET/POST /agent-scheduled-tasks` 等应用 API）。每次触发会生成独立调度会话，出现在侧栏「调度」列表；普通会话在「历史」。任务与执行日志保存在 PostgreSQL（迁移 `009_agent_scheduled_tasks.sql`），由 Mastra schedules 负责触发；启动时会做一次应用表与触发器的非阻塞对账。请勿让普通用户直接调用原生 `/api/schedules`（已拦截；Studio 管理员会话 Cookie 除外）。旧版工具创建、且无 `appTaskId` 的 schedule 不会自动改写，可通过只读审计列出后人工处理。
+
 ## 工作区与存储
 
 每用户工作区根目录为 `$WORKSPACE_ROOT/users/<UUID>/workspace`（默认 `WORKSPACE_ROOT=/data/mastra`），线程文件在 `threads/<threadId>/{input,output,tmp}`。`WORKSPACE_RESOLVER_ENABLED=true` 时，管理员 Workspace 使用该用户目录上的 `LocalFilesystem({ contained: true })`。Mastra 原生命令与文件系统工具已关闭；受控文件工具走 `FileService`。
