@@ -6,6 +6,7 @@ import {
   claimRun,
   getRunStats,
   getTask,
+  getTaskById,
   insertTask,
   listRuns,
   listTasks,
@@ -44,6 +45,7 @@ export type ScheduledTaskServiceDeps = {
   resolveDefaultModelRefs?: typeof resolveDefaultModelRefs;
   insertTask?: typeof insertTask;
   getTask?: typeof getTask;
+  getTaskById?: typeof getTaskById;
   updateTask?: typeof updateTask;
   listTasks?: typeof listTasks;
   claimRun?: typeof claimRun;
@@ -107,6 +109,7 @@ export function createScheduledTaskService(driverOrDeps: ScheduleDriver | Schedu
   const repo = {
     insertTask: resolved.insertTask ?? insertTask,
     getTask: resolved.getTask ?? getTask,
+    getTaskById: resolved.getTaskById ?? getTaskById,
     updateTask: resolved.updateTask ?? updateTask,
     listTasks: resolved.listTasks ?? listTasks,
     claimRun: resolved.claimRun ?? claimRun,
@@ -158,6 +161,12 @@ export function createScheduledTaskService(driverOrDeps: ScheduleDriver | Schedu
         if (error instanceof ScheduledTaskError) throw error;
         throw new ScheduledTaskError('upstream', '创建调度触发器失败');
       }
+    },
+
+    async get(owner: AuthUser, id: string): Promise<TaskDto> {
+      const existing = await loadOwned(owner, id);
+      const stats = await repo.getRunStats(existing.id, owner.id);
+      return toTaskDto(existing, stats);
     },
 
     async edit(owner: AuthUser, id: string, input: unknown): Promise<TaskDto> {
@@ -276,8 +285,12 @@ export function createScheduledTaskService(driverOrDeps: ScheduleDriver | Schedu
       id: string,
       page: PageQuery,
     ): Promise<{ items: RunDto[]; total: number }> {
-      await loadOwned(owner, id);
-      // Soft-deleted tasks still expose logs via owner + task id.
+      assertAdmin(owner);
+      const active = await repo.getTask(id, owner.id);
+      const row = active ?? await repo.getTaskById(id);
+      if (!row || row.ownerUserId !== owner.id) {
+        throw new ScheduledTaskError('not_found', '任务不存在');
+      }
       const result = await repo.listRuns(id, owner.id, page);
       return { items: result.items.map(toRunDto), total: result.total };
     },

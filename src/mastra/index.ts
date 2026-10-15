@@ -27,6 +27,8 @@ import { createStudioProxyAuth } from './auth/studio-proxy';
 import { financeRoutes } from './finance/routes';
 import { financeSearchTool, financeInterfaceInfoTool, financeFetchTool } from './finance/tools';
 import { createScheduledTaskHooks } from './scheduled-tasks/hooks';
+import { nativeScheduleGuardMiddleware } from './scheduled-tasks/native-guard';
+import { scheduledTaskRoutes } from './scheduled-tasks/routes';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error('DATABASE_URL 未配置，请先运行 npm run db:local:setup');
@@ -45,9 +47,14 @@ export const mastra = new Mastra({
   studio: { auth: configuredStudioAuth },
   server: {
     studioBase: process.env.MASTRA_STUDIO_BASE || '/',
-    middleware: [agentModelLockMiddleware, authorizeThreadRoute, studioChineseMiddleware],
+    middleware: [
+      nativeScheduleGuardMiddleware,
+      agentModelLockMiddleware,
+      authorizeThreadRoute,
+      studioChineseMiddleware,
+    ],
     apiRoutes: [...authRoutes, ...modelRoutes, ...modelAdminRoutes, ...fileRoutes,
-      ...currentWorkspaceFileRoutes, ...financeRoutes],
+      ...currentWorkspaceFileRoutes, ...financeRoutes, ...scheduledTaskRoutes],
     auth: {
       authenticateToken: async token => getUserByToken(token),
       mapUserToResourceId: user => resourceIdFor(authContextFromUser(user)),
