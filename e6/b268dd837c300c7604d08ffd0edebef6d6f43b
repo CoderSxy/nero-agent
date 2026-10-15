@@ -1,0 +1,42 @@
+web/src/agent/ThreadSidebar.tsx
+  s_73e70484bd90f5::t_2022ade929c11a 12,16-17,27-28
+  s_73e70484bd90f5::t_22898e5bfb2938 136-145,148-149
+  s_73e70484bd90f5::t_2d6b2a7998cd58 169-171
+web/src/agent/use-history-search.ts
+  s_73e70484bd90f5::t_9a69011d82bce8 115-116,118
+  s_73e70484bd90f5::t_75b5c1412e8748 136,144
+  s_73e70484bd90f5::t_d20a103b056674 179,181-182,198
+web/src/agent/AgentPage.tsx
+  s_73e70484bd90f5::t_349c002ab12cc9 27
+  s_73e70484bd90f5::t_ddb374fed6d2c9 46-50,52-57
+  s_73e70484bd90f5::t_643b460061d5c9 259,267,272-273
+web/src/agent/thread-source.test.ts
+  s_73e70484bd90f5::t_0938f274450a6f 1-44
+web/src/agent/thread-source.ts
+  s_73e70484bd90f5::t_62fccd60ded353 1-25
+web/src/agent/use-thread-list.ts
+  s_73e70484bd90f5::t_90564c58ed4e8d 6
+  s_73e70484bd90f5::t_1cb2376f3f666f 38
+web/src/styles.css
+  s_73e70484bd90f5::t_1995ea2ef22055 45-47
+web/src/agent/use-history-search.test.tsx
+  s_73e70484bd90f5::t_f7dfa84f870068 439-468
+web/src/agent/ThreadSidebar.test.tsx
+  s_73e70484bd90f5::t_dd1fbe23764283 174-188
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e6b268dd837c300c7604d08ffd0edebef6d6f43b",
+  "prompts": {},
+  "sessions": {
+    "s_73e70484bd90f5": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4848ff13-c2a5-4ff9-b27e-2e4f0eff2dd3",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
