@@ -1,0 +1,26 @@
+src/mastra/auth/service.ts
+  s_73e70484bd90f5::t_7f6382495885f7 67-76
+src/mastra/scheduled-tasks/service.ts
+  s_73e70484bd90f5::t_c27218826c8563 1-95,99,104-294
+  s_73e70484bd90f5::t_d1d8ef2896ce06 96-98,100-103
+tests/scheduled-tasks-service.test.ts
+  s_73e70484bd90f5::t_354c7a0a43a26b 1-324
+src/mastra/scheduled-tasks/validation.ts
+  s_73e70484bd90f5::t_d3e2b82a865da8 1-170
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "de74072d7d0b1633ad1ffad4d67f003bee2b3e26",
+  "prompts": {},
+  "sessions": {
+    "s_73e70484bd90f5": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4848ff13-c2a5-4ff9-b27e-2e4f0eff2dd3",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
