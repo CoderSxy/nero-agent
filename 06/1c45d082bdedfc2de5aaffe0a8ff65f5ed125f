@@ -1,0 +1,24 @@
+web/src/agent/AgentComposer.tsx
+  s_81656977d7a4eb::t_22f81b5bd83b38 12-26,118-119,247-249,291
+web/src/agent/AgentComposer.test.tsx
+  s_81656977d7a4eb::t_f2a80f9bc19fbd 81-116
+  s_81656977d7a4eb::t_a9dde5059afea4 74
+web/src/styles.css
+  s_81656977d7a4eb::t_e24f688a81df29 214
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "061c45d082bdedfc2de5aaffe0a8ff65f5ed125f",
+  "prompts": {},
+  "sessions": {
+    "s_81656977d7a4eb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13525-074a-7c01-88bd-5b003594a9a6",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
