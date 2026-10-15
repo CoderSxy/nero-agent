@@ -1,0 +1,24 @@
+docs/superpowers/plans/2026-10-15-scheduled-tasks-and-conversation-sources.md
+  s_87f1287fe23cca::t_7af8dade14a46d 50-51,153-156
+  s_87f1287fe23cca::t_7d5fa98e8fcb7a 24-28,74,97,108,123,125
+  s_87f1287fe23cca::t_7a124ed4b31f8d 61-62
+  s_87f1287fe23cca::t_0dcae84b6718d5 58
+  s_87f1287fe23cca::t_8885f03ee194e4 63
+  s_87f1287fe23cca::t_83e690dbb9158a 1-23,29-49,52-57,59-60,64-73,75-96,98-107,109-122,124,126-152
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6591b7bf126939e6ff4aeb2d298e52be7de8dfbd",
+  "prompts": {},
+  "sessions": {
+    "s_87f1287fe23cca": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13d48-075b-7bf3-a961-a73b39e29e62",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
