@@ -1,0 +1,26 @@
+tests/scheduled-tasks-integration.test.ts
+  s_73e70484bd90f5::t_b0d51a718e3ec8 1-166
+README.md
+  s_73e70484bd90f5::t_01af449c63b2a1 69-72
+src/mastra/scheduled-tasks/reconcile.ts
+  s_73e70484bd90f5::t_0a9ae56b0a06ea 1-86
+src/mastra/index.ts
+  s_73e70484bd90f5::t_77f251b761e6dd 91-92
+  s_73e70484bd90f5::t_879e6e95f4a9f2 31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3fdbae63b4096c56a7aae3ec8b3a492dbb0cd01e",
+  "prompts": {},
+  "sessions": {
+    "s_73e70484bd90f5": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4848ff13-c2a5-4ff9-b27e-2e4f0eff2dd3",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
