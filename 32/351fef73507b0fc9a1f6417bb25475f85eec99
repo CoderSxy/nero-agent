@@ -1,0 +1,184 @@
+web/src/agent/use-scheduled-thread-updates.test.tsx
+  s_87f1287fe23cca::t_2a5b49a6f92496 101-127,131-132
+  s_87f1287fe23cca::t_6bedfd4e6bb37f 133-165
+  s_87f1287fe23cca::t_5da7e8516c391f 1-30,33-60,166
+  s_87f1287fe23cca::t_4c0430a245ff6e 31-32
+  s_87f1287fe23cca::t_24e105c22e2fd2 128-130
+  s_87f1287fe23cca::t_cc61a3028f25c1 61-83
+  s_87f1287fe23cca::t_ea1587f82447f1 84-100
+tests/scheduled-tasks-worker.test.ts
+  s_87f1287fe23cca::t_205274161593f2 76
+  s_87f1287fe23cca::t_32280e86edf0e0 1-23,28-64,67-75,77-80,84-88,90-93
+  s_87f1287fe23cca::t_689d55d085710e 24-27,65-66,81-83,89
+web/src/agent/use-scheduled-thread-updates.ts
+  s_87f1287fe23cca::t_ee4b2a10b1a4d2 16,18,21,28-29
+  s_87f1287fe23cca::t_60c188b36ec70a 17,19-20
+  s_87f1287fe23cca::t_db6a0a0969fe2b 73
+  s_87f1287fe23cca::t_75497a3973bf0c 15,30-31,60,79,87,94-95,98-100,102
+  s_87f1287fe23cca::t_98ff698d45c414 57,66,71,103
+  s_87f1287fe23cca::t_6e9b5d1dee9066 27
+  s_87f1287fe23cca::t_6f65ce5db3489f 8,59,72,74-78,80-85
+  s_87f1287fe23cca::t_6b7b425a717bc0 1-7,9-14,32-56,58,61-65,67-70,86,88-93,96-97,101,104-120
+  s_87f1287fe23cca::t_33e8447d147f84 22-26
+web/src/agent/scheduled-tasks-api.ts
+  s_87f1287fe23cca::t_6b351dfc24b0ca 91-93
+web/src/agent/ThreadSidebar.tsx
+  s_87f1287fe23cca::t_7ccb1405e62e76 139-147,155-160
+web/src/agent/AgentPage.test.tsx
+  s_87f1287fe23cca::t_c09d1d52745ea2 1,157-169
+  s_87f1287fe23cca::t_28d029ecc4ce4b 170-171
+  s_87f1287fe23cca::t_995734d3fc2dbb 84,98,108,149-156
+src/mastra/scheduled-tasks/reconcile.ts
+  s_87f1287fe23cca::t_5cfb7959c369fb 82-83
+  s_87f1287fe23cca::t_5473fdd0d43c3a 80
+  s_87f1287fe23cca::t_ac74f0899c71cc 27-30,34,36-37,39,81,84-89
+  s_87f1287fe23cca::t_0a9a8b20a1c773 79
+  s_87f1287fe23cca::t_6fc7a5778da895 55-68
+  s_87f1287fe23cca::t_3b24ae1b72e0d4 3,107-110
+web/src/agent/MessageList.tsx
+  s_87f1287fe23cca::t_3b5eb3741d35d1 219-234,236
+  s_d7a30c610d9727::t_b08f82f6a5b49d 235,238-239,270,319-320
+  s_87f1287fe23cca::t_a04df3b85c54a0 10,72-80,108-110,112-129,260-261,322
+  s_87f1287fe23cca::t_20c4657d812112 81-107,111,323
+  s_87f1287fe23cca::t_26561245ee49b1 209,211,215-218,244-256
+src/mastra/scheduled-tasks/service.ts
+  s_87f1287fe23cca::t_5d89d5b2e3a31f 243-245,269-270
+  s_87f1287fe23cca::t_98182bfa2d2a79 5,186-189
+  s_87f1287fe23cca::t_585a6bc8ed80ed 246-255,271-281
+  s_87f1287fe23cca::t_540d44603545c7 15,55,120,295
+  s_87f1287fe23cca::t_745f2de9aa3ab7 205-229
+  s_87f1287fe23cca::t_c30a537c79637e 8,56,121,304-308
+tests/scheduled-tasks-hooks.test.ts
+  s_87f1287fe23cca::t_1e210bbd9349dd 240,272-285
+  s_87f1287fe23cca::t_2a537353e5df43 121-126,199-239
+  s_87f1287fe23cca::t_87048595f972ea 9,14-32,38-40
+  s_87f1287fe23cca::t_b170819f04e63f 242-271
+  s_87f1287fe23cca::t_f8602f60de872a 33-37
+  s_87f1287fe23cca::t_a8ceadc65ed9e9 41
+  s_87f1287fe23cca::t_add405e5bb6d9c 241
+src/mastra/scheduled-tasks/repository.ts
+  s_87f1287fe23cca::t_76ca5800585ccf 336-345
+  s_87f1287fe23cca::t_33636d8cdd804e 346-358
+web/src/agent/message-parts.test.ts
+  s_87f1287fe23cca::t_fe8ff366f3c482 60-68
+tests/scheduled-tasks-validation.test.ts
+  s_87f1287fe23cca::t_037e791b1c25a8 1-10
+web/src/App.test.tsx
+  s_87f1287fe23cca::t_333b2a2eb87c8d 1,10-22,24-27
+  s_87f1287fe23cca::t_d0352669302a55 9,23
+web/src/agent/AgentChat.tsx
+  s_87f1287fe23cca::t_f033a431ec79b4 20,50,67,97-104,461
+src/mastra/scheduled-tasks/hooks.ts
+  s_87f1287fe23cca::t_9f2578e75185e3 173,254
+  s_87f1287fe23cca::t_c74a73b35ab9c4 51
+  s_87f1287fe23cca::t_75d5c8dab61bb2 172
+  s_87f1287fe23cca::t_799d279d404fa8 174
+  s_87f1287fe23cca::t_a312d3bf114a0c 175-180,182-188,190-197,199-208,210-212,215-224,226-230,244-246
+  s_87f1287fe23cca::t_28715f7ad6c6da 124-125,263,276
+  s_87f1287fe23cca::t_cb3e96efd6b650 34-35,73-74,80-83,213-214
+  s_87f1287fe23cca::t_7dcfef63a9d7e7 16,31,136,167-170
+  s_87f1287fe23cca::t_697564c3a4f864 91,100-106,108-114,139
+tests/scheduled-tasks-integration.test.ts
+  s_87f1287fe23cca::t_29f222388b750c 40-56
+  s_87f1287fe23cca::t_1d004e6951247b 13-39
+  s_87f1287fe23cca::t_ac82915a457e8c 57-73
+src/mastra/scheduled-tasks/validation.ts
+  s_87f1287fe23cca::t_890682f6bf630d 1,86-90
+  s_87f1287fe23cca::t_13ce7dafd51cf9 112,132-133
+web/vite.config.ts
+  s_87f1287fe23cca::t_c7af29f765f1a9 14
+web/src/agent/task-timezone.ts
+  s_87f1287fe23cca::t_4901438096ec14 1-32
+web/src/agent/AgentShell.tsx
+  s_87f1287fe23cca::t_6b351dfc24b0ca 75-91,125
+tests/scheduled-tasks-service.test.ts
+  s_87f1287fe23cca::t_1e210bbd9349dd 342,419-442
+  s_87f1287fe23cca::t_58db6583868173 204-211,325-341
+  s_87f1287fe23cca::t_3aac74b478228d 139
+  s_87f1287fe23cca::t_8a13fde11042ce 344-363
+  s_87f1287fe23cca::t_cb2d91ff84e9bf 166
+  s_87f1287fe23cca::t_a374d562a6d755 364-386
+  s_87f1287fe23cca::t_d2bb3e9d897af4 406-418
+  s_87f1287fe23cca::t_55b7ec7891e169 387-405
+  s_87f1287fe23cca::t_021612234b6bed 343
+web/src/agent/message-parts.ts
+  s_87f1287fe23cca::t_0afc7e659f5606 24-35,77-78,80
+  s_87f1287fe23cca::t_567fc3efbfb7c1 90-93,98-99,101-102
+  s_87f1287fe23cca::t_f133867bad595a 94-97
+  s_87f1287fe23cca::t_d6db9654c48d0e 100
+  s_d7a30c610d9727::t_b08f82f6a5b49d 7-8,11,14-23,56-58,73-74,76,79
+web/src/agent/task-timezone.test.ts
+  s_87f1287fe23cca::t_cc23cd9064b397 1-21
+web/src/agent/AgentPage.tsx
+  s_87f1287fe23cca::t_e6d5d47da85faa 20,78-79,246
+web/src/agent/ScheduledTasksPage.tsx
+  s_87f1287fe23cca::t_6b351dfc24b0ca 107,124,127-131,203-218,287-291
+  s_87f1287fe23cca::t_776f82405a8b45 311-324,333,336,377-378
+  s_87f1287fe23cca::t_64ce41b261ba87 75,181-183
+  s_87f1287fe23cca::t_9804a6d39f1554 121,123,136-139,222,226,234-235,268,276
+  s_87f1287fe23cca::t_53eec2f118a822 219,223,225,241,244-248,256,280,301-302,310,335,416
+  s_87f1287fe23cca::t_56d54144863dfb 337-376,379-415
+  s_87f1287fe23cca::t_a9dcc50b4395e1 4,19,39,70-71,90-91,120,126,140-148
+  s_87f1287fe23cca::t_2002d4369fc7db 1,27,43,62,86-87,122,132-135,180,242
+  s_87f1287fe23cca::t_9c0ca8bb703b6c 243
+  s_87f1287fe23cca::t_8f598ce673ede6 300
+  s_87f1287fe23cca::t_97a1befa1e3984 95-99,179
+  s_87f1287fe23cca::t_a332a828b68b6d 155-157,229
+  s_87f1287fe23cca::t_0f51c123f49432 125
+  s_87f1287fe23cca::t_f07cd86e60df14 220
+web/src/agent/ThreadSidebar.test.tsx
+  s_87f1287fe23cca::t_78ce0f2d9b6197 108,118,120-126
+web/src/agent/MessageList.test.tsx
+  s_87f1287fe23cca::t_ff850973689291 36-66,104-105
+  s_d7a30c610d9727::t_0688c68ebef9fa 268-299
+  s_87f1287fe23cca::t_b9b24ed615e635 67-103
+  s_d7a30c610d9727::t_6563c345f1c6be 349-366
+  s_87f1287fe23cca::t_a53c2a11e0db6e 300-348
+  s_87f1287fe23cca::t_fe8ff366f3c482 107-119
+web/src/agent/thread-source.ts
+  s_87f1287fe23cca::t_e6d5d47da85faa 13-21
+web/src/styles.css
+  s_87f1287fe23cca::t_5b52658543f101 70-71,73-85,451
+  s_87f1287fe23cca::t_5c933c4c14fbb1 91-96,99
+  s_87f1287fe23cca::t_97b3d3da199a58 17,61,72
+  s_87f1287fe23cca::t_b675989c0dc9c2 233-238
+  s_87f1287fe23cca::t_e86ee5118b8c84 48,53-56,63-65,67-69,86-90
+  s_87f1287fe23cca::t_0097638413cd26 453
+  s_87f1287fe23cca::t_5d4ee7afb50e60 44
+web/src/agent/ScheduledTasksPage.test.tsx
+  s_87f1287fe23cca::t_8f598ce673ede6 122
+  s_87f1287fe23cca::t_19dd85550997cd 1,126-128,132-133,136,139-140,145-146
+  s_87f1287fe23cca::t_6b5abe387d3a4e 134-135,137-138,158-160,165-167,187,203,206-208
+  s_87f1287fe23cca::t_e8fce80e17ec83 155-156
+  s_87f1287fe23cca::t_cb01ed5be3188d 15,18-20,98-101,178-186,188-193
+  s_87f1287fe23cca::t_d0352669302a55 125,129-131,141-144
+  s_87f1287fe23cca::t_9caf496fa51cfb 117-121,123-124
+  s_87f1287fe23cca::t_2885047f399242 194-201,204-205,209
+  s_87f1287fe23cca::t_9f411a78ac283a 202
+  s_87f1287fe23cca::t_28d029ecc4ce4b 16,63,96,105-116
+  s_87f1287fe23cca::t_88e3c04ab30543 17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "32351fef73507b0fc9a1f6417bb25475f85eec99",
+  "prompts": {},
+  "sessions": {
+    "s_87f1287fe23cca": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13d48-075b-7bf3-a961-a73b39e29e62",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_d7a30c610d9727": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12bc1-fbfb-7bb1-8a0d-d63b0c1d4cae",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
