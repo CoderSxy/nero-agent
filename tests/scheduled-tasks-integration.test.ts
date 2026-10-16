@@ -10,6 +10,67 @@ import { auditLegacySchedules } from '../src/mastra/scheduled-tasks/legacy';
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
 
+test('reconcile repairs trigger configuration drift from application task data', async () => {
+  const row = {
+    id: randomUUID(), owner_user_id: randomUUID(), mastra_schedule_id: 'agent_drift',
+    name: '晨报', cron: '0 9 * * *', timezone: 'Asia/Shanghai', prompt: '新提示词',
+    status: 'active' as const,
+  };
+  const schedule = {
+    id: 'agent_drift', agentId: 'agent', name: '旧名称', prompt: '旧提示词',
+    cron: '0 8 * * *', timezone: 'UTC', status: 'active' as const,
+    metadata: { appTaskId: row.id }, nextFireAt: Date.now(),
+    createdAt: Date.now(), updatedAt: Date.now(),
+  };
+  const patches: unknown[] = [];
+  const driver = {
+    get: async () => schedule,
+    update: async (_id: string, patch: unknown) => { patches.push(patch); return { ...schedule, ...patch }; },
+  } as unknown as ScheduleDriver;
+  const result = await reconcileScheduledTasks(driver, 'agent', {
+    loadRows: async () => [row],
+  });
+  assert.equal(result.repaired, 1);
+  assert.deepEqual(patches[0], {
+    name: row.name, cron: row.cron, timezone: row.timezone, prompt: row.prompt,
+    metadata: { appTaskId: row.id },
+  });
+});
+
+test('reconcile restores application task identity in trigger metadata', async () => {
+  const row = { id: randomUUID(), owner_user_id: randomUUID(),
+    mastra_schedule_id: 'agent_meta', name: '晨报', cron: '0 9 * * *',
+    timezone: 'Asia/Shanghai', prompt: '汇报', status: 'active' as const };
+  const schedule = { id: 'agent_meta', agentId: 'agent', name: row.name,
+    cron: row.cron, timezone: row.timezone, prompt: row.prompt,
+    status: 'active' as const, metadata: { appTaskId: randomUUID() },
+    nextFireAt: Date.now(), createdAt: Date.now(), updatedAt: Date.now() };
+  let corrected: unknown;
+  const driver = { get: async () => schedule,
+    update: async (_id: string, patch: unknown) => { corrected = patch; return { ...schedule, ...patch }; },
+  } as unknown as ScheduleDriver;
+  const result = await reconcileScheduledTasks(driver, 'agent', { loadRows: async () => [row] });
+  assert.equal(result.repaired, 1);
+  assert.deepEqual((corrected as { metadata: unknown }).metadata, { appTaskId: row.id });
+});
+
+test('reconcile removes a newly created trigger if linking it to the task fails', async () => {
+  const row = { id: randomUUID(), owner_user_id: randomUUID(),
+    mastra_schedule_id: null, name: '晨报', cron: '0 9 * * *',
+    timezone: 'Asia/Shanghai', prompt: '汇报', status: 'active' as const };
+  const deleted: string[] = [];
+  const driver = {
+    create: async () => ({ id: 'agent_orphan', status: 'active' }),
+    delete: async (id: string) => { deleted.push(id); },
+  } as unknown as ScheduleDriver;
+  const result = await reconcileScheduledTasks(driver, 'agent', {
+    loadRows: async () => [row],
+    updateTask: async () => { throw new Error('database unavailable'); },
+  });
+  assert.equal(result.failed, 1);
+  assert.deepEqual(deleted, ['agent_orphan']);
+});
+
 test('reconcile recreates missing triggers and repairs status drift',
   { skip: !hasDatabase }, async () => {
   const suffix = randomUUID();

@@ -136,6 +136,7 @@ function baseDeps(overrides: Partial<ScheduledTaskServiceDeps> = {}): ScheduledT
     driver,
     agentId: 'agent',
     findAuthorizedModel: async () => ({ id: 'ok' }),
+    recoverStaleRuns: async () => 0,
     resolveDefaultModelRefs: async () => ({
       chatModelRef: 'public:11111111-1111-4111-8111-111111111111',
       memoryModelRef: 'public:11111111-1111-4111-8111-111111111111',
@@ -162,6 +163,7 @@ function baseDeps(overrides: Partial<ScheduledTaskServiceDeps> = {}): ScheduledT
       if (!row || row.ownerUserId !== ownerId || row.status === 'deleted') return null;
       return row;
     },
+    getTaskById: async (id) => tasks.get(id) ?? null,
     updateTask: async (id, ownerId, patch) => {
       const row = tasks.get(id);
       if (!row || row.ownerUserId !== ownerId) return null;
@@ -198,6 +200,14 @@ function baseDeps(overrides: Partial<ScheduledTaskServiceDeps> = {}): ScheduledT
       };
       runs.set(run.id, run);
       return { run, created: true };
+    },
+    finishRun: async (runId, patch) => {
+      const run = runs.get(runId);
+      if (!run) return null;
+      const updated = { ...run, ...patch, finishedAt: patch.finishedAt instanceof Date
+        ? patch.finishedAt.toISOString() : patch.finishedAt ?? run.finishedAt } as ScheduledTaskRun;
+      runs.set(runId, updated);
+      return updated;
     },
     listRuns: async () => ({ items: [], total: 0 }),
     getRunStats: async () => ({ lastFireAt: null, execCount: 0 }),
@@ -310,6 +320,124 @@ test('concurrent manual runs only invoke driver.run once', async () => {
   assert.equal(driver.calls.run.length, 1);
   assert.equal(results.filter((result) => result.accepted).length, 1);
   assert.equal(results.filter((result) => !result.accepted).length, 1);
+});
+
+test('failed manual dispatch closes the in-flight claim so another request can run', async () => {
+  const owner = admin();
+  const row = task(owner.id);
+  const deps = baseDeps({
+    getTask: async (id, ownerId) => id === row.id && ownerId === owner.id ? row : null,
+  });
+  let attempts = 0;
+  deps.driver.run = async (id) => {
+    attempts += 1;
+    if (attempts === 1) throw new Error('worker unavailable');
+    return { scheduleId: id, claimId: randomUUID(), scheduledFireAt: Date.now() };
+  };
+  const service = createScheduledTaskService(deps);
+  await assertCode(service.run(owner, row.id), 'upstream');
+  const retry = await service.run(owner, row.id);
+  assert.equal(retry.accepted, true);
+  assert.equal(attempts, 2);
+});
+
+test('manual trigger recovers an expired in-flight run before claiming a new one', async () => {
+  const owner = admin();
+  const row = task(owner.id);
+  let recovered = false;
+  const deps = baseDeps({
+    getTask: async (id, ownerId) => id === row.id && ownerId === owner.id ? row : null,
+    recoverStaleRuns: async () => { recovered = true; return 1; },
+    claimRun: async (taskId, kind, occurrenceKey, firedAt) => ({
+      created: recovered,
+      run: { id: randomUUID(), taskId, ownerUserId: owner.id, triggerKind: kind,
+        occurrenceKey, firedAt: firedAt.toISOString(), threadId: null,
+        status: recovered ? 'preparing' : 'running', runId: null,
+        errorSummary: null, finishedAt: null },
+    }),
+  });
+  const result = await createScheduledTaskService(deps).run(owner, row.id);
+  assert.equal(result.accepted, true);
+  assert.equal(recovered, true);
+});
+
+test('edit restores the previous trigger when saving the application row fails', async () => {
+  const owner = admin();
+  const row = task(owner.id);
+  const updates: { cron?: string; prompt?: string }[] = [];
+  const driver = mockDriver({
+    update: async (id, patch) => {
+      updates.push({ cron: patch.cron, prompt: patch.prompt });
+      return { id, agentId: 'agent', prompt: patch.prompt ?? row.prompt,
+        cron: patch.cron ?? row.cron, status: 'active', nextFireAt: Date.now(),
+        createdAt: Date.now(), updatedAt: Date.now() };
+    },
+  });
+  const deps = baseDeps({ driver,
+    getTask: async (id, ownerId) => id === row.id && ownerId === owner.id ? row : null,
+    updateTask: async () => { throw new Error('database unavailable'); },
+  });
+  const service = createScheduledTaskService(deps);
+  await assert.rejects(service.edit(owner, row.id, input({ cron: '0 10 * * *', prompt: '新提示词' })));
+  assert.equal(updates.length, 2);
+  assert.equal(updates[1]?.cron, row.cron);
+  assert.equal(updates[1]?.prompt, row.prompt);
+});
+
+test('edit keeps saved model references when a client omits model fields', async () => {
+  const owner = admin();
+  const chatModelRef = `private:${randomUUID()}`;
+  const memoryModelRef = `private:${randomUUID()}`;
+  const row = task(owner.id, { chatModelRef, memoryModelRef });
+  let saved: ScheduledTask | null = null;
+  const deps = baseDeps({
+    getTask: async (id, ownerId) => id === row.id && ownerId === owner.id ? row : null,
+    updateTask: async (_id, _ownerId, patch) => {
+      saved = { ...row, ...patch };
+      return saved;
+    },
+  });
+  const { chatModelRef: _chat, memoryModelRef: _memory, ...withoutModels } = input();
+  await createScheduledTaskService(deps).edit(owner, row.id, withoutModels);
+  assert.equal(saved?.chatModelRef, chatModelRef);
+  assert.equal(saved?.memoryModelRef, memoryModelRef);
+});
+
+test('pause restores the active trigger when saving paused status fails', async () => {
+  const owner = admin();
+  const row = task(owner.id);
+  const driver = mockDriver();
+  const deps = baseDeps({ driver,
+    getTask: async (id, ownerId) => id === row.id && ownerId === owner.id ? row : null,
+    updateTask: async () => { throw new Error('database unavailable'); },
+  });
+  await assert.rejects(createScheduledTaskService(deps).pause(owner, row.id));
+  assert.deepEqual(driver.calls.pause, [row.mastraScheduleId]);
+  assert.deepEqual(driver.calls.resume, [row.mastraScheduleId]);
+});
+
+test('repeating pause on a paused task cannot reactivate its trigger after a write failure', async () => {
+  const owner = admin();
+  const row = task(owner.id, { status: 'paused' });
+  const driver = mockDriver();
+  const deps = baseDeps({ driver,
+    getTask: async (id, ownerId) => id === row.id && ownerId === owner.id ? row : null,
+    updateTask: async () => { throw new Error('database unavailable'); },
+  });
+  await createScheduledTaskService(deps).pause(owner, row.id);
+  assert.deepEqual(driver.calls.resume, []);
+});
+
+test('repeating resume on an active task cannot pause its trigger after a write failure', async () => {
+  const owner = admin();
+  const row = task(owner.id, { status: 'active' });
+  const driver = mockDriver();
+  const deps = baseDeps({ driver,
+    getTask: async (id, ownerId) => id === row.id && ownerId === owner.id ? row : null,
+    updateTask: async () => { throw new Error('database unavailable'); },
+  });
+  await createScheduledTaskService(deps).resume(owner, row.id);
+  assert.deepEqual(driver.calls.pause, []);
 });
 
 test('paused tasks reject manual run', async () => {

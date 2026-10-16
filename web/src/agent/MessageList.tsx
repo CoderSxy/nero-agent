@@ -7,7 +7,7 @@ import { ToolCall, ToolCallTrigger, ToolCallHeader, ToolCallContent, ToolCallMon
 import { ToolApproval } from '@mastra/playground-ui/components/ai/tool-approval';
 import { AskUser } from '@mastra/playground-ui/components/ai/ask-user';
 import { ObservationMarkerBadge } from '@mastra/playground-ui/domains/chat/tools/badges/observation-marker-badge';
-import { Globe2, Wrench, Terminal, LoaderCircle } from 'lucide-react';
+import { Copy, Globe2, Wrench, Terminal, LoaderCircle } from 'lucide-react';
 import type { PreparedAttachment } from './attachment-client';
 import { formatBytes, isImageAttachment } from './attachment-types';
 import { parseAttachmentIdsFromText } from './attachment-protocol';
@@ -67,6 +67,64 @@ function rawUserText(message: MastraDBMessage): string {
   if (typeof content === 'string') return content;
   const parts = Array.isArray(content.parts) ? content.parts : [];
   return parts.filter(part => part.type === 'text').map(part => 'text' in part ? part.text : '').join('');
+}
+
+function recordedModel(message: MastraDBMessage): string | null {
+  const parts = message.content.parts;
+  for (let index = parts.length - 1; index >= 0; index -= 1) {
+    const part = parts[index];
+    if (part.type === 'step-start' && typeof part.model === 'string' && part.model.trim()) return part.model;
+  }
+  return null;
+}
+
+function modelForAnswer(rows: readonly { message: MastraDBMessage }[], index: number): string | null {
+  const ownModel = recordedModel(rows[index].message);
+  if (ownModel) return ownModel;
+  for (let previous = index - 1; previous >= 0 && rows[previous].message.role !== 'user'; previous -= 1) {
+    const model = recordedModel(rows[previous].message);
+    if (model) return model;
+  }
+  for (let next = index + 1; next < rows.length && rows[next].message.role !== 'user'; next += 1) {
+    const model = recordedModel(rows[next].message);
+    if (model) return model;
+  }
+  return null;
+}
+
+function formatMessageTime(date: Date, now = new Date()): string {
+  const time = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  if (date.toDateString() === now.toDateString()) return time;
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const diffDays = Math.floor((startOfToday - startOfDate) / 86400000);
+  if (diffDays > 0 && diffDays < 7) {
+    return `周${'日一二三四五六'[date.getDay()]} ${time}`;
+  }
+  return `${date.getMonth() + 1}月${date.getDate()}日 ${time}`;
+}
+
+function MessageActions({ message, text, model }: { message: MastraDBMessage; text: string; model: string | null }) {
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
+  const date = message.createdAt ? new Date(message.createdAt) : null;
+  const time = date && !Number.isNaN(date.getTime())
+    ? formatMessageTime(date) : null;
+  async function copy() {
+    try { await navigator.clipboard.writeText(text); setCopyStatus('copied'); }
+    catch { setCopyStatus('error'); }
+  }
+  return <div className="message-actions" role="group" aria-label="回复操作">
+    <button type="button" aria-label="复制消息" title="复制" onClick={() => void copy()}>
+      <Copy size={14} aria-hidden="true" />
+    </button>
+    {copyStatus !== 'idle' && <span role="status" className={copyStatus === 'error' ? 'error' : undefined}>
+      {copyStatus === 'copied' ? '已复制' : '复制失败'}
+    </span>}
+    {model && <span className="message-model-name" title={model}>{model}</span>}
+    {time && <time className="message-time" dateTime={date!.toISOString()} title={date!.toLocaleString('zh-CN')}>
+      {time}
+    </time>}
+  </div>;
 }
 
 function attachmentsForMessage(message: MastraDBMessage, threadAttachments: PreparedAttachment[]): PreparedAttachment[] {
@@ -148,26 +206,59 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
     catch { /* AgentChat shows the error; keep the question available. */ }
     finally { busy.current.delete(id); setPending(null); }
   }
-  const rows = messages.map(message => ({
+  const rows = messages.map((message, sourceIndex) => ({
     message,
+    sourceIndex,
     parts: messageParts(message),
     attachments: attachmentsForMessage(message, threadAttachments),
   }));
-  const completedCycles = new Set<string>();
-  for (const { parts } of rows) {
+  let activeTurnStart = 0;
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (isUserMessage(messages[index])) { activeTurnStart = index; break; }
+  }
+  const orderedRows: typeof rows = [];
+  for (const row of rows) {
+    const processOnly = row.message.role === 'assistant' && row.attachments.length === 0 &&
+      row.parts.length > 0 && row.parts.every(part => part.kind !== 'text') &&
+      row.parts.some(part => part.kind === 'reasoning' || part.kind === 'observation');
+    if (processOnly) {
+      let insertAt = -1;
+      for (let index = orderedRows.length - 1; index >= 0; index -= 1) {
+        const prior = orderedRows[index];
+        if (prior.message.role !== 'assistant') break;
+        if (prior.parts.some(part => part.kind === 'text')) { insertAt = index; break; }
+      }
+      if (insertAt >= 0) { orderedRows.splice(insertAt, 0, row); continue; }
+    }
+    orderedRows.push(row);
+  }
+  const settledCycles = new Set<string>();
+  for (const { parts } of orderedRows) {
     for (const part of parts) {
-      if (part.kind === 'observation' && part.state === 'complete' && part.cycleId) {
-        completedCycles.add(part.cycleId);
+      if (part.kind === 'observation' && part.state !== 'running' && part.state !== 'buffering' && part.cycleId) {
+        settledCycles.add(part.cycleId);
       }
     }
   }
   return <div className="message-list" aria-live="polite">
-    {rows.map(({ message, parts: rawParts, attachments }) => {
-      const parts = rawParts.filter(part => part.kind !== 'observation' || part.state !== 'running' ||
-        !part.cycleId || !completedCycles.has(part.cycleId));
+    {orderedRows.map(({ message, sourceIndex, parts: rawParts, attachments }, rowIndex) => {
+      const parts = rawParts.filter(part => {
+        if (part.kind !== 'observation') return true;
+        if (part.state === 'running' || part.state === 'buffering') {
+          return isRunning && sourceIndex >= activeTurnStart && (!part.cycleId || !settledCycles.has(part.cycleId));
+        }
+        if (part.state === 'buffering-complete') {
+          const data = part.data;
+          const extracted = Object.values(data.extractedValues ?? {}).some(value => value !== null && value !== undefined && value !== '');
+          return Boolean(data.observations || extracted || data.extractionFailures?.length);
+        }
+        return true;
+      });
       if (!parts.length && !attachments.length) return null;
       const runningProcess = isRunning && message === messages.at(-1) &&
         parts.some(part => part.kind === 'reasoning' || part.kind === 'tool' || part.kind === 'observation');
+      const answerText = parts.filter(part => part.kind === 'text' && !streamError(part.text))
+        .map(part => part.kind === 'text' ? part.text : '').join('\n\n').trim();
       return <Message key={message.id} from={isUserMessage(message) ? 'user' : 'assistant'}
         data-message-id={message.id}
         className={runningProcess ? 'process-message process-message--running' : undefined}>
@@ -176,7 +267,7 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
         </div>}
         {parts.map((part, index) => {
           if (part.kind === 'observation') return <ObservationMarkerBadge key={part.cycleId ?? index}
-            toolName={part.state === 'running' ? 'Observing' : 'Observed'} args={{}}
+            toolName={part.state === 'running' || part.state === 'buffering' ? 'Observing' : 'Observed'} args={{}}
             metadata={{ omData: part.data }} />;
           if (part.kind === 'reasoning') return <details key={index} className="process-reasoning" open>
             <summary className={part.streaming ? 'process-reasoning__streaming' : undefined}>Reasoning</summary>
@@ -225,8 +316,11 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
           </ToolApproval>}
           </div>;
         })}
-        {runningProcess && !parts.some(part => part.kind === 'observation' && part.state === 'running') &&
+        {runningProcess && !parts.some(part => part.kind === 'observation' &&
+          (part.state === 'running' || part.state === 'buffering')) &&
           <p className="process-status" role="status"><LoaderCircle size={14} aria-hidden="true" />正在处理…</p>}
+        {message.role === 'assistant' && answerText && !(isRunning && message === messages.at(-1)) &&
+          <MessageActions message={message} text={answerText} model={modelForAnswer(orderedRows, rowIndex)} />}
       </Message>;
     })}
     {isRunning && !messages.some(message => message === messages.at(-1) && messageParts(message)

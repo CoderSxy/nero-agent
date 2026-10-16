@@ -2,14 +2,17 @@ import { randomUUID } from 'node:crypto';
 import type { Mastra } from '@mastra/core/mastra';
 import type { AuthUser } from '../auth/service';
 import { findAuthorizedModel } from '../models/service';
+import type { ModelRef } from '../models/types';
 import {
   claimRun,
+  finishRun,
   getRunStats,
   getTask,
   getTaskById,
   insertTask,
   listRuns,
   listTasks,
+  recoverStaleRuns,
   updateTask,
 } from './repository';
 import type {
@@ -49,6 +52,8 @@ export type ScheduledTaskServiceDeps = {
   updateTask?: typeof updateTask;
   listTasks?: typeof listTasks;
   claimRun?: typeof claimRun;
+  recoverStaleRuns?: typeof recoverStaleRuns;
+  finishRun?: typeof finishRun;
   listRuns?: typeof listRuns;
   getRunStats?: typeof getRunStats;
 };
@@ -112,6 +117,8 @@ export function createScheduledTaskService(driverOrDeps: ScheduleDriver | Schedu
     updateTask: resolved.updateTask ?? updateTask,
     listTasks: resolved.listTasks ?? listTasks,
     claimRun: resolved.claimRun ?? claimRun,
+    recoverStaleRuns: resolved.recoverStaleRuns ?? recoverStaleRuns,
+    finishRun: resolved.finishRun ?? finishRun,
     listRuns: resolved.listRuns ?? listRuns,
     getRunStats: resolved.getRunStats ?? getRunStats,
   };
@@ -176,6 +183,10 @@ export function createScheduledTaskService(driverOrDeps: ScheduleDriver | Schedu
       const validated = await validateTaskInput(input, owner, {
         findAuthorizedModel: authorize,
         resolveDefaultModelRefs: defaults,
+        fallbackModelRefs: {
+          chatModelRef: existing.chatModelRef as ModelRef,
+          memoryModelRef: existing.memoryModelRef as ModelRef,
+        },
       });
       if (!existing.mastraScheduleId) {
         throw new ScheduledTaskError('conflict', '任务触发器尚未就绪');
@@ -191,16 +202,31 @@ export function createScheduledTaskService(driverOrDeps: ScheduleDriver | Schedu
       } catch {
         throw new ScheduledTaskError('upstream', '更新调度触发器失败');
       }
-      const updated = await repo.updateTask(id, owner.id, {
-        name: validated.name,
-        cron: validated.cron,
-        timezone: validated.timezone,
-        prompt: validated.prompt,
-        chatModelRef: validated.chatModelRef,
-        memoryModelRef: validated.memoryModelRef,
-        startsAt: validated.startsAt ?? null,
-        endsAt: validated.endsAt ?? null,
-      });
+      let updated: ScheduledTask | null;
+      try {
+        updated = await repo.updateTask(id, owner.id, {
+          name: validated.name,
+          cron: validated.cron,
+          timezone: validated.timezone,
+          prompt: validated.prompt,
+          chatModelRef: validated.chatModelRef,
+          memoryModelRef: validated.memoryModelRef,
+          startsAt: validated.startsAt ?? null,
+          endsAt: validated.endsAt ?? null,
+        });
+        requireOwned(updated);
+      } catch (error) {
+        try {
+          await driver.update(existing.mastraScheduleId, {
+            cron: existing.cron, timezone: existing.timezone,
+            prompt: existing.prompt, name: existing.name,
+            metadata: { appTaskId: existing.id },
+          });
+        } catch (rollbackError) {
+          console.error('scheduled task edit rollback failed', rollbackError);
+        }
+        throw error;
+      }
       requireOwned(updated);
       const stats = await repo.getRunStats(updated.id, owner.id);
       return toTaskDto(updated, stats);
@@ -214,7 +240,19 @@ export function createScheduledTaskService(driverOrDeps: ScheduleDriver | Schedu
       } catch {
         throw new ScheduledTaskError('upstream', '暂停调度触发器失败');
       }
-      const updated = await repo.updateTask(id, owner.id, { status: 'paused' });
+      if (existing.status === 'paused') {
+        return toTaskDto(existing, await repo.getRunStats(existing.id, owner.id));
+      }
+      let updated: ScheduledTask | null;
+      try {
+        updated = await repo.updateTask(id, owner.id, { status: 'paused' });
+        requireOwned(updated);
+      } catch (error) {
+        await driver.resume(existing.mastraScheduleId).catch((rollbackError) => {
+          console.error('scheduled task pause rollback failed', rollbackError);
+        });
+        throw error;
+      }
       requireOwned(updated);
       const stats = await repo.getRunStats(updated.id, owner.id);
       return toTaskDto(updated, stats);
@@ -228,7 +266,19 @@ export function createScheduledTaskService(driverOrDeps: ScheduleDriver | Schedu
       } catch {
         throw new ScheduledTaskError('upstream', '恢复调度触发器失败');
       }
-      const updated = await repo.updateTask(id, owner.id, { status: 'active' });
+      if (existing.status === 'active') {
+        return toTaskDto(existing, await repo.getRunStats(existing.id, owner.id));
+      }
+      let updated: ScheduledTask | null;
+      try {
+        updated = await repo.updateTask(id, owner.id, { status: 'active' });
+        requireOwned(updated);
+      } catch (error) {
+        await driver.pause(existing.mastraScheduleId).catch((rollbackError) => {
+          console.error('scheduled task resume rollback failed', rollbackError);
+        });
+        throw error;
+      }
       requireOwned(updated);
       const stats = await repo.getRunStats(updated.id, owner.id);
       return toTaskDto(updated, stats);
@@ -242,6 +292,7 @@ export function createScheduledTaskService(driverOrDeps: ScheduleDriver | Schedu
       if (!existing.mastraScheduleId) {
         throw new ScheduledTaskError('conflict', '任务触发器尚未就绪');
       }
+      await repo.recoverStaleRuns(existing.id);
       const occurrenceKey = randomUUID();
       const claim = await repo.claimRun(existing.id, 'manual' as TriggerKind, occurrenceKey, new Date());
       if (!claim.created) {
@@ -250,7 +301,11 @@ export function createScheduledTaskService(driverOrDeps: ScheduleDriver | Schedu
       try {
         await driver.run(existing.mastraScheduleId);
       } catch (error) {
-        // Leave preparing row for hooks/reconcile visibility; surface failure.
+        await repo.finishRun(claim.run.id, {
+          status: 'failed',
+          errorSummary: '手动触发失败',
+          finishedAt: new Date(),
+        });
         throw new ScheduledTaskError('upstream', '手动触发失败');
       }
       return { accepted: true, run: claim.run };

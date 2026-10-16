@@ -4,10 +4,34 @@ import { stripAttachmentProtocol } from './attachment-protocol';
 import { isUserMessage } from './pending-user-message';
 
 export type ToolPart = { id: string; name: string; args: unknown; result?: unknown; state: string };
+type ObservationState = 'running' | 'complete' | 'failed' | 'buffering' | 'buffering-complete' |
+  'buffering-failed' | 'activated';
 export type DisplayPart = { kind: 'text'; text: string } |
   { kind: 'reasoning'; text: string; streaming: boolean; redacted: boolean } |
-  { kind: 'observation'; state: 'running' | 'complete'; cycleId?: string; data: OmMarkerData } |
+  { kind: 'observation'; state: ObservationState; cycleId?: string; data: OmMarkerData } |
   { kind: 'tool'; tool: ToolPart };
+
+const omStates: Record<string, ObservationState> = {
+  'data-om-observation-start': 'running',
+  'data-om-observation-end': 'complete',
+  'data-om-observation-failed': 'failed',
+  'data-om-buffering-start': 'buffering',
+  'data-om-buffering-end': 'buffering-complete',
+  'data-om-buffering-failed': 'buffering-failed',
+  'data-om-activation': 'activated',
+};
+
+function readableObservations(raw: string | undefined): string | undefined {
+  const value = raw?.trim();
+  if (!value) return undefined;
+  const content = (value.match(/<observations>\s*([\s\S]*?)\s*<\/observations>/i)?.[1] ?? value).trim();
+  if (!content || content.toLowerCase() === 'no observations') return undefined;
+  const lines = content.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  if (lines.some(line => /^\*\s*\S/.test(line))) return value;
+  if (!lines.some(line => !/^(?:Date:|Thread [a-f0-9]+:)/i.test(line))) return undefined;
+  return lines.map(line => /^(?:Date:|Thread [a-f0-9]+:)/i.test(line) ? line
+    : `* ${line.replace(/^[-*]\s*/, '')}`).join('\n');
+}
 
 export {
   buildAgentAttachmentMessage,
@@ -29,7 +53,9 @@ export function messageParts(message: MastraDBMessage) {
   const content = message.content;
   if (typeof content === 'string') return [{ kind: 'text', text: content }] satisfies DisplayPart[];
   const parts = Array.isArray(content.parts) ? content.parts : [];
-  const completedCycles = new Set(parts.filter(part => part.type === 'data-om-observation-end')
+  const settledCycles = new Set(parts.filter(part => part.type === 'data-om-observation-end' ||
+    part.type === 'data-om-observation-failed' || part.type === 'data-om-buffering-end' ||
+    part.type === 'data-om-buffering-failed')
     .map(part => (part as typeof part & { data?: { cycleId?: string } }).data?.cycleId)
     .filter((id): id is string => typeof id === 'string'));
   const items: DisplayPart[] = parts.flatMap<DisplayPart>(part => {
@@ -44,12 +70,14 @@ export function messageParts(message: MastraDBMessage) {
         ? [{ kind: 'reasoning', text, streaming: reasoning.state === 'streaming', redacted: reasoning.redacted === true }]
         : [];
     }
-    if (part.type === 'data-om-observation-start' || part.type === 'data-om-observation-end') {
+    const omState = omStates[part.type];
+    if (omState) {
       const data = ((part as typeof part & { data?: OmMarkerData }).data ?? {}) as OmMarkerData;
-      if (part.type === 'data-om-observation-start' && data.cycleId && completedCycles.has(data.cycleId)) return [];
-      const complete = part.type === 'data-om-observation-end';
-      return [{ kind: 'observation', state: complete ? 'complete' : 'running', cycleId: data.cycleId,
-        data: { ...data, _state: complete ? 'complete' : 'loading' } }];
+      if ((omState === 'running' || omState === 'buffering') && data.cycleId && settledCycles.has(data.cycleId)) return [];
+      const observations = (omState === 'buffering-complete' || omState === 'complete' || omState === 'activated')
+        ? readableObservations(data.observations) : data.observations;
+      return [{ kind: 'observation', state: omState, cycleId: data.cycleId,
+        data: { ...data, observations, _state: omState === 'running' ? 'loading' : omState } }];
     }
     if (part.type === 'tool-invocation' && 'toolInvocation' in part) {
       const invocation = part.toolInvocation;
@@ -59,6 +87,19 @@ export function messageParts(message: MastraDBMessage) {
     return [];
   });
   if (!items.length && typeof content.content === 'string') items.push({ kind: 'text', text: content.content });
+  // A generated turn can persist its final text before the process markers are
+  // appended. Keep earlier text/tool steps in place, but show the trailing
+  // process before the final answer.
+  if (message.role === 'assistant') {
+    let finalTextIndex = -1;
+    for (let index = items.length - 1; index >= 0; index -= 1) {
+      if (items[index].kind === 'text') { finalTextIndex = index; break; }
+    }
+    const trailing = items.slice(finalTextIndex + 1);
+    if (finalTextIndex >= 0 && trailing.some(item => item.kind === 'reasoning' || item.kind === 'observation')) {
+      return [...items.slice(0, finalTextIndex), ...trailing, items[finalTextIndex]];
+    }
+  }
   return items;
 }
 

@@ -3,7 +3,6 @@ import { RequestContext } from '@mastra/core/request-context';
 import type { Mastra } from '@mastra/core/mastra';
 import type { SchedulesConfig } from '@mastra/core/schedules';
 import { getActiveUserById, type AuthUser } from '../auth/service';
-import { memoryForRequest } from '../agents/memory-model';
 import {
   chatModelRefContextKey,
   memoryModelRefContextKey,
@@ -14,6 +13,7 @@ import {
   claimRun,
   finishRun,
   getTaskById,
+  startRun,
 } from './repository';
 import type { RunFinishPatch, ScheduledTask, ScheduledTaskRun, TriggerKind } from './types';
 import { cronOccurrenceKey } from './validation';
@@ -28,8 +28,11 @@ export type ScheduledTaskHooksDeps = {
   findAuthorizedModel?: typeof findAuthorizedModel;
   getTaskById?: typeof getTaskById;
   claimRun?: typeof claimRun;
+  startRun?: typeof startRun;
   finishRun?: typeof finishRun;
   createThread?: (input: {
+    mastra: Mastra;
+    agentId: string;
     resourceId: string;
     title: string;
     metadata: Record<string, unknown>;
@@ -45,7 +48,7 @@ export type ScheduledTaskHooksDeps = {
   }) => Promise<{ runId?: string }>;
 };
 
-function appTaskIdOf(schedule: { metadata?: unknown }): string | null {
+function appTaskIdOf(schedule: { [key: string]: unknown }): string | null {
   const metadata = schedule.metadata;
   if (!metadata || typeof metadata !== 'object') return null;
   const value = (metadata as Record<string, unknown>).appTaskId;
@@ -67,12 +70,17 @@ function buildRequestContext(user: AuthUser, chatRef: string, memoryRef: string)
 }
 
 async function defaultCreateThread(input: {
+  mastra: Mastra;
+  agentId: string;
   resourceId: string;
   title: string;
   metadata: Record<string, unknown>;
   requestContext: RequestContext;
 }): Promise<{ id: string }> {
-  const memory = await memoryForRequest({ requestContext: input.requestContext });
+  const memory = await input.mastra.getAgent(input.agentId).getMemory({
+    requestContext: input.requestContext,
+  });
+  if (!memory) throw new Error('定时任务 Agent 未配置会话存储');
   return memory.createThread({
     resourceId: input.resourceId,
     title: input.title,
@@ -80,7 +88,7 @@ async function defaultCreateThread(input: {
   });
 }
 
-async function defaultRunAgent(input: {
+export async function runScheduledAgent(input: {
   mastra: Mastra;
   agentId: string;
   prompt: string;
@@ -89,17 +97,21 @@ async function defaultRunAgent(input: {
   requestContext: RequestContext;
 }): Promise<{ runId?: string }> {
   const agent = input.mastra.getAgent(input.agentId);
-  const result = await agent.generate(input.prompt, {
-    requestContext: input.requestContext,
-    memory: {
-      thread: input.threadId,
-      resource: input.resourceId,
-    },
+  const dispatched = agent.sendMessage(input.prompt, {
+    resourceId: input.resourceId,
+    threadId: input.threadId,
+    ifIdle: { streamOptions: {
+      requestContext: input.requestContext,
+      memory: { thread: input.threadId, resource: input.resourceId },
+    } },
   });
-  const runId = result && typeof result === 'object' && 'runId' in result
-    ? (result as { runId?: string }).runId
-    : undefined;
-  return { runId: typeof runId === 'string' ? runId : undefined };
+  const accepted = await dispatched.accepted;
+  if (accepted.action !== 'wake') throw new Error(`定时任务未启动独立执行：${accepted.action}`);
+  let streamError: Error | undefined;
+  await accepted.output.consumeStream({ onError: error => { streamError = error; } });
+  if (streamError) throw streamError;
+  await accepted.output.text;
+  return { runId: accepted.runId };
 }
 
 /**
@@ -109,8 +121,8 @@ async function defaultRunAgent(input: {
  * `@mastra/core@1.71.0` `worker-BoYkCgzR.js`): the worker awaits
  * `sendSignal(...).accepted` and then calls `onFinish({ outcome: 'succeeded' })`
  * without `consumeStream()`, so success would be recorded before the agent run
- * ends. We therefore execute `agent.generate` inside `prepare` with a
- * server-rebuilt request context, persist the final run status, and return
+ * ends. We therefore send a thread message inside `prepare`, consume its stream
+ * with a server-rebuilt request context, persist the final run status, and return
  * `null` so the worker skips `sendSignal`. Legacy schedules without
  * `metadata.appTaskId` still return `undefined` (default Mastra behavior).
  */
@@ -121,9 +133,10 @@ export function createScheduledTaskHooks(
   const authorizeModel = deps.findAuthorizedModel ?? findAuthorizedModel;
   const loadTask = deps.getTaskById ?? getTaskById;
   const claim = deps.claimRun ?? claimRun;
+  const start = deps.startRun ?? startRun;
   const finish = deps.finishRun ?? finishRun;
   const createThread = deps.createThread ?? defaultCreateThread;
-  const runAgent = deps.runAgent ?? defaultRunAgent;
+  const runAgent = deps.runAgent ?? runScheduledAgent;
 
   async function finalize(runId: string, patch: RunFinishPatch): Promise<void> {
     await finish(runId, {
@@ -151,74 +164,70 @@ export function createScheduledTaskHooks(
         : cronOccurrenceKey(task.cron, task.timezone, firedAt);
 
       const claimed = await claim(task.id, kind as TriggerKind, occurrenceKey, firedAt);
-      if (!claimed.created && TERMINAL.has(claimed.run.status)) {
-        return null;
-      }
-      if (!claimed.created && claimed.run.threadId && claimed.run.status === 'running') {
-        return null;
-      }
+      if (!claimed.created && TERMINAL.has(claimed.run.status)) return null;
+      // Manual runs are pre-created by the API. For both kinds, only the
+      // worker winning this database CAS may create the execution thread.
+      if (!(await start(claimed.run.id))) return null;
 
-      if (task.status !== 'active') {
-        await finalize(claimed.run.id, {
-          status: 'skipped',
-          errorSummary: '任务未启用',
-        });
-        return null;
-      }
-
-      if (!inEffectiveWindow(task, firedAt)) {
-        await finalize(claimed.run.id, {
-          status: 'skipped',
-          errorSummary: '不在生效时间范围内',
-        });
-        return null;
-      }
-
-      const owner = await resolveUser(task.ownerUserId);
-      if (!owner || !owner.roles.includes('admin')) {
-        await finalize(claimed.run.id, {
-          status: 'failed',
-          errorSummary: '任务所有者不可用或权限不足',
-        });
-        return null;
-      }
-
-      try {
-        await authorizeModel(task.chatModelRef as ModelRef, owner);
-        await authorizeModel(task.memoryModelRef as ModelRef, owner);
-      } catch (error) {
-        const summary = error instanceof ModelCatalogError || (error as { name?: string }).name === 'ModelCatalogError'
-          ? '模型不可用或无权限'
-          : '模型校验失败';
-        await finalize(claimed.run.id, { status: 'failed', errorSummary: summary });
-        return null;
-      }
-
-      const requestContext = buildRequestContext(owner, task.chatModelRef, task.memoryModelRef);
       let threadId = claimed.run.threadId;
-      if (!threadId) {
-        const thread = await createThread({
-          resourceId: owner.id,
-          title: `定时任务：${task.name}`,
-          metadata: {
-            neroAgentSourceType: 'schedule',
-            neroAgentScheduleTaskId: task.id,
-            neroAgentScheduleRunId: claimed.run.id,
-            neroAgentModels: {
-              chatModel: task.chatModelRef,
-              memoryModel: task.memoryModelRef,
-            },
-          },
-          requestContext,
-        });
-        threadId = thread.id;
-        await finish(claimed.run.id, {
-          status: 'running',
-          threadId,
-        });
-      }
-
       try {
+        if (task.status !== 'active') {
+          await finalize(claimed.run.id, {
+            status: 'skipped',
+            errorSummary: '任务未启用',
+          });
+          return null;
+        }
+
+        if (!inEffectiveWindow(task, firedAt)) {
+          await finalize(claimed.run.id, {
+            status: 'skipped',
+            errorSummary: '不在生效时间范围内',
+          });
+          return null;
+        }
+
+        const owner = await resolveUser(task.ownerUserId);
+        if (!owner || !owner.roles.includes('admin')) {
+          await finalize(claimed.run.id, {
+            status: 'failed',
+            errorSummary: '任务所有者不可用或权限不足',
+          });
+          return null;
+        }
+
+        try {
+          await authorizeModel(task.chatModelRef as ModelRef, owner);
+          await authorizeModel(task.memoryModelRef as ModelRef, owner);
+        } catch (error) {
+          const summary = error instanceof ModelCatalogError || (error as { name?: string }).name === 'ModelCatalogError'
+            ? '模型不可用或无权限'
+            : '模型校验失败';
+          await finalize(claimed.run.id, { status: 'failed', errorSummary: summary });
+          return null;
+        }
+
+        const requestContext = buildRequestContext(owner, task.chatModelRef, task.memoryModelRef);
+        if (!threadId) {
+          const thread = await createThread({
+            mastra: ctx.mastra,
+            agentId: ctx.agentId,
+            resourceId: owner.id,
+            title: `定时任务：${task.name}`,
+            metadata: {
+              neroAgentSourceType: 'schedule',
+              neroAgentScheduleTaskId: task.id,
+              neroAgentScheduleRunId: claimed.run.id,
+              neroAgentModels: {
+                chatModel: task.chatModelRef,
+                memoryModel: task.memoryModelRef,
+              },
+            },
+            requestContext,
+          });
+          threadId = thread.id;
+          await finish(claimed.run.id, { status: 'running', threadId });
+        }
         const result = await runAgent({
           mastra: ctx.mastra,
           agentId: ctx.agentId,
@@ -232,6 +241,9 @@ export function createScheduledTaskHooks(
           threadId,
           runId: result.runId ?? null,
         });
+
+        // Skip worker sendSignal/getMemory path; run already completed above.
+        return null;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         await finalize(claimed.run.id, {
@@ -239,10 +251,8 @@ export function createScheduledTaskHooks(
           threadId,
           errorSummary: message.slice(0, 500),
         });
+        return null;
       }
-
-      // Skip worker sendSignal/getMemory path; run already completed above.
-      return null;
     },
 
     async onFinish(ctx) {
@@ -250,7 +260,7 @@ export function createScheduledTaskHooks(
       if (!appTaskId) return;
       const threadId = ctx.effective.threadId;
       if (!threadId) return;
-      // prepare-generate already finalized; only repair wake-path leftovers.
+      // The prepare stream already finalized; only repair wake-path leftovers.
       if (ctx.outcome === 'skipped' || ctx.outcome === 'discarded') return;
       if (ctx.outcome === 'delivered' || ctx.outcome === 'persisted') return;
       if (ctx.outcome !== 'succeeded') return;
@@ -263,7 +273,7 @@ export function createScheduledTaskHooks(
       const threadId = ctx.effective?.threadId;
       if (!threadId) return;
       // Best-effort: mark matching non-terminal run failed when worker errors.
-      // prepare-generate path usually already finalized.
+      // The prepare stream path usually already finalized.
     },
 
     async onAbort(ctx) {

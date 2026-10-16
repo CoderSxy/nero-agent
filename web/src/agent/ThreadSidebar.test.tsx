@@ -105,7 +105,7 @@ it('shows rename above delete and saves a nonempty edited title', async () => {
   await waitFor(() => expect(onRename).toHaveBeenCalledWith('a', '新标题'));
 });
 
-it('shows history search beside the heading and opens the dialog from the icon', async () => {
+it('places source tabs in the heading, with the list switch before search', async () => {
   const ensureRecent = vi.fn();
   const threads = [{ id: 'a', title: '会话', resourceId: 'agent', updatedAt: '2026-10-05' }] as never;
   renderSidebar(<ThreadSidebar threads={threads} loading={false} error={null}
@@ -115,9 +115,15 @@ it('shows history search beside the heading and opens the dialog from the icon',
       recentProgress: { completed: 0, total: 0 }, fullProgress: { completed: 0, total: 0 },
       recentFailedCount: 0, fullFailedCount: 0, ensureRecent, cancelRecent: vi.fn(),
       loadAll: vi.fn(), retryRecent: vi.fn(), retryFull: vi.fn(), invalidateThread: vi.fn(),
-    }} onSearchSelect={vi.fn()} />);
+    }} onSearchSelect={vi.fn()} onSourceChange={vi.fn()} />);
   const launcher = screen.getByRole('button', { name: '搜索历史对话' });
-  expect(launcher.closest('.thread-history-heading')).toBeTruthy();
+  const heading = launcher.closest('.thread-history-heading');
+  const tabs = screen.getByRole('tablist', { name: '会话来源' });
+  const listSwitch = screen.getByRole('button', { name: '切换为普通列表' });
+  expect(heading?.contains(tabs)).toBe(true);
+  expect(heading?.textContent).not.toContain('历史对话');
+  expect(Boolean(tabs.compareDocumentPosition(listSwitch) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+  expect(Boolean(listSwitch.compareDocumentPosition(launcher) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
   fireEvent.click(launcher);
   expect(await screen.findByRole('dialog', { name: '搜索历史对话' })).toBeTruthy();
   expect(ensureRecent).toHaveBeenCalled();

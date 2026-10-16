@@ -1,4 +1,4 @@
-import { Cron } from 'croner';
+import { Cron, CronDate, CronPattern } from 'croner';
 import type { AuthUser } from '../auth/service';
 import { listEnabledPublic } from '../models/repository';
 import { findAuthorizedModel } from '../models/service';
@@ -83,12 +83,11 @@ export function computeNextFireAt(cron: string, timezone: string, from = new Dat
 /** Planned occurrence key for a cron fire in the task timezone (not delivery firedAt). */
 export function cronOccurrenceKey(cron: string, timezone: string, around: Date): string {
   const job = new Cron(cron, { timezone, paused: true });
-  const previous = job.previousRun(around);
-  const next = job.nextRun(around);
-  // Prefer the scheduled slot that is <= around when available.
-  const slot = previous && previous.getTime() <= around.getTime()
-    ? previous
-    : next ?? previous;
+  // previousRun() reports this Cron instance's last actual execution; it does
+  // not accept a reference date. CronDate.decrement computes the planned slot.
+  const reference = job.match(around) ? new Date(around.getTime() + 1000) : around;
+  const slot = new CronDate(reference, timezone)
+    .decrement(new CronPattern(cron, timezone), { timezone })?.getDate();
   if (!slot) throw new ScheduledTaskError('invalid_input', '无法计算 Cron 触发时段');
   return slot.toLocaleString('sv-SE', { timeZone: timezone }).replace(' ', 'T');
 }
@@ -110,6 +109,7 @@ export async function validateTaskInput(
   deps: {
     findAuthorizedModel?: typeof findAuthorizedModel;
     resolveDefaultModelRefs?: typeof resolveDefaultModelRefs;
+    fallbackModelRefs?: { chatModelRef: ModelRef; memoryModelRef: ModelRef };
   } = {},
 ): Promise<TaskInput & { chatModelRef: string; memoryModelRef: string }> {
   assertAdmin(owner);
@@ -129,7 +129,8 @@ export async function validateTaskInput(
     throw new ScheduledTaskError('invalid_input', '结束时间不能早于开始时间');
   }
 
-  const defaults = await (deps.resolveDefaultModelRefs ?? resolveDefaultModelRefs)();
+  const defaults = deps.fallbackModelRefs
+    ?? await (deps.resolveDefaultModelRefs ?? resolveDefaultModelRefs)();
   let chatModelRef = defaults.chatModelRef;
   let memoryModelRef = defaults.memoryModelRef;
 

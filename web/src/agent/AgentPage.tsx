@@ -17,6 +17,7 @@ import { getDefaultModels, readThreadModels, saveThreadModels, withThreadModels,
 import type { PendingUserMessage } from './pending-user-message';
 import { readThreadFinanceCategory, saveThreadFinanceCategory, type FinanceCategory } from './finance-category';
 import type { AgentShellContextValue } from './AgentShell';
+import { scheduledRunOfThread } from './thread-source';
 
 function completeModels(models: Partial<ModelSettings>): ModelSettings | null {
   return models.chatModel && models.memoryModel
@@ -74,6 +75,8 @@ export function AgentPage() {
     [threadId, threadMetadata, catalog]);
   const financeCategory = threadId && metadataThreadId === threadId
     ? readThreadFinanceCategory(threadMetadata) : null;
+  const scheduledRun = threadId && metadataThreadId === threadId
+    ? scheduledRunOfThread(threadMetadata) : null;
   const models: Partial<ModelSettings> = threadId
     ? threadRead ? (threadRead.invalid ? threadRead.settings : { ...defaults, ...threadRead.settings }) : {}
     : { ...defaults, ...Object.fromEntries(Object.entries(draftModels).filter(([, ref]) => available.has(ref))) };
@@ -240,6 +243,7 @@ export function AgentPage() {
       {loadingThread ? <div className="empty-chat">加载会话中…</div> : threadId && !notice ?
         <AgentChat key={threadId} title={list.threads.find(thread => thread.id === threadId)?.title || '未命名会话'}
           threadId={threadId} resourceId={user.id} initialMessages={messages} models={selected}
+          scheduledRun={scheduledRun}
           initialDraft={handoffThreadId === threadId ? landingDraft : ''}
           focusComposer={handoffThreadId === threadId}
           catalog={catalog ?? []} modelRef={selected?.chatModel} onModelChange={selectComposerModel}

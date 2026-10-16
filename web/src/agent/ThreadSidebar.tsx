@@ -135,23 +135,16 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
     <ThreadList aria-label="会话列表" embedded>
       <ThreadListNewItem render={<button type="button" className="new-thread-button" onClick={onNew}
         disabled={!canCreate} />}>新建会话</ThreadListNewItem>
-      {onSourceChange && <div className="thread-source-tabs" role="tablist" aria-label="会话来源">
-        <button type="button" role="tab" aria-selected={source === 'default'}
-          className={source === 'default' ? 'active' : undefined}
-          onClick={() => onSourceChange('default')}>历史</button>
-        <button type="button" role="tab" aria-selected={source === 'schedule'}
-          className={source === 'schedule' ? 'active' : undefined}
-          onClick={() => onSourceChange('schedule')}>调度</button>
-      </div>}
       <div className="thread-history-heading">
-        <span>{source === 'schedule' ? '调度会话' : '历史对话'}</span>
-        <div className="thread-history-actions">
-          {searchEnabled && <button ref={searchLauncherRef} type="button" className="thread-history-toggle"
-            aria-label={source === 'schedule' ? '搜索调度会话' : '搜索历史对话'}
-            title={source === 'schedule' ? '搜索调度会话' : '搜索历史对话'}
-            onClick={() => setSearchOpen(true)}>
-            <Search size={16} aria-hidden="true" />
-          </button>}
+        <div className="thread-history-leading">
+          {onSourceChange ? <div className="thread-source-tabs" role="tablist" aria-label="会话来源">
+            <button type="button" role="tab" aria-selected={source === 'default'}
+              className={source === 'default' ? 'active' : undefined}
+              onClick={() => onSourceChange('default')}>历史</button>
+            <button type="button" role="tab" aria-selected={source === 'schedule'}
+              className={source === 'schedule' ? 'active' : undefined}
+              onClick={() => onSourceChange('schedule')}>调度</button>
+          </div> : <span>{source === 'schedule' ? '调度会话' : '历史对话'}</span>}
           <button type="button" className="thread-history-toggle"
             aria-label={historyMode === 'grouped' ? '切换为普通列表' : '切换为时间分组'}
             title={historyMode === 'grouped' ? '切换为普通列表' : '切换为时间分组'}
@@ -159,6 +152,12 @@ export function ThreadSidebar({ threads, currentId, loading, error, onNew, onSel
             {historyMode === 'grouped' ? <List size={16} aria-hidden="true" /> : <CalendarDays size={16} aria-hidden="true" />}
           </button>
         </div>
+        {searchEnabled && <button ref={searchLauncherRef} type="button" className="thread-history-toggle thread-history-search"
+          aria-label={source === 'schedule' ? '搜索调度会话' : '搜索历史对话'}
+          title={source === 'schedule' ? '搜索调度会话' : '搜索历史对话'}
+          onClick={() => setSearchOpen(true)}>
+          <Search size={16} aria-hidden="true" />
+        </button>}
       </div>
       <div className="thread-list-scroll" onScroll={() => setMenuId(null)}>
         <ThreadListItems>

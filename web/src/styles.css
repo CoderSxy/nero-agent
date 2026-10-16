@@ -14,6 +14,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .login-card input { width: 100%; padding: 11px 12px; border: 1px solid var(--border); border-radius: 9px; background: var(--background); color: var(--foreground); }
 .login-card button { margin-top: 8px; padding: 11px; border-radius: 9px; background: var(--foreground); color: var(--background); }
 .agent-layout { display: grid; grid-template-columns: var(--left-panel-width, 260px) minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr); min-height: 100vh; height: 100vh; overflow-x: clip; }
+.agent-layout:has(.scheduled-tasks-page) { grid-template-columns: var(--left-panel-width, 260px) minmax(0, 1fr); }
 .left-panel-dock { position: relative; min-width: 0; min-height: 0; }
 .left-panel-dock > .agent-sidebar { height: 100%; }
 .right-panel-dock { position: relative; height: 100%; min-width: 0; z-index: 5; }
@@ -40,29 +41,62 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .brand-tag { padding: 3px 5px; border: 1px solid #8a6bff59; border-radius: 5px; font-size: 10px; font-weight: 700; letter-spacing: .04em; }
 .thread-scroll { flex: 1; min-height: 0; overflow: hidden; padding: 0 12px; }
 .thread-scroll nav { min-height: 0; overflow: hidden; }
-.thread-list-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+.thread-list-scroll { flex: 1; min-height: 0; margin-right: -8px; padding-right: 8px; overflow-y: auto; }
 .sidebar-note { padding: 8px 14px; }
 .manage-popover a, .manage-popover button[role="menuitem"] { display: block; width: 100%; text-align: left; padding: 8px 10px; border: 0; background: transparent; color: var(--foreground); text-decoration: none; border-radius: 8px; cursor: pointer; font-size: 13px; }
 .manage-popover a.active, .manage-popover button[role="menuitem"].active { background: var(--card); }
-.scheduled-tasks-page { padding: 24px 28px; overflow: auto; }
+.scheduled-tasks-page { padding: 24px 28px; overflow: auto; background: var(--background); }
 .scheduled-tasks-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
 .scheduled-tasks-header h1 { margin: 0 0 6px; font-size: 22px; }
 .scheduled-tasks-actions, .scheduled-tasks-search, .scheduled-task-card-actions, .scheduled-tasks-pagination { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .scheduled-tasks-search { margin-bottom: 16px; }
+.scheduled-tasks-actions button, .scheduled-tasks-search button, .scheduled-task-card-actions button, .scheduled-tasks-pagination button,
+.scheduled-task-editor button, .scheduled-task-logs button { padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--foreground); font-size: 13px; }
+.scheduled-tasks-actions button:last-child, .scheduled-task-editor button[type='submit'] { background: var(--foreground); color: var(--background); }
+.scheduled-tasks-search input { min-width: min(100%, 260px); padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--foreground); }
 .scheduled-task-list { display: grid; gap: 12px; }
 .scheduled-task-card { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; background: var(--card); }
 .scheduled-task-card-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
 .scheduled-task-card h2 { margin: 0; font-size: 16px; }
+.scheduled-task-card-prompt { margin: 8px 0; overflow: hidden; color: var(--muted-foreground); font-size: 13px; line-height: 1.5; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
 .task-status { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--fill-subtle); }
+.scheduled-task-empty { display: grid; place-content: center; justify-items: center; gap: 8px; min-height: 280px; border: 1px dashed var(--border); border-radius: 12px; color: var(--muted-foreground); }
+.scheduled-task-empty strong { color: var(--foreground); }
+.scheduled-tasks-pagination { justify-content: flex-end; margin-top: 18px; }
 .scheduled-task-editor label, .scheduled-task-logs li { display: block; margin: 8px 0; }
-.scheduled-task-editor input, .scheduled-task-editor textarea, .scheduled-task-editor select { width: 100%; margin-top: 4px; }
-.thread-source-tabs { display: flex; gap: 4px; padding: 4px 8px 2px; }
-.thread-source-tabs button { flex: 1; height: 28px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--muted-foreground); font-size: 12px; font-weight: 600; cursor: pointer; }
-.thread-source-tabs button.active, .thread-source-tabs button[aria-selected="true"] { background: var(--card); color: var(--foreground); border-color: var(--border); }
-.thread-history-heading { display: flex; align-items: center; justify-content: space-between; min-height: 32px; padding: 2px 8px; color: color-mix(in srgb, var(--foreground) 76%, var(--sidebar)); font-size: 12px; font-weight: 700; letter-spacing: .02em; }
-.thread-history-actions { display: flex; align-items: center; gap: 2px; }
+.scheduled-task-editor label { color: var(--muted-foreground); font-size: 12px; }
+.scheduled-task-editor input, .scheduled-task-editor textarea, .scheduled-task-editor select { width: 100%; margin-top: 5px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 13px; }
+.scheduled-task-editor textarea { resize: vertical; }
+.scheduled-task-modal-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 20px; background: #0009; }
+.scheduled-task-modal { width: min(100%, 680px); max-height: min(90vh, 820px); overflow: hidden; border: 1px solid var(--border); border-radius: 16px; background: var(--sidebar); box-shadow: 0 24px 80px #0005; }
+.scheduled-task-logs-modal { display: flex; flex-direction: column; width: min(100%, 620px); }
+.scheduled-task-editor { display: flex; flex-direction: column; max-height: inherit; }
+.scheduled-task-modal-header, .scheduled-task-modal-footer { display: flex; align-items: center; justify-content: space-between; flex: none; padding: 16px 24px; }
+.scheduled-task-modal-header { border-bottom: 1px solid var(--border); }
+.scheduled-task-modal-header small { color: var(--muted-foreground); font-size: 11px; }
+.scheduled-task-modal-header h2 { margin: 4px 0 0; font-size: 19px; }
+.scheduled-task-modal-header button { border: 0; background: transparent; color: var(--muted-foreground); font-size: 25px; line-height: 1; }
+.scheduled-task-modal-body { min-height: 0; overflow-y: auto; padding: 14px 24px 20px; }
+.scheduled-task-editor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
+.scheduled-task-editor-time { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.scheduled-task-model-note { margin: 2px 0 12px; font-size: 12px; }
+.scheduled-task-modal-footer { justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border); }
+.scheduled-task-modal-footer button { padding: 8px 18px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--foreground); }
+.scheduled-task-modal-footer button[type='submit'] { background: var(--foreground); color: var(--background); }
+.scheduled-task-logs h2 { margin: 0 0 14px; font-size: 15px; }
+.scheduled-task-logs ul { margin: 0; padding: 0; list-style: none; }
+.scheduled-task-logs li { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+.scheduled-task-logs li span { display: block; }
+.scheduled-task-logs a { display: inline-block; margin-top: 5px; }
+.thread-source-tabs { display: flex; flex: none; align-items: center; gap: 5px; }
+.thread-source-tabs button { min-height: 24px; padding: 2px 8px; border: 0; border-radius: 999px; background: transparent; color: var(--muted-foreground); font-size: 12px; font-weight: 600; line-height: 18px; cursor: pointer; }
+.thread-source-tabs button.active, .thread-source-tabs button[aria-selected="true"] { background: color-mix(in srgb, var(--foreground) 9%, var(--sidebar)); color: var(--foreground); }
+.thread-source-tabs button:focus-visible { outline: 2px solid var(--foreground); outline-offset: 2px; }
+.thread-history-heading { display: flex; align-items: center; justify-content: space-between; gap: 4px; min-height: 32px; padding: 2px 8px; color: color-mix(in srgb, var(--foreground) 76%, var(--sidebar)); font-size: 12px; font-weight: 700; letter-spacing: .02em; }
+.thread-history-leading { display: flex; min-width: 0; align-items: center; gap: 2px; }
 .thread-history-toggle { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; color: var(--muted-foreground); opacity: 0; transition: opacity .16s, background-color .16s; }
 .thread-history-heading:hover .thread-history-toggle, .thread-history-toggle:focus-visible { opacity: 1; }
+.thread-history-search { flex: none; opacity: 1; }
 .history-search-backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: start center; padding: 12vh 16px 16px; background: #0009; }
 .history-search-dialog { width: min(100%, 560px); padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--popover); box-shadow: 0 18px 40px #0005; }
 .history-search-title { margin: 0 0 10px; font-size: 15px; font-weight: 600; color: var(--foreground); }
@@ -196,6 +230,12 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .light .chat-title { color: #111827; }
 .message-list { padding: 28px 0 24px; display: flex; flex-direction: column; gap: 24px; min-width: 0; max-width: 100%; }
 .chat-shell--active .message-list { padding-top: 65px; }
+.message-actions { display: flex; align-items: center; gap: 8px; min-height: 24px; margin-top: 7px; color: var(--muted-foreground); font-size: 12px; }
+.message-actions button { display: grid; place-items: center; width: 24px; height: 24px; border: 0; border-radius: 7px; background: transparent; color: inherit; }
+.message-actions button:hover { background: color-mix(in srgb, var(--foreground) 8%, transparent); color: var(--foreground); }
+.message-actions button:focus-visible { outline: 2px solid var(--foreground); outline-offset: 2px; }
+.message-model-name { display: inline-flex; align-items: center; max-width: min(50%, 220px); min-height: 22px; overflow: hidden; padding: 0 7px; border-radius: 999px; background: color-mix(in srgb, var(--foreground) 7%, transparent); color: var(--muted-foreground); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.message-time { white-space: nowrap; }
 .message-search-target { border-radius: 12px; outline: 2px solid color-mix(in srgb, var(--primary, #6b7cff) 55%, var(--border)); outline-offset: 2px;
   background: color-mix(in srgb, var(--primary, #6b7cff) 12%, transparent); transition: outline-color .2s, background-color .2s; }
 .light .message-search-target { outline-color: color-mix(in srgb, #6b7cff 45%, var(--border));
@@ -408,5 +448,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .error { color: var(--destructive); }
 .notice { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background: var(--popover); padding: 8px 14px; z-index: 2; border-radius: 8px; }
 @media (max-width: 1050px) { .agent-layout { grid-template-columns: var(--left-panel-width, 210px) minmax(0, 1fr) 0; } .right-panel-dock { position: fixed; top: 0; right: 0; bottom: 0; height: 100vh; } .right-panel-toggles { right: calc(100% + 8px); } .right-panel-surface { box-shadow: -12px 0 30px #0002; } }
+@media (max-width: 650px) { .scheduled-task-modal-backdrop { padding: 10px; } .scheduled-task-modal { max-height: 96vh; } .scheduled-task-modal-body, .scheduled-task-modal-header, .scheduled-task-modal-footer { padding-left: 16px; padding-right: 16px; } .scheduled-task-editor-grid { grid-template-columns: 1fr; } }
 @media (max-width: 650px) { .agent-layout { grid-template-columns: 1fr; } .left-panel-dock { display: none; } }
+@media (max-width: 650px) { .agent-layout:has(.scheduled-tasks-page) { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .chat-shell::after, .chat-shell [data-slot='chat-shell-dock'] [data-slot='chat-shell-column'], .chat-welcome, .process-reasoning summary::before { transition: none; } .chat-welcome h1, .tool-progress, .process-status svg, .run-status svg, .process-reasoning__streaming { animation: none; } }

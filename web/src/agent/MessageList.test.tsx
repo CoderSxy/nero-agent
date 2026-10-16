@@ -33,7 +33,90 @@ describe('message anchors', () => {
   });
 });
 
+describe('message actions', () => {
+  it('shows copy, the recorded model, and local time below a completed answer', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    const message = { id: 'answer', role: 'assistant', createdAt: new Date(2026, 9, 16, 9, 30),
+      content: { format: 2, parts: [
+        { type: 'step-start', model: 'openai/gpt-5' },
+        { type: 'text', text: '**第一段**' },
+        { type: 'text', text: '第二段' },
+      ] } };
+    render(<MessageList messages={[message] as never} isRunning={false} error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+    const actions = screen.getByRole('group', { name: '回复操作' });
+    expect(actions.textContent).toContain('openai/gpt-5');
+    expect(actions.textContent).toContain('09:30');
+    fireEvent.click(screen.getByRole('button', { name: '复制消息' }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('**第一段**\n\n第二段'));
+    expect(screen.getByText('已复制')).toBeTruthy();
+  });
+
+  it('hides reply actions while streaming and omits a model when none was recorded', () => {
+    const message = { id: 'answer', role: 'assistant', createdAt: new Date(2026, 9, 16, 9, 30),
+      content: { format: 2, parts: [{ type: 'text', text: '部分回复' }] } };
+    const props = { error: null, onApprove: vi.fn(), onDecline: vi.fn(), onAnswer: vi.fn() };
+    const view = render(<MessageList messages={[message] as never} isRunning {...props} />);
+    expect(screen.queryByRole('group', { name: '回复操作' })).toBeNull();
+    view.rerender(<MessageList messages={[message] as never} isRunning={false} {...props} />);
+    const actions = screen.getByRole('group', { name: '回复操作' });
+    expect(actions.textContent).toContain('09:30');
+    expect(actions.querySelector('.message-model-name')).toBeNull();
+  });
+
+  it('formats reply time like datax for today, recent days, and older messages', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 16, 12));
+    try {
+      const messages = [
+        { id: 'today', role: 'assistant', createdAt: new Date(2026, 9, 16, 9, 58),
+          content: { format: 2, parts: [{ type: 'text', text: '今天' }] } },
+        { id: 'yesterday', role: 'assistant', createdAt: new Date(2026, 9, 15, 21, 2),
+          content: { format: 2, parts: [{ type: 'text', text: '昨天' }] } },
+        { id: 'older', role: 'assistant', createdAt: new Date(2026, 9, 1, 9, 58),
+          content: { format: 2, parts: [{ type: 'text', text: '较早' }] } },
+      ];
+      const { container } = render(<MessageList messages={messages as never} isRunning={false} error={null}
+        onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+      const time = (id: string) => container.querySelector(`[data-message-id="${id}"] .message-time`)?.textContent;
+      expect(time('today')).toBe('09:58');
+      expect(time('yesterday')).toBe('周四 21:02');
+      expect(time('older')).toBe('10月1日 09:58');
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('uses a recorded model from the same turn when the final text is a separate message', () => {
+    const messages = [
+      { id: 'user', role: 'user', content: { format: 2, parts: [{ type: 'text', text: '问题' }] } },
+      { id: 'process', role: 'assistant', content: { format: 2, parts: [
+        { type: 'step-start', model: 'workbuddy.chat/kimi-k3-1' },
+        { type: 'reasoning', reasoning: '分析中', state: 'done' },
+      ] } },
+      { id: 'answer', role: 'assistant', content: { format: 2, parts: [{ type: 'text', text: '回答' }] } },
+    ];
+    const { container } = render(<MessageList messages={messages as never} isRunning={false} error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+    expect(container.querySelector('[data-message-id="answer"] .message-model-name')?.textContent)
+      .toBe('workbuddy.chat/kimi-k3-1');
+    expect(container.querySelector('[data-message-id="process"] .message-actions')).toBeNull();
+  });
+});
+
 describe('message tools and stream state', () => {
+  it('places a saved process-only message before the answer from the same turn', () => {
+    const messages = [
+      { id: 'user', role: 'user', content: { format: 2, parts: [{ type: 'text', text: '苏州天气' }] } },
+      { id: 'answer', role: 'assistant', content: { format: 2, parts: [{ type: 'text', text: '今天多云' }] } },
+      { id: 'process', role: 'assistant', content: { format: 2, parts: [
+        { type: 'reasoning', reasoning: '核对天气数据', state: 'done' },
+      ] } },
+    ];
+    const { container } = render(<MessageList messages={messages as never} isRunning={false} error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+    expect([...container.querySelectorAll('[data-message-id]')].map(node => node.getAttribute('data-message-id')))
+      .toEqual(['user', 'process', 'answer']);
+  });
   it('turns a completed JSON chart fence into a chart and switches both ways', async () => {
     const option = '{"xAxis":{"type":"category","data":["周一","周二"]},"yAxis":{"type":"value"},"series":[{"type":"line","data":[26,28]}]}';
     const text = (end: string) => `趋势如下：\n\n\`\`\`json\n${option}${end}\n\n最高温先升后降。`;
@@ -181,6 +264,105 @@ describe('message tools and stream state', () => {
     expect(screen.getByText('Continue research')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Suggested Response' }));
     expect(screen.getByText('Answer concisely')).toBeTruthy();
+  });
+  it('shows a buffered observation from saved messages with its expandable contents', () => {
+    const messages = [
+      { id: 'buffer-start', role: 'assistant', content: { format: 2, parts: [
+        { type: 'data-om-buffering-start', data: { cycleId: 'buffer-1', operationType: 'observation', tokensToBuffer: 14700 } },
+      ] } },
+      { id: 'buffer-end', role: 'assistant', content: { format: 2, parts: [
+        { type: 'data-om-buffering-end', data: { cycleId: 'buffer-1', operationType: 'observation',
+          tokensBuffered: 14700, bufferedTokens: 272,
+          observations: 'Date: Oct 15, 2026\n* 🟢 (16:17) User asked about Suzhou weather' } },
+      ] } },
+    ];
+    const { container } = render(<MessageList messages={messages as never} isRunning={false} error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+    expect(container.querySelectorAll('[data-om-badge="buffer-1"]')).toHaveLength(1);
+    expect(container.querySelector('[data-om-state="buffering-complete"]')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Buffered observations 14\.7k→272 tokens/ }));
+    expect(screen.getByText('User asked about Suzhou weather')).toBeTruthy();
+  });
+  it('shows buffering progress and failure without leaving a stale progress marker', () => {
+    const start = { id: 'buffer-start', role: 'assistant', content: { format: 2, parts: [
+      { type: 'data-om-buffering-start', data: { cycleId: 'buffer-2', operationType: 'reflection', tokensToBuffer: 2000 } },
+    ] } };
+    const props = { isRunning: true, error: null, onApprove: vi.fn(), onDecline: vi.fn(), onAnswer: vi.fn() };
+    const view = render(<MessageList messages={[start] as never} {...props} />);
+    expect(screen.getByText('Buffering reflection ~2.0k tokens')).toBeTruthy();
+    view.rerender(<MessageList messages={[start, { id: 'buffer-failed', role: 'assistant', content: { format: 2, parts: [
+      { type: 'data-om-buffering-failed', data: { cycleId: 'buffer-2', operationType: 'reflection', error: 'model unavailable' } },
+    ] } }] as never} {...props} isRunning={false} />);
+    expect(view.container.querySelectorAll('[data-om-badge="buffer-2"]')).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Buffered reflection failed' }));
+    expect(screen.getByText('model unavailable')).toBeTruthy();
+  });
+  it('does not leave an orphan buffering spinner in a completed conversation', () => {
+    const message = { id: 'orphan', role: 'assistant', content: { format: 2, parts: [
+      { type: 'data-om-buffering-start', data: { cycleId: 'orphan-1', operationType: 'observation', tokensToBuffer: 6800 } },
+      { type: 'text', text: '已经完成的回答' },
+    ] } };
+    const props = { error: null, onApprove: vi.fn(), onDecline: vi.fn(), onAnswer: vi.fn() };
+    const view = render(<MessageList messages={[message] as never} isRunning {...props} />);
+    expect(screen.getByText('Buffering observations ~6.8k tokens')).toBeTruthy();
+    view.rerender(<MessageList messages={[message] as never} isRunning={false} {...props} />);
+    expect(screen.queryByText('Buffering observations ~6.8k tokens')).toBeNull();
+    expect(screen.getByText('已经完成的回答')).toBeTruthy();
+  });
+  it('hides an old orphan spinner while another turn is running', () => {
+    const messages = [
+      { id: 'old', role: 'assistant', content: { format: 2, parts: [
+        { type: 'data-om-buffering-start', data: { cycleId: 'old-cycle', tokensToBuffer: 6800 } },
+      ] } },
+      { id: 'new-user', role: 'user', content: { format: 2, parts: [{ type: 'text', text: '新问题' }] } },
+      { id: 'new', role: 'assistant', content: { format: 2, parts: [
+        { type: 'data-om-buffering-start', data: { cycleId: 'new-cycle', tokensToBuffer: 2000 } },
+      ] } },
+    ];
+    const { container } = render(<MessageList messages={messages as never} isRunning error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+    expect(container.querySelector('[data-om-badge="old-cycle"]')).toBeNull();
+    expect(container.querySelector('[data-om-badge="new-cycle"]')).toBeTruthy();
+  });
+  it('shows plain buffered observations instead of an empty detail panel', () => {
+    const message = { id: 'plain-buffer', role: 'assistant', content: { format: 2, parts: [
+      { type: 'data-om-buffering-end', data: { cycleId: 'plain-buffer', operationType: 'observation',
+        tokensBuffered: 9000, bufferedTokens: 363, observations: '<observations>用户想要秋季旅行建议</observations>' } },
+    ] } };
+    render(<MessageList messages={[message] as never} isRunning={false} error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /Buffered observations 9\.0k→363 tokens/ }));
+    expect(screen.getByText('用户想要秋季旅行建议')).toBeTruthy();
+    expect(screen.queryByText('No observations')).toBeNull();
+  });
+  it('omits a completed buffering marker with no visible observations', () => {
+    const message = { id: 'empty-buffer', role: 'assistant', content: { format: 2, parts: [
+      { type: 'data-om-buffering-end', data: { cycleId: 'empty-buffer', operationType: 'observation',
+        tokensBuffered: 9000, bufferedTokens: 363, observations: '   ' } },
+      { type: 'text', text: '最终回答' },
+    ] } };
+    const { container } = render(<MessageList messages={[message] as never} isRunning={false} error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+    expect(container.querySelector('[data-om-badge="empty-buffer"]')).toBeNull();
+    expect(screen.getByText('最终回答')).toBeTruthy();
+  });
+  it('shows activated observations and failed synchronous observations', () => {
+    const messages = [
+      { id: 'activated', role: 'assistant', content: { format: 2, parts: [
+        { type: 'data-om-activation', data: { cycleId: 'activation-1', operationType: 'observation',
+          tokensActivated: 14700, observationTokens: 272,
+          observations: 'Date: Oct 15, 2026\n* 🟢 (16:17) Activated weather notes' } },
+      ] } },
+      { id: 'failed', role: 'assistant', content: { format: 2, parts: [
+        { type: 'data-om-observation-failed', data: { cycleId: 'failed-1', operationType: 'reflection', error: 'reflection failed' } },
+      ] } },
+    ];
+    const { container } = render(<MessageList messages={messages as never} isRunning={false} error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+    expect(container.querySelector('[data-om-badge="activation-1"][data-om-state="activated"]')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Observed 14\.7k→272 tokens/ }));
+    expect(screen.getByText('Activated weather notes')).toBeTruthy();
+    expect(screen.getByText('reflection failed')).toBeTruthy();
   });
   it('deduplicates a cycle when start and end are saved in separate messages', () => {
     const messages = [

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
@@ -6,6 +6,25 @@ import { App } from './App';
 afterEach(() => { cleanup(); sessionStorage.clear(); vi.unstubAllGlobals(); });
 
 describe('agent login', () => {
+  it('renders the scheduled tasks route with the shared sidebar and a full-width task area', async () => {
+    sessionStorage.setItem('nero-agent-session', 'admin-token');
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (input: string) => {
+      const path = String(input);
+      const body = path === '/auth/me'
+        ? { user: { id: 'admin-1', email: 'admin@example.com', displayName: 'Admin', roles: ['admin'] } }
+        : path.startsWith('/agent-scheduled-tasks?') ? { items: [], total: 0 }
+          : path === '/model-catalog' ? { models: [] } : { threads: [] };
+      return { ok: true, json: async () => body };
+    }));
+    render(<MemoryRouter initialEntries={['/scheduled-tasks']}><App /></MemoryRouter>);
+
+    const center = await screen.findByRole('region', { name: '定时任务列表' });
+    expect(within(center).getByRole('heading', { name: '定时任务' })).toBeTruthy();
+    expect(screen.queryByRole('complementary', { name: '定时任务详情与配置' })).toBeNull();
+    expect(screen.getByRole('menuitem', { name: '定时任务' })).toBeTruthy();
+    expect(screen.getByLabelText('NERO AGENT')).toBeTruthy();
+  });
+
   it('shows a login form before an anonymous visitor can access the agent', () => {
     render(<MemoryRouter initialEntries={['/agent/new']}><App /></MemoryRouter>);
     expect(screen.getByRole('heading', { name: '登录 NERO AGENT' })).toBeTruthy();

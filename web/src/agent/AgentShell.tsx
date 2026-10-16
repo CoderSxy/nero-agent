@@ -72,6 +72,23 @@ export function AgentShell({ user, onLogout }: { user: CurrentUser; onLogout: ()
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
+  useEffect(() => {
+    if (threadSource !== 'schedule') return;
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') void list.refresh();
+    };
+    const timer = window.setInterval(refreshWhenVisible, 15_000);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, [threadSource, list.refresh]);
+
+  function changeThreadSource(source: ThreadSource) {
+    setThreadSource(source);
+    void list.refresh();
+  }
 
   async function deleteThread(id: string) {
     const nextId = neighborAfterDeletion(visibleThreads, id);
@@ -105,7 +122,7 @@ export function AgentShell({ user, onLogout }: { user: CurrentUser; onLogout: ()
         theme={theme} onThemeChange={setTheme}
         canCreate={chatActions.canCreate} user={user} onLogout={onLogout}
         search={historySearch} onSearchSelect={selectHistorySearchResult}
-        source={threadSource} onSourceChange={setThreadSource}
+        source={threadSource} onSourceChange={changeThreadSource}
         isAdmin={user.roles.includes('admin')} />
       <PanelResizeHandle side="left" width={leftWidth} min={200} max={leftMax} onResize={setLeftPreferredWidth} />
     </div>

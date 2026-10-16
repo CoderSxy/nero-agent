@@ -10,6 +10,15 @@ export function sourceOfThread(metadata: unknown): ThreadSource {
   return value === 'schedule' ? 'schedule' : 'default';
 }
 
+export function scheduledRunOfThread(metadata: unknown): { taskId: string; runId: string } | null {
+  if (sourceOfThread(metadata) !== 'schedule') return null;
+  const values = metadata as Record<string, unknown>;
+  const taskId = values.neroAgentScheduleTaskId;
+  const runId = values.neroAgentScheduleRunId;
+  return typeof taskId === 'string' && taskId && typeof runId === 'string' && runId
+    ? { taskId, runId } : null;
+}
+
 export function filterThreadsBySource(threads: Thread[], source: ThreadSource): Thread[] {
   return threads.filter((thread) => sourceOfThread(thread.metadata) === source);
 }

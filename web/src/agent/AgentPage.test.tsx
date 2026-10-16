@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createMemoryRouter, MemoryRouter, Route, RouterProvider, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentPage } from './AgentPage';
@@ -81,7 +81,7 @@ vi.mock('./history-search-cache', () => ({ createHistorySearchCache: () => ({}) 
 vi.mock('./AgentChat', () => ({ AgentChat: ({ title, models, sendBlockedReason, catalog, modelRef, onModelChange,
   modelError, pendingUserMessages, onMessageSubmitted, onMessageSent, onMessageFailed, onResponseSettled,
   onFilesChanged, attachRequest, attachmentRefreshVersion,
-  targetMessageId, initialDraft, focusComposer }: {
+  targetMessageId, initialDraft, focusComposer, scheduledRun }: {
   title?: string;
   initialDraft?: string; focusComposer?: boolean;
   models: { chatModel: string; memoryModel: string } | null; sendBlockedReason?: string | null;
@@ -95,6 +95,7 @@ vi.mock('./AgentChat', () => ({ AgentChat: ({ title, models, sendBlockedReason, 
   attachRequest?: { id: number; path: string; source: 'personal' | 'agent' } | null;
   attachmentRefreshVersion?: number;
   targetMessageId?: string;
+  scheduledRun?: { taskId: string; runId: string } | null;
 }) => <div data-testid="models">{models ? `${models.chatModel}|${models.memoryModel}` : 'none'}
   <textarea aria-label="已创建会话输入框" defaultValue={initialDraft} autoFocus={focusComposer} />
   <span data-testid="chat-title">{title}</span>
@@ -104,6 +105,7 @@ vi.mock('./AgentChat', () => ({ AgentChat: ({ title, models, sendBlockedReason, 
     ? `${attachRequest.id}|${attachRequest.source}|${attachRequest.path}` : ''}</span>
   <span data-testid="attachment-refresh">{String(attachmentRefreshVersion ?? 0)}</span>
   <span data-testid="target-message">{targetMessageId ?? ''}</span>
+  <span data-testid="scheduled-run">{scheduledRun ? `${scheduledRun.taskId}|${scheduledRun.runId}` : ''}</span>
   <button type="button" onClick={() => onMessageSubmitted?.({ id: 'local', text: '刚发送的消息',
     createdAt: new Date(), occurrence: 1 })}>模拟发送</button>
   <button type="button" onClick={() => onMessageSent?.({ id: 'local', text: '刚发送的消息',
@@ -144,6 +146,29 @@ function renderPage(path = '/agent/thread-1') {
 }
 
 describe('Agent page model selection', () => {
+  it('passes a scheduled run identity to the open conversation', async () => {
+    get.mockResolvedValue({ id: 'thread-1', resourceId: 'agent', metadata: {
+      neroAgentSourceType: 'schedule', neroAgentScheduleTaskId: 'task-1',
+      neroAgentScheduleRunId: 'run-1', neroAgentModels: { chatModel: flash, memoryModel: flash },
+    } });
+    renderPage();
+    await waitFor(() => expect(screen.getByTestId('scheduled-run').textContent).toBe('task-1|run-1'));
+  });
+  it('refreshes scheduled conversations on tab switch, while visible, and after returning to the page', () => {
+    vi.useFakeTimers();
+    try {
+      renderPage('/agent/new');
+      fireEvent.click(screen.getByRole('tab', { name: '调度' }));
+      expect(refreshThreadList).toHaveBeenCalledTimes(1);
+      act(() => { vi.advanceTimersByTime(15_000); });
+      expect(refreshThreadList).toHaveBeenCalledTimes(2);
+      fireEvent(document, new Event('visibilitychange'));
+      expect(refreshThreadList).toHaveBeenCalledTimes(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('shows the new-conversation welcome and composer without creating a thread on page load', async () => {
     renderPage('/agent/new');
     expect(await screen.findByRole('heading', { name: '有什么可以帮你？' })).toBeTruthy();

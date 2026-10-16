@@ -333,6 +333,29 @@ export async function finishRun(
   return result.rows[0] ? toRun(result.rows[0]) : null;
 }
 
+/** Atomically assign one worker to a claimed run before any thread is created. */
+export async function startRun(runId: string, db?: Queryable): Promise<boolean> {
+  const result = await dbOf(db).query(
+    `UPDATE agent_scheduled_task_runs SET status = 'running'
+     WHERE id = $1 AND status = 'preparing' RETURNING id`,
+    [runId],
+  );
+  return result.rows.length === 1;
+}
+
+/** Expire abandoned claims so a crashed worker cannot block manual retries forever. */
+export async function recoverStaleRuns(taskId?: string, db?: Queryable): Promise<number> {
+  const result = await dbOf(db).query(
+    `UPDATE agent_scheduled_task_runs
+     SET status = 'failed', error_summary = '执行超时或服务中断', finished_at = now()
+     WHERE ($1::uuid IS NULL OR task_id = $1)
+       AND ((status = 'preparing' AND created_at < now() - interval '10 minutes')
+         OR (status = 'running' AND created_at < now() - interval '24 hours'))`,
+    [taskId ?? null],
+  );
+  return result.rowCount ?? 0;
+}
+
 export async function listRuns(
   taskId: string,
   ownerId: string,

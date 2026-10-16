@@ -6,9 +6,38 @@ import type { AuthUser } from '../src/mastra/auth/service';
 import { memoryForRequest } from '../src/mastra/agents/memory-model';
 import {
   createScheduledTaskHooks,
+  runScheduledAgent,
   type ScheduledTaskHooksDeps,
 } from '../src/mastra/scheduled-tasks/hooks';
 import type { ScheduledTask, ScheduledTaskRun } from '../src/mastra/scheduled-tasks/types';
+
+test('scheduled agent publishes a thread stream and waits for its completion', async () => {
+  let release!: () => void;
+  const completed = new Promise<void>(resolve => { release = resolve; });
+  const calls: unknown[][] = [];
+  const mastra = { getAgent: () => ({ sendMessage: (...args: unknown[]) => {
+    calls.push(args);
+    return { accepted: Promise.resolve({ action: 'wake', runId: 'model-run', output: {
+      consumeStream: () => completed,
+      text: completed.then(() => 'done'),
+    } }) };
+  } }) };
+  const pending = runScheduledAgent({ mastra: mastra as never, agentId: 'agent', prompt: '天气',
+    threadId: 'thread-1', resourceId: 'owner-1', requestContext: new RequestContext() });
+  let settled = false;
+  void pending.then(() => { settled = true; });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(settled, false);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0]?.[0], '天气');
+  const target = calls[0]?.[1] as { resourceId: string; threadId: string;
+    ifIdle: { streamOptions: { requestContext: RequestContext } } };
+  assert.equal(target.resourceId, 'owner-1');
+  assert.equal(target.threadId, 'thread-1');
+  assert.ok(target.ifIdle.streamOptions.requestContext instanceof RequestContext);
+  release();
+  assert.deepEqual(await pending, { runId: 'model-run' });
+});
 
 function admin(id = randomUUID()): AuthUser {
   return { id, email: `${id}@example.test`, displayName: 'Admin', roles: ['admin'] };
@@ -89,6 +118,12 @@ function makeDeps(seed: {
       runs.set(run.id, run);
       return { run, created: true };
     },
+    startRun: async (runId) => {
+      const run = runs.get(runId);
+      if (!run || run.status !== 'preparing') return false;
+      runs.set(runId, { ...run, status: 'running' });
+      return true;
+    },
     finishRun: async (runId, patch) => {
       const run = runs.get(runId);
       if (!run) return null;
@@ -159,6 +194,93 @@ test('same cron claim is idempotent and does not create a second thread', async 
   assert.equal(deps.threads.length, 1);
   assert.equal(deps.runs.size, 1);
   assert.equal(deps.generateCalls, 1);
+});
+
+test('concurrent cron deliveries create one thread while first worker is preparing', async () => {
+  const owner = admin();
+  const task = taskRow(owner);
+  const deps = makeDeps({ owner, task });
+  let release!: () => void;
+  let entered!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  const started = new Promise<void>((resolve) => { entered = resolve; });
+  const originalCreate = deps.createThread!;
+  deps.createThread = async (input) => {
+    entered();
+    await gate;
+    return originalCreate(input);
+  };
+  const hooks = createScheduledTaskHooks(deps);
+  const ctx = {
+    mastra: {}, agentId: 'agent',
+    schedule: { id: 'agent_x', agentId: 'agent', metadata: { appTaskId: task.id } },
+    trigger: { kind: 'cron' as const, firedAt: new Date('2026-10-15T01:00:02.000Z') },
+  };
+  const first = hooks.prepare!(ctx);
+  await started;
+  const second = hooks.prepare!(ctx);
+  release();
+  await Promise.all([first, second]);
+  assert.equal(deps.threads.length, 1);
+  assert.equal(deps.generateCalls, 1);
+});
+
+test('thread creation failure closes the claimed run as failed', async () => {
+  const owner = admin();
+  const task = taskRow(owner);
+  const deps = makeDeps({ owner, task });
+  deps.createThread = async () => { throw new Error('storage unavailable'); };
+  const hooks = createScheduledTaskHooks(deps);
+  await hooks.prepare!({
+    mastra: {}, agentId: 'agent',
+    schedule: { id: 'agent_x', agentId: 'agent', metadata: { appTaskId: task.id } },
+    trigger: { kind: 'cron', firedAt: new Date('2026-10-15T01:00:02.000Z') },
+  });
+  assert.equal([...deps.runs.values()][0]?.status, 'failed');
+});
+
+test('default thread creation uses agent memory initialized with Mastra storage', async () => {
+  const owner = admin();
+  const task = taskRow(owner);
+  const deps = makeDeps({ owner, task });
+  delete deps.createThread;
+  let memoryLookup = 0;
+  const mastra = {
+    getAgent: (id: string) => {
+      assert.equal(id, 'agent');
+      return { getMemory: async ({ requestContext }: { requestContext: RequestContext }) => {
+        assert.equal(requestContext.get('mastra__user').id, owner.id);
+        memoryLookup += 1;
+        return { createThread: async ({ metadata }: { metadata: Record<string, unknown> }) => {
+          assert.equal(metadata.neroAgentSourceType, 'schedule');
+          return { id: 'stored-thread' };
+        } };
+      } };
+    },
+  };
+  const hooks = createScheduledTaskHooks(deps);
+  await hooks.prepare!({
+    mastra: mastra as never, agentId: 'agent',
+    schedule: { id: 'agent_x', agentId: 'agent', metadata: { appTaskId: task.id } },
+    trigger: { kind: 'cron', firedAt: new Date('2026-10-15T01:00:02.000Z') },
+  });
+  assert.equal(memoryLookup, 1);
+  assert.equal([...deps.runs.values()][0]?.status, 'succeeded');
+  assert.equal([...deps.runs.values()][0]?.threadId, 'stored-thread');
+});
+
+test('owner lookup failure closes the claimed run as failed', async () => {
+  const owner = admin();
+  const task = taskRow(owner);
+  const deps = makeDeps({ owner, task });
+  deps.getActiveUserById = async () => { throw new Error('database unavailable'); };
+  const hooks = createScheduledTaskHooks(deps);
+  await hooks.prepare!({
+    mastra: {}, agentId: 'agent',
+    schedule: { id: 'agent_x', agentId: 'agent', metadata: { appTaskId: task.id } },
+    trigger: { kind: 'cron', firedAt: new Date('2026-10-15T01:00:02.000Z') },
+  });
+  assert.equal([...deps.runs.values()][0]?.status, 'failed');
 });
 
 test('out of effective window is skipped without a thread', async () => {

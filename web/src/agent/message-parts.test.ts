@@ -57,6 +57,15 @@ describe('stream error display', () => {
     expect(parts.map(part => part.kind)).toEqual(['reasoning', 'tool', 'reasoning']);
     expect(parts[2]).toMatchObject({ kind: 'reasoning', text: '正在核对结果', streaming: true });
   });
+  it('shows process parts before a completed answer when they arrive after its text', () => {
+    const parts = messageParts({ id: 'scheduled', role: 'assistant', content: { format: 2, parts: [
+      { type: 'tool-invocation', toolInvocation: { state: 'result', toolCallId: 'weather', toolName: 'search', args: {}, result: 'sunny' } },
+      { type: 'text', text: '苏州今天多云。' },
+      { type: 'reasoning', reasoning: '先核对逐小时天气', state: 'done' },
+      { type: 'data-om-buffering-end', data: { cycleId: 'weather-buffer', operationType: 'observation' } },
+    ] } } as never);
+    expect(parts.map(part => part.kind)).toEqual(['tool', 'reasoning', 'observation', 'text']);
+  });
   it('replaces the observation start with its completed cycle and preserves detail', () => {
     const parts = messageParts({ id: 'one', role: 'assistant', content: { format: 2, parts: [
       { type: 'data-om-observation-start', data: { cycleId: 'cycle-1', tokensToObserve: 93500 } },

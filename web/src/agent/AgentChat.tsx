@@ -17,6 +17,7 @@ import type { ModelRef, SafeModel } from './model-catalog-client';
 import { nextPendingUserMessage, withPendingUserMessages, type PendingUserMessage } from './pending-user-message';
 import { WorkspaceFilePicker } from './WorkspaceFilePicker';
 import type { FinanceCategory } from './finance-category';
+import { useScheduledThreadUpdates, type ScheduledRunRef } from './use-scheduled-thread-updates';
 
 type PendingUpload = { key: string; file: File };
 
@@ -46,7 +47,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   onModelChange, modelRef, modelDisabled = false, modelError, sendBlockedReason,
   financeCategory = null, financeEnabled = false, financeSaving = false, onFinanceCategoryChange,
   pendingUserMessages = [], onMessageSubmitted, onMessageFailed, onResponseSettled, onFilesChanged, attachRequest,
-  attachmentRefreshVersion = 0, targetMessageId, initialDraft = '', focusComposer = false }: {
+  attachmentRefreshVersion = 0, targetMessageId, initialDraft = '', focusComposer = false, scheduledRun }: {
   title?: string; threadId: string; resourceId: string; initialMessages: MastraDBMessage[];
   initialDraft?: string; focusComposer?: boolean;
   onMessageSent: (message: PendingUserMessage) => void;
@@ -63,6 +64,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   attachRequest?: AttachRequest | null;
   attachmentRefreshVersion?: number;
   targetMessageId?: string;
+  scheduledRun?: ScheduledRunRef | null;
 }) {
   const [draft, setDraft] = useState(initialDraft);
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -89,10 +91,17 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   const memoryModel = models?.memoryModel;
   const requestContext = useMemo(() => chatModel && memoryModel
     ? createModelRequestContext({ chatModel, memoryModel }) : undefined, [chatModel, memoryModel]);
-  const blockedReason = financeSaving ? '正在保存财经分类…' : sendBlockedReason ?? (models ? null : '请先配置可用模型');
   const selectedModel = catalog.find(model => model.ref === (modelRef ?? chatModel));
   const chat = useChat({ agentId: AGENT_ID, resourceId, threadId, initialMessages, requestContext,
     enableThreadSignals: true });
+  const scheduledRunning = useScheduledThreadUpdates({ run: scheduledRun, threadId, resourceId,
+    setMessages: chat.setMessages, onSettled: () => {
+      onResponseSettled?.();
+      onFilesChanged?.();
+      refreshThreadAttachments();
+    } });
+  const blockedReason = scheduledRunning ? '定时任务正在执行…'
+    : financeSaving ? '正在保存财经分类…' : sendBlockedReason ?? (models ? null : '请先配置可用模型');
   const wasRunning = useRef(chat.isRunning);
 
   function invalidateAttachmentList() {
@@ -449,7 +458,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
       const viewport = event.currentTarget;
       followRef.current = viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop <= 48;
     }}><ChatShell.Content><ChatShell.Column>
-      <MessageList messages={visibleMessages} isRunning={chat.isRunning} error={error}
+      <MessageList messages={visibleMessages} isRunning={chat.isRunning || scheduledRunning} error={error}
         approvals={visibleApprovals} pendingApprovalIds={pendingApprovalIds}
         threadAttachments={threadAttachments}
         onApprove={approve} onDecline={decline} onAnswer={answer} />

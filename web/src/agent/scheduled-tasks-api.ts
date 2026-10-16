@@ -88,7 +88,9 @@ export async function resumeTask(id: string) {
 }
 
 export async function runTask(id: string) {
-  return readJson<{ accepted: boolean }>(await apiFetch(`/agent-scheduled-tasks/${id}/run`, { method: 'POST' }));
+  return readJson<{ accepted: boolean; run: Pick<RunDto, 'id' | 'threadId' | 'status'> }>(
+    await apiFetch(`/agent-scheduled-tasks/${id}/run`, { method: 'POST' }),
+  );
 }
 
 export async function deleteTask(id: string) {
