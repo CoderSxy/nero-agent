@@ -136,6 +136,18 @@ describe('message tools and stream state', () => {
     expect(screen.getByRole('img', { name: 'ECharts 图表' })).toBeTruthy();
   });
 
+  it('renders a completed JSON5 chart with a single series in the message body', async () => {
+    const source = "{xAxis:{type:'category',data:['一月','二月']},yAxis:{type:'value'},series:{type:'line',data:[1,2]},}";
+    const message = { id: 'single-series-chart', role: 'assistant', content: { format: 2, parts: [
+      { type: 'text', text: `趋势如下：\n\n\`\`\`json\n${source}\n\`\`\`\n\n说明文字。` },
+    ] } };
+    render(<MessageList messages={[message] as never} isRunning={false} error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+    expect(await screen.findByRole('img', { name: 'ECharts 图表' })).toBeTruthy();
+    expect(screen.getByText('说明文字。')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '源码' }));
+    expect(screen.getByText(source)).toBeTruthy();
+  });
   it('keeps ordinary JSON as code', () => {
     const message = { id: 'plain-json', role: 'assistant', content: { format: 2, parts: [
       { type: 'text', text: '```json\n{"series":[{"name":"记录","data":[1,2]}]}\n```' },
@@ -197,7 +209,7 @@ describe('message tools and stream state', () => {
     const view = render(<MessageList messages={[message] as never} isRunning={false} error={null}
       onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
     expect(view.container.querySelector('[data-chart="echarts"]')).toBeNull();
-    expect(screen.getByRole('alert').textContent).toContain('图表配置无效');
+    expect(screen.getByRole('alert').textContent).toContain('图表配置格式不正确');
     expect((globalThis as Record<string, unknown>)[marker]).toBeUndefined();
   });
   it('shows live reasoning and a bordered running process', () => {

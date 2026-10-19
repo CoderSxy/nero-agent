@@ -18,6 +18,9 @@ import type { PendingUserMessage } from './pending-user-message';
 import { readThreadFinanceCategory, saveThreadFinanceCategory, type FinanceCategory } from './finance-category';
 import type { AgentShellContextValue } from './AgentShell';
 import { scheduledRunOfThread } from './thread-source';
+import { MobileInbox } from './mobile/MobileInbox';
+import { useMobileLayout } from './mobile/useMobileLayout';
+import { MobileComposerDock } from './mobile/MobileComposerDock';
 
 function completeModels(models: Partial<ModelSettings>): ModelSettings | null {
   return models.chatModel && models.memoryModel
@@ -25,7 +28,8 @@ function completeModels(models: Partial<ModelSettings>): ModelSettings | null {
 }
 
 export function AgentPage() {
-  const { user, list, historySearch, setChatActions } = useOutletContext<AgentShellContextValue>();
+  const { user, list, historySearch, setChatActions, threadSource, setThreadSource, visibleThreads } = useOutletContext<AgentShellContextValue>();
+  const mobile = useMobileLayout();
   const { threadId: routeThreadId } = useParams();
   const threadId = routeThreadId === 'new' ? undefined : routeThreadId;
   const [searchParams] = useSearchParams();
@@ -33,9 +37,13 @@ export function AgentPage() {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<MastraDBMessage[]>([]);
   const [landingDraft, setLandingDraft] = useState('');
+  const [pendingLandingAction, setPendingLandingAction] = useState(false);
   const [landingFocused, setLandingFocused] = useState(false);
   const [creatingThread, setCreatingThread] = useState(false);
   const [handoffThreadId, setHandoffThreadId] = useState<string | null>(null);
+  const [handoffSendThreadId, setHandoffSendThreadId] = useState<string | null>(null);
+  const pendingLandingFilesRef = useRef<{ files: File[]; kind: 'file' | 'image' }[]>([]);
+  const pendingLandingPickerRef = useRef(false);
   const creatingThreadRef = useRef(false);
   const pendingFinanceCategoryRef = useRef<FinanceCategory | null>(null);
   const landingCreationStartedRef = useRef(false);
@@ -149,7 +157,11 @@ export function AgentPage() {
     landingCreationStartedRef.current = false;
     setLandingFocused(false);
     setLandingDraft('');
+    setPendingLandingAction(false);
     setHandoffThreadId(null);
+    setHandoffSendThreadId(null);
+    pendingLandingFilesRef.current = [];
+    pendingLandingPickerRef.current = false;
   }, [threadId]);
   useEffect(() => {
     if (handoffThreadId && threadId && threadId !== handoffThreadId) setHandoffThreadId(null);
@@ -162,7 +174,10 @@ export function AgentPage() {
       void create(true);
     }
   }, [threadId, landingFocused, canCreate]);
-  async function create(fromLanding = false) {
+  useEffect(() => {
+    if (!threadId && pendingLandingAction && canCreate && !creatingThreadRef.current) void create(true);
+  }, [threadId, pendingLandingAction, canCreate]);
+  async function create(fromLanding = false, sendAfterCreate = false) {
     if (creatingThreadRef.current || (fromLanding && landingCreationStartedRef.current)) return;
     if (!canCreate || !newThreadModels) { setNotice(catalog ? '请先配置公共默认模型' : '模型列表尚未加载，请稍后重试'); return; }
     creatingThreadRef.current = true;
@@ -179,6 +194,7 @@ export function AgentPage() {
         setFinanceSaving(false);
       }
       setHandoffThreadId(fromLanding ? thread.id : null);
+      setHandoffSendThreadId(sendAfterCreate ? thread.id : null);
       setNotice(null);
       navigate(`/agent/${thread.id}`);
     } catch (cause) {
@@ -236,16 +252,39 @@ export function AgentPage() {
   useEffect(() => {
     setChatActions({ onNew: () => void create(!threadId), canCreate });
   }, [canCreate, threadId, setChatActions]);
+  const landingComposer = <AgentComposer draft={landingDraft} onDraftChange={setLandingDraft}
+    financeCategory={null} financeEnabled={financeEnabled} financeSaving={financeSaving}
+    onFinanceCategoryChange={value => void changeFinanceCategory(value)}
+    onInputFocus={mobile ? undefined : () => { setLandingFocused(true); if (canCreate) void create(true); }}
+    isRunning={false} sendDisabled={!canCreate || creatingThread} attachmentsDisabled={!mobile} mobileInline={mobile}
+    onSend={() => void create(true, mobile)} onStop={() => undefined}
+    onUploadFiles={(files, kind) => {
+      pendingLandingFilesRef.current.push({ files, kind });
+      setPendingLandingAction(true);
+    }}
+    onChooseWorkspaceFiles={() => {
+      pendingLandingPickerRef.current = true;
+      setPendingLandingAction(true);
+    }}
+    catalog={catalog ?? []} modelRef={selected?.chatModel} onModelChange={selectComposerModel}
+    modelDisabled={creatingThread} />;
   return <>
     <section className="agent-center">
       {notice && <div role="alert" className="notice">{notice}</div>}
       {financeError && <div role="alert" className="notice">{financeError}</div>}
-      {loadingThread ? <div className="empty-chat">加载会话中…</div> : threadId && !notice ?
+      {mobile && !threadId ? <MobileInbox threads={visibleThreads} source={threadSource}
+        onSourceChange={setThreadSource} onNavigate={path => navigate(path)}
+        onOpenThread={id => navigate(`/agent/${encodeURIComponent(id)}`)}
+        loading={list.loading} error={list.error} modelCount={catalog?.length}
+        composer={<MobileComposerDock>{landingComposer}</MobileComposerDock>} /> : loadingThread ? <div className="empty-chat">加载会话中…</div> : threadId && !notice ?
         <AgentChat key={threadId} title={list.threads.find(thread => thread.id === threadId)?.title || '未命名会话'}
           threadId={threadId} resourceId={user.id} initialMessages={messages} models={selected}
           scheduledRun={scheduledRun}
           initialDraft={handoffThreadId === threadId ? landingDraft : ''}
           focusComposer={handoffThreadId === threadId}
+          sendOnMount={handoffSendThreadId === threadId}
+          initialFiles={handoffThreadId === threadId ? pendingLandingFilesRef.current : []}
+          openPickerOnMount={handoffThreadId === threadId && pendingLandingPickerRef.current}
           catalog={catalog ?? []} modelRef={selected?.chatModel} onModelChange={selectComposerModel}
           modelDisabled={settingsSaving} modelError={settingsError}
           financeCategory={financeCategory} financeEnabled={financeEnabled} financeSaving={financeSaving}
@@ -280,20 +319,13 @@ export function AgentPage() {
           </ChatShell.Content></ChatShell.Viewport></ChatShell.Stage>
           <ChatShell.Dock><ChatShell.Column>
             <div className="chat-welcome"><h1>有什么可以帮你？</h1></div>
-            <AgentComposer draft={landingDraft} onDraftChange={setLandingDraft}
-              financeCategory={null} financeEnabled={financeEnabled} financeSaving={financeSaving}
-              onFinanceCategoryChange={value => void changeFinanceCategory(value)}
-              onInputFocus={() => { setLandingFocused(true); if (canCreate) void create(true); }}
-              isRunning={false} sendDisabled={!canCreate || creatingThread} attachmentsDisabled
-              onSend={() => void create(true)} onStop={() => undefined}
-              catalog={catalog ?? []} modelRef={selected?.chatModel} onModelChange={selectComposerModel}
-              modelDisabled={creatingThread} />
+            {landingComposer}
           </ChatShell.Column></ChatShell.Dock>
         </ChatShell>}
       {fileRequest && <WorkspaceFileOverlay request={fileRequest} source={workspaceSource}
         onClosed={() => setFileRequest(null)} onSaved={() => setFilesRefreshVersion(value => value + 1)} />}
     </section>
-    <RightPanelDock width={rightWidth} maxWidth={rightMax} onResize={setRightPreferredWidth}
+    {!mobile && <RightPanelDock width={rightWidth} maxWidth={rightMax} onResize={setRightPreferredWidth}
       config={<ConfigPanel agent={agent} memory={memory} loading={configLoading} error={configError}
       models={configModels} />}
       files={<WorkspaceFileTree source={workspaceSource}
@@ -304,6 +336,6 @@ export function AgentPage() {
           nextAttachId.current += 1;
           setAttachRequest({ id: nextAttachId.current, threadId, path, source });
         } : undefined}
-        onFilesChanged={() => setFilesRefreshVersion(value => value + 1)} />} />
+        onFilesChanged={() => setFilesRefreshVersion(value => value + 1)} />} />}
   </>;
 }

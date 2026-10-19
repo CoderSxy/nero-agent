@@ -52,6 +52,33 @@ afterEach(() => { cleanup(); vi.clearAllMocks(); vi.unstubAllGlobals(); mockRunn
 });
 
 describe('Agent conversation', () => {
+  it('edits directly in the mobile composer and opens its add menu', () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockImplementation((query: string) => ({ matches: query === '(max-width: 767px)', media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
+    render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}
+      onMessageSent={vi.fn()} models={models} catalog={catalog} />);
+    const input = screen.getByRole('textbox', { name: '发送消息' });
+    fireEvent.change(input, { target: { value: '直接输入内容' } });
+    expect((input as HTMLTextAreaElement).value).toBe('直接输入内容');
+    expect(screen.queryByRole('dialog', { name: '会话输入框' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '添加附件' }));
+    expect(screen.getByRole('menuitem', { name: '上传文件' })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: '添加图片' })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: '切换模型' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('menuitem', { name: '切换模型' }));
+    expect(screen.getByRole('listbox', { name: '选择模型' })).toBeTruthy();
+  });
+  it('sends a mobile Inbox handoff draft once after the conversation mounts', async () => {
+    mockMessages = [];
+    sendMessage.mockResolvedValue(undefined);
+    const props = { threadId: 'thread-1', resourceId: 'agent', initialMessages: [],
+      initialDraft: '请总结今天的内容', sendOnMount: true, onMessageSent: vi.fn(), models };
+    const { rerender } = render(<AgentChat {...props} />);
+    await waitFor(() => expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({
+      message: '请总结今天的内容', threadId: 'thread-1',
+    })));
+    rerender(<AgentChat {...props} />);
+    expect(sendMessage).toHaveBeenCalledTimes(1);
+  });
   it('restores the landing draft and focuses the composer after creating a conversation', () => {
     mockMessages = [];
     render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}

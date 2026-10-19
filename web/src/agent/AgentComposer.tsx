@@ -87,12 +87,13 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
   catalog = [], modelRef, onModelChange, modelDisabled = false,
   financeCategory = null, financeEnabled = false, financeSaving = false, onFinanceCategoryChange,
   attachments = [], onChooseWorkspaceFiles, onUploadFiles, onRemoveAttachment, onRetryAttachment,
-  onWorkspaceDrop, onInputFocus, autoFocus = false, attachmentsDisabled = false }: {
+  onWorkspaceDrop, onInputFocus, autoFocus = false, attachmentsDisabled = false, mobileInline = false }: {
   sendDisabled?: boolean; draft: string; onDraftChange: (value: string) => void; isRunning: boolean;
   financeCategory?: FinanceCategory | null; financeEnabled?: boolean; financeSaving?: boolean;
   onFinanceCategoryChange?: (value: FinanceCategory | null) => void;
   onSend: () => void; onStop: () => void;
   onInputFocus?: () => void; autoFocus?: boolean; attachmentsDisabled?: boolean;
+  mobileInline?: boolean;
   catalog?: SafeModel[]; modelRef?: ModelRef; onModelChange?: (ref: ModelRef) => void; modelDisabled?: boolean;
   attachments?: ComposerAttachment[];
   onChooseWorkspaceFiles?: () => void;
@@ -219,7 +220,8 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
     setPreview(null);
   }
 
-  return <div className="agent-composer" onDragOver={onDragOver} onDrop={onDrop} onPaste={onPaste}>
+  return <div className={`agent-composer${mobileInline ? ' mobile-inline-composer' : ''}`}
+    onDragOver={onDragOver} onDrop={onDrop} onPaste={onPaste}>
     <div className="composer-finance-row">
       <div className="composer-finance-picker">
         <button type="button" aria-label="财经数据" aria-expanded={financeOpen} disabled={financeSaving || isRunning}
@@ -307,7 +309,7 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
             onClick={event => {
               if (addOpen) { setAddOpen(false); return; }
               const rect = event.currentTarget.getBoundingClientRect();
-              setAddPosition({ top: Math.max(8, rect.top - 140), left: Math.min(rect.left, window.innerWidth - 180) });
+              setAddPosition({ top: Math.max(8, rect.top - (mobileInline ? 188 : 140)), left: Math.min(rect.left, window.innerWidth - 180) });
               setAddOpen(true); setOpen(false);
             }}><Plus size={18} aria-hidden="true" /></button>
           {addOpen && createPortal(<div className="composer-add-menu" role="menu" aria-label="添加附件"
@@ -316,6 +318,15 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
             <button type="button" role="menuitem" onClick={() => { setAddOpen(false); onChooseWorkspaceFiles?.(); }}>
               选择工作区文件</button>
             <button type="button" role="menuitem" onClick={() => pickFiles('image')}>添加图片</button>
+            {mobileInline && <button type="button" role="menuitem" disabled={modelDisabled || catalog.length === 0}
+              onClick={() => {
+                setAddOpen(false); setQuery('');
+                setPosition({ top: Math.max(8, addPosition.top - 270), left: 8,
+                  width: Math.min(360, window.innerWidth - 16) });
+                setOpen(true);
+              }}>切换模型</button>}
+            {mobileInline && <button type="button" role="menuitem" disabled={financeSaving || isRunning}
+              onClick={() => { setAddOpen(false); setFinanceOpen(true); }}>财经数据</button>}
           </div>, document.body)}
           {isRunning ? <button className="composer-send-button" type="button" aria-label="停止" title="停止"
             onClick={onStop}><Square size={16} fill="currentColor" aria-hidden="true" /></button>

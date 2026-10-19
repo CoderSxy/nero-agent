@@ -81,9 +81,10 @@ vi.mock('./history-search-cache', () => ({ createHistorySearchCache: () => ({}) 
 vi.mock('./AgentChat', () => ({ AgentChat: ({ title, models, sendBlockedReason, catalog, modelRef, onModelChange,
   modelError, pendingUserMessages, onMessageSubmitted, onMessageSent, onMessageFailed, onResponseSettled,
   onFilesChanged, attachRequest, attachmentRefreshVersion,
-  targetMessageId, initialDraft, focusComposer, scheduledRun }: {
+  targetMessageId, initialDraft, focusComposer, sendOnMount, initialFiles, scheduledRun }: {
   title?: string;
-  initialDraft?: string; focusComposer?: boolean;
+  initialDraft?: string; focusComposer?: boolean; sendOnMount?: boolean;
+  initialFiles?: { files: File[]; kind: 'file' | 'image' }[];
   models: { chatModel: string; memoryModel: string } | null; sendBlockedReason?: string | null;
   catalog?: Array<{ ref: string; displayName: string }>; modelRef?: string; onModelChange?: (ref: string) => void;
   modelError?: string | null; pendingUserMessages?: PendingUserMessage[];
@@ -106,6 +107,8 @@ vi.mock('./AgentChat', () => ({ AgentChat: ({ title, models, sendBlockedReason, 
   <span data-testid="attachment-refresh">{String(attachmentRefreshVersion ?? 0)}</span>
   <span data-testid="target-message">{targetMessageId ?? ''}</span>
   <span data-testid="scheduled-run">{scheduledRun ? `${scheduledRun.taskId}|${scheduledRun.runId}` : ''}</span>
+  <span data-testid="auto-send">{String(Boolean(sendOnMount))}</span>
+  <span data-testid="handoff-files">{initialFiles?.flatMap(batch => batch.files.map(file => file.name)).join('|')}</span>
   <button type="button" onClick={() => onMessageSubmitted?.({ id: 'local', text: '刚发送的消息',
     createdAt: new Date(), occurrence: 1 })}>模拟发送</button>
   <button type="button" onClick={() => onMessageSent?.({ id: 'local', text: '刚发送的消息',
@@ -146,6 +149,59 @@ function renderPage(path = '/agent/thread-1') {
 }
 
 describe('Agent page model selection', () => {
+  it('shows the mobile Inbox with overview cards and recent conversations at narrow widths', async () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockImplementation((query: string) => ({
+      matches: query === '(max-width: 767px)', media: query,
+      addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    })));
+    threadItems = [{ id: 'thread-1', title: '移动端会话', resourceId: 'agent', updatedAt: '2026-10-16T00:00:00Z' }];
+    renderPage('/agent/new');
+    expect(await screen.findByRole('region', { name: 'Inbox' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '历史对话，1 个会话' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '文件管理' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '模型列表' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '敬请期待' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('button', { name: '打开会话 移动端会话' })).toBeTruthy();
+  });
+  it('shows a mobile back control for an open conversation', async () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockImplementation((query: string) => ({
+      matches: query === '(max-width: 767px)', media: query,
+      addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    })));
+    renderPage('/agent/thread-1');
+    expect(await screen.findByRole('button', { name: '返回 Inbox' })).toBeTruthy();
+  });
+  it('types directly in the mobile composer without creating a thread until send', async () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockImplementation((query: string) => ({
+      matches: query === '(max-width: 767px)', media: query,
+      addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    })));
+    createThread.mockResolvedValueOnce({ id: 'thread-1' });
+    renderPage('/agent/new');
+    const input = await screen.findByRole('textbox', { name: '发送消息' });
+    fireEvent.focus(input);
+    expect(createThread).not.toHaveBeenCalled();
+    fireEvent.change(input, { target: { value: '请总结今天的内容' } });
+    fireEvent.click(screen.getByRole('button', { name: '发送' }));
+    await waitFor(() => expect(createThread).toHaveBeenCalledTimes(1));
+    expect((await screen.findByRole('textbox', { name: '已创建会话输入框' }) as HTMLTextAreaElement).value)
+      .toBe('请总结今天的内容');
+    expect(screen.getByTestId('auto-send').textContent).toBe('true');
+  });
+  it('passes a file selected from the mobile plus menu into the created conversation', async () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockImplementation((query: string) => ({
+      matches: query === '(max-width: 767px)', media: query,
+      addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    })));
+    createThread.mockResolvedValueOnce({ id: 'thread-1' });
+    const { container } = renderPage('/agent/new');
+    fireEvent.click(screen.getByRole('button', { name: '添加附件' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '上传文件' }));
+    const fileInput = container.querySelector('input[aria-label="选择本地文件"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [new File(['hello'], 'notes.txt', { type: 'text/plain' })] } });
+    await waitFor(() => expect(createThread).toHaveBeenCalledTimes(1));
+    expect((await screen.findByTestId('handoff-files')).textContent).toBe('notes.txt');
+  });
   it('passes a scheduled run identity to the open conversation', async () => {
     get.mockResolvedValue({ id: 'thread-1', resourceId: 'agent', metadata: {
       neroAgentSourceType: 'schedule', neroAgentScheduleTaskId: 'task-1',

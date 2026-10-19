@@ -7,6 +7,7 @@ export default defineConfig({
   optimizeDeps: { exclude: ['emf-converter'] },
   build: { rollupOptions: { external: ['emf-converter'] } },
   server: {
+    host: true ,
     proxy: {
       '/api': 'http://127.0.0.1:4111',
       '/auth': 'http://127.0.0.1:4111',

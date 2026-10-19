@@ -18,6 +18,8 @@ import { nextPendingUserMessage, withPendingUserMessages, type PendingUserMessag
 import { WorkspaceFilePicker } from './WorkspaceFilePicker';
 import type { FinanceCategory } from './finance-category';
 import { useScheduledThreadUpdates, type ScheduledRunRef } from './use-scheduled-thread-updates';
+import { MobileComposerDock } from './mobile/MobileComposerDock';
+import { useMobileLayout } from './mobile/useMobileLayout';
 
 type PendingUpload = { key: string; file: File };
 
@@ -47,9 +49,11 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   onModelChange, modelRef, modelDisabled = false, modelError, sendBlockedReason,
   financeCategory = null, financeEnabled = false, financeSaving = false, onFinanceCategoryChange,
   pendingUserMessages = [], onMessageSubmitted, onMessageFailed, onResponseSettled, onFilesChanged, attachRequest,
-  attachmentRefreshVersion = 0, targetMessageId, initialDraft = '', focusComposer = false, scheduledRun }: {
+  attachmentRefreshVersion = 0, targetMessageId, initialDraft = '', focusComposer = false, sendOnMount = false,
+  initialFiles = [], openPickerOnMount = false, scheduledRun }: {
   title?: string; threadId: string; resourceId: string; initialMessages: MastraDBMessage[];
-  initialDraft?: string; focusComposer?: boolean;
+  initialDraft?: string; focusComposer?: boolean; sendOnMount?: boolean;
+  initialFiles?: { files: File[]; kind: 'file' | 'image' }[]; openPickerOnMount?: boolean;
   onMessageSent: (message: PendingUserMessage) => void;
   models: ModelSettings | null; catalog?: SafeModel[]; modelRef?: ModelRef;
   onModelChange?: (ref: ModelRef) => void; modelDisabled?: boolean; modelError?: string | null;
@@ -66,7 +70,9 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   targetMessageId?: string;
   scheduledRun?: ScheduledRunRef | null;
 }) {
+  const mobile = useMobileLayout();
   const [draft, setDraft] = useState(initialDraft);
+  const handoffSendStarted = useRef(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [failedDecisions, setFailedDecisions] = useState<Set<string>>(new Set());
@@ -74,6 +80,13 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
   const [threadAttachments, setThreadAttachments] = useState<PreparedAttachment[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const initialFilesHandled = useRef(false);
+  useEffect(() => {
+    if (initialFilesHandled.current) return;
+    initialFilesHandled.current = true;
+    if (openPickerOnMount) setPickerOpen(true);
+    for (const batch of initialFiles) uploadFiles(batch.files, batch.kind);
+  }, []);
   const pendingUploads = useRef(new Map<string, PendingUpload>());
   const nextAttachmentId = useRef(0);
   const lastAttachRequestId = useRef<number | null>(null);
@@ -434,6 +447,11 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
       setError(cause instanceof Error ? cause.message : '请求失败');
     }
   }
+  useEffect(() => {
+    if (!sendOnMount || !draft.trim() || handoffSendStarted.current) return;
+    handoffSendStarted.current = true;
+    void send();
+  }, [sendOnMount, draft]);
   async function approve(id: string) {
     try { await chat.approveToolCall(id); setError(null);
       setPendingApprovalIds(value => { const next = new Set(value); next.delete(id); return next; });
@@ -469,7 +487,17 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
       </div>
       {blockedReason && <p className="notice" role="status">{blockedReason}</p>}
       {modelError && <p className="error" role="alert">{modelError}</p>}
-      <AgentComposer draft={draft} sendDisabled={Boolean(blockedReason) || modelDisabled} onDraftChange={setDraft}
+      {mobile ? <MobileComposerDock>
+        <AgentComposer draft={draft} sendDisabled={Boolean(blockedReason) || modelDisabled} onDraftChange={setDraft}
+          financeCategory={financeCategory} financeEnabled={financeEnabled} financeSaving={financeSaving}
+          onFinanceCategoryChange={onFinanceCategoryChange}
+          autoFocus={focusComposer} mobileInline
+          catalog={catalog} modelRef={modelRef ?? models?.chatModel} onModelChange={onModelChange} modelDisabled={modelDisabled}
+          isRunning={chat.isRunning || chat.isAwaitingToolApproval} onSend={() => void send()}
+          attachments={attachments} onChooseWorkspaceFiles={() => setPickerOpen(true)} onUploadFiles={uploadFiles}
+          onRemoveAttachment={removeAttachment} onRetryAttachment={retryAttachment} onWorkspaceDrop={onWorkspaceDrop}
+          onStop={() => { chat.cancelRun(); setError('已停止'); }} />
+      </MobileComposerDock> : <AgentComposer draft={draft} sendDisabled={Boolean(blockedReason) || modelDisabled} onDraftChange={setDraft}
       financeCategory={financeCategory} financeEnabled={financeEnabled} financeSaving={financeSaving}
       onFinanceCategoryChange={onFinanceCategoryChange}
       autoFocus={focusComposer}
@@ -481,7 +509,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
       onRemoveAttachment={removeAttachment}
       onRetryAttachment={retryAttachment}
       onWorkspaceDrop={onWorkspaceDrop}
-      onStop={() => { chat.cancelRun(); setError('已停止'); }} />
+      onStop={() => { chat.cancelRun(); setError('已停止'); }} />}
       {pickerOpen && <WorkspaceFilePicker source="personal"
         onConfirm={paths => void chooseWorkspaceFiles(paths)}
         onClose={() => setPickerOpen(false)} />}

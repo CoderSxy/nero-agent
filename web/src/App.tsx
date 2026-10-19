@@ -4,6 +4,7 @@ import { MastraReactProvider } from '@mastra/react';
 import { AgentPage } from './agent/AgentPage';
 import { AgentShell } from './agent/AgentShell';
 import { ScheduledTasksPage } from './agent/ScheduledTasksPage';
+import { MobileFilesPage, MobileHistoryPage, MobileModelsPage } from './agent/mobile/MobilePages';
 import { setAgentClientToken } from './agent/client';
 
 export type CurrentUser = { id: string; email: string; displayName: string; roles: ('admin' | 'user')[] };
@@ -103,6 +104,9 @@ export function App() {
     <Routes>
       <Route element={<AgentShell user={user} onLogout={onLogout} />}>
         <Route path="/agent/:threadId" element={<AgentPage />} />
+        <Route path="/history" element={<MobileHistoryPage />} />
+        <Route path="/files" element={<MobileFilesPage />} />
+        <Route path="/models" element={<MobileModelsPage />} />
         <Route path="/scheduled-tasks" element={<ScheduledTasksPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/agent/new" replace />} />

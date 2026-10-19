@@ -2,6 +2,9 @@ import { Agent, type ToolsInput } from '@mastra/core/agent';
 import { TaskSignalProvider } from '@mastra/core/signals';
 import { askUserTool, webFetchTool } from '@mastra/core/tools';
 import { LocalFilesystem, LocalSandbox, Workspace } from '@mastra/core/workspace';
+import { temporalProcessor } from '../temporal/processor';
+import { temporalInstructions } from '../temporal/instructions';
+import { chartInstructions } from './chart-instructions';
 import { memoryForRequest } from './memory-model';
 import { startScheduleTool, stopScheduleTool } from '../tools/schedule-tools';
 import type { RequestContext } from '@mastra/core/request-context';
@@ -61,6 +64,8 @@ export const agent = new Agent({
   },
   instructions: () => `你是一个友好的通用智能体。默认使用简体中文回复，帮助用户搜索资料、完成任务、处理本地文件，并探索 Mastra 的能力。用户明确要求其他语言时，按其要求回复。
 
+${temporalInstructions}
+
 可建议用户尝试：查询所在城市的天气；制作一个樱花节活动页面；查询 SPCX 股价并设置定时提醒。
 
 用户打招呼或没有提出具体任务时，可以简要介绍这些示例。需求不明确时，提出简短的问题。
@@ -73,17 +78,7 @@ ${isUserFilesEnabled() ? `用户要求保存 Markdown、HTML 或其他文本到�
 
 用户消息中若列出附件 ID 与名称，使用 read_attached_file({ attachmentId }) 读取；不要猜测工作区路径，也不要用 glob/grep/edit 的 path 传附件 ID。文本附件返回内容；图片仅在当前模型支持视觉时可读。` : '当前环境文件功能未开放。用户要求读写工作区文件时，明确说明暂不可用；不要调用无关工具代替文件操作。'}
 
-需要展示步骤、关系或流程时，可在回答中输出完整的 mermaid 代码围栏。围栏内使用 Mermaid 语法，例如：
-\`\`\`mermaid
-flowchart LR
-  A[开始] --> B[完成]
-\`\`\`
-
-需要展示已有数据的趋势、对比或分布时，可在回答中输出完整的 echarts 代码围栏。围栏内必须是严格 JSON 格式的 ECharts option：属性名和字符串使用双引号，不写 JavaScript 函数、变量、注释或尾随逗号。例如：
-\`\`\`echarts
-{"xAxis":{"type":"category","data":["一月","二月"]},"yAxis":{"type":"value"},"series":[{"type":"bar","data":[12,18]}]}
-\`\`\`
-图表数据只使用用户提供或已核实的数据；没有数据时先说明，不编造数值。图表或流程图应配简短文字说明。
+${chartInstructions}
 `,
   model: async ({ requestContext }) => createTransportModel((await resolveSelectedModel(requestContext, 'chat')).config),
   defaultOptions: {
@@ -96,7 +91,7 @@ flowchart LR
     return isWorkspaceResolverEnabled() ? userWorkspace : workspace;
   },
   tools: ({ requestContext }) => resolveAgentTools(requestContext),
-  inputProcessors: [attachmentPersistenceProcessor],
+  inputProcessors: [temporalProcessor, attachmentPersistenceProcessor],
   outputProcessors: [attachmentPersistenceProcessor],
   signals: [new TaskSignalProvider()],
 });

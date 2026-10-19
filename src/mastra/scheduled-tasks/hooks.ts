@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { setScheduledTimezone } from '../temporal/context';
 import { RequestContext } from '@mastra/core/request-context';
 import type { Mastra } from '@mastra/core/mastra';
 import type { SchedulesConfig } from '@mastra/core/schedules';
@@ -208,6 +209,7 @@ export function createScheduledTaskHooks(
         }
 
         const requestContext = buildRequestContext(owner, task.chatModelRef, task.memoryModelRef);
+        setScheduledTimezone(requestContext, task.timezone);
         if (!threadId) {
           const thread = await createThread({
             mastra: ctx.mastra,

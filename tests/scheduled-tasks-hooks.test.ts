@@ -3,6 +3,7 @@ import test from 'node:test';
 import { randomUUID } from 'node:crypto';
 import { RequestContext } from '@mastra/core/request-context';
 import type { AuthUser } from '../src/mastra/auth/service';
+import { resolveTemporalTimezone } from '../src/mastra/temporal/context';
 import { memoryForRequest } from '../src/mastra/agents/memory-model';
 import {
   createScheduledTaskHooks,
@@ -374,4 +375,20 @@ test('memoryForRequest allows missing request context for read-only default memo
   const memory = await memoryForRequest({ requestContext: empty });
   assert.ok(memory);
   assert.equal(typeof memory.getThreadById, 'function');
+});
+
+
+test('scheduled execution propagates persisted task timezone to the model context', async () => {
+  const owner = admin();
+  const task = taskRow(owner, { timezone: 'America/New_York' });
+  const deps = makeDeps({ owner, task });
+  let timezone: string | undefined;
+  deps.runAgent = async ({ requestContext }) => {
+    timezone = resolveTemporalTimezone(requestContext);
+    return { runId: 'timezone-run' };
+  };
+  await createScheduledTaskHooks(deps).prepare!({ mastra: {}, agentId: 'agent',
+    schedule: { id: 'agent_x', agentId: 'agent', metadata: { appTaskId: task.id }, prompt: task.prompt },
+    trigger: { kind: 'cron', firedAt: new Date('2026-10-15T13:00:00Z') } });
+  assert.equal(timezone, 'America/New_York');
 });
