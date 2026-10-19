@@ -1,0 +1,194 @@
+web/src/agent/mobile/mobile.css
+  s_b85450459e164e::t_a59f6fda970d77 1-19,22-25,28-29,34-51,67-97,99,117-119,121-148,150-153,157-158,161-166
+  s_b85450459e164e::t_1f136c1229e4d0 101-106
+  s_b85450459e164e::t_f1730d5302e43a 20-21
+  s_b85450459e164e::t_4bf63dc02cd823 26-27,30-33
+  s_b85450459e164e::t_969a98d9b7c024 52-66
+  s_b85450459e164e::t_cd0ffeb0e82168 120
+  s_b85450459e164e::t_95b8443fef192e 154-156,159
+  s_b85450459e164e::t_7679ff57e760cc 160
+  s_b85450459e164e::t_ff46eba4e25b00 100,107-116
+  s_b85450459e164e::t_9c8b5f52775fa2 149
+  s_b85450459e164e::t_bd626e33716831 98
+src/mastra/temporal/context.ts
+  s_9f02ea9a04c319::t_dadf5b8a5c612e 1-59
+web/src/agent/mobile/MobileThreadActions.test.tsx
+  s_b85450459e164e::t_822ac2f5e1a252 1-23
+tests/tavily-search-tool.test.ts
+  s_9f02ea9a04c319::t_d12b9738b34898 28,41-42,48,84-128
+tests/temporal-processor.test.ts
+  s_9f02ea9a04c319::t_fd66566ffcacb2 81-82
+  s_9f02ea9a04c319::t_59e2a835a9d283 65-76
+  s_9f02ea9a04c319::t_504d3a3901c54b 77-80,83-87
+  s_9f02ea9a04c319::t_054f9959318614 1-64
+web/src/agent/MessageList.test.tsx
+  s_9f02ea9a04c319::t_8ba69a389fcd0d 139-150
+  s_9f02ea9a04c319::t_763cf6dae4d43f 212
+docs/chart-rendering-verification.md
+  s_9f02ea9a04c319::t_9e5eb727cbdf42 1-41
+docs/superpowers/plans/2026-10-17-chart-output-and-rendering.md
+  s_9f02ea9a04c319::t_c0abf27d51fb6c 1-33,37-42,46-51,55-59,65-70
+  s_9f02ea9a04c319::t_9e5eb727cbdf42 34-36,43-45,52-54,60-64,71-79
+web/src/agent/markdown/MermaidBlock.test.tsx
+  s_9f02ea9a04c319::t_8ba69a389fcd0d 1-10,12-14,16-18
+  s_9f02ea9a04c319::t_5211fe0a7fa7e9 11,15
+tests/chart-instructions.test.ts
+  s_9f02ea9a04c319::t_96110486258cb3 1-27
+docs/superpowers/specs/2026-10-16-mobile-web-adaptation-design.md
+  s_b85450459e164e::t_062db82892332e 1-12,14-21
+  s_b85450459e164e::t_aa4cda6848909e 13
+web/src/agent/AgentPage.tsx
+  s_b85450459e164e::t_81bb8a9fd54028 21-22,31-32,255-257,269-270,275-278,322,328,339
+  s_b85450459e164e::t_dbe9fc8f0f062c 23,44,162,180,197,258,260,285
+  s_b85450459e164e::t_1d4924d63da4d7 45-46,163-164,259,261-262,264-266,268,279,286-287
+  s_b85450459e164e::t_a8c503002ea1b5 40,160,177-179,263,267
+docs/superpowers/specs/2026-10-17-temporal-accuracy-optimization-design.md
+  s_9f02ea9a04c319::t_79eb35e0c48bbf 4
+  s_9f02ea9a04c319::t_1738e6c949560a 1-3,5-158
+web/src/App.tsx
+  s_b85450459e164e::t_7778a1ad44af59 7,107-109
+src/mastra/agents/agent.ts
+  s_9f02ea9a04c319::t_11a18da6462809 7,81
+  s_9f02ea9a04c319::t_dadf5b8a5c612e 5-6,67-68,94
+web/src/agent/AgentChat.tsx
+  s_b85450459e164e::t_48d5e10d26b6b5 55,75,450-454
+  s_b85450459e164e::t_2505e65795cd02 21-22,73,491-493,495-500,512
+  s_b85450459e164e::t_7ece9eeab13067 52-53,56,83-89,490,494
+web/src/agent/AgentPage.test.tsx
+  s_b85450459e164e::t_9b757f1f935a0c 160
+  s_b85450459e164e::t_76960c138f2a4f 191-204
+  s_b85450459e164e::t_aa8f5429391d85 86,110
+  s_b85450459e164e::t_6fbc4d6052bd8e 84,87,111
+  s_b85450459e164e::t_bcf3af216fdfd2 164
+  s_b85450459e164e::t_190d7b88427713 174
+  s_b85450459e164e::t_ca194f96b25a83 175-190
+  s_b85450459e164e::t_a0a0d325c2b307 152-159,161-163,165
+  s_b85450459e164e::t_2cf0c0021d5eb7 166-173
+src/mastra/agents/chart-instructions.ts
+  s_9f02ea9a04c319::t_11a18da6462809 1-15
+docs/temporal-accuracy-verification.md
+  s_9f02ea9a04c319::t_79eb35e0c48bbf 1-12,15-17,19-74
+  s_9f02ea9a04c319::t_98b52eae2ebe25 13-14,18
+  s_9f02ea9a04c319::t_0a4b6e2a775b8a 75-84
+tests/temporal-context.test.ts
+  s_9f02ea9a04c319::t_054f9959318614 1-27
+tests/temporal-date-range.test.ts
+  s_9f02ea9a04c319::t_cbf40ce311def9 1-78
+web/src/agent/AgentShell.tsx
+  s_b85450459e164e::t_21b174cb763aa7 84-98
+  s_b85450459e164e::t_5abed3b9c43d5e 2,14,43-45,141-143,145-151,153,155,159-167
+  s_b85450459e164e::t_788efa177cb8b2 3,15,46,144,154,156-158
+  s_b85450459e164e::t_74a00e43465168 49
+  s_b85450459e164e::t_55d08d76ba4021 152
+  s_b85450459e164e::t_39522f94154346 83
+web/src/agent/mobile/MobileHistory.test.tsx
+  s_b85450459e164e::t_7165dbf05d823f 1-12,14-23
+  s_b85450459e164e::t_cd0ffeb0e82168 13
+src/mastra/tools/tavily-search-tool.ts
+  s_9f02ea9a04c319::t_ae29ef66e8c716 3,5-7,10-21,26,33,54,61,65,68,82-85,91-92,110,125
+web/src/agent/mobile/MobileInbox.tsx
+  s_b85450459e164e::t_cd12dcacf4e378 1-70
+docs/temporal-accuracy-evaluation.md
+  s_9f02ea9a04c319::t_0a4b6e2a775b8a 10
+  s_9f02ea9a04c319::t_a16a836146545b 1-9,11-44
+web/src/agent/mobile/MobileComposerDock.tsx
+  s_b85450459e164e::t_a094ce7f095eed 1-5
+web/src/agent/mobile/MobileModels.test.tsx
+  s_b85450459e164e::t_b26aac20753614 1-22
+web/src/main.tsx
+  s_b85450459e164e::t_a59f6fda970d77 7
+web/src/agent/markdown/echarts-option.ts
+  s_9f02ea9a04c319::t_d2521a86038514 2,4-68,70-95,98,101-102
+docs/superpowers/specs/2026-10-17-chart-output-and-rendering-design.md
+  s_9f02ea9a04c319::t_66bfd327b77d6c 1-3,5-158
+  s_9f02ea9a04c319::t_9e5eb727cbdf42 4
+web/src/agent/AgentChat.test.tsx
+  s_b85450459e164e::t_0e0c169e48fd24 56-57,69
+  s_b85450459e164e::t_3b95c75dd7990d 58,67-68
+  s_b85450459e164e::t_fb0164677fcb46 70-81
+  s_b85450459e164e::t_190d7b88427713 55,59-66
+web/src/agent/AgentComposer.tsx
+  s_b85450459e164e::t_1f136c1229e4d0 328-329
+  s_b85450459e164e::t_514270f808b74d 90,96,223-224,312,321-327
+web/src/agent/mobile/MobilePages.tsx
+  s_b85450459e164e::t_7778a1ad44af59 1,3-15,18-61
+  s_b85450459e164e::t_a23619f2b9bdff 2,16-17
+src/mastra/temporal/processor.ts
+  s_9f02ea9a04c319::t_cbf40ce311def9 5,19
+  s_9f02ea9a04c319::t_dadf5b8a5c612e 1-4,6-14,18,20-22
+  s_9f02ea9a04c319::t_b0165c5868f35e 15-17
+web/src/agent/mobile/MobileInbox.test.tsx
+  s_b85450459e164e::t_d69a41ba1a20b3 26
+  s_b85450459e164e::t_0ddfc425e561cc 1-25,27-30
+web/index.html
+  s_b85450459e164e::t_9c8b5f52775fa2 3
+web/src/agent/markdown/EChartsBlock.test.tsx
+  s_9f02ea9a04c319::t_8ba69a389fcd0d 72-74,80-91,93-103
+  s_9f02ea9a04c319::t_763cf6dae4d43f 3,13
+  s_9f02ea9a04c319::t_0ff8cef173a6e3 1-2,4-12,14-71,75-79,104,120
+  s_9f02ea9a04c319::t_b4c7f25f7c4608 92,105-119
+docs/superpowers/plans/2026-10-16-mobile-web-adaptation.md
+  s_b85450459e164e::t_062db82892332e 1-16
+web/src/agent/mobile/MobileThreadActions.tsx
+  s_b85450459e164e::t_66c2c85c25f21f 1-51
+src/mastra/temporal/instructions.ts
+  s_9f02ea9a04c319::t_dadf5b8a5c612e 1-9
+web/src/agent/mobile/useMobileLayout.ts
+  s_b85450459e164e::t_81bb8a9fd54028 1-16
+docs/superpowers/plans/2026-10-17-temporal-accuracy-abc.md
+  s_9f02ea9a04c319::t_a9cbd4a6a60a33 1-34,38-44,48-54,60-65
+  s_9f02ea9a04c319::t_98b52eae2ebe25 72,74
+  s_9f02ea9a04c319::t_79eb35e0c48bbf 35-37,45-47,55-59,66-71,73
+web/src/agent/markdown/echarts-option.test.ts
+  s_9f02ea9a04c319::t_f4a460277cf097 2-64
+  s_9f02ea9a04c319::t_0e8515c19c061b 1
+web/src/agent/mobile/MobileModels.tsx
+  s_b85450459e164e::t_8a4466ab56a7c1 15
+  s_b85450459e164e::t_524661897ebc18 1-14,16-33
+tests/temporal-agent.integration.test.ts
+  s_9f02ea9a04c319::t_5a8f14d8dfc680 1-34,36-37,42-43,53,57
+  s_9f02ea9a04c319::t_59e2a835a9d283 35
+  s_9f02ea9a04c319::t_d5f8d97b2379f5 66-124
+  s_9f02ea9a04c319::t_ef75d89731dfc3 38-41,44-52,54-56,58-65
+web/src/agent/mobile/MobileHistory.tsx
+  s_b85450459e164e::t_c0d41eec3b12b0 1-17,23-39
+  s_b85450459e164e::t_cd0ffeb0e82168 18-22
+tests/scheduled-tasks-hooks.test.ts
+  s_9f02ea9a04c319::t_dadf5b8a5c612e 6,379-393
+  s_9f02ea9a04c319::t_f6f71f901623bf 394
+web/src/agent/markdown/EChartsBlock.tsx
+  s_9f02ea9a04c319::t_5211fe0a7fa7e9 4-10,13-31,33-34,36-37,40-41,43-44,46-56,58-61,63-67,69-83
+  s_9f02ea9a04c319::t_bdbedbb595aed3 2-3,84-103,105-106,111-113,115-119
+src/mastra/scheduled-tasks/hooks.ts
+  s_9f02ea9a04c319::t_dadf5b8a5c612e 2,212
+src/mastra/temporal/date-range.ts
+  s_9f02ea9a04c319::t_b80a7eac46bee7 1-97
+web/package-lock.json
+  s_9f02ea9a04c319::t_5bbda112da645b 21
+web/package.json
+  s_9f02ea9a04c319::t_83ee77a3a6ed42 23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "14f31ebe3a28c8b60d813514ba6c8c5138c90421",
+  "prompts": {},
+  "sessions": {
+    "s_9f02ea9a04c319": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1487b-d970-7ac0-9426-dfa36f7f72a2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_b85450459e164e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14280-089f-7eb2-b9d1-f682ed7d604f",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
