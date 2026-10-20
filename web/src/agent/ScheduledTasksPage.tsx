@@ -17,6 +17,7 @@ import {
 } from './scheduled-tasks-api';
 import { buildTaskCron, cronLabel, parseTaskCron, type CronPreset } from './task-cron';
 import { fromTaskLocalTime, toTaskLocalTime } from './task-timezone';
+import { SkillPicker } from './skills/SkillPicker';
 
 const DEFAULT_TZ = 'Asia/Shanghai';
 
@@ -34,6 +35,8 @@ type EditorState = {
   customCron: string;
   startsAt: string;
   endsAt: string;
+  selectedSkillIds: string[];
+  skillIdsTouched: boolean;
 };
 
 function emptyEditor(defaultRef = ''): EditorState {
@@ -50,6 +53,8 @@ function emptyEditor(defaultRef = ''): EditorState {
     customCron: '0 9 * * *',
     startsAt: '',
     endsAt: '',
+    selectedSkillIds: [],
+    skillIdsTouched: false,
   };
 }
 
@@ -69,6 +74,8 @@ function editorFromTask(task: TaskDto & { prompt?: string }): EditorState {
     customCron: parsed.kind === 'custom' ? parsed.expression : task.cron,
     startsAt: task.startsAt ? toTaskLocalTime(task.startsAt, task.timezone) : '',
     endsAt: task.endsAt ? toTaskLocalTime(task.endsAt, task.timezone) : '',
+    selectedSkillIds: Array.isArray(task.selectedSkillIds) ? task.selectedSkillIds : [],
+    skillIdsTouched: Array.isArray(task.selectedSkillIds),
   };
 }
 
@@ -89,6 +96,9 @@ function toInput(editor: EditorState, defaultModelRef?: string): TaskInput {
     cron: buildTaskCron(preset, editor.timezone),
     startsAt: editor.startsAt ? fromTaskLocalTime(editor.startsAt, editor.timezone) : null,
     endsAt: editor.endsAt ? fromTaskLocalTime(editor.endsAt, editor.timezone) : null,
+    ...(editor.skillIdsTouched || editor.selectedSkillIds.length > 0
+      ? { selectedSkillIds: editor.selectedSkillIds.slice(0, 5) }
+      : {}),
   };
 }
 
@@ -365,6 +375,12 @@ export function ScheduledTasksPage() {
             onChange={(event) => setEditor({ ...editor, name: event.target.value })} /></label>
           <label>提示词<textarea required rows={5} value={editor.prompt}
             onChange={(event) => setEditor({ ...editor, prompt: event.target.value })} /></label>
+          <div className="scheduled-task-skills">
+            <span>技能（可选）</span>
+            <SkillPicker value={editor.selectedSkillIds} disabled={saving}
+              scopeKey={editor.id ?? 'new-task'}
+              onChange={(ids) => setEditor({ ...editor, selectedSkillIds: ids, skillIdsTouched: true })} />
+          </div>
           <div className="scheduled-task-editor-grid">
             <label>模型<select value={editor.modelRef}
               onChange={(event) => setEditor({ ...editor, modelRef: event.target.value })}>

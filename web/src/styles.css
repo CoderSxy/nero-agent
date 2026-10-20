@@ -14,7 +14,8 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .login-card input { width: 100%; padding: 11px 12px; border: 1px solid var(--border); border-radius: 9px; background: var(--background); color: var(--foreground); }
 .login-card button { margin-top: 8px; padding: 11px; border-radius: 9px; background: var(--foreground); color: var(--background); }
 .agent-layout { display: grid; grid-template-columns: var(--left-panel-width, 260px) minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr); min-height: 100vh; height: 100vh; overflow-x: clip; }
-.agent-layout:has(.scheduled-tasks-page) { grid-template-columns: var(--left-panel-width, 260px) minmax(0, 1fr); }
+.agent-layout:has(.scheduled-tasks-page),
+.agent-layout:has(.skills-page) { grid-template-columns: var(--left-panel-width, 260px) minmax(0, 1fr); }
 .left-panel-dock { position: relative; min-width: 0; min-height: 0; }
 .left-panel-dock > .agent-sidebar { height: 100%; }
 .right-panel-dock { position: relative; height: 100%; min-width: 0; z-index: 5; }
@@ -46,6 +47,58 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .manage-popover a, .manage-popover button[role="menuitem"] { display: block; width: 100%; text-align: left; padding: 8px 10px; border: 0; background: transparent; color: var(--foreground); text-decoration: none; border-radius: 8px; cursor: pointer; font-size: 13px; }
 .manage-popover a.active, .manage-popover button[role="menuitem"].active { background: var(--card); }
 .scheduled-tasks-page { padding: 24px 28px; overflow: auto; background: var(--background); }
+.skills-page { min-width: 0; padding: 20px 22px; overflow: auto; background: var(--background); }
+.skills-layout { display: grid; grid-template-columns: minmax(0, 280px) minmax(0, 1fr); gap: 16px; min-width: 0; align-items: start; }
+.skills-list-pane, .skills-detail-pane { min-width: 0; border: 1px solid var(--border); border-radius: 14px; background: var(--card); padding: 16px; }
+.skills-header, .skills-detail-header, .skill-panel-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.skills-header h1, .skills-detail-header h2, .skill-panel-header h2 { margin: 0 0 4px; font-size: 18px; }
+.skills-header p, .skills-detail-header p, .skill-version-meta, .skill-empty-hint, .skill-readonly-note { margin: 0; color: var(--muted-foreground); font-size: 12px; line-height: 1.45; }
+.skills-header-actions, .skills-search, .skills-pagination, .skill-panel-actions, .skills-tabs,
+.skill-files-upload, .skill-file-actions, .skill-version-actions, .skill-grant-add { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.skills-search { margin: 12px 0; }
+.skills-search input, .skills-search select, .skill-files-upload input, .skill-permissions-form input,
+.skill-permissions-form select, .skills-create-modal input, .skills-create-modal textarea {
+  min-width: 0; width: 100%; max-width: 100%; padding: 8px 10px; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 13px; box-sizing: border-box;
+}
+.skills-search input, .skills-search select { width: auto; flex: 1 1 120px; }
+.skills-header-actions button, .skills-search button, .skills-pagination button, .skills-tabs button,
+.skill-panel-actions button, .skill-files-upload button, .skill-file-actions button, .skill-version-actions button,
+.skill-permissions-form button, .skill-grant-add button {
+  padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--background);
+  color: var(--foreground); font-size: 13px;
+}
+.skills-header-actions button, .skills-search button, .skill-panel-actions button:last-child,
+.skill-permissions-form button[type='submit'] { background: var(--foreground); color: var(--background); }
+.skills-list, .skill-file-list, .skill-version-list, .skill-grant-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.skill-sync-dialog { display: grid; gap: 10px; margin: 12px 0; padding: 12px; border: 1px solid var(--border); border-radius: 12px; max-width: 100%; }
+.skill-sync-dialog input, .skill-sync-dialog select { max-width: 100%; }
+.skill-rename-risk { margin: 0; padding-left: 18px; color: var(--foreground); }
+.skill-diff-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.skill-diff-table th, .skill-diff-table td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--border); word-break: break-all; }
+.skills-list button { display: grid; gap: 4px; width: 100%; text-align: left; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--background); color: var(--foreground); }
+.skills-list button.active, .skills-tabs button[aria-pressed='true'] { border-color: var(--foreground); }
+.skills-list strong, .skill-file-path { overflow-wrap: anywhere; word-break: break-word; }
+.skills-list small, .skill-file-meta, .skill-version-badges { color: var(--muted-foreground); font-size: 12px; }
+.skills-empty { display: grid; gap: 6px; place-content: center; min-height: 160px; color: var(--muted-foreground); text-align: center; }
+.skills-pagination { justify-content: flex-end; margin-top: 12px; }
+.skills-tabs { margin-top: 8px; }
+.skill-editor, .skill-files, .skill-versions, .skill-permissions { display: grid; gap: 12px; min-width: 0; }
+.skill-editor-body { min-width: 0; min-height: 320px; height: min(55vh, 520px); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
+.skill-md-textarea, .skill-md-preview { flex: 1; min-height: 0; width: 100%; margin: 0; padding: 12px; border: 0; background: var(--background); color: var(--foreground); font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; resize: none; box-sizing: border-box; overflow: auto; }
+.skill-md-preview { font-family: inherit; }
+.skill-conflict { margin: 0; color: var(--destructive); font-size: 13px; }
+.skill-dirty-mark { color: var(--foreground); }
+.skill-file-list li, .skill-version-list li, .skill-grant-list li {
+  display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; flex-wrap: wrap;
+  padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
+}
+.skill-permissions-form, .skill-grant-fieldset { display: grid; gap: 10px; min-width: 0; }
+.skill-permissions-form label { display: grid; gap: 5px; color: var(--muted-foreground); font-size: 12px; }
+.skill-grant-add input { flex: 1 1 160px; }
+.skill-files-upload label { display: grid; gap: 5px; flex: 1 1 180px; color: var(--muted-foreground); font-size: 12px; }
+.skills-create-modal label { display: block; margin: 8px 0; color: var(--muted-foreground); font-size: 12px; }
+button.danger { color: var(--destructive); }
 .scheduled-tasks-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
 .scheduled-tasks-header h1 { margin: 0 0 6px; font-size: 22px; }
 .scheduled-tasks-actions, .scheduled-tasks-search, .scheduled-task-card-actions, .scheduled-tasks-pagination { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -241,7 +294,12 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .light .message-search-target { outline-color: color-mix(in srgb, #6b7cff 45%, var(--border));
   background: color-mix(in srgb, #6b7cff 10%, var(--card)); }
 .agent-composer { margin-bottom: 24px; }
-.composer-finance-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 8px 4px; font-size: 12px; }
+.composer-finance-row, .composer-shortcut-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 8px 4px; font-size: 12px; }
+.skill-shortcut-form, .skill-shortcut-editor { display: grid; gap: 10px; min-width: 0; padding: 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
+.skill-shortcut-form label, .skill-shortcut-editor label { display: grid; gap: 4px; font-size: 12px; }
+.skill-shortcut-form input, .skill-shortcut-form textarea, .skill-shortcut-form select,
+.skill-shortcut-editor input, .skill-shortcut-editor textarea, .skill-shortcut-editor select { width: 100%; min-height: 32px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--background); color: var(--foreground); }
+.skill-shortcut-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .composer-finance-picker { position: relative; }
 .composer-finance-picker > button, .composer-finance-chip { display: inline-flex; align-items: center; gap: 5px; min-height: 28px; padding: 3px 9px; border: 1px solid var(--border); border-radius: 999px; background: var(--card); color: var(--foreground); }
 .composer-finance-picker > button:hover, .composer-finance-menu button:hover { background: var(--popover); }
@@ -249,6 +307,14 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .composer-finance-menu button { padding: 7px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--foreground); text-align: left; }
 .composer-finance-chip { background: var(--popover); }
 .composer-finance-chip.is-inactive { opacity: .65; }
+.skill-picker { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.skill-picker-toolbar, .skill-picker-chips, .skill-execution-badges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.skill-picker-toolbar > button, .skill-chip { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 3px 9px; border: 1px solid var(--border); border-radius: 999px; background: var(--card); color: var(--foreground); }
+.skill-chip.is-invalid, .skill-execution-badge.is-failed { color: #b42318; border-color: #b42318; }
+.skill-chip button { display: inline-grid; place-items: center; padding: 1px; border: 0; background: transparent; color: inherit; }
+.skill-picker-menu { display: flex; flex-direction: column; gap: 4px; max-width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--popover); }
+.skill-picker-menu input, .skill-picker-menu button { max-width: 100%; }
+.skill-execution-badge { display: inline-flex; min-height: 24px; padding: 2px 8px; border: 1px solid var(--border); border-radius: 999px; background: var(--card); font-size: 12px; }
 .composer-finance-chip button { display: inline-grid; place-items: center; padding: 1px; border: 0; background: transparent; color: inherit; }
 .composer-model-trigger { display: flex; align-items: center; gap: 7px; max-width: min(65%, 240px); min-width: 0; height: 34px; padding: 3px 9px 3px 5px; border-radius: 9px; color: var(--foreground); font-size: 12px; }
 .composer-model-trigger:hover, .composer-model-trigger[aria-expanded='true'] { background: var(--card); }
@@ -450,5 +516,14 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 @media (max-width: 1050px) { .agent-layout { grid-template-columns: var(--left-panel-width, 210px) minmax(0, 1fr) 0; } .right-panel-dock { position: fixed; top: 0; right: 0; bottom: 0; height: 100vh; } .right-panel-toggles { right: calc(100% + 8px); } .right-panel-surface { box-shadow: -12px 0 30px #0002; } }
 @media (max-width: 650px) { .scheduled-task-modal-backdrop { padding: 10px; } .scheduled-task-modal { max-height: 96vh; } .scheduled-task-modal-body, .scheduled-task-modal-header, .scheduled-task-modal-footer { padding-left: 16px; padding-right: 16px; } .scheduled-task-editor-grid { grid-template-columns: 1fr; } }
 @media (max-width: 650px) { .agent-layout { grid-template-columns: 1fr; } .left-panel-dock { display: none; } }
-@media (max-width: 650px) { .agent-layout:has(.scheduled-tasks-page) { grid-template-columns: 1fr; } }
+@media (max-width: 900px) {
+  .skills-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 650px) {
+  .agent-layout:has(.scheduled-tasks-page),
+  .agent-layout:has(.skills-page) { grid-template-columns: 1fr; }
+  .skills-page { padding: 14px 16px calc(24px + env(safe-area-inset-bottom, 0px)); }
+  .skills-list-pane, .skills-detail-pane { padding: 12px; }
+  .skill-editor-body { height: min(48vh, 420px); }
+}
 @media (prefers-reduced-motion: reduce) { .chat-shell::after, .chat-shell [data-slot='chat-shell-dock'] [data-slot='chat-shell-column'], .chat-welcome, .process-reasoning summary::before { transition: none; } .chat-welcome h1, .tool-progress, .process-status svg, .run-status svg, .process-reasoning__streaming { animation: none; } }

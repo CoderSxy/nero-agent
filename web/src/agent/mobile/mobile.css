@@ -158,7 +158,11 @@
   .mobile-agent-layout .composer-attachment-row { flex-wrap: nowrap; overflow-x: auto; }
   .workspace-file-picker-backdrop { z-index: 74; align-items: end; padding: 0; }
   .workspace-file-picker { width: 100%; max-height: 82dvh; border-radius: 20px 20px 0 0; padding-bottom: env(safe-area-inset-bottom); }
-  .mobile-agent-layout .scheduled-tasks-page { padding: 14px 16px calc(24px + env(safe-area-inset-bottom)); }
+  .mobile-agent-layout .scheduled-tasks-page,
+  .mobile-agent-layout .skills-page { padding: 14px 16px calc(24px + env(safe-area-inset-bottom)); }
+  .mobile-inbox-links { display: flex; flex-wrap: wrap; gap: 8px 12px; justify-content: flex-end; min-width: 0; }
+  .mobile-agent-layout .skills-layout { grid-template-columns: 1fr; }
+  .mobile-agent-layout .skills-page { overflow-x: clip; }
 }
 
 @media (prefers-reduced-motion: reduce) {

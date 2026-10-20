@@ -107,3 +107,131 @@ export function summarize(value: unknown): string {
   if (typeof value === 'string') return value;
   try { return JSON.stringify(value, null, 2) ?? ''; } catch { return String(value); }
 }
+
+export type SkillActivationView = {
+  serverExecutionId: string;
+  skillId: string;
+  name: string;
+  version?: number;
+  manifestHash?: string;
+  hashPrefix?: string;
+  status: 'loaded' | 'failed';
+  errorCode?: string;
+};
+
+const SKILL_ACTIVATION_PART = 'data-nero-skill-activation';
+const SKILL_TOOL_NAMES = new Set(['skill', 'skill_read', 'skill_search', 'run_skill_script']);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+export function skillHashPrefix(hash: unknown): string | undefined {
+  if (typeof hash !== 'string' || !/^[a-f0-9]{8,64}$/i.test(hash)) return undefined;
+  return hash.slice(0, 8).toLowerCase();
+}
+
+function safeSkillName(name: string): string | null {
+  const trimmed = name.trim();
+  if (!trimmed || /^\/Users\/|^\/home\/|^[A-Za-z]:\\/.test(trimmed)) return null;
+  return trimmed;
+}
+
+function viewFromActivation(raw: unknown): SkillActivationView | null {
+  if (!isRecord(raw)) return null;
+  if (raw.status !== 'loaded' && raw.status !== 'failed') return null;
+  if (typeof raw.skillId !== 'string' || !raw.skillId.trim()) return null;
+  if (typeof raw.name !== 'string') return null;
+  const name = safeSkillName(raw.name);
+  if (!name) return null;
+  const manifestHash = typeof raw.manifestHash === 'string' ? raw.manifestHash : undefined;
+  return {
+    serverExecutionId: typeof raw.serverExecutionId === 'string' ? raw.serverExecutionId : '',
+    skillId: raw.skillId,
+    name,
+    version: typeof raw.version === 'number' ? raw.version : undefined,
+    manifestHash,
+    hashPrefix: skillHashPrefix(manifestHash),
+    status: raw.status,
+    errorCode: typeof raw.errorCode === 'string' ? raw.errorCode : undefined,
+  };
+}
+
+function viewFromTool(name: string, args: unknown, result: unknown): SkillActivationView | null {
+  if (!SKILL_TOOL_NAMES.has(name) || !isRecord(result) || typeof result.ok !== 'boolean') return null;
+  const skill = isRecord(result.skill) ? result.skill : {};
+  const input = isRecord(args) ? args : {};
+  if (result.ok) {
+    return viewFromActivation({
+      serverExecutionId: '',
+      skillId: skill.skillId,
+      name: skill.name,
+      version: skill.version,
+      manifestHash: skill.manifestHash,
+      status: 'loaded',
+    });
+  }
+  const skillId = typeof skill.skillId === 'string' ? skill.skillId
+    : typeof input.skillId === 'string' ? input.skillId
+      : typeof input.name === 'string' ? input.name : '';
+  const label = typeof skill.name === 'string' ? skill.name
+    : typeof input.name === 'string' ? input.name : skillId;
+  return viewFromActivation({
+    serverExecutionId: '',
+    skillId,
+    name: label,
+    version: skill.version,
+    manifestHash: skill.manifestHash,
+    status: 'failed',
+    errorCode: result.code,
+  });
+}
+
+function dedupeActivations(items: SkillActivationView[]): SkillActivationView[] {
+  const exact = new Map<string, SkillActivationView>();
+  for (const item of items) {
+    const key = [item.serverExecutionId, item.skillId, item.version ?? '', item.status].join('/');
+    if (!exact.has(key)) exact.set(key, item);
+  }
+  const list = [...exact.values()];
+  const identified = list.filter(item => item.serverExecutionId);
+  return list.filter(item => {
+    if (item.serverExecutionId) return true;
+    return !identified.some(other => other.skillId === item.skillId
+      && other.version === item.version && other.status === item.status);
+  });
+}
+
+/** Badges come from tool results, activation chunks, and saved metadata — never from composer chips. */
+export function skillActivations(message: MastraDBMessage): SkillActivationView[] {
+  const content = message.content;
+  if (typeof content === 'string' || !content) return [];
+  const found: SkillActivationView[] = [];
+  const parts = Array.isArray(content.parts) ? content.parts : [];
+  for (const part of parts) {
+    if (part.type === SKILL_ACTIVATION_PART) {
+      const data = (part as { data?: unknown }).data;
+      const view = viewFromActivation(data);
+      if (view) found.push(view);
+      continue;
+    }
+    if (part.type === 'tool-invocation' && 'toolInvocation' in part) {
+      const invocation = part.toolInvocation;
+      const view = viewFromTool(
+        invocation.toolName,
+        invocation.args,
+        'result' in invocation ? invocation.result : undefined,
+      );
+      if (view) found.push(view);
+    }
+  }
+  const metadata = isRecord(content.metadata) ? content.metadata : null;
+  const saved = metadata?.neroSkillActivations;
+  if (Array.isArray(saved)) {
+    for (const item of saved) {
+      const view = viewFromActivation(item);
+      if (view) found.push(view);
+    }
+  }
+  return dedupeActivations(found);
+}

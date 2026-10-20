@@ -8,6 +8,9 @@ import {
 } from './attachment-types';
 import type { ModelRef, SafeModel } from './model-catalog-client';
 import { financeCategoryOptions, type FinanceCategory } from './finance-category';
+import { SkillPicker } from './skills/SkillPicker';
+import { SkillShortcutDock } from './skills/SkillShortcutForm';
+import { limitSkillIds } from './skills/selection';
 
 function modelFacts(model: SafeModel): string {
   const meta = model.catalogMetadata;
@@ -87,7 +90,8 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
   catalog = [], modelRef, onModelChange, modelDisabled = false,
   financeCategory = null, financeEnabled = false, financeSaving = false, onFinanceCategoryChange,
   attachments = [], onChooseWorkspaceFiles, onUploadFiles, onRemoveAttachment, onRetryAttachment,
-  onWorkspaceDrop, onInputFocus, autoFocus = false, attachmentsDisabled = false, mobileInline = false }: {
+  onWorkspaceDrop, onInputFocus, autoFocus = false, attachmentsDisabled = false, mobileInline = false,
+  selectedSkillIds, onSelectedSkillIdsChange, skillScopeKey, preserveMissingSkills = false }: {
   sendDisabled?: boolean; draft: string; onDraftChange: (value: string) => void; isRunning: boolean;
   financeCategory?: FinanceCategory | null; financeEnabled?: boolean; financeSaving?: boolean;
   onFinanceCategoryChange?: (value: FinanceCategory | null) => void;
@@ -101,6 +105,10 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
   onRemoveAttachment?: (key: string) => void;
   onRetryAttachment?: (key: string) => void;
   onWorkspaceDrop?: (items: WorkspaceDragItem[]) => void;
+  selectedSkillIds?: string[];
+  onSelectedSkillIdsChange?: (ids: string[]) => void;
+  skillScopeKey?: string;
+  preserveMissingSkills?: boolean;
 }) {
   const available = modelRef && catalog.some(model => model.ref === modelRef);
   const selected = available ? catalog.find(model => model.ref === modelRef) : undefined;
@@ -220,8 +228,21 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
     setPreview(null);
   }
 
+  const slashQuery = draft.startsWith('/') ? draft.slice(1) : undefined;
   return <div className={`agent-composer${mobileInline ? ' mobile-inline-composer' : ''}`}
     onDragOver={onDragOver} onDrop={onDrop} onPaste={onPaste}>
+    {onSelectedSkillIdsChange && <SkillPicker value={selectedSkillIds ?? []} disabled={isRunning || sendDisabled}
+      scopeKey={skillScopeKey} slashQuery={slashQuery} preserveMissing={preserveMissingSkills}
+      onChange={onSelectedSkillIdsChange}
+      onPickedFromSlash={() => { if (draft.startsWith('/')) onDraftChange(''); }} />}
+    {onSelectedSkillIdsChange && <SkillShortcutDock disabled={isRunning || sendDisabled} scopeKey={skillScopeKey}
+      onApply={({ skillId, text }) => {
+        onDraftChange(text);
+        onSelectedSkillIdsChange(limitSkillIds([
+          skillId,
+          ...(selectedSkillIds ?? []).filter(id => id !== skillId),
+        ]));
+      }} />}
     <div className="composer-finance-row">
       <div className="composer-finance-picker">
         <button type="button" aria-label="财经数据" aria-expanded={financeOpen} disabled={financeSaving || isRunning}

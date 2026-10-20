@@ -26,6 +26,7 @@ type TaskRow = {
   memory_model_ref: string;
   starts_at: Date | null;
   ends_at: Date | null;
+  selected_skill_ids: string[] | null;
   status: ScheduledTask['status'];
   created_at: Date;
   updated_at: Date;
@@ -67,6 +68,7 @@ function toTask(row: TaskRow): ScheduledTask {
     memoryModelRef: row.memory_model_ref,
     startsAt: toIso(row.starts_at),
     endsAt: toIso(row.ends_at),
+    selectedSkillIds: Array.isArray(row.selected_skill_ids) ? row.selected_skill_ids : [],
     status: row.status,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
@@ -91,7 +93,7 @@ function toRun(row: RunRow): ScheduledTaskRun {
 
 const TASK_COLUMNS = `
   id, owner_user_id, mastra_schedule_id, name, task_type, cron, timezone, prompt,
-  chat_model_ref, memory_model_ref, starts_at, ends_at, status, created_at, updated_at
+  chat_model_ref, memory_model_ref, starts_at, ends_at, selected_skill_ids, status, created_at, updated_at
 `;
 
 const RUN_COLUMNS = `
@@ -114,11 +116,12 @@ export async function insertTask(
 ): Promise<ScheduledTask> {
   const chatModelRef = input.chatModelRef ?? '';
   const memoryModelRef = input.memoryModelRef ?? '';
+  const selectedSkillIds = input.selectedSkillIds ?? [];
   const result = await dbOf(db).query<TaskRow>(
     `INSERT INTO agent_scheduled_tasks (
        owner_user_id, name, cron, timezone, prompt, chat_model_ref, memory_model_ref,
-       starts_at, ends_at, status
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'paused')
+       starts_at, ends_at, selected_skill_ids, status
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::uuid[], 'paused')
      RETURNING ${TASK_COLUMNS}`,
     [
       ownerId,
@@ -130,6 +133,7 @@ export async function insertTask(
       memoryModelRef,
       parseOptionalTimestamp(input.startsAt ?? null) ?? null,
       parseOptionalTimestamp(input.endsAt ?? null) ?? null,
+      selectedSkillIds,
     ],
   );
   return toTask(result.rows[0]);
@@ -222,6 +226,10 @@ export async function updateTask(
   if (patch.memoryModelRef !== undefined) push('memory_model_ref', patch.memoryModelRef);
   if (patch.startsAt !== undefined) push('starts_at', parseOptionalTimestamp(patch.startsAt) ?? null);
   if (patch.endsAt !== undefined) push('ends_at', parseOptionalTimestamp(patch.endsAt) ?? null);
+  if (patch.selectedSkillIds !== undefined) {
+    params.push(patch.selectedSkillIds);
+    sets.push(`selected_skill_ids = $${params.length}::uuid[]`);
+  }
   if (patch.status !== undefined) push('status', patch.status);
   if (patch.mastraScheduleId !== undefined) push('mastra_schedule_id', patch.mastraScheduleId);
 

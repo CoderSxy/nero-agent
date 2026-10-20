@@ -1,8 +1,12 @@
-import { createDockerodeEngine } from './docker/client';
+import { createDockerodeEngine, type DockerEngine } from './docker/client';
 import { DockerSandboxProvider } from './docker/provider';
 import type { SandboxProvider } from './provider';
 import { SandboxRegistry } from './registry';
-import { SandboxCleaner, startSandboxCleanup } from './cleaner';
+import {
+  SandboxCleaner,
+  cleanupOrphanSkillScriptContainers,
+  startSandboxCleanup,
+} from './cleaner';
 import { commandQueue } from './execution-queue';
 
 let shared: SandboxProvider | undefined;
@@ -16,9 +20,24 @@ export async function sandboxProvider(): Promise<SandboxProvider> {
   }
   initializing = (async () => {
     const registry = new SandboxRegistry();
-    const provider = new DockerSandboxProvider(await createDockerodeEngine(), registry);
-    const cleaner = new SandboxCleaner(provider, registry, () => registry.listOwners(), userId => commandQueue.isUserBusy(userId));
-    startSandboxCleanup(cleaner, { onError: error => console.error('Sandbox cleanup failed', error) });
+    const engine = await createDockerodeEngine();
+    const provider = new DockerSandboxProvider(engine, registry);
+    const cleaner = new SandboxCleaner(
+      provider,
+      registry,
+      () => registry.listOwners(),
+      userId => commandQueue.isUserBusy(userId),
+    );
+    startSandboxCleanup({
+      runOnce: async (now) => {
+        const report = await cleaner.runOnce(now);
+        await cleanupOrphanSkillScriptContainers(engine as DockerEngine, { now }).catch(error => {
+          console.error('Skill script orphan cleanup failed', error);
+          return { removed: [], skipped: [] };
+        });
+        return report;
+      },
+    }, { onError: error => console.error('Sandbox cleanup failed', error) });
     shared = provider;
     return provider;
   })();

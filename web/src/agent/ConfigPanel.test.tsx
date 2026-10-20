@@ -74,4 +74,23 @@ describe('read only agent configuration', () => {
     expect(screen.getByText('Agent 配置：agent-workspace')).toBeTruthy();
     expect(screen.queryByRole('tree')).toBeNull();
   });
+  it('keeps the available catalog separate from skills loaded this turn', () => {
+    render(<ConfigPanel agent={{ name: '智能体', tools: {}, skills: { 'framework-skill': {} } } as never}
+      availableCatalog={['checklist']}
+      turnActivations={[{
+        serverExecutionId: 'exec-1', skillId: 'skill-1', name: 'checklist', version: 3,
+        hashPrefix: '01234567', status: 'failed', errorCode: 'SKILL_NOT_FOUND',
+      }]}
+      loading={false} error={null} />);
+    const catalog = screen.getByRole('region', { name: '可用目录' });
+    const loaded = screen.getByRole('region', { name: '本轮加载' });
+    expect(catalog.textContent).toContain('checklist');
+    expect(catalog.textContent).not.toContain('加载失败');
+    expect(loaded.textContent).toContain('加载失败');
+    expect(loaded.textContent).toContain('checklist');
+    expect(loaded.textContent).toContain('v3');
+    expect(loaded.textContent).toContain('01234567');
+    expect(loaded.textContent).not.toContain('framework-skill');
+    expect(screen.queryByText('已加载')).toBeNull();
+  });
 });

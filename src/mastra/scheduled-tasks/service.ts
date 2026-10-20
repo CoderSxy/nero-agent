@@ -213,6 +213,9 @@ export function createScheduledTaskService(driverOrDeps: ScheduleDriver | Schedu
           memoryModelRef: validated.memoryModelRef,
           startsAt: validated.startsAt ?? null,
           endsAt: validated.endsAt ?? null,
+          ...(validated.selectedSkillIds !== undefined
+            ? { selectedSkillIds: validated.selectedSkillIds }
+            : {}),
         });
         requireOwned(updated);
       } catch (error) {

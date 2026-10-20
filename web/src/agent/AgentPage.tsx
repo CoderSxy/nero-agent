@@ -21,6 +21,8 @@ import { scheduledRunOfThread } from './thread-source';
 import { MobileInbox } from './mobile/MobileInbox';
 import { useMobileLayout } from './mobile/useMobileLayout';
 import { MobileComposerDock } from './mobile/MobileComposerDock';
+import { listAvailableSkills } from './skills/skills-api';
+import type { SkillActivationView } from './message-parts';
 
 function completeModels(models: Partial<ModelSettings>): ModelSettings | null {
   return models.chatModel && models.memoryModel
@@ -36,6 +38,8 @@ export function AgentPage() {
   const targetMessageId = searchParams.get('targetMessageId') ?? undefined;
   const navigate = useNavigate();
   const [messages, setMessages] = useState<MastraDBMessage[]>([]);
+  const [availableCatalog, setAvailableCatalog] = useState<string[] | undefined>(undefined);
+  const [turnActivations, setTurnActivations] = useState<SkillActivationView[]>([]);
   const [landingDraft, setLandingDraft] = useState('');
   const [pendingLandingAction, setPendingLandingAction] = useState(false);
   const [landingFocused, setLandingFocused] = useState(false);
@@ -151,7 +155,14 @@ export function AgentPage() {
     });
     return () => { active = false; };
   }, [threadId, navigate, user.id]);
-  useEffect(() => { setFinanceSaving(false); setFinanceError(null); }, [threadId]);
+  useEffect(() => { setFinanceSaving(false); setFinanceError(null); setTurnActivations([]); }, [threadId]);
+  useEffect(() => {
+    let cancelled = false;
+    void listAvailableSkills({ page: 1, pageSize: 50 }).then(page => {
+      if (!cancelled) setAvailableCatalog(page.items.filter(item => item.userInvocable !== false).map(item => item.name));
+    }).catch(() => { if (!cancelled) setAvailableCatalog([]); });
+    return () => { cancelled = true; };
+  }, []);
   useEffect(() => {
     if (threadId) { setLandingFocused(false); return; }
     landingCreationStartedRef.current = false;
@@ -313,7 +324,7 @@ export function AgentPage() {
             setPendingByThread(current => ({ ...current,
               [threadId]: (current[threadId] ?? []).filter(item => item.id !== message.id) }));
           }}
-          targetMessageId={targetMessageId} /> :
+          targetMessageId={targetMessageId} onTurnActivations={setTurnActivations} /> :
         <ChatShell className="chat-shell chat-shell--empty">
           <ChatShell.Stage><ChatShell.Viewport><ChatShell.Content><ChatShell.Column />
           </ChatShell.Content></ChatShell.Viewport></ChatShell.Stage>
@@ -327,7 +338,7 @@ export function AgentPage() {
     </section>
     {!mobile && <RightPanelDock width={rightWidth} maxWidth={rightMax} onResize={setRightPreferredWidth}
       config={<ConfigPanel agent={agent} memory={memory} loading={configLoading} error={configError}
-      models={configModels} />}
+      models={configModels} availableCatalog={availableCatalog} turnActivations={turnActivations} />}
       files={<WorkspaceFileTree source={workspaceSource}
         workspaceId={workspaceSource === 'agent' ? agent?.workspaceId : undefined}
         refreshVersion={filesRefreshVersion}

@@ -20,6 +20,11 @@ import { disabledNativeWorkspaceTools } from '../sandbox/native-tools';
 import { sandboxTools } from '../sandbox/tool';
 import { financeSearchTool, financeInterfaceInfoTool, financeFetchTool } from '../finance/tools';
 import { isFinanceEnabled, trustedFinanceCategory } from '../finance/scope';
+import { installSkillExecutionBindings } from '../skills/agent-bindings';
+import {
+  resolveSkillAgentProcessor,
+  resolveSkillAgentTools,
+} from '../skills/factory';
 
 const workspacePath = 'workspace';
 
@@ -91,10 +96,14 @@ ${chartInstructions}
     return isWorkspaceResolverEnabled() ? userWorkspace : workspace;
   },
   tools: ({ requestContext }) => resolveAgentTools(requestContext),
-  inputProcessors: [temporalProcessor, attachmentPersistenceProcessor],
-  outputProcessors: [attachmentPersistenceProcessor],
+  // App skill/skill_read/skill_search only — do NOT configure native Agent.skills auto-tools.
+  inputProcessors: [temporalProcessor, attachmentPersistenceProcessor, resolveSkillAgentProcessor()],
+  outputProcessors: [attachmentPersistenceProcessor, resolveSkillAgentProcessor()],
   signals: [new TaskSignalProvider()],
 });
+
+// Chat / stream / resume / sendMessage: bind server-owned runId before skill pins.
+installSkillExecutionBindings(agent);
 
 function resolveAgentTools(requestContext: RequestContext): ToolsInput {
   const common = {
@@ -108,6 +117,7 @@ function resolveAgentTools(requestContext: RequestContext): ToolsInput {
       finance_interface_info: financeInterfaceInfoTool,
       finance_fetch: financeFetchTool,
     } : {}),
+    ...resolveSkillAgentTools(),
   };
   if (isAdmin(requestContext)) {
     return { ...common, start_schedule: startScheduleTool, stop_schedule: stopScheduleTool } as ToolsInput;

@@ -11,6 +11,8 @@ export type TaskInput = {
   memoryModelRef?: string;
   startsAt?: string | null;
   endsAt?: string | null;
+  /** Optional skill UUID intents (≤5); resolved to published versions at fire time. */
+  selectedSkillIds?: string[];
 };
 
 export type ScheduledTask = {
@@ -26,6 +28,7 @@ export type ScheduledTask = {
   memoryModelRef: string;
   startsAt: string | null;
   endsAt: string | null;
+  selectedSkillIds: string[];
   status: TaskStatus;
   createdAt: string;
   updatedAt: string;
@@ -65,6 +68,7 @@ export type TaskPatch = Partial<{
   memoryModelRef: string;
   startsAt: string | null;
   endsAt: string | null;
+  selectedSkillIds: string[];
   status: TaskStatus;
   mastraScheduleId: string | null;
 }>;

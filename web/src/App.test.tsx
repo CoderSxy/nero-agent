@@ -25,6 +25,24 @@ describe('agent login', () => {
     expect(screen.getByLabelText('NERO AGENT')).toBeTruthy();
   });
 
+  it('renders the skills management route for ordinary users', async () => {
+    sessionStorage.setItem('nero-agent-session', 'user-token');
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (input: string) => {
+      const path = String(input);
+      const body = path === '/auth/me'
+        ? { user: { id: 'user-1', email: 'user@example.com', displayName: 'User', roles: ['user'] } }
+        : path.startsWith('/agent-skills/groups') ? { items: [] }
+          : path.startsWith('/agent-skills?') || path === '/agent-skills'
+            ? { items: [], total: 0, page: 1, pageSize: 20 }
+            : { threads: [] };
+      return { ok: true, json: async () => body };
+    }));
+    render(<MemoryRouter initialEntries={['/agent/skills']}><App /></MemoryRouter>);
+    const center = await screen.findByRole('region', { name: '技能管理' });
+    expect(within(center).getByRole('heading', { name: '技能管理' })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: '技能管理' })).toBeTruthy();
+  });
+
   it('shows a login form before an anonymous visitor can access the agent', () => {
     render(<MemoryRouter initialEntries={['/agent/new']}><App /></MemoryRouter>);
     expect(screen.getByRole('heading', { name: '登录 NERO AGENT' })).toBeTruthy();

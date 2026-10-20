@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import type { GetAgentResponse, GetMemoryConfigResponse } from '@mastra/client-js';
 import { Brain, ChevronRight, Cpu, FileText, Gauge, Sparkles, Workflow, Wrench } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import type { SkillActivationView } from './message-parts';
 
 function display(value: unknown) {
   if (value == null || value === '') return '未提供';
@@ -10,9 +11,12 @@ function display(value: unknown) {
   return JSON.stringify(value, null, 2);
 }
 
-export function ConfigPanel({ agent, memory, models, loading, error }: {
+export function ConfigPanel({ agent, memory, models, loading, error, availableCatalog, turnActivations = [] }: {
   agent: GetAgentResponse | null; memory?: GetMemoryConfigResponse | null; models?: { chatModel: string; memoryModel: string };
   loading: boolean; error: string | null;
+  /** Names the user may invoke. Distinct from skills actually loaded this turn. */
+  availableCatalog?: string[];
+  turnActivations?: SkillActivationView[];
 }) {
   const [open, setOpen] = useState<Record<string, boolean>>({ overview: true, workspace: false, memory: true });
   const [promptView, setPromptView] = useState<'read' | 'source'>('read');
@@ -22,7 +26,7 @@ export function ConfigPanel({ agent, memory, models, loading, error }: {
   const tools = agent ? [...new Set([...names(agent.tools), ...(agent.workspaceTools ?? [])])] : [];
   const workflows = names(agent?.workflows);
   const processors = [...new Set([...names(extra?.inputProcessors), ...names(extra?.outputProcessors)])];
-  const skills = names(agent?.skills);
+  const catalogNames = availableCatalog ?? names(agent?.skills);
   const scorers = names(extra?.scorers);
   return <aside className="config-panel" aria-label="智能体配置">
     <header className="config-header"><h2>Config</h2><span>只读</span></header>
@@ -37,7 +41,25 @@ export function ConfigPanel({ agent, memory, models, loading, error }: {
         <ConfigGroup tone="processors" icon={<Cpu size={18} />} title="处理器"
           summary={!processors.length ? 'None' : processors.length}>{processors.length > 0 && <Chips items={processors} />}</ConfigGroup>
         <ConfigGroup tone="skills" icon={<Sparkles size={18} />} title="Skills"
-          summary={!skills.length ? 'None' : skills.length}>{skills.length > 0 && <Chips items={skills} />}</ConfigGroup>
+          summary={!catalogNames.length ? 'None' : catalogNames.length}>
+          <div className="config-skill-split">
+            <section aria-label="可用目录">
+              <h4>可用目录</h4>
+              <Chips items={catalogNames} />
+            </section>
+            <section aria-label="本轮加载">
+              <h4>本轮加载</h4>
+              {turnActivations.length === 0 ? <span className="config-none">None</span> : <ul className="skill-execution-badges">
+                {turnActivations.map(item => <li key={`${item.serverExecutionId}/${item.skillId}/${item.version ?? ''}/${item.status}`}
+                  data-status={item.status}>
+                  {item.status === 'failed' ? '加载失败' : '已加载'} {item.name}
+                  {item.version != null ? ` v${item.version}` : ''}
+                  {item.hashPrefix ? ` ${item.hashPrefix}` : ''}
+                </li>)}
+              </ul>}
+            </section>
+          </div>
+        </ConfigGroup>
         <ConfigGroup tone="scorers" icon={<Gauge size={18} />} title="评分器"
           summary={!scorers.length ? 'None' : scorers.length}>{scorers.length > 0 && <Chips items={scorers} />}</ConfigGroup>
         <ConfigGroup tone="memory" icon={<Brain size={18} />} title="记忆">

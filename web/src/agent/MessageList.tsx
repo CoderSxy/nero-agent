@@ -12,7 +12,8 @@ import type { PreparedAttachment } from './attachment-client';
 import { formatBytes, isImageAttachment } from './attachment-types';
 import { parseAttachmentIdsFromText } from './attachment-protocol';
 import { fetchWorkspaceFile } from './client';
-import { messageParts, streamError, summarize, type ToolPart } from './message-parts';
+import { messageParts, skillActivations, streamError, summarize, type ToolPart } from './message-parts';
+import { SkillExecutionBadge } from './skills/SkillExecutionBadge';
 import { isUserMessage } from './pending-user-message';
 
 type AskUserPayload = { question: string; options?: { label: string; description?: string }[];
@@ -262,6 +263,7 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
       return <Message key={message.id} from={isUserMessage(message) ? 'user' : 'assistant'}
         data-message-id={message.id}
         className={runningProcess ? 'process-message process-message--running' : undefined}>
+        {message.role === 'assistant' && <SkillExecutionBadge activations={skillActivations(message)} />}
         {attachments.length > 0 && <div className="message-attachment-row" aria-label="消息附件">
           {attachments.map(item => <HistoryAttachmentCard key={item.attachmentId} attachment={item} />)}
         </div>}

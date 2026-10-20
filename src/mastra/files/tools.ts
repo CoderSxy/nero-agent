@@ -220,7 +220,7 @@ export function createReadAttachedFileTool(deps: ReadAttachedFileDeps = {}) {
       const threadId = agentThreadId(context);
       const attachments = await attachmentsFrom(context);
       const { ref, data } = await attachments.readOwned(auth, threadId, attachmentId);
-      if (ref.status === 'deleted' || data.byteLength === 0 && ref.status === 'deleted') {
+      if (ref.status === 'deleted') {
         return {
           attachmentId: ref.attachmentId,
           name: ref.name,

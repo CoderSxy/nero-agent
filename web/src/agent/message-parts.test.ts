@@ -4,6 +4,7 @@ import {
   DEFAULT_ATTACHMENT_PROMPT,
   messageParts,
   parseAttachmentIdsFromText,
+  skillActivations,
   streamError,
   stripAttachmentProtocol,
   userVisibleText,
@@ -77,5 +78,32 @@ describe('stream error display', () => {
     expect(parts[0]).toMatchObject({ kind: 'observation', state: 'complete', cycleId: 'cycle-1',
       data: { tokensObserved: 93500, observationTokens: 382, durationMs: 29700,
         currentTask: 'Continue research', suggestedResponse: 'Answer concisely' } });
+  });
+  it('dedupes skill activations and keeps a failed load distinct from success', () => {
+    const hash = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    const event = {
+      serverExecutionId: 'exec-1', skillId: 'skill-1', name: 'checklist', version: 3,
+      manifestHash: hash, status: 'loaded',
+    };
+    const failed = { serverExecutionId: 'exec-1', skillId: 'skill-2', name: 'missing', status: 'failed', errorCode: 'SKILL_NOT_FOUND' };
+    const activations = skillActivations({ id: 'one', role: 'assistant', content: { format: 2,
+      metadata: { neroSkillActivations: [event, failed] },
+      parts: [
+        { type: 'data-nero-skill-activation', data: event },
+        { type: 'tool-invocation', toolInvocation: { state: 'result', toolCallId: 'call', toolName: 'skill',
+          args: { name: 'checklist' }, result: { ok: true, skill: {
+            skillId: 'skill-1', name: 'checklist', version: 3, manifestHash: hash,
+          } } } },
+        { type: 'tool-invocation', toolInvocation: { state: 'call', toolCallId: 'pending', toolName: 'skill',
+          args: { name: 'checklist' } } },
+        { type: 'tool-invocation', toolInvocation: { state: 'result', toolCallId: 'path', toolName: 'skill',
+          args: {}, result: { ok: true, skill: { skillId: 'skill-9', name: '/Users/secret/skill', version: 1, manifestHash: hash } } } },
+      ],
+    } } as never);
+    expect(activations).toEqual([
+      expect.objectContaining({ skillId: 'skill-1', name: 'checklist', version: 3, status: 'loaded', hashPrefix: '01234567' }),
+      expect.objectContaining({ skillId: 'skill-2', name: 'missing', status: 'failed', errorCode: 'SKILL_NOT_FOUND' }),
+    ]);
+    expect(activations.some(item => item.name.includes('/Users/'))).toBe(false);
   });
 });

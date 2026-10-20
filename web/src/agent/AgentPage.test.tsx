@@ -44,6 +44,9 @@ vi.mock('./client', () => ({ AGENT_ID: 'agent', getFinanceCapabilities: async ()
   return response.json();
 } }));
 vi.mock('./model-catalog-client', () => ({ getSelectableModels: () => getSelectableModels() }));
+vi.mock('./skills/skills-api', () => ({
+  listAvailableSkills: () => Promise.resolve({ items: [], total: 0, page: 1, pageSize: 50 }),
+}));
 const refreshThreadList = vi.fn();
 vi.mock('./use-thread-list', () => ({ useThreadList: () => ({
   threads: threadItems, loading: false, error: null, refresh: refreshThreadList, createThread, deleteThread,

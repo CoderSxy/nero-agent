@@ -4,6 +4,7 @@ import { MastraReactProvider } from '@mastra/react';
 import { AgentPage } from './agent/AgentPage';
 import { AgentShell } from './agent/AgentShell';
 import { ScheduledTasksPage } from './agent/ScheduledTasksPage';
+import { SkillsPage } from './agent/skills/SkillsPage';
 import { MobileFilesPage, MobileHistoryPage, MobileModelsPage } from './agent/mobile/MobilePages';
 import { setAgentClientToken } from './agent/client';
 
@@ -108,6 +109,7 @@ export function App() {
         <Route path="/files" element={<MobileFilesPage />} />
         <Route path="/models" element={<MobileModelsPage />} />
         <Route path="/scheduled-tasks" element={<ScheduledTasksPage />} />
+        <Route path="/agent/skills" element={<SkillsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/agent/new" replace />} />
     </Routes>

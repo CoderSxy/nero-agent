@@ -19,6 +19,10 @@ vi.mock('./model-catalog-client', () => ({
   getSelectableModels: (...args: unknown[]) => getSelectableModels(...args),
 }));
 
+const listAvailableSkills = vi.hoisted(() => vi.fn());
+vi.mock('./skills/skills-api', () => ({
+  listAvailableSkills: (...args: unknown[]) => listAvailableSkills(...args),
+}));
 vi.mock('./scheduled-tasks-api', () => ({
   listTasks: (...args: unknown[]) => listTasks(...args),
   createTask: (...args: unknown[]) => createTask(...args),
@@ -86,6 +90,7 @@ function renderWithContext(isAdmin = true) {
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 beforeEach(() => {
+  listAvailableSkills.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 50 });
   listTasks.mockResolvedValue({ items: [task], total: 1 });
   listTaskRuns.mockResolvedValue({ items: [], total: 0 });
   createTask.mockResolvedValue({ task });
@@ -165,6 +170,7 @@ describe('ScheduledTasksPage', () => {
     expect(createTask.mock.calls[0]?.[0]).toMatchObject({
       chatModelRef: 'public:1', memoryModelRef: 'public:1', timezone: 'Asia/Shanghai',
     });
+    expect(createTask.mock.calls[0]?.[0].selectedSkillIds).toBeUndefined();
     fireEvent.click(screen.getByRole('button', { name: '暂停' }));
     await waitFor(() => expect(pauseTask).toHaveBeenCalledWith('task-1'));
     fireEvent.click(screen.getByRole('button', { name: '立即运行' }));
@@ -191,6 +197,7 @@ describe('ScheduledTasksPage', () => {
       chatModelRef: 'private:2', memoryModelRef: 'private:2',
       startsAt: '2026-10-20T01:00:00.000Z',
     });
+    expect(updateTask.mock.calls[0]?.[1].selectedSkillIds).toBeUndefined();
   });
 
   it('lets an edited private-model task switch back to the public default', async () => {
@@ -206,5 +213,22 @@ describe('ScheduledTasksPage', () => {
     expect(updateTask.mock.calls[0]?.[1]).toMatchObject({
       chatModelRef: 'public:1', memoryModelRef: 'public:1',
     });
+  });
+
+  it('saves selected skills and still edits a task that has no skill field', async () => {
+    const skill = {
+      id: '11111111-1111-4111-8111-111111111111', name: 'alpha', description: 'a', version: 1,
+      userInvocable: true, availability: 'instructions-only',
+    };
+    listAvailableSkills.mockResolvedValue({ items: [skill], total: 1, page: 1, pageSize: 50 });
+    renderWithContext(true);
+    fireEvent.click(screen.getByRole('button', { name: '新增任务' }));
+    fireEvent.change(screen.getByLabelText('任务名'), { target: { value: '带技能' } });
+    fireEvent.change(screen.getByLabelText('提示词'), { target: { value: '总结' } });
+    fireEvent.click(screen.getByRole('button', { name: '选择技能' }));
+    fireEvent.click(await screen.findByRole('option', { name: 'alpha' }));
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+    await waitFor(() => expect(createTask).toHaveBeenCalled());
+    expect(createTask.mock.calls.at(-1)?.[0].selectedSkillIds).toEqual([skill.id]);
   });
 });

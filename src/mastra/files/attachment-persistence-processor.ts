@@ -18,6 +18,14 @@ type ToolResultPart = {
   providerOptions?: unknown;
 };
 
+type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
+function isJsonValue(value: unknown): value is JsonValue {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') return true;
+  if (typeof value === 'number') return Number.isFinite(value);
+  if (Array.isArray(value)) return value.every(isJsonValue);
+  return typeof value === 'object' && value !== null && Object.values(value).every(isJsonValue);
+}
+
 const PENDING_IMAGE_OUTPUTS_KEY = 'pendingAttachedImageOutputs';
 
 type ToolInvocationPart = {
@@ -63,7 +71,7 @@ function containsImagePayload(value: unknown): boolean {
  * processToolResult, and Observational Memory can observe/persist on step>0
  * before final processOutputResult. processLLMRequest mutations are not persisted.
  */
-export const attachmentPersistenceProcessor: Processor = {
+export const attachmentPersistenceProcessor = {
   id: 'attachment-persistence-sanitizer',
 
   async processToolResult({ toolName, toolCallId, args, result, messageList, state }) {
@@ -88,7 +96,7 @@ export const attachmentPersistenceProcessor: Processor = {
         result: sanitized.result,
       },
       providerMetadata: {
-        mastra: { modelOutput: sanitized.modelOutput },
+        mastra: isJsonValue(sanitized.modelOutput) ? { modelOutput: sanitized.modelOutput } : {},
       },
     });
   },
@@ -110,14 +118,15 @@ export const attachmentPersistenceProcessor: Processor = {
     return { prompt: next as typeof prompt };
   },
 
-  async processOutputResult({ messageList }) {
+  processOutputResult({ messageList }) {
     stripStoredImageBytes(messageList);
+    return messageList;
   },
 
   async processInputStep({ messageList }) {
     stripStoredImageBytes(messageList);
   },
-};
+} satisfies Processor;
 
 export function rehydratePromptImages(
   prompt: PromptMessage[],
@@ -181,7 +190,7 @@ export function stripStoredImageBytes(messageList: {
           result: sanitized.result,
         },
         providerMetadata: {
-          mastra: { modelOutput: sanitized.modelOutput },
+          mastra: isJsonValue(sanitized.modelOutput) ? { modelOutput: sanitized.modelOutput } : {},
         },
       });
     }

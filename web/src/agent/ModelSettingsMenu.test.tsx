@@ -15,15 +15,17 @@ describe('sidebar manage menu', () => {
     expect(screen.queryByRole('menu', { name: '管理' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '管理' }));
     expect(screen.getByRole('menu', { name: '管理' })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: '技能管理' })).toBeTruthy();
     expect(screen.getByRole('menuitem', { name: '定时任务' })).toBeTruthy();
     expect(screen.getByRole('menuitem', { name: '外观' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: '管理' }));
     expect(screen.queryByRole('menu', { name: '管理' })).toBeNull();
   });
 
-  it('hides scheduled tasks for non-admins and keeps appearance controls', () => {
+  it('hides scheduled tasks for non-admins and keeps skills plus appearance controls', () => {
     renderMenu(<ManageMenu theme="dark" onThemeChange={vi.fn()} isAdmin={false} />);
     fireEvent.click(screen.getByRole('button', { name: '管理' }));
+    expect(screen.getByRole('menuitem', { name: '技能管理' })).toBeTruthy();
     expect(screen.queryByRole('menuitem', { name: '定时任务' })).toBeNull();
     fireEvent.click(screen.getByRole('menuitem', { name: '外观' }));
     fireEvent.click(screen.getByRole('button', { name: '浅色' }));

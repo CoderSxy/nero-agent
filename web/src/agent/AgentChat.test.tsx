@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentChat } from './AgentChat';
-import type { SafeModel } from './model-catalog-client';
+import type { ModelRef, SafeModel } from './model-catalog-client';
 import type { PendingUserMessage } from './pending-user-message';
 
 const sendMessage = vi.fn();
@@ -38,6 +38,11 @@ vi.mock('./client', () => ({
   AGENT_ID: 'agent', listWorkspaceFiles, fetchWorkspaceFile, fetchUserFile: vi.fn(),
   uploadWorkspaceFile: (...args: unknown[]) => uploadWorkspaceFile(...args),
 }));
+const listAvailableSkills = vi.hoisted(() => vi.fn());
+vi.mock('./skills/skills-api', () => ({
+  listAvailableSkills: (...args: unknown[]) => listAvailableSkills(...args),
+  listAvailableShortcuts: async () => ({ items: [] }),
+}));
 vi.mock('./attachment-client', () => ({
   uploadWorkspaceFile: (...args: unknown[]) => uploadWorkspaceFile(...args),
   prepareAttachments: (...args: unknown[]) => prepareAttachments(...args),
@@ -46,6 +51,7 @@ vi.mock('./attachment-client', () => ({
 beforeEach(() => {
   listThreadAttachments.mockResolvedValue([]);
   fetchWorkspaceFile.mockResolvedValue(new Blob(['x'], { type: 'application/octet-stream' }));
+  listAvailableSkills.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 50 });
 });
 afterEach(() => { cleanup(); vi.clearAllMocks(); vi.unstubAllGlobals(); mockRunning = false; mockMessages =
   [{ id: 'partial', role: 'assistant', content: { format: 2, parts: [{ type: 'text', text: '部分回复' }] } }];
@@ -873,5 +879,87 @@ describe('history search message targeting', () => {
     viewport.scrollTop = 99;
     rerender(<AgentChat {...props} />);
     expect(viewport.scrollTop).toBe(99);
+  });
+});
+
+const skillAlpha = {
+  id: '11111111-1111-4111-8111-111111111111', name: 'alpha', description: 'a', version: 1,
+  userInvocable: true, availability: 'instructions-only',
+};
+const skillBeta = {
+  id: '22222222-2222-4222-8222-222222222222', name: 'beta', description: 'b', version: 1,
+  userInvocable: true, availability: 'ready',
+};
+
+describe('skill selection on send', () => {
+  it('clears the previous thread selection', async () => {
+    listAvailableSkills.mockResolvedValue({ items: [skillAlpha], total: 1, page: 1, pageSize: 50 });
+    const { rerender } = render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}
+      onMessageSent={vi.fn()} models={models} catalog={catalog} />);
+    fireEvent.click(screen.getByRole('button', { name: '选择技能' }));
+    fireEvent.click(await screen.findByRole('option', { name: 'alpha' }));
+    expect(screen.getByLabelText('已选技能').textContent).toContain('alpha');
+    rerender(<AgentChat threadId="thread-2" resourceId="agent" initialMessages={[]}
+      onMessageSent={vi.fn()} models={models} catalog={catalog} />);
+    expect(screen.queryByLabelText('已选技能')).toBeNull();
+  });
+
+  it('sends skills with the message snapshot and restores them when send fails', async () => {
+    listAvailableSkills.mockResolvedValue({ items: [skillAlpha], total: 1, page: 1, pageSize: 50 });
+    listWorkspaceFiles.mockResolvedValue({ files: [{ path: 'a.txt', type: 'file', size: 3 }] });
+    prepareAttachments.mockResolvedValue([{
+      attachmentId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+      clientMessageId: 'x', source: 'personal', path: 'a.txt', name: 'a.txt',
+      size: 3, mimeType: 'text/plain', etag: '', status: 'available',
+    }]);
+    let setModel: (ref: ModelRef) => void = () => undefined;
+    function Harness() {
+      const [ref, setRef] = useState<ModelRef>(chatRef);
+      setModel = setRef;
+      return <AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}
+        onMessageSent={vi.fn()} models={models} catalog={catalog} modelRef={ref} onModelChange={setRef} />;
+    }
+    sendMessage.mockImplementation(async () => {
+      setModel(visionRef);
+      throw new Error('network down');
+    });
+    render(<Harness />);
+    fireEvent.click(screen.getByRole('button', { name: '选择技能' }));
+    fireEvent.click(await screen.findByRole('option', { name: 'alpha' }));
+    fireEvent.click(screen.getByRole('button', { name: '添加附件' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '选择工作区文件' }));
+    fireEvent.click(await screen.findByRole('checkbox', { name: '选择 a.txt' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认' }));
+    expect(await screen.findByLabelText('附件 a.txt')).toBeTruthy();
+    fireEvent.change(screen.getByRole('textbox', { name: '发送消息' }), { target: { value: '请同时处理' } });
+    fireEvent.click(screen.getByRole('button', { name: '发送' }));
+    await waitFor(() => expect(sendMessage).toHaveBeenCalled());
+    const options = sendMessage.mock.calls[0]![0];
+    expect(options.message).toContain('请同时处理');
+    expect(options.requestContext.get('nero-agent.chat-model-ref')).toBe(chatRef);
+    expect(options.requestContext.get('nero-agent.selected-skill-ids')).toEqual([skillAlpha.id]);
+    await waitFor(() => expect(screen.getByRole('textbox', { name: '发送消息' })).toHaveProperty('value', '请同时处理'));
+    expect(screen.getByLabelText('附件 a.txt')).toBeTruthy();
+    expect(screen.getByRole('combobox', { name: '模型' }).textContent).toContain('默认模型');
+    listAvailableSkills.mockResolvedValue({ items: [skillBeta], total: 1, page: 1, pageSize: 50 });
+    fireEvent.click(screen.getByRole('button', { name: '刷新技能权限' }));
+    await waitFor(() => expect(screen.getByLabelText('已选技能').textContent).toContain('失效'));
+    expect(screen.getByLabelText('已选技能').textContent).not.toContain('beta');
+  });
+
+  it('clears the skill selection after a successful send and ignores a second click', async () => {
+    listAvailableSkills.mockResolvedValue({ items: [skillAlpha], total: 1, page: 1, pageSize: 50 });
+    let release: () => void = () => undefined;
+    sendMessage.mockImplementation(() => new Promise<void>(resolve => { release = resolve; }));
+    render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}
+      onMessageSent={vi.fn()} models={models} catalog={catalog} />);
+    fireEvent.click(screen.getByRole('button', { name: '选择技能' }));
+    fireEvent.click(await screen.findByRole('option', { name: 'alpha' }));
+    fireEvent.change(screen.getByRole('textbox', { name: '发送消息' }), { target: { value: '执行技能' } });
+    fireEvent.click(screen.getByRole('button', { name: '发送' }));
+    fireEvent.click(screen.getByRole('button', { name: '发送' }));
+    expect(sendMessage).toHaveBeenCalledTimes(1);
+    release();
+    await waitFor(() => expect(screen.queryByLabelText('已选技能')).toBeNull());
   });
 });

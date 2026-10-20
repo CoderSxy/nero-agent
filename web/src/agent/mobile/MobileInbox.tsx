@@ -50,7 +50,10 @@ export function MobileInbox({ threads, source, onSourceChange, onNavigate, onOpe
           <button role="tab" aria-selected={!scheduled} type="button" onClick={() => onSourceChange('default')}>最近会话</button>
           <button role="tab" aria-selected={scheduled} type="button" onClick={() => onSourceChange('schedule')}>最近调度</button>
         </div>
-        <button type="button" className="mobile-text-link" onClick={() => onNavigate('/scheduled-tasks')}>定时任务 <span aria-hidden="true">→</span></button>
+        <div className="mobile-inbox-links">
+          <button type="button" className="mobile-text-link" onClick={() => onNavigate('/agent/skills')}>技能管理 <span aria-hidden="true">→</span></button>
+          <button type="button" className="mobile-text-link" onClick={() => onNavigate('/scheduled-tasks')}>定时任务 <span aria-hidden="true">→</span></button>
+        </div>
       </div>
       {loading && threads.length === 0 ? <p role="status">加载会话中…</p> : null}
       {error ? <p role="alert">{error}</p> : null}

@@ -45,6 +45,7 @@ function task(ownerId: string, overrides: Partial<ScheduledTask> = {}): Schedule
     memoryModelRef: 'public:11111111-1111-4111-8111-111111111111',
     startsAt: null,
     endsAt: null,
+    selectedSkillIds: [],
     status: 'active',
     createdAt: now,
     updatedAt: now,
@@ -401,6 +402,28 @@ test('edit keeps saved model references when a client omits model fields', async
   await createScheduledTaskService(deps).edit(owner, row.id, withoutModels);
   assert.equal(saved?.chatModelRef, chatModelRef);
   assert.equal(saved?.memoryModelRef, memoryModelRef);
+});
+
+test('edit persists selectedSkillIds when provided', async () => {
+  const owner = admin();
+  const skillA = randomUUID();
+  const skillB = randomUUID();
+  const row = task(owner.id, { selectedSkillIds: [] });
+  let savedPatch: Partial<ScheduledTask> | null = null;
+  const deps = baseDeps({
+    getTask: async (id, ownerId) => (id === row.id && ownerId === owner.id ? row : null),
+    updateTask: async (_id, _ownerId, patch) => {
+      savedPatch = patch;
+      return { ...row, ...patch, selectedSkillIds: patch.selectedSkillIds ?? row.selectedSkillIds };
+    },
+  });
+  const dto = await createScheduledTaskService(deps).edit(
+    owner,
+    row.id,
+    input({ selectedSkillIds: [skillA, skillB, skillA] }),
+  );
+  assert.deepEqual(savedPatch?.selectedSkillIds, [skillA, skillB]);
+  assert.deepEqual(dto.selectedSkillIds, [skillA, skillB]);
 });
 
 test('pause restores the active trigger when saving paused status fails', async () => {

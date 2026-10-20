@@ -29,7 +29,10 @@ import { financeSearchTool, financeInterfaceInfoTool, financeFetchTool } from '.
 import { createScheduledTaskHooks } from './scheduled-tasks/hooks';
 import { nativeScheduleGuardMiddleware } from './scheduled-tasks/native-guard';
 import { startScheduledTaskReconcile } from './scheduled-tasks/reconcile';
+import { startSkillsReconcile } from './skills/reconcile';
 import { scheduledTaskRoutes } from './scheduled-tasks/routes';
+import { resolveSkillAgentTools } from './skills/factory';
+import { skillRoutes } from './skills/routes';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error('DATABASE_URL 未配置，请先运行 npm run db:local:setup');
@@ -55,7 +58,7 @@ export const mastra = new Mastra({
       studioChineseMiddleware,
     ],
     apiRoutes: [...authRoutes, ...modelRoutes, ...modelAdminRoutes, ...fileRoutes,
-      ...currentWorkspaceFileRoutes, ...financeRoutes, ...scheduledTaskRoutes],
+      ...currentWorkspaceFileRoutes, ...financeRoutes, ...scheduledTaskRoutes, ...skillRoutes],
     auth: {
       authenticateToken: async token => getUserByToken(token),
       mapUserToResourceId: user => resourceIdFor(authContextFromUser(user)),
@@ -66,7 +69,9 @@ export const mastra = new Mastra({
   },
   agents: { agent },
   tools: { startScheduleTool, stopScheduleTool, tavilySearchTool, executeCommandTool, ...userFileTools,
-    financeSearchTool, financeInterfaceInfoTool, financeFetchTool },
+    financeSearchTool, financeInterfaceInfoTool, financeFetchTool,
+    // App skill tools only when AGENT_SKILLS_ENABLED=true; never native Agent.skills auto-tools.
+    ...resolveSkillAgentTools() },
   schedules: createScheduledTaskHooks(),
   storage: new MastraCompositeStore({
     id: 'composite-storage',
@@ -90,3 +95,4 @@ export const mastra = new Mastra({
 });
 
 startScheduledTaskReconcile(mastra.schedules);
+startSkillsReconcile();

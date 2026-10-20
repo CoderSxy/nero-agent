@@ -124,7 +124,7 @@ export class AttachmentService {
         createdAt: this.now(),
       }));
     }
-    const byKey = new Map(
+    const byKey = new Map<string, (typeof existing)[number]>(
       [...existing, ...created].map(record => [`${record.source}\0${record.path}`, record] as const),
     );
     return Promise.all(unique.map(async item => this.toRef(byKey.get(itemKey(item))!)));

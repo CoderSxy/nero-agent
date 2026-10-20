@@ -602,4 +602,25 @@ describe('message tools and stream state', () => {
     expect(screen.getByText('文件已删除')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /预览 gone|打开 gone/ })).toBeNull();
   });
+
+  it('shows a failed explicit skill load without treating it as success', () => {
+    const hash = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    const message = { id: 'skills', role: 'assistant', content: { format: 2,
+      metadata: { neroSkillActivations: [
+        { serverExecutionId: 'exec-1', skillId: 'skill-1', name: 'checklist', version: 3,
+          manifestHash: hash, status: 'failed', errorCode: 'SKILL_NOT_FOUND' },
+      ] },
+      parts: [{ type: 'text', text: '未能加载技能' }],
+    } };
+    render(<MessageList messages={[message] as never} isRunning={false} error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+    const badges = screen.getByRole('list', { name: '技能加载结果' });
+    expect(badges.textContent).toContain('加载失败');
+    expect(badges.textContent).toContain('checklist');
+    expect(badges.textContent).toContain('v3');
+    expect(badges.textContent).toContain('01234567');
+    expect(badges.textContent).toContain('SKILL_NOT_FOUND');
+    expect(badges.textContent).not.toContain('已加载');
+    expect(screen.queryByText('/Users/')).toBeNull();
+  });
 });

@@ -11,6 +11,11 @@ import {
 import { findAuthorizedModel } from '../models/service';
 import { ModelCatalogError, type ModelRef } from '../models/types';
 import {
+  bindSkillServerExecutionId,
+  bindSkillThreadId,
+} from '../skills/execution-context';
+import { SELECTED_SKILL_IDS_CONTEXT_KEY } from '../skills/validation';
+import {
   claimRun,
   finishRun,
   getTaskById,
@@ -62,11 +67,20 @@ function inEffectiveWindow(task: ScheduledTask, at: Date): boolean {
   return true;
 }
 
-function buildRequestContext(user: AuthUser, chatRef: string, memoryRef: string): RequestContext {
+function buildRequestContext(
+  user: AuthUser,
+  chatRef: string,
+  memoryRef: string,
+  selectedSkillIds: string[] = [],
+): RequestContext {
   const requestContext = new RequestContext();
   requestContext.set(MASTRA_USER_KEY, user);
   requestContext.set(chatModelRefContextKey, chatRef);
   requestContext.set(memoryModelRefContextKey, memoryRef);
+  // Intent only — runtime loads current published versions under trusted identity.
+  if (selectedSkillIds.length > 0) {
+    requestContext.set(SELECTED_SKILL_IDS_CONTEXT_KEY, selectedSkillIds.slice(0, 5));
+  }
   return requestContext;
 }
 
@@ -98,21 +112,25 @@ export async function runScheduledAgent(input: {
   requestContext: RequestContext;
 }): Promise<{ runId?: string }> {
   const agent = input.mastra.getAgent(input.agentId);
+  // Same server-owned runId for pin authority and Mastra stream (fail closed if unbound).
+  const runId = bindSkillServerExecutionId(input.requestContext);
+  bindSkillThreadId(input.requestContext, input.threadId);
   const dispatched = agent.sendMessage(input.prompt, {
     resourceId: input.resourceId,
     threadId: input.threadId,
     ifIdle: { streamOptions: {
       requestContext: input.requestContext,
+      runId,
       memory: { thread: input.threadId, resource: input.resourceId },
     } },
   });
   const accepted = await dispatched.accepted;
   if (accepted.action !== 'wake') throw new Error(`定时任务未启动独立执行：${accepted.action}`);
   let streamError: Error | undefined;
-  await accepted.output.consumeStream({ onError: error => { streamError = error; } });
+  await accepted.output.consumeStream({ onError: error => { streamError = error instanceof Error ? error : new Error(String(error)); } });
   if (streamError) throw streamError;
   await accepted.output.text;
-  return { runId: accepted.runId };
+  return { runId: accepted.runId ?? runId };
 }
 
 /**
@@ -208,7 +226,12 @@ export function createScheduledTaskHooks(
           return null;
         }
 
-        const requestContext = buildRequestContext(owner, task.chatModelRef, task.memoryModelRef);
+        const requestContext = buildRequestContext(
+          owner,
+          task.chatModelRef,
+          task.memoryModelRef,
+          task.selectedSkillIds ?? [],
+        );
         setScheduledTimezone(requestContext, task.timezone);
         if (!threadId) {
           const thread = await createThread({

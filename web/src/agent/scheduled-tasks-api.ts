@@ -19,6 +19,7 @@ export type TaskDto = {
   nextFireAt: string | null;
   lastFireAt: string | null;
   execCount: number;
+  selectedSkillIds?: string[];
 };
 
 export type RunDto = {
@@ -42,6 +43,7 @@ export type TaskInput = {
   memoryModelRef?: string;
   startsAt?: string | null;
   endsAt?: string | null;
+  selectedSkillIds?: string[];
 };
 
 async function readJson<T>(response: Response): Promise<T> {

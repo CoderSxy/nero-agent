@@ -20,12 +20,32 @@ export interface DockerEngine {
   remove(id: string, force?: boolean): Promise<void>;
 }
 
+/**
+ * Registry pins use name@sha256:<content-digest>. Locally built images often only have an
+ * image ID (also sha256:…). If that ID exists locally, rewrite Image so create does not try
+ * to pull a non-existent registry digest.
+ */
+async function resolveImageRef(docker: Docker, image: string | undefined): Promise<string | undefined> {
+  if (!image) return image;
+  const match = image.match(/^(.+)@sha256:([a-f0-9]{64})$/i);
+  if (!match) return image;
+  const digest = match[2]!;
+  const localId = `sha256:${digest}`;
+  try {
+    await docker.getImage(localId).inspect();
+    return localId;
+  } catch {
+    return image;
+  }
+}
+
 export async function createDockerodeEngine(dockerInstance?: Docker): Promise<DockerEngine> {
   const { default: DockerConstructor } = await import('dockerode');
   const docker = dockerInstance ?? new DockerConstructor();
   return {
     async create(options) {
-      const container = await docker.createContainer(options);
+      const Image = await resolveImageRef(docker, options.Image);
+      const container = await docker.createContainer({ ...options, Image });
       return { id: container.id };
     },
     async start(id) {

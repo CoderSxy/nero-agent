@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "runtimes": ["python3"],
+  "entrypoints": ["scripts/to_csv.py"],
+  "requiredTools": [],
+  "network": "none"
+}

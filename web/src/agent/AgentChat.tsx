@@ -18,6 +18,9 @@ import { nextPendingUserMessage, withPendingUserMessages, type PendingUserMessag
 import { WorkspaceFilePicker } from './WorkspaceFilePicker';
 import type { FinanceCategory } from './finance-category';
 import { useScheduledThreadUpdates, type ScheduledRunRef } from './use-scheduled-thread-updates';
+import { mergeSkillSelection } from './skills/selection';
+import type { SkillActivationView } from './message-parts';
+import { skillActivations } from './message-parts';
 import { MobileComposerDock } from './mobile/MobileComposerDock';
 import { useMobileLayout } from './mobile/useMobileLayout';
 
@@ -49,8 +52,8 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   onModelChange, modelRef, modelDisabled = false, modelError, sendBlockedReason,
   financeCategory = null, financeEnabled = false, financeSaving = false, onFinanceCategoryChange,
   pendingUserMessages = [], onMessageSubmitted, onMessageFailed, onResponseSettled, onFilesChanged, attachRequest,
-  attachmentRefreshVersion = 0, targetMessageId, initialDraft = '', focusComposer = false, sendOnMount = false,
-  initialFiles = [], openPickerOnMount = false, scheduledRun }: {
+  attachmentRefreshVersion = 0, targetMessageId,   initialDraft = '', focusComposer = false, sendOnMount = false,
+  initialFiles = [], openPickerOnMount = false, scheduledRun, onTurnActivations }: {
   title?: string; threadId: string; resourceId: string; initialMessages: MastraDBMessage[];
   initialDraft?: string; focusComposer?: boolean; sendOnMount?: boolean;
   initialFiles?: { files: File[]; kind: 'file' | 'image' }[]; openPickerOnMount?: boolean;
@@ -69,6 +72,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   attachmentRefreshVersion?: number;
   targetMessageId?: string;
   scheduledRun?: ScheduledRunRef | null;
+  onTurnActivations?: (activations: SkillActivationView[]) => void;
 }) {
   const mobile = useMobileLayout();
   const [draft, setDraft] = useState(initialDraft);
@@ -80,6 +84,10 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
   const [threadAttachments, setThreadAttachments] = useState<PreparedAttachment[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [selectedSkillIds, setSelectedSkillIds] = useState<string[]>([]);
+  const [preserveMissingSkills, setPreserveMissingSkills] = useState(false);
+  const [sending, setSending] = useState(false);
+  const sendingRef = useRef(false);
   const initialFilesHandled = useRef(false);
   useEffect(() => {
     if (initialFilesHandled.current) return;
@@ -150,6 +158,8 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     wasRunning.current = chat.isRunning;
   }, [chat.isRunning, onFilesChanged, onResponseSettled, threadId]);
   useEffect(() => {
+    setSelectedSkillIds([]);
+    setPreserveMissingSkills(false);
     refreshThreadAttachments();
     return () => { invalidateAttachmentList(); };
   }, [threadId]);
@@ -179,6 +189,14 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   }, [attachmentRefreshVersion]);
 
   const visibleMessages = withPendingUserMessages(chat.messages, pendingUserMessages);
+  const reportedActivations = useRef('');
+  useEffect(() => {
+    const next = visibleMessages.flatMap(message => message.role === 'assistant' ? skillActivations(message) : []);
+    const key = JSON.stringify(next);
+    if (key === reportedActivations.current) return;
+    reportedActivations.current = key;
+    onTurnActivations?.(next);
+  }, [visibleMessages, onTurnActivations]);
   const isEmpty = !hasSubmitted && initialMessages.length === 0 && visibleMessages.length === 0;
   useEffect(() => {
     setHandledTargetKey(null);
@@ -387,6 +405,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   }
 
   async function send() {
+    if (sendingRef.current) return;
     const ready = attachments.filter(item => item.state === 'ready' && item.path);
     if (attachments.some(item => item.state !== 'ready')) return;
     const visibleText = draft.trim() || (ready.length ? DEFAULT_ATTACHMENT_PROMPT : '');
@@ -396,6 +415,10 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
       setError('当前模型不支持图片，请切换支持图片的模型');
       return;
     }
+    const skillSnapshot = selectedSkillIds.slice(0, 5);
+    const modelSnapshot = modelRef ?? models?.chatModel;
+    sendingRef.current = true;
+    setSending(true);
     const pending = nextPendingUserMessage(visibleText, chat.messages, pendingUserMessages);
     // Stable id for prepare/server records. @mastra/react may ignore this and use client-set-*.
     const clientMessageId = pending.id;
@@ -429,7 +452,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
         mode: 'stream',
         threadId,
         clientMessageId,
-        requestContext,
+        requestContext: mergeSkillSelection(requestContext, skillSnapshot),
         onChunk: async chunk => {
           if (chunk.type === 'tool-call-approval') {
             const id = chunk.payload?.toolCallId;
@@ -439,12 +462,20 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
       });
       setAttachments([]);
       pendingUploads.current.clear();
+      setSelectedSkillIds([]);
+      setPreserveMissingSkills(false);
       onMessageSent(pending);
     } catch (cause) {
       onMessageFailed?.(pending);
       setDraft(draftSnapshot);
       setAttachments(attachmentSnapshot);
+      setSelectedSkillIds(skillSnapshot);
+      setPreserveMissingSkills(true);
+      if (modelSnapshot) onModelChange?.(modelSnapshot);
       setError(cause instanceof Error ? cause.message : '请求失败');
+    } finally {
+      sendingRef.current = false;
+      setSending(false);
     }
   }
   useEffect(() => {
@@ -488,20 +519,24 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
       {blockedReason && <p className="notice" role="status">{blockedReason}</p>}
       {modelError && <p className="error" role="alert">{modelError}</p>}
       {mobile ? <MobileComposerDock>
-        <AgentComposer draft={draft} sendDisabled={Boolean(blockedReason) || modelDisabled} onDraftChange={setDraft}
+        <AgentComposer draft={draft} sendDisabled={Boolean(blockedReason) || modelDisabled || sending} onDraftChange={setDraft}
           financeCategory={financeCategory} financeEnabled={financeEnabled} financeSaving={financeSaving}
           onFinanceCategoryChange={onFinanceCategoryChange}
           autoFocus={focusComposer} mobileInline
           catalog={catalog} modelRef={modelRef ?? models?.chatModel} onModelChange={onModelChange} modelDisabled={modelDisabled}
+          selectedSkillIds={selectedSkillIds} onSelectedSkillIdsChange={setSelectedSkillIds}
+          skillScopeKey={threadId} preserveMissingSkills={preserveMissingSkills}
           isRunning={chat.isRunning || chat.isAwaitingToolApproval} onSend={() => void send()}
           attachments={attachments} onChooseWorkspaceFiles={() => setPickerOpen(true)} onUploadFiles={uploadFiles}
           onRemoveAttachment={removeAttachment} onRetryAttachment={retryAttachment} onWorkspaceDrop={onWorkspaceDrop}
           onStop={() => { chat.cancelRun(); setError('已停止'); }} />
-      </MobileComposerDock> : <AgentComposer draft={draft} sendDisabled={Boolean(blockedReason) || modelDisabled} onDraftChange={setDraft}
+      </MobileComposerDock> : <AgentComposer draft={draft} sendDisabled={Boolean(blockedReason) || modelDisabled || sending} onDraftChange={setDraft}
       financeCategory={financeCategory} financeEnabled={financeEnabled} financeSaving={financeSaving}
       onFinanceCategoryChange={onFinanceCategoryChange}
       autoFocus={focusComposer}
       catalog={catalog} modelRef={modelRef ?? models?.chatModel} onModelChange={onModelChange} modelDisabled={modelDisabled}
+      selectedSkillIds={selectedSkillIds} onSelectedSkillIdsChange={setSelectedSkillIds}
+      skillScopeKey={threadId} preserveMissingSkills={preserveMissingSkills}
       isRunning={chat.isRunning || chat.isAwaitingToolApproval} onSend={() => void send()}
       attachments={attachments}
       onChooseWorkspaceFiles={() => setPickerOpen(true)}

@@ -11,6 +11,7 @@ export type ManageEntry = {
 };
 
 export const MANAGE_ENTRIES: ManageEntry[] = [
+  { id: 'skills', label: '技能管理', to: '/agent/skills' },
   { id: 'scheduled-tasks', label: '定时任务', to: '/scheduled-tasks', adminOnly: true },
   { id: 'appearance', label: '外观' },
   { id: 'logout', label: '退出登录' },
@@ -24,13 +25,15 @@ export function ManageMenu({ theme, onThemeChange, user, onLogout, isAdmin }: {
   isAdmin?: boolean;
 }) {
   const location = useLocation();
-  const defaultOpen = location.pathname.startsWith('/scheduled-tasks');
+  const defaultOpen = location.pathname.startsWith('/scheduled-tasks')
+    || location.pathname.startsWith('/agent/skills');
   const [open, setOpen] = useState(defaultOpen);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
 
   useEffect(() => {
-    if (location.pathname.startsWith('/scheduled-tasks')) setOpen(true);
+    if (location.pathname.startsWith('/scheduled-tasks')
+      || location.pathname.startsWith('/agent/skills')) setOpen(true);
   }, [location.pathname]);
 
   const entries = MANAGE_ENTRIES.filter((entry) => !entry.adminOnly || isAdmin);

@@ -85,6 +85,8 @@ sudo grep -E '^(AKTOOLS_BASE_URL|FINANCE_TOOL_ENABLED)=' /opt/nero-agent/.env
 
 当前 Nginx 仅将已列出的 API 路径代理到 Mastra。首次发布财经功能时，还要把 `/finance` 加入 `/etc/nginx/sites-available/nero-agent` 中现有的 API `location` 正则，例如将 `api|auth|model-catalog` 改成 `api|auth|finance|model-catalog`。先备份配置，再执行 `sudo nginx -t`；测试通过后才 `sudo systemctl reload nginx`。`/finance/capabilities` 未登录时应返回 `401 application/json`，不能返回前端首页的 `200 text/html`。AKTools 的 18080 端口无需对公网开放。后续发布无需重复添加环境变量或路由。
 
+首次启用 Agent Skills HTTP 时，同样把 `agent-skills` 加入该 API `location` 正则（与 `agent-scheduled-tasks` 同组）。未登录 `GET /agent-skills/available` 应返回 `401 application/json`，不能回落到前端 `index.html`。开发代理见 `web/vite.config.ts`；说明见 `docs/deployment/agent-skills.md` §1.1。
+
 ### 按需迁移 PostgreSQL
 
 **本次没有 PostgreSQL 表、字段、索引或约束变动，也没有新增迁移 SQL 时，整步跳过。** 不需要每次发布都运行 migrate.mjs。

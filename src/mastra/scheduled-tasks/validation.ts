@@ -158,6 +158,26 @@ export async function validateTaskInput(
     throw error;
   }
 
+  let selectedSkillIds: string[] | undefined;
+  if (body.selectedSkillIds !== undefined) {
+    if (!Array.isArray(body.selectedSkillIds)) {
+      throw new ScheduledTaskError('invalid_input', 'selectedSkillIds 无效');
+    }
+    if (body.selectedSkillIds.length > 5) {
+      throw new ScheduledTaskError('invalid_input', 'selectedSkillIds 最多 5 个');
+    }
+    const uuidRe =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    selectedSkillIds = [];
+    for (const raw of body.selectedSkillIds) {
+      if (typeof raw !== 'string' || !uuidRe.test(raw.trim())) {
+        throw new ScheduledTaskError('invalid_input', 'selectedSkillIds 含无效 UUID');
+      }
+      const id = raw.trim();
+      if (!selectedSkillIds.includes(id)) selectedSkillIds.push(id);
+    }
+  }
+
   return {
     name,
     cron,
@@ -167,5 +187,6 @@ export async function validateTaskInput(
     memoryModelRef,
     startsAt: startsAt === undefined ? null : startsAt,
     endsAt: endsAt === undefined ? null : endsAt,
+    selectedSkillIds,
   };
 }
