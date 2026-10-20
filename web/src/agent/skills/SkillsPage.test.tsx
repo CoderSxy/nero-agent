@@ -58,6 +58,7 @@ const skillA: SkillManageListItem = {
   deletedAt: null,
   createdAt: '',
   updatedAt: '',
+  description: 'alpha 描述',
   canEdit: true,
   canPublish: true,
   canManage: true,
@@ -68,6 +69,7 @@ const skillB: SkillManageListItem = {
   id: 'skill-b',
   canonicalName: 'beta-skill',
   revision: '5',
+  description: 'beta 描述',
   canEdit: false,
   canPublish: false,
   canManage: false,
@@ -166,6 +168,7 @@ describe('SkillsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '搜索' }));
     await waitFor(() => expect(listManageableSkills).toHaveBeenCalledWith(
       expect.objectContaining({ q: 'alpha', groupId: 'g1', page: 1 }),
+      expect.any(AbortSignal),
     ));
 
     fireEvent.click(screen.getByRole('button', { name: '新建技能' }));
@@ -183,7 +186,7 @@ describe('SkillsPage', () => {
     getSkillDetail.mockResolvedValue({ ...detailFor(skillA, '# body'), grants, audienceIds: ['audience-1'] });
     patchSkillMetadata.mockResolvedValue({ skill: { ...skillA, groupId: 'g1', revision: '2' } });
     renderPage();
-    fireEvent.click(await screen.findByRole('button', { name: /alpha-skill/ }));
+    fireEvent.click(await screen.findByRole('button', { name: '编辑 alpha-skill' }));
     fireEvent.click(await screen.findByRole('button', { name: '权限' }));
     fireEvent.change(screen.getByLabelText('分类'), { target: { value: 'g1' } });
     fireEvent.click(screen.getByRole('button', { name: '保存权限' }));
@@ -199,7 +202,7 @@ describe('SkillsPage', () => {
 
   it('keeps unsaved body on 409 and disables save after revoke', async () => {
     renderPage();
-    fireEvent.click(await screen.findByRole('button', { name: /alpha-skill/ }));
+    fireEvent.click(await screen.findByRole('button', { name: '编辑 alpha-skill' }));
     const editor = await screen.findByLabelText('技能正文');
     await waitFor(() => expect((editor as HTMLTextAreaElement).value).toBe('# server-a'));
     fireEvent.change(editor, { target: { value: '# local draft' } });
@@ -230,8 +233,8 @@ describe('SkillsPage', () => {
     });
 
     renderPage();
-    fireEvent.click(await screen.findByRole('button', { name: /alpha-skill/ }));
-    fireEvent.click(await screen.findByRole('button', { name: /beta-skill/ }));
+    fireEvent.click(await screen.findByRole('button', { name: '编辑 alpha-skill' }));
+    fireEvent.click(await screen.findByRole('button', { name: '编辑 beta-skill' }));
     await waitFor(() => expect(screen.getByLabelText('技能正文')).toBeTruthy());
     expect((screen.getByLabelText('技能正文') as HTMLTextAreaElement).value).toBe('# server-b');
 
@@ -280,7 +283,7 @@ describe('SkillsPage', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     renderPage();
-    fireEvent.click(await screen.findByRole('button', { name: /alpha-skill/ }));
+    fireEvent.click(await screen.findByRole('button', { name: '编辑 alpha-skill' }));
     fireEvent.click(await screen.findByRole('button', { name: '版本' }));
     expect(await screen.findByText(/发布版 1/)).toBeTruthy();
     expect(screen.getByText(/未启用/)).toBeTruthy();
@@ -301,7 +304,7 @@ describe('SkillsPage', () => {
       }],
     });
     renderPage();
-    fireEvent.click(await screen.findByRole('button', { name: /beta-skill/ }));
+    fireEvent.click(await screen.findByRole('button', { name: '编辑 beta-skill' }));
     expect(await screen.findByRole('button', { name: '保存草稿' })).toBeTruthy();
     expect((screen.getByRole('button', { name: '保存草稿' }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: '版本' }));
@@ -309,4 +312,35 @@ describe('SkillsPage', () => {
     expect(screen.queryByRole('button', { name: '发布' })).toBeNull();
     expect(screen.queryByRole('button', { name: '启用' })).toBeNull();
   });
+  it('does not publish or overwrite a dirty editor when discard is declined', async () => {
+    listSkillVersions.mockResolvedValue({ items: [{ version: 1, state: 'draft' }] });
+    publishSkill.mockResolvedValue({ skill: skillA, version: detailFor(skillA, '# server-a').draft });
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: '编辑 alpha-skill' }));
+    const editor = await screen.findByLabelText('技能正文');
+    await waitFor(() => expect((editor as HTMLTextAreaElement).value).toBe('# server-a'));
+    fireEvent.change(editor, { target: { value: '# unsaved local instructions' } });
+    fireEvent.click(screen.getByRole('button', { name: '发布 alpha-skill' }));
+    await waitFor(() => expect(window.confirm).toHaveBeenCalled());
+    expect(publishSkill).not.toHaveBeenCalled();
+    expect((screen.getByLabelText('技能正文') as HTMLTextAreaElement).value).toBe('# unsaved local instructions');
+  });
+
+  it('does not create and switch away from dirty instructions when discard is declined', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: '编辑 alpha-skill' }));
+    const editor = await screen.findByLabelText('技能正文');
+    fireEvent.change(editor, { target: { value: '# keep this draft' } });
+    fireEvent.click(screen.getByRole('button', { name: '新建技能' }));
+    const dialog = screen.getByRole('dialog', { name: '新建技能' });
+    fireEvent.change(within(dialog).getByLabelText('规范名'), { target: { value: 'new-skill' } });
+    fireEvent.change(within(dialog).getByLabelText('描述'), { target: { value: 'description' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: '创建' }));
+    expect(window.confirm).toHaveBeenCalled();
+    expect(createSkill).not.toHaveBeenCalled();
+    expect((screen.getByLabelText('技能正文') as HTMLTextAreaElement).value).toBe('# keep this draft');
+  });
+
 });

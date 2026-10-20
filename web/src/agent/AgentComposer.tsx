@@ -8,9 +8,12 @@ import {
 } from './attachment-types';
 import type { ModelRef, SafeModel } from './model-catalog-client';
 import { financeCategoryOptions, type FinanceCategory } from './finance-category';
-import { SkillPicker } from './skills/SkillPicker';
+import { SkillPicker, type SkillPickerHandle } from './skills/SkillPicker';
+import { SkillSelectionChips } from './skills/SkillSelectionChips';
 import { SkillShortcutDock } from './skills/SkillShortcutForm';
 import { limitSkillIds } from './skills/selection';
+import { replaceSkillSlash, resolveSkillSlash, type SkillSlashMatch } from './skills/skill-slash';
+import type { SkillSummary } from './skills/types';
 
 function modelFacts(model: SafeModel): string {
   const meta = model.catalogMetadata;
@@ -119,6 +122,24 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
   const [query, setQuery] = useState('');
   const [position, setPosition] = useState({ top: 0, left: 0, width: 360 });
   const [preview, setPreview] = useState<{ key: string; name: string; url: string } | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const pickerRef = useRef<SkillPickerHandle>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
+  const [skillOpen, setSkillOpen] = useState(false);
+  const [skillMode, setSkillMode] = useState<'slash' | 'search'>('slash');
+  const [skillQuery, setSkillQuery] = useState('');
+  const [skillCatalog, setSkillCatalog] = useState<SkillSummary[]>([]);
+  const [skillPhase, setSkillPhase] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [skillPosition, setSkillPosition] = useState<{ left: number; width: number; maxHeight: number; top?: number; bottom?: number }>({ left: 8, width: 320, maxHeight: 360, bottom: 8 });
+  const dismissedRef = useRef<{ start: number; end: number; token: string } | null>(null);
+  const matchRef = useRef<SkillSlashMatch | null>(null);
+  const draftRef = useRef(draft);
+  const modeRef = useRef(skillMode);
+  const composingRef = useRef(false);
+  const pendingCaret = useRef<number | null>(null);
+  const pickGeneration = useRef(0);
+  draftRef.current = draft;
+  modeRef.current = skillMode;
   const searchRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -228,14 +249,139 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
     setPreview(null);
   }
 
-  const slashQuery = draft.startsWith('/') ? draft.slice(1) : undefined;
-  return <div className={`agent-composer${mobileInline ? ' mobile-inline-composer' : ''}`}
+  function dismissSkillPanel() {
+    const current = matchRef.current;
+    if (current && modeRef.current === 'slash') {
+      dismissedRef.current = {
+        start: current.start,
+        end: current.end,
+        token: draftRef.current.slice(current.start, current.end),
+      };
+    }
+    setSkillOpen(false);
+  }
+
+  function updateFromCaret(text: string, start: number, end: number) {
+    if (isRunning || mobileInline) return;
+    const next = resolveSkillSlash(text, start, end);
+    matchRef.current = next;
+    if (!next) {
+      if (modeRef.current === 'slash') setSkillOpen(false);
+      return;
+    }
+    const token = text.slice(next.start, next.end);
+    const dismissed = dismissedRef.current;
+    if (dismissed && dismissed.token === token && dismissed.start === next.start && dismissed.end === next.end) {
+      setSkillOpen(false);
+      return;
+    }
+    dismissedRef.current = null;
+    setSkillMode('slash');
+    setSkillQuery(next.query);
+    placeSkillPopover();
+    setSkillOpen(true);
+    setOpen(false);
+    setAddOpen(false);
+  }
+
+  function applyPickedSkill() {
+    const generation = pickGeneration.current;
+    const current = matchRef.current;
+    if (modeRef.current === 'slash' && current && generation === pickGeneration.current) {
+      const replaced = replaceSkillSlash(draftRef.current, current);
+      onDraftChange(replaced.text);
+      matchRef.current = null;
+      dismissedRef.current = null;
+      pendingCaret.current = replaced.caret;
+    }
+    setSkillOpen(false);
+  }
+
+  useEffect(() => {
+    if (pendingCaret.current === null) return;
+    const caret = pendingCaret.current;
+    pendingCaret.current = null;
+    const node = inputRef.current;
+    if (!node) return;
+    node.focus();
+    node.setSelectionRange(caret, caret);
+  }, [draft]);
+
+  useEffect(() => {
+    pickGeneration.current += 1;
+    setSkillOpen(false);
+    matchRef.current = null;
+    dismissedRef.current = null;
+  }, [skillScopeKey, isRunning]);
+
+  function placeSkillPopover() {
+    const root = composerRef.current;
+    if (!root || mobileInline) return;
+    const box = root.querySelector('[data-slot="composer-box"]');
+    const anchor = box instanceof HTMLElement ? box : root;
+    const rect = anchor.getBoundingClientRect();
+    const margin = 8;
+    const gap = 10;
+    const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+    const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+    const width = Math.min(rect.width, Math.max(240, viewportWidth - margin * 2));
+    const left = Math.min(Math.max(margin, rect.left), Math.max(margin, viewportWidth - width - margin));
+    const spaceAbove = rect.top - gap - margin;
+    const spaceBelow = viewportHeight - rect.bottom - gap - margin;
+    if (spaceAbove < 200 && spaceBelow > spaceAbove) {
+      setSkillPosition({
+        top: rect.bottom + gap,
+        left,
+        width,
+        maxHeight: Math.max(160, Math.min(420, spaceBelow)),
+      });
+      return;
+    }
+    setSkillPosition({
+      bottom: viewportHeight - rect.top + gap,
+      left,
+      width,
+      maxHeight: Math.max(160, Math.min(420, spaceAbove)),
+    });
+  }
+
+  useEffect(() => {
+    if (!skillOpen || mobileInline) return;
+    const place = () => placeSkillPopover();
+    place();
+    const view = window.visualViewport;
+    const observed = composerRef.current;
+    const box = observed?.querySelector('[data-slot="composer-box"]');
+    const observer = new ResizeObserver(place);
+    if (observed) observer.observe(observed);
+    if (box) observer.observe(box);
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    view?.addEventListener('resize', place);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+      view?.removeEventListener('resize', place);
+    };
+  }, [skillOpen, mobileInline]);
+
+  useEffect(() => {
+    if (!skillOpen) return;
+    const close = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (target instanceof Element && target.closest('.skill-picker-popover, .composer-skill-button')) return;
+      dismissSkillPanel();
+    };
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
+  }, [skillOpen]);
+
+  return <div ref={composerRef} className={`agent-composer${mobileInline ? ' mobile-inline-composer' : ''}`}
     onDragOver={onDragOver} onDrop={onDrop} onPaste={onPaste}>
-    {onSelectedSkillIdsChange && <SkillPicker value={selectedSkillIds ?? []} disabled={isRunning || sendDisabled}
-      scopeKey={skillScopeKey} slashQuery={slashQuery} preserveMissing={preserveMissingSkills}
-      onChange={onSelectedSkillIdsChange}
-      onPickedFromSlash={() => { if (draft.startsWith('/')) onDraftChange(''); }} />}
     {onSelectedSkillIdsChange && <SkillShortcutDock disabled={isRunning || sendDisabled} scopeKey={skillScopeKey}
+      suppressStatus={skillOpen && skillPhase === 'error'}
       onApply={({ skillId, text }) => {
         onDraftChange(text);
         onSelectedSkillIdsChange(limitSkillIds([
@@ -271,12 +417,38 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
       当前模型不支持图片，请切换支持图片的模型
     </p>}
     <ComposerRing busy={isRunning}><ComposerBox>
-      <ComposerInput aria-label="发送消息" placeholder="向智能体发送消息…" value={draft}
+      {onSelectedSkillIdsChange && <SkillSelectionChips value={selectedSkillIds ?? []} catalog={skillCatalog}
+        phase={skillPhase} disabled={isRunning || sendDisabled} preserveMissing={preserveMissingSkills}
+        onRemove={id => onSelectedSkillIdsChange((selectedSkillIds ?? []).filter(item => item !== id))} />}
+      <ComposerInput ref={inputRef} aria-label="发送消息" placeholder={mobileInline ? '向智能体发送消息…' : '向智能体发送消息，输入 / 选择技能…'} value={draft}
         autoFocus={autoFocus} onFocus={onInputFocus}
-        onChange={event => onDraftChange(event.target.value)}
+        onChange={event => {
+          onDraftChange(event.target.value);
+          updateFromCaret(event.target.value, event.target.selectionStart ?? event.target.value.length, event.target.selectionEnd ?? event.target.value.length);
+        }}
+        onSelect={event => {
+          const target = event.target as HTMLTextAreaElement;
+          updateFromCaret(target.value, target.selectionStart ?? 0, target.selectionEnd ?? 0);
+        }}
+        onCompositionStart={() => { composingRef.current = true; }}
+        onCompositionEnd={event => {
+          composingRef.current = false;
+          const target = event.target as HTMLTextAreaElement;
+          updateFromCaret(target.value, target.selectionStart ?? target.value.length, target.selectionEnd ?? target.value.length);
+        }}
         onKeyDown={event => {
-          if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing
-            || event.nativeEvent.keyCode === 229) return;
+          const native = event.nativeEvent;
+          if (composingRef.current || native.isComposing || native.keyCode === 229) return;
+          if (event.key === 'Tab' && skillOpen) {
+            dismissSkillPanel();
+            return;
+          }
+          if (event.key === 'Enter' && event.shiftKey) return;
+          if (pickerRef.current?.handleKeyDown(event)) return;
+          if (event.key !== 'Enter' || skillOpen) {
+            if (event.key === 'Enter') event.preventDefault();
+            return;
+          }
           event.preventDefault();
           if (canSend) onSend();
         }} />
@@ -286,6 +458,7 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
           title="会话与记忆模型" disabled={isRunning || modelDisabled || catalog.length === 0}
           onClick={event => {
             if (open) { setOpen(false); return; }
+            dismissSkillPanel();
             const rect = event.currentTarget.getBoundingClientRect();
             const width = Math.min(360, window.innerWidth - 16);
             setPosition({ top: Math.max(8, rect.top - 392), left: Math.min(Math.max(8, rect.left), window.innerWidth - width - 8), width });
@@ -321,6 +494,20 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
           </div>
         </div>, document.body)}
         <div className="composer-file-controls">
+          {!mobileInline && onSelectedSkillIdsChange && <button type="button" className="composer-skill-button" aria-label="技能"
+            aria-expanded={skillOpen && skillMode === 'search'} disabled={isRunning || sendDisabled}
+            onClick={() => {
+              if (skillOpen && skillMode === 'search') {
+                setSkillOpen(false);
+                return;
+              }
+              setSkillMode('search');
+              setSkillQuery('');
+              placeSkillPopover();
+              setSkillOpen(true);
+              setOpen(false);
+              setAddOpen(false);
+            }}>技能</button>}
           <input ref={fileInputRef} className="composer-file-input" type="file" multiple
             aria-label="选择本地文件" disabled={attachmentsDisabled} onChange={event => onFileInput('file', event)} />
           <input ref={imageInputRef} className="composer-file-input" type="file" multiple accept={IMAGE_ACCEPT}
@@ -329,12 +516,15 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
             aria-haspopup="menu" aria-expanded={addOpen} disabled={attachmentsDisabled}
             onClick={event => {
               if (addOpen) { setAddOpen(false); return; }
+              dismissSkillPanel();
               const rect = event.currentTarget.getBoundingClientRect();
               setAddPosition({ top: Math.max(8, rect.top - (mobileInline ? 188 : 140)), left: Math.min(rect.left, window.innerWidth - 180) });
               setAddOpen(true); setOpen(false);
             }}><Plus size={18} aria-hidden="true" /></button>
           {addOpen && createPortal(<div className="composer-add-menu" role="menu" aria-label="添加附件"
             style={addPosition}>
+            {mobileInline && onSelectedSkillIdsChange && <button type="button" role="menuitem"
+              onClick={() => { setAddOpen(false); setSkillMode('search'); setSkillQuery(''); setSkillOpen(true); setOpen(false); }}>选择技能</button>}
             <button type="button" role="menuitem" onClick={() => pickFiles('file')}>上传文件</button>
             <button type="button" role="menuitem" onClick={() => { setAddOpen(false); onChooseWorkspaceFiles?.(); }}>
               选择工作区文件</button>
@@ -362,5 +552,23 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
       <img src={preview.url} alt={preview.name} />
     </div>, document.body)}
   </Composer>
+  {onSelectedSkillIdsChange && mobileInline && skillOpen && createPortal(<div className="skill-picker-backdrop" onPointerDown={dismissSkillPanel} />, document.body)}
+  {onSelectedSkillIdsChange && createPortal(<div className={`skill-picker-popover${mobileInline ? ' is-mobile' : ''}`} hidden={!skillOpen}
+    role={mobileInline && skillOpen ? 'dialog' : undefined} aria-label={mobileInline && skillOpen ? '选择技能' : undefined}
+    aria-modal={mobileInline && skillOpen ? true : undefined}
+    style={skillOpen && !mobileInline ? {
+      left: skillPosition.left,
+      width: skillPosition.width,
+      maxHeight: skillPosition.maxHeight,
+      ...(skillPosition.top == null
+        ? { top: 'auto', bottom: skillPosition.bottom }
+        : { top: skillPosition.top, bottom: 'auto' }),
+    } : undefined}>
+    <SkillPicker ref={pickerRef} value={selectedSkillIds ?? []} disabled={isRunning || sendDisabled}
+      scopeKey={skillScopeKey} preserveMissing={preserveMissingSkills} open={skillOpen} query={skillQuery}
+      inputMode={skillMode} onQueryChange={setSkillQuery} onRequestClose={dismissSkillPanel}
+      onPicked={applyPickedSkill} onCatalogChange={setSkillCatalog} onPhaseChange={setSkillPhase}
+      onChange={onSelectedSkillIdsChange} />
+  </div>, document.body)}
   </div>;
 }

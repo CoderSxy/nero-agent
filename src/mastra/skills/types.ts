@@ -453,6 +453,7 @@ export type SetMetadataServiceInput = {
 };
 
 export type SkillManageListItem = SkillRecord & {
+  description: string;
   canEdit: boolean;
   canPublish: boolean;
   canManage: boolean;

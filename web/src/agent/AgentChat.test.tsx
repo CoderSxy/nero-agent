@@ -896,7 +896,7 @@ describe('skill selection on send', () => {
     listAvailableSkills.mockResolvedValue({ items: [skillAlpha], total: 1, page: 1, pageSize: 50 });
     const { rerender } = render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}
       onMessageSent={vi.fn()} models={models} catalog={catalog} />);
-    fireEvent.click(screen.getByRole('button', { name: '选择技能' }));
+    fireEvent.click(screen.getByRole('button', { name: '技能' }));
     fireEvent.click(await screen.findByRole('option', { name: 'alpha' }));
     expect(screen.getByLabelText('已选技能').textContent).toContain('alpha');
     rerender(<AgentChat threadId="thread-2" resourceId="agent" initialMessages={[]}
@@ -924,7 +924,7 @@ describe('skill selection on send', () => {
       throw new Error('network down');
     });
     render(<Harness />);
-    fireEvent.click(screen.getByRole('button', { name: '选择技能' }));
+    fireEvent.click(screen.getByRole('button', { name: '技能' }));
     fireEvent.click(await screen.findByRole('option', { name: 'alpha' }));
     fireEvent.click(screen.getByRole('button', { name: '添加附件' }));
     fireEvent.click(screen.getByRole('menuitem', { name: '选择工作区文件' }));
@@ -942,6 +942,7 @@ describe('skill selection on send', () => {
     expect(screen.getByLabelText('附件 a.txt')).toBeTruthy();
     expect(screen.getByRole('combobox', { name: '模型' }).textContent).toContain('默认模型');
     listAvailableSkills.mockResolvedValue({ items: [skillBeta], total: 1, page: 1, pageSize: 50 });
+    fireEvent.click(screen.getByRole('button', { name: '技能' }));
     fireEvent.click(screen.getByRole('button', { name: '刷新技能权限' }));
     await waitFor(() => expect(screen.getByLabelText('已选技能').textContent).toContain('失效'));
     expect(screen.getByLabelText('已选技能').textContent).not.toContain('beta');
@@ -953,7 +954,7 @@ describe('skill selection on send', () => {
     sendMessage.mockImplementation(() => new Promise<void>(resolve => { release = resolve; }));
     render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}
       onMessageSent={vi.fn()} models={models} catalog={catalog} />);
-    fireEvent.click(screen.getByRole('button', { name: '选择技能' }));
+    fireEvent.click(screen.getByRole('button', { name: '技能' }));
     fireEvent.click(await screen.findByRole('option', { name: 'alpha' }));
     fireEvent.change(screen.getByRole('textbox', { name: '发送消息' }), { target: { value: '执行技能' } });
     fireEvent.click(screen.getByRole('button', { name: '发送' }));
@@ -962,4 +963,29 @@ describe('skill selection on send', () => {
     release();
     await waitFor(() => expect(screen.queryByLabelText('已选技能')).toBeNull());
   });
+  it('sends an initial landing skill UUID on the first automatic message', async () => {
+    Element.prototype.getAnimations = () => [];
+    const id = '11111111-1111-4111-8111-111111111111';
+    listAvailableSkills.mockResolvedValue({items:[{id,name:'initial-skill',description:'test',version:1,userInvocable:true}],total:1,page:1,pageSize:50});
+    render(<AgentChat threadId="initial-thread" resourceId="agent" initialMessages={[]}
+      initialDraft="use initial skill" initialSelectedSkillIds={[id]} sendOnMount onMessageSent={vi.fn()} models={models} />);
+    await waitFor(() => expect(sendMessage).toHaveBeenCalled());
+    const sent=sendMessage.mock.calls[0]![0];
+    expect(sent.requestContext.get('nero-agent.selected-skill-ids')).toEqual([id]);
+  });
+
+  it('waits for model settings before auto-sending a landing skill and sends exactly once', async () => {
+    Element.prototype.getAnimations = () => [];
+    const id = '11111111-1111-4111-8111-111111111111';
+    listAvailableSkills.mockResolvedValue({items:[{id,name:'initial-skill',description:'test',version:1,userInvocable:true}],total:1,page:1,pageSize:50});
+    const props={threadId:'delayed-settings',resourceId:'agent',initialMessages:[],initialDraft:'use initial skill',initialSelectedSkillIds:[id],sendOnMount:true,onMessageSent:vi.fn()};
+    const {rerender}=render(<AgentChat {...props} models={null} sendBlockedReason="模型列表加载中…" />);
+    expect(sendMessage).not.toHaveBeenCalled();
+    rerender(<AgentChat {...props} models={models} />);
+    await waitFor(() => expect(sendMessage).toHaveBeenCalledTimes(1));
+    expect(sendMessage.mock.calls[0]![0].requestContext.get('nero-agent.selected-skill-ids')).toEqual([id]);
+    rerender(<AgentChat {...props} models={models} />);
+    expect(sendMessage).toHaveBeenCalledTimes(1);
+  });
+
 });

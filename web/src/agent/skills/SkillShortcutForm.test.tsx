@@ -10,7 +10,8 @@ const listAvailableSkills = vi.hoisted(() => vi.fn());
 const listAvailableShortcuts = vi.hoisted(() => vi.fn());
 const getSkillShortcut = vi.hoisted(() => vi.fn());
 const putSkillShortcut = vi.hoisted(() => vi.fn());
-vi.mock('./skills-api', () => ({
+vi.mock('./skills-api', async () => ({
+  ...await vi.importActual<typeof import('./skills-api')>('./skills-api'),
   listAvailableSkills: (...args: unknown[]) => listAvailableSkills(...args),
   listAvailableShortcuts: (...args: unknown[]) => listAvailableShortcuts(...args),
   getSkillShortcut: (...args: unknown[]) => getSkillShortcut(...args),
@@ -112,7 +113,8 @@ describe('SkillShortcutForm', () => {
     expect(screen.getByLabelText('草稿').textContent?.includes('system')).toBe(false);
 
     listAvailableShortcuts.mockResolvedValue({ items: [] });
-    fireEvent.click(screen.getByRole('button', { name: '刷新快捷入口' }));
+    fireEvent.click(screen.getByRole('button', { name: '快捷入口菜单' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '刷新快捷入口' }));
     await waitFor(() => expect(screen.queryByRole('button', { name: 'reference-demo 清单' })).toBeNull());
   });
 
@@ -136,4 +138,11 @@ describe('SkillShortcutForm', () => {
     expect(screen.getByRole('status').textContent).toMatch(/所有者或管理员/);
     expect(screen.queryByRole('button', { name: '保存快捷配置' })).toBeNull();
   });
+  it('reports a malformed shortcut response without crashing the composer', async () => {
+    listAvailableShortcuts.mockResolvedValue({});
+    render(<ComposerHarness />);
+    expect((await screen.findByRole('alert')).textContent).toContain('技能加载失败');
+    expect(screen.getByRole('textbox',{name:'发送消息'})).toBeTruthy();
+  });
+
 });

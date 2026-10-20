@@ -518,6 +518,24 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
     };
   }
 
+  async function manageListDescription(
+    skill: SkillRecord,
+    caps: SkillCapabilities,
+  ): Promise<string> {
+    const versions = await repository.listVersions(skill.id);
+    if (skill.publishedVersion != null) {
+      const published = versions.find((version) => (
+        version.version === skill.publishedVersion && version.state === 'published'
+      ));
+      return published?.description ?? '';
+    }
+    // Publish-only grants are in the manage list, but canViewDraft currently
+    // includes them. Draft text stays limited to edit/manage.
+    if (!caps.canEdit && !caps.canManage) return '';
+    const draft = versions.find((version) => version.state === 'draft');
+    return draft?.description ?? '';
+  }
+
   const service: SkillService = {
     async listAvailable(actor, query) {
       const active = await isActorActive(actor.userId);
@@ -555,6 +573,7 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
         if (!loaded) continue;
         items.push({
           ...skill,
+          description: await manageListDescription(skill, loaded.caps),
           canEdit: loaded.caps.canEdit,
           canPublish: loaded.caps.canPublish,
           canManage: loaded.caps.canManage,

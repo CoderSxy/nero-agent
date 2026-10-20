@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { SkillApiError, listManageableSkills, saveDraft } from './skills-api';
+import { SkillApiError, listAvailableSkills, listManageableSkills, saveDraft } from './skills-api';
 
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
@@ -31,5 +31,18 @@ describe('skills-api', () => {
     const headers = new Headers(init.headers);
     expect(headers.get('If-Match')).toBe('"3"');
     expect(JSON.parse(String(init.body))).toMatchObject({ expectedRevision: '3', skillMd: '# x' });
+  });
+
+  it('forwards an optional abort signal without changing the available URL', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ items: [], total: 0, page: 1, pageSize: 50 }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const controller = new AbortController();
+    await listAvailableSkills({ page: 1, pageSize: 50, q: '天气' }, controller.signal);
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('/agent-skills/available?');
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('q=%E5%A4%A9%E6%B0%94');
+    expect((fetchMock.mock.calls[0]?.[1] as RequestInit).signal).toBe(controller.signal);
   });
 });

@@ -18,6 +18,8 @@ import {
 import { buildTaskCron, cronLabel, parseTaskCron, type CronPreset } from './task-cron';
 import { fromTaskLocalTime, toTaskLocalTime } from './task-timezone';
 import { SkillPicker } from './skills/SkillPicker';
+import { SkillSelectionChips } from './skills/SkillSelectionChips';
+import type { SkillSummary } from './skills/types';
 
 const DEFAULT_TZ = 'Asia/Shanghai';
 
@@ -129,6 +131,10 @@ export function ScheduledTasksPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [models, setModels] = useState<SafeModel[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [skillOpen, setSkillOpen] = useState(false);
+  const [skillQuery, setSkillQuery] = useState('');
+  const [skillCatalog, setSkillCatalog] = useState<SkillSummary[]>([]);
+  const [skillPhase, setSkillPhase] = useState<'loading' | 'ready' | 'error'>('loading');
   const editorDialogRef = useRef<HTMLDivElement>(null);
   const logsDialogRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef(true);
@@ -377,8 +383,19 @@ export function ScheduledTasksPage() {
             onChange={(event) => setEditor({ ...editor, prompt: event.target.value })} /></label>
           <div className="scheduled-task-skills">
             <span>技能（可选）</span>
+            <button type="button" aria-label="选择技能" disabled={saving}
+              onClick={() => setSkillOpen(open => !open)}>选择技能</button>
+            <SkillSelectionChips value={editor.selectedSkillIds} catalog={skillCatalog} phase={skillPhase}
+              disabled={saving} onRemove={id => setEditor({
+                ...editor,
+                selectedSkillIds: editor.selectedSkillIds.filter(item => item !== id),
+                skillIdsTouched: true,
+              })} />
             <SkillPicker value={editor.selectedSkillIds} disabled={saving}
-              scopeKey={editor.id ?? 'new-task'}
+              scopeKey={editor.id ?? 'new-task'} open={skillOpen} query={skillQuery}
+              inputMode="search" onQueryChange={setSkillQuery}
+              onRequestClose={() => setSkillOpen(false)} onPicked={() => setSkillOpen(false)}
+              onCatalogChange={setSkillCatalog} onPhaseChange={setSkillPhase}
               onChange={(ids) => setEditor({ ...editor, selectedSkillIds: ids, skillIdsTouched: true })} />
           </div>
           <div className="scheduled-task-editor-grid">

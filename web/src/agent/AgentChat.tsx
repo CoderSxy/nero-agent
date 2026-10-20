@@ -53,9 +53,9 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   financeCategory = null, financeEnabled = false, financeSaving = false, onFinanceCategoryChange,
   pendingUserMessages = [], onMessageSubmitted, onMessageFailed, onResponseSettled, onFilesChanged, attachRequest,
   attachmentRefreshVersion = 0, targetMessageId,   initialDraft = '', focusComposer = false, sendOnMount = false,
-  initialFiles = [], openPickerOnMount = false, scheduledRun, onTurnActivations }: {
+  initialFiles = [], initialSelectedSkillIds = [], openPickerOnMount = false, scheduledRun, onTurnActivations }: {
   title?: string; threadId: string; resourceId: string; initialMessages: MastraDBMessage[];
-  initialDraft?: string; focusComposer?: boolean; sendOnMount?: boolean;
+  initialDraft?: string; initialSelectedSkillIds?: string[]; focusComposer?: boolean; sendOnMount?: boolean;
   initialFiles?: { files: File[]; kind: 'file' | 'image' }[]; openPickerOnMount?: boolean;
   onMessageSent: (message: PendingUserMessage) => void;
   models: ModelSettings | null; catalog?: SafeModel[]; modelRef?: ModelRef;
@@ -84,7 +84,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
   const [threadAttachments, setThreadAttachments] = useState<PreparedAttachment[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [selectedSkillIds, setSelectedSkillIds] = useState<string[]>([]);
+  const [selectedSkillIds, setSelectedSkillIds] = useState<string[]>(() => initialSelectedSkillIds.slice(0, 5));
   const [preserveMissingSkills, setPreserveMissingSkills] = useState(false);
   const [sending, setSending] = useState(false);
   const sendingRef = useRef(false);
@@ -158,7 +158,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     wasRunning.current = chat.isRunning;
   }, [chat.isRunning, onFilesChanged, onResponseSettled, threadId]);
   useEffect(() => {
-    setSelectedSkillIds([]);
+    setSelectedSkillIds(initialSelectedSkillIds.slice(0, 5));
     setPreserveMissingSkills(false);
     refreshThreadAttachments();
     return () => { invalidateAttachmentList(); };
@@ -479,10 +479,12 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     }
   }
   useEffect(() => {
-    if (!sendOnMount || !draft.trim() || handoffSendStarted.current) return;
+    if (!sendOnMount || !draft.trim() || handoffSendStarted.current
+      || blockedReason || modelDisabled || chat.isRunning || chat.isAwaitingToolApproval
+      || attachments.some(item => item.state !== 'ready')) return;
     handoffSendStarted.current = true;
     void send();
-  }, [sendOnMount, draft]);
+  }, [sendOnMount, draft, blockedReason, modelDisabled, chat.isRunning, chat.isAwaitingToolApproval, attachments]);
   async function approve(id: string) {
     try { await chat.approveToolCall(id); setError(null);
       setPendingApprovalIds(value => { const next = new Set(value); next.delete(id); return next; });

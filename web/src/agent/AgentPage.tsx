@@ -41,6 +41,7 @@ export function AgentPage() {
   const [availableCatalog, setAvailableCatalog] = useState<string[] | undefined>(undefined);
   const [turnActivations, setTurnActivations] = useState<SkillActivationView[]>([]);
   const [landingDraft, setLandingDraft] = useState('');
+  const [landingSkillIds, setLandingSkillIds] = useState<string[]>([]);
   const [pendingLandingAction, setPendingLandingAction] = useState(false);
   const [landingFocused, setLandingFocused] = useState(false);
   const [creatingThread, setCreatingThread] = useState(false);
@@ -168,6 +169,7 @@ export function AgentPage() {
     landingCreationStartedRef.current = false;
     setLandingFocused(false);
     setLandingDraft('');
+    setLandingSkillIds([]);
     setPendingLandingAction(false);
     setHandoffThreadId(null);
     setHandoffSendThreadId(null);
@@ -264,6 +266,7 @@ export function AgentPage() {
     setChatActions({ onNew: () => void create(!threadId), canCreate });
   }, [canCreate, threadId, setChatActions]);
   const landingComposer = <AgentComposer draft={landingDraft} onDraftChange={setLandingDraft}
+    selectedSkillIds={landingSkillIds} onSelectedSkillIdsChange={setLandingSkillIds} skillScopeKey={`landing:${user.id}`}
     financeCategory={null} financeEnabled={financeEnabled} financeSaving={financeSaving}
     onFinanceCategoryChange={value => void changeFinanceCategory(value)}
     onInputFocus={mobile ? undefined : () => { setLandingFocused(true); if (canCreate) void create(true); }}
@@ -292,6 +295,7 @@ export function AgentPage() {
           threadId={threadId} resourceId={user.id} initialMessages={messages} models={selected}
           scheduledRun={scheduledRun}
           initialDraft={handoffThreadId === threadId ? landingDraft : ''}
+          initialSelectedSkillIds={handoffThreadId === threadId ? landingSkillIds : []}
           focusComposer={handoffThreadId === threadId}
           sendOnMount={handoffSendThreadId === threadId}
           initialFiles={handoffThreadId === threadId ? pendingLandingFilesRef.current : []}

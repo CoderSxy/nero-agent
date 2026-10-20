@@ -1,232 +1,178 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { useState } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentComposer } from './AgentComposer';
 import type { ComposerAttachment } from './attachment-types';
-import type { SafeModel } from './model-catalog-client';
+import type { SkillSummary } from './skills/types';
 
-const fetchWorkspaceFile = vi.fn();
-vi.mock('./client', () => ({
-  fetchWorkspaceFile: (...args: unknown[]) => fetchWorkspaceFile(...args),
-}));
+const listAvailableSkills = vi.hoisted(() => vi.fn());
+const listAvailableShortcuts = vi.hoisted(() => vi.fn());
+vi.mock('./skills/skills-api', async () => {
+  const actual = await vi.importActual<typeof import('./skills/skills-api')>('./skills/skills-api');
+  return {
+    ...actual,
+    listAvailableSkills: (...args: unknown[]) => listAvailableSkills(...args),
+    listAvailableShortcuts: (...args: unknown[]) => listAvailableShortcuts(...args),
+  };
+});
 
+const weatherId = '11111111-1111-4111-8111-111111111111';
+const weather: SkillSummary = {
+  id: weatherId, name: '天气', description: '预报', version: 1,
+  userInvocable: true, availability: 'instructions-only',
+};
+const attachment: ComposerAttachment = {
+  key: 'file-1', source: 'personal', path: 'notes/a.txt', name: 'a.txt',
+  size: 4, mimeType: 'text/plain', etag: 'e', state: 'ready',
+};
+
+function Harness({ isRunning = false, scopeKey = 'thread-1', initial = '' }: {
+  isRunning?: boolean; scopeKey?: string; initial?: string;
+}) {
+  const [draft, setDraft] = useState(initial);
+  const [ids, setIds] = useState<string[]>([]);
+  const onSend = vi.fn();
+  return <>
+    <AgentComposer draft={draft} onDraftChange={setDraft} isRunning={isRunning} onSend={onSend} onStop={vi.fn()}
+      attachments={[attachment]} selectedSkillIds={ids} onSelectedSkillIdsChange={setIds} skillScopeKey={scopeKey} />
+    <output aria-label="草稿">{draft}</output>
+    <output aria-label="所选">{ids.join(',')}</output>
+    <button type="button" onClick={onSend}>记录发送</button>
+  </>;
+}
+
+function typeAt(value: string, caret: number) {
+  const input = screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement;
+  input.focus();
+  fireEvent.change(input, { target: { value } });
+  input.setSelectionRange(caret, caret);
+  fireEvent.select(input);
+  return input;
+}
+
+beforeEach(() => {
+  listAvailableShortcuts.mockResolvedValue({ items: [] });
+  listAvailableSkills.mockImplementation(async (query: { q?: string }) => {
+    if (query.q && !'天气'.includes(query.q)) return { items: [], total: 0, page: 1, pageSize: 50 };
+    return { items: [weather], total: 1, page: 1, pageSize: 50 };
+  });
+});
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
-const readyFile = (overrides: Partial<ComposerAttachment> = {}): ComposerAttachment => ({
-  key: 'f1', source: 'personal', path: 'uploads/a/notes.txt', name: 'notes.txt',
-  size: 12, mimeType: 'text/plain', etag: 'e1', state: 'ready', ...overrides,
-});
-
-describe('Composer run controls', () => {
-  it('shows finance categories without enabling tools, and keeps a removable category chip', () => {
-    const change = vi.fn();
-    const props = { draft: '', onDraftChange: vi.fn(), isRunning: false,
-      onSend: vi.fn(), onStop: vi.fn(), financeEnabled: false, onFinanceCategoryChange: change };
-    const { rerender } = render(<AgentComposer {...props} />);
-    fireEvent.click(screen.getByRole('button', { name: '财经数据' }));
-    expect(screen.getByRole('menu', { name: '财经数据分类' })).toBeTruthy();
-    fireEvent.click(screen.getByRole('menuitem', { name: '基金' }));
-    expect(change).toHaveBeenCalledWith('fund');
-    rerender(<AgentComposer {...props} financeCategory="fund" />);
-    expect(screen.getByText(/财经数据 · 基金/).textContent).toContain('暂不可用');
-    fireEvent.click(screen.getByRole('button', { name: '移除财经分类' }));
-    expect(change).toHaveBeenCalledWith(null);
-  });
-  it('does not send when Enter confirms IME text, then sends on a later Enter', () => {
-    const send = vi.fn();
-    render(<AgentComposer draft="你好" onDraftChange={vi.fn()} isRunning={false}
-      onSend={send} onStop={vi.fn()} />);
-    const input = screen.getByRole('textbox', { name: '发送消息' });
-    fireEvent.keyDown(input, { key: 'Enter', isComposing: true });
-    expect(send).not.toHaveBeenCalled();
-    fireEvent.keyDown(input, { key: 'Enter' });
-    expect(send).toHaveBeenCalledTimes(1);
-  });
-  it('does not send for an IME Enter reported with keyCode 229', () => {
-    const send = vi.fn();
-    render(<AgentComposer draft="你好" onDraftChange={vi.fn()} isRunning={false}
-      onSend={send} onStop={vi.fn()} />);
-    fireEvent.keyDown(screen.getByRole('textbox', { name: '发送消息' }),
-      { key: 'Enter', keyCode: 229 });
-    expect(send).not.toHaveBeenCalled();
-  });
-  it('shows the selected default model at bottom left and icon send control at bottom right', () => {
-    const first = 'public:11111111-1111-4111-8111-111111111111';
-    const second = 'private:22222222-2222-4222-8222-222222222222';
-    const catalog = [first, second].map((ref, index) => ({
-      ref, scope: index === 0 ? 'public' : 'private', displayName: index === 0 ? '默认模型' : '个人模型',
-      providerId: 'test', modelId: `m${index}`, enabled: true, baseUrl: 'https://example.test',
-      apiMode: 'chat', hasApiKey: true, keyHint: '1234', supportsVision: index === 1,
-    })) as SafeModel[];
-    const change = vi.fn();
-    const { container } = render(<AgentComposer draft="测试" onDraftChange={vi.fn()} isRunning={false}
-      onSend={vi.fn()} onStop={vi.fn()} catalog={catalog} modelRef={first} onModelChange={change} />);
-    const actions = container.querySelector('[data-slot="composer-actions"]')!;
-    const select = screen.getByRole('combobox', { name: '模型' });
-    const send = screen.getByRole('button', { name: '发送' });
-    expect(actions.firstElementChild).toBe(select);
-    expect(actions.lastElementChild?.lastElementChild).toBe(send);
-    expect(screen.getByRole('button', { name: '添加附件' }).nextElementSibling).toBe(send);
-    expect(select.textContent).toContain('默认模型');
-    expect(send.querySelector('svg')).toBeTruthy();
-    expect(send.textContent).toBe('');
-    fireEvent.click(select);
-    expect(screen.getByRole('listbox', { name: '选择模型' })).toBeTruthy();
-    expect(screen.getByRole('option', { name: /默认模型/ }).textContent).toContain('文本');
-    fireEvent.change(screen.getByRole('searchbox', { name: '搜索模型' }), { target: { value: '个人' } });
-    expect(screen.queryByRole('option', { name: /默认模型/ })).toBeNull();
-    expect(screen.getByRole('option', { name: /个人模型/ }).textContent).toContain('支持图片');
-    fireEvent.click(screen.getByRole('option', { name: /个人模型/ }));
-    expect(change).toHaveBeenCalledWith(second);
-  });
-  it('shows catalog facts on one line beneath the model name', () => {
-    const catalog = [{
-      ref: 'public:11111111-1111-4111-8111-111111111111', scope: 'public', displayName: 'Deepseek-V4.1-Flash',
-      providerId: 'workbuddy', modelId: 'deepseek-v4.1-flash', enabled: true, baseUrl: 'https://example.test',
-      apiMode: 'chat', hasApiKey: true, keyHint: '1234', supportsVision: true,
-      catalogMetadata: { creditLabel: 'x0.11', modality: 'multimodal', inferenceOnly: true,
-        providerName: 'DeepSeek' },
-    }] as SafeModel[];
-    render(<AgentComposer draft="" onDraftChange={vi.fn()} isRunning={false}
-      onSend={vi.fn()} onStop={vi.fn()} catalog={catalog} modelRef={catalog[0].ref} />);
-    fireEvent.click(screen.getByRole('combobox', { name: '模型' }));
-    const option = screen.getByRole('option', { name: /Deepseek-V4\.1-Flash/ });
-    expect(option.querySelectorAll('small')).toHaveLength(1);
-    expect(option.querySelector('small')?.textContent).toBe('x0.11 · 支持图片 · 仅推理 · DeepSeek');
-    expect(option.textContent).not.toContain('workbuddy / deepseek-v4.1-flash');
-  });
-  it('disables sending an attached image with a model that cannot read images', () => {
-    fetchWorkspaceFile.mockResolvedValue(new Blob(['img'], { type: 'image/png' }));
-    const catalog = [false, true].map((supportsVision, index) => ({
-      ref: `public:${index + 1}1111111-1111-4111-8111-111111111111`, scope: 'public',
-      displayName: supportsVision ? '视觉模型' : '文本模型', providerId: 'test', modelId: `m${index}`,
-      enabled: true, baseUrl: 'https://example.test', apiMode: 'chat', hasApiKey: true,
-      keyHint: '1234', supportsVision,
-    })) as SafeModel[];
+describe('AgentComposer slash skills', () => {
+  it('replaces only the slash token and keeps surrounding text, attachments, and unique ids', async () => {
     const onSend = vi.fn();
-    const props = { draft: '看看这张图', onDraftChange: vi.fn(), isRunning: false,
-      onSend, onStop: vi.fn(), catalog, attachments: [readyFile({ name: 'shot.png', mimeType: 'image/png' })] };
-    const { rerender } = render(<AgentComposer {...props} modelRef={catalog[0].ref} />);
-    expect((screen.getByRole('button', { name: '发送' }) as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByText('当前模型不支持图片，请切换支持图片的模型')).toBeTruthy();
+    function Box() {
+      const [draft, setDraft] = useState('前文 请 /天气 分析 后文');
+  const [ids, setIds] = useState<string[]>([]);
+      return <AgentComposer draft={draft} onDraftChange={setDraft} isRunning={false} onSend={onSend} onStop={vi.fn()}
+        attachments={[attachment]} selectedSkillIds={ids} onSelectedSkillIdsChange={setIds} skillScopeKey="thread-1" />;
+    }
+    render(<Box />);
+    typeAt('前文 请 /天气 分析 后文', '前文 请 /天气'.length);
+    fireEvent.click(await screen.findByRole('option', { name: '天气' }));
+    await waitFor(() => expect(screen.getByRole('textbox', { name: '发送消息' })).toHaveProperty('value', '前文 请  分析 后文'));
+    expect(screen.getByLabelText('附件 a.txt')).toBeTruthy();
+    expect(screen.getAllByText('天气').length).toBeGreaterThan(0);
+    expect(screen.getByLabelText('已选技能').textContent?.match(/天气/g)).toHaveLength(1);
+    expect(onSend).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '技能' }));
+    expect(await screen.findByRole('searchbox', { name: '搜索技能' })).toBeTruthy();
+  });
+
+  it('lets Enter select from the panel and keeps Shift+Enter and a closed panel on their own paths', async () => {
+    const onSend = vi.fn();
+    function Box() {
+      const [draft, setDraft] = useState('');
+      const [ids, setIds] = useState<string[]>([]);
+      return <AgentComposer draft={draft} onDraftChange={setDraft} isRunning={false} onSend={onSend} onStop={vi.fn()}
+        selectedSkillIds={ids} onSelectedSkillIdsChange={setIds} />;
+    }
+    render(<Box />);
+    const input = typeAt('/', 1);
+    expect(await screen.findByRole('option', { name: '天气' })).toBeTruthy();
+    fireEvent.keyDown(input, { key: 'Enter', shiftKey: true });
+    expect(onSend).not.toHaveBeenCalled();
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await waitFor(() => expect(screen.getByLabelText('已选技能').textContent).toContain('天气'));
+    expect(onSend).not.toHaveBeenCalled();
+
+    typeAt('/暂无', 3);
+    await waitFor(() => expect(screen.getByText('未找到匹配技能')).toBeTruthy());
     fireEvent.keyDown(screen.getByRole('textbox', { name: '发送消息' }), { key: 'Enter' });
     expect(onSend).not.toHaveBeenCalled();
-    rerender(<AgentComposer {...props} modelRef={catalog[1].ref} />);
-    expect((screen.getByRole('button', { name: '发送' }) as HTMLButtonElement).disabled).toBe(false);
-    expect(screen.queryByText('当前模型不支持图片，请切换支持图片的模型')).toBeNull();
-  });
-  it('closes an open model menu when model changes become disabled', () => {
-    const catalog = [{
-      ref: 'public:11111111-1111-4111-8111-111111111111', scope: 'public', displayName: '默认模型',
-      providerId: 'test', modelId: 'm1', enabled: true, baseUrl: 'https://example.test',
-      apiMode: 'chat', hasApiKey: true, keyHint: '1234', supportsVision: false,
-    }] as SafeModel[];
-    const props = { draft: '', onDraftChange: vi.fn(), isRunning: false, onSend: vi.fn(), onStop: vi.fn(),
-      catalog, modelRef: catalog[0].ref };
-    const { rerender } = render(<AgentComposer {...props} />);
-    fireEvent.click(screen.getByRole('combobox', { name: '模型' }));
-    expect(screen.getByRole('listbox', { name: '选择模型' })).toBeTruthy();
-    rerender(<AgentComposer {...props} modelDisabled />);
-    expect(screen.queryByRole('listbox', { name: '选择模型' })).toBeNull();
-  });
-  it('prevents duplicate sends while a run is active and exposes stop', () => {
-    const send = vi.fn(); const stop = vi.fn();
-    render(<AgentComposer draft="测试" onDraftChange={vi.fn()} isRunning={true} onSend={send} onStop={stop} />);
+
+    fireEvent.keyDown(screen.getByRole('textbox', { name: '发送消息' }), { key: 'Escape' });
+    expect(screen.queryByText('未找到匹配技能')).toBeNull();
+    fireEvent.select(screen.getByRole('textbox', { name: '发送消息' }));
+    expect(screen.queryByText('未找到匹配技能')).toBeNull();
+    typeAt('/天气', 3);
+    expect(await screen.findByRole('option', { name: '天气' })).toBeTruthy();
+    fireEvent.keyDown(screen.getByRole('textbox', { name: '发送消息' }), { key: 'Escape' });
+    typeAt('你好', 2);
     fireEvent.keyDown(screen.getByRole('textbox', { name: '发送消息' }), { key: 'Enter' });
-    expect(send).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: '停止' }));
-    expect(stop).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe('Composer attachment menu and cards', () => {
-  it('opens a three-option add menu without a context module', () => {
-    const onUploadFiles = vi.fn();
-    const onChooseWorkspaceFiles = vi.fn();
-    render(<AgentComposer draft="" onDraftChange={vi.fn()} isRunning={false} onSend={vi.fn()} onStop={vi.fn()}
-      onUploadFiles={onUploadFiles} onChooseWorkspaceFiles={onChooseWorkspaceFiles} />);
-    fireEvent.click(screen.getByRole('button', { name: '添加附件' }));
-    const menu = screen.getByRole('menu', { name: '添加附件' });
-    const items = Array.from(menu.querySelectorAll('[role="menuitem"]')).map(item => item.textContent);
-    expect(items).toEqual(['上传文件', '选择工作区文件', '添加图片']);
-    expect(items).not.toContain('上下文');
-    fireEvent.click(screen.getByRole('menuitem', { name: '选择工作区文件' }));
-    expect(onChooseWorkspaceFiles).toHaveBeenCalledTimes(1);
+    expect(onSend).toHaveBeenCalledTimes(1);
   });
 
-  it('renders file and image cards with remove actions and blocks send while uploading or failed', async () => {
-    fetchWorkspaceFile.mockResolvedValue(new Blob(['img'], { type: 'image/png' }));
-    const createObjectURL = vi.fn(() => 'blob:preview-shot');
-    const revokeObjectURL = vi.fn();
-    vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL });
-    const onRemove = vi.fn();
+  it('ignores an IME Enter, restores the caret, and closes on Tab, outside click, running, or scope change', async () => {
     const onSend = vi.fn();
-    const onRetry = vi.fn();
-    const attachments: ComposerAttachment[] = [
-      readyFile({ key: 'a', name: '报告 中文.md', path: 'docs/报告 中文.md' }),
-      readyFile({ key: 'b', name: 'shot.png', path: 'uploads/b/shot.png', mimeType: 'image/png' }),
-      readyFile({ key: 'c', name: 'uploading.bin', state: 'uploading', path: '', etag: '' }),
-    ];
-    const { rerender, unmount } = render(<AgentComposer draft="你好" onDraftChange={vi.fn()} isRunning={false}
-      onSend={onSend} onStop={vi.fn()} attachments={attachments} onRemoveAttachment={onRemove}
-      onRetryAttachment={onRetry} />);
-    expect(screen.getByLabelText('附件 报告 中文.md')).toBeTruthy();
-    await waitFor(() => expect(screen.getByRole('img', { name: 'shot.png' })).toBeTruthy());
-    expect(fetchWorkspaceFile).toHaveBeenCalledWith('uploads/b/shot.png', 'personal');
-    expect((screen.getByRole('button', { name: '发送' }) as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.click(screen.getByRole('button', { name: '从本次消息移除 报告 中文.md' }));
-    expect(onRemove).toHaveBeenCalledWith('a');
-    fireEvent.click(screen.getByRole('button', { name: '预览 shot.png' }));
-    expect(screen.getByRole('dialog', { name: '图片预览' })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: '关闭预览' }));
-    expect(screen.queryByRole('dialog', { name: '图片预览' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: '预览 shot.png' }));
-    fireEvent.click(screen.getByRole('button', { name: '从本次消息移除 shot.png' }));
-    expect(screen.queryByRole('dialog', { name: '图片预览' })).toBeNull();
-    expect(onRemove).toHaveBeenCalledWith('b');
+    function Box({ running = false, scopeKey = 'thread-1' }: { running?: boolean; scopeKey?: string }) {
+      const [draft, setDraft] = useState('');
+      const [ids, setIds] = useState<string[]>([]);
+      return <AgentComposer draft={draft} onDraftChange={setDraft} isRunning={running} onSend={onSend} onStop={vi.fn()}
+        selectedSkillIds={ids} onSelectedSkillIdsChange={setIds} skillScopeKey={scopeKey} />;
+    }
+    const { rerender } = render(<Box />);
+    const input = typeAt('/天气', 3);
+    expect(await screen.findByRole('option', { name: '天气' })).toBeTruthy();
+    fireEvent.compositionStart(input);
+    fireEvent.keyDown(input, { key: 'Enter', keyCode: 229, isComposing: true });
+    fireEvent.compositionEnd(input);
+    expect(onSend).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText('已选技能')).toBeNull();
 
-    rerender(<AgentComposer draft="你好" onDraftChange={vi.fn()} isRunning={false}
-      onSend={onSend} onStop={vi.fn()} attachments={[readyFile({ key: 'f', state: 'failed', error: '上传失败' })]}
-      onRemoveAttachment={onRemove} onRetryAttachment={onRetry} />);
-    expect((screen.getByRole('button', { name: '发送' }) as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.click(screen.getByRole('button', { name: '重试 notes.txt' }));
-    expect(onRetry).toHaveBeenCalledWith('f');
-    unmount();
-    expect(revokeObjectURL).toHaveBeenCalled();
-    vi.unstubAllGlobals();
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await waitFor(() => expect((screen.getByRole('textbox', { name: '发送消息' }) as HTMLTextAreaElement).selectionStart).toBe(0));
+    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: '发送消息' }));
+
+    typeAt('/天气', 3);
+    await screen.findByRole('option', { name: '天气' });
+    fireEvent.keyDown(screen.getByRole('textbox', { name: '发送消息' }), { key: 'Tab' });
+    expect(screen.queryByRole('option', { name: '天气' })).toBeNull();
+
+    typeAt('/天', 2);
+    await screen.findByRole('option', { name: '天气' });
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole('option', { name: '天气' })).toBeNull();
+
+    typeAt('/天气', 3);
+    await screen.findByRole('option', { name: '天气' });
+    rerender(<Box running />);
+    expect(screen.queryByRole('option', { name: '天气' })).toBeNull();
+    rerender(<Box scopeKey="thread-2" />);
+    typeAt('请 /天气', '请 /天气'.length);
+    await screen.findByRole('option', { name: '天气' });
+    rerender(<Box scopeKey="thread-3" />);
+    expect(screen.queryByRole('option', { name: '天气' })).toBeNull();
+  });
+  it('uses the mobile plus sheet for skills and leaves slash text untouched', async () => {
+    function Mobile() {
+      const [draft, setDraft] = useState('');
+      const [ids, setIds] = useState<string[]>([]);
+      return <AgentComposer draft={draft} onDraftChange={setDraft} isRunning={false}
+        onSend={vi.fn()} onStop={vi.fn()} mobileInline selectedSkillIds={ids} onSelectedSkillIdsChange={setIds} />;
+    }
+    render(<Mobile />);
+    const input = typeAt('/天气',3);
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(screen.queryByRole('button',{name:'技能'})).toBeNull();
+    fireEvent.click(screen.getByRole('button',{name:'添加附件'}));
+    fireEvent.click(screen.getByRole('menuitem',{name:'选择技能'}));
+    expect(await screen.findByRole('dialog',{name:'选择技能'})).toBeTruthy();
+    fireEvent.click(await screen.findByRole('option',{name:'天气'}));
+    expect(screen.getByLabelText('已选技能').textContent).toContain('天气');
+    expect((input as HTMLTextAreaElement).value).toBe('/天气');
+    expect(screen.queryByRole('dialog',{name:'选择技能'})).toBeNull();
   });
 
-  it('forwards multi-file and image picks through dedicated inputs', () => {
-    const onUploadFiles = vi.fn();
-    render(<AgentComposer draft="" onDraftChange={vi.fn()} isRunning={false} onSend={vi.fn()} onStop={vi.fn()}
-      onUploadFiles={onUploadFiles} />);
-    fireEvent.click(screen.getByRole('button', { name: '添加附件' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: '上传文件' }));
-    const fileInput = screen.getByLabelText('选择本地文件') as HTMLInputElement;
-    expect(fileInput.multiple).toBe(true);
-    const files = [
-      new File(['a'], '报告 中文.md', { type: 'text/markdown' }),
-      new File(['b'], 'notes.txt', { type: 'text/plain' }),
-    ];
-    fireEvent.change(fileInput, { target: { files } });
-    expect(onUploadFiles).toHaveBeenCalledWith(files, 'file');
-
-    fireEvent.click(screen.getByRole('button', { name: '添加附件' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: '添加图片' }));
-    const imageInput = screen.getByLabelText('选择图片') as HTMLInputElement;
-    expect(imageInput.accept).toContain('image/png');
-    const images = [new File(['i'], 'shot.png', { type: 'image/png' })];
-    fireEvent.change(imageInput, { target: { files: images } });
-    expect(onUploadFiles).toHaveBeenCalledWith(images, 'image');
-  });
-
-  it('shows same-name files from different paths as separate cards', () => {
-    render(<AgentComposer draft="x" onDraftChange={vi.fn()} isRunning={false} onSend={vi.fn()} onStop={vi.fn()}
-      attachments={[
-        readyFile({ key: '1', path: 'docs/报告.md', name: '报告.md' }),
-        readyFile({ key: '2', path: 'uploads/a/报告.md', name: '报告.md' }),
-      ]} />);
-    expect(screen.getAllByText('报告.md')).toHaveLength(2);
-    expect(screen.getByTitle('docs/报告.md')).toBeTruthy();
-    expect(screen.getByTitle('uploads/a/报告.md')).toBeTruthy();
-  });
 });

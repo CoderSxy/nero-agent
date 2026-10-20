@@ -74,14 +74,14 @@ export async function listManageableSkills(query: {
   pageSize: number;
   q?: string;
   groupId?: string;
-}): Promise<SkillListPage<SkillManageListItem>> {
+}, signal?: AbortSignal): Promise<SkillListPage<SkillManageListItem>> {
   const params = new URLSearchParams({
     page: String(query.page),
     pageSize: String(query.pageSize),
   });
   if (query.q) params.set('q', query.q);
   if (query.groupId) params.set('groupId', query.groupId);
-  return readJson(await apiFetch(`/agent-skills?${params}`));
+  return readJson(await apiFetch(`/agent-skills?${params}`, { signal }));
 }
 
 export async function createSkill(input: { name: string; description: string }) {

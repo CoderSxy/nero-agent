@@ -44,8 +44,10 @@ vi.mock('./client', () => ({ AGENT_ID: 'agent', getFinanceCapabilities: async ()
   return response.json();
 } }));
 vi.mock('./model-catalog-client', () => ({ getSelectableModels: () => getSelectableModels() }));
+const listAvailableSkills = vi.hoisted(() => vi.fn());
 vi.mock('./skills/skills-api', () => ({
-  listAvailableSkills: () => Promise.resolve({ items: [], total: 0, page: 1, pageSize: 50 }),
+  listAvailableSkills: (...args: unknown[]) => listAvailableSkills(...args),
+  listAvailableShortcuts: () => Promise.resolve({items:[]}),
 }));
 const refreshThreadList = vi.fn();
 vi.mock('./use-thread-list', () => ({ useThreadList: () => ({
@@ -84,9 +86,9 @@ vi.mock('./history-search-cache', () => ({ createHistorySearchCache: () => ({}) 
 vi.mock('./AgentChat', () => ({ AgentChat: ({ title, models, sendBlockedReason, catalog, modelRef, onModelChange,
   modelError, pendingUserMessages, onMessageSubmitted, onMessageSent, onMessageFailed, onResponseSettled,
   onFilesChanged, attachRequest, attachmentRefreshVersion,
-  targetMessageId, initialDraft, focusComposer, sendOnMount, initialFiles, scheduledRun }: {
+  targetMessageId, initialDraft, initialSelectedSkillIds, focusComposer, sendOnMount, initialFiles, scheduledRun }: {
   title?: string;
-  initialDraft?: string; focusComposer?: boolean; sendOnMount?: boolean;
+  initialDraft?: string; initialSelectedSkillIds?: string[]; focusComposer?: boolean; sendOnMount?: boolean;
   initialFiles?: { files: File[]; kind: 'file' | 'image' }[];
   models: { chatModel: string; memoryModel: string } | null; sendBlockedReason?: string | null;
   catalog?: Array<{ ref: string; displayName: string }>; modelRef?: string; onModelChange?: (ref: string) => void;
@@ -111,6 +113,7 @@ vi.mock('./AgentChat', () => ({ AgentChat: ({ title, models, sendBlockedReason, 
   <span data-testid="target-message">{targetMessageId ?? ''}</span>
   <span data-testid="scheduled-run">{scheduledRun ? `${scheduledRun.taskId}|${scheduledRun.runId}` : ''}</span>
   <span data-testid="auto-send">{String(Boolean(sendOnMount))}</span>
+  <span data-testid="handoff-skills">{initialSelectedSkillIds?.join(',')}</span>
   <span data-testid="handoff-files">{initialFiles?.flatMap(batch => batch.files.map(file => file.name)).join('|')}</span>
   <button type="button" onClick={() => onMessageSubmitted?.({ id: 'local', text: '刚发送的消息',
     createdAt: new Date(), occurrence: 1 })}>模拟发送</button>
@@ -131,6 +134,7 @@ function threadWith(models: unknown) {
 }
 
 beforeEach(() => {
+  listAvailableSkills.mockResolvedValue({items:[],total:0,page:1,pageSize:50});
   localStorage.clear();
   threadItems = [];
   deleteThread.mockResolvedValue(undefined);
@@ -634,4 +638,26 @@ describe('history search', () => {
       expect(router.state.location.search).toBe(`?targetMessageId=${encodeURIComponent('msg?id=1')}`);
     });
   });
+  it('selects a skill on mobile Inbox and hands its UUID to the first conversation message', async () => {
+    Element.prototype.getAnimations = () => [];
+    createThread.mockResolvedValueOnce({id:'thread-1'});
+    vi.stubGlobal('matchMedia', vi.fn().mockImplementation((query: string) => ({
+      matches: query === '(max-width: 767px)', media: query,
+      addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    })));
+    const id = '11111111-1111-4111-8111-111111111111';
+    listAvailableSkills.mockResolvedValue({items:[{id,name:'mobile-skill',description:'test',version:1,userInvocable:true,availability:'instructions-only'}],total:1,page:1,pageSize:50});
+    renderPage('/agent/new');
+    const input = await screen.findByRole('textbox', { name: '发送消息' });
+    await waitFor(() => expect((screen.getByRole('button', {name:'添加附件'}) as HTMLButtonElement).disabled).toBe(false));
+    fireEvent.click(screen.getByRole('button', {name:'添加附件'}));
+    fireEvent.click(screen.getByRole('menuitem', {name:'选择技能'}));
+    fireEvent.click(await screen.findByRole('option', {name:'mobile-skill'}));
+    expect(createThread).not.toHaveBeenCalled();
+    fireEvent.change(input, {target:{value:'use the selected skill'}});
+    fireEvent.click(screen.getByRole('button', {name:'发送'}));
+    await waitFor(() => expect(screen.getByTestId('handoff-skills').textContent).toBe(id));
+    expect(screen.getByTestId('auto-send').textContent).toBe('true');
+  });
+
 });

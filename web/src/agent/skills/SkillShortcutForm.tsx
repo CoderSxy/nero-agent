@@ -9,6 +9,7 @@ import {
   type ShortcutPrompt,
 } from '../../../../src/mastra/skills/shortcuts';
 import { getSkillShortcut, listAvailableShortcuts, putSkillShortcut } from './skills-api';
+import { toSkillUiState } from './skill-ui-state';
 import type { SkillShortcutAvailable, SkillShortcutRecord } from './types';
 
 export type ShortcutApplyResult = {
@@ -94,16 +95,19 @@ export function SkillShortcutForm({
 export function SkillShortcutDock({
   disabled = false,
   scopeKey = '',
+  suppressStatus = false,
   onApply,
 }: {
   disabled?: boolean;
   scopeKey?: string;
+  suppressStatus?: boolean;
   onApply: (result: ShortcutApplyResult) => void;
 }) {
   const [items, setItems] = useState<SkillShortcutAvailable[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
   const active = items.find(item => item.id === activeId) ?? null;
 
   useEffect(() => {
@@ -112,12 +116,13 @@ export function SkillShortcutDock({
     void listAvailableShortcuts(controller.signal)
       .then(page => {
         if (controller.signal.aborted) return;
+        if (!Array.isArray(page.items)) throw new Error('技能快捷入口响应格式错误');
         setItems(page.items);
         setActiveId(current => page.items.some(item => item.id === current) ? current : null);
       })
       .catch(cause => {
         if (controller.signal.aborted) return;
-        setError(cause instanceof Error ? cause.message : '快捷入口加载失败');
+        setError(toSkillUiState(cause).message);
       });
     return () => controller.abort();
   }, [scopeKey, nonce]);
@@ -128,8 +133,15 @@ export function SkillShortcutDock({
       aria-pressed={item.id === activeId} onClick={() => setActiveId(item.id)}>
       {item.label}
     </button>)}
-    <button type="button" disabled={disabled} onClick={() => setNonce(value => value + 1)}>刷新快捷入口</button>
-    {error ? <p role="alert">{error}</p> : null}
+    <button type="button" aria-label="快捷入口菜单" aria-haspopup="menu" aria-expanded={menuOpen}
+      disabled={disabled} onClick={() => setMenuOpen(open => !open)}>⋯</button>
+    {menuOpen && <div role="menu" aria-label="快捷入口操作">
+      <button type="button" role="menuitem" disabled={disabled} onClick={() => {
+        setMenuOpen(false);
+        setNonce(value => value + 1);
+      }}>刷新快捷入口</button>
+    </div>}
+    {error && !suppressStatus ? <p role="alert">{error}</p> : null}
     {active ? <SkillShortcutForm shortcut={active} disabled={disabled} onCancel={() => setActiveId(null)}
       onApply={result => { onApply(result); setActiveId(null); }} /> : null}
   </div>;

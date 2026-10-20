@@ -36,6 +36,7 @@ export type SkillVersionRecord = {
 };
 
 export type SkillManageListItem = SkillRecord & {
+  description: string;
   canEdit: boolean;
   canPublish: boolean;
   canManage: boolean;

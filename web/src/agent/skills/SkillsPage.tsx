@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import type { AgentShellContextValue } from '../AgentShell';
+import { SkillCard } from './SkillCard';
+import { confirmSkillSwitch, SkillEditorPanel } from './SkillEditorPanel';
 import { SkillEditor } from './SkillEditor';
 import { SkillShortcutEditor } from './SkillShortcutForm';
 import { SkillImportDialog } from './SkillImportDialog';
@@ -55,6 +57,11 @@ export function SkillsPage() {
   const [qDraft, setQDraft] = useState('');
   const [groupId, setGroupId] = useState('');
   const [groups, setGroups] = useState<SkillGroupRecord[]>([]);
+  const [groupsUnavailable, setGroupsUnavailable] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [previews, setPreviews] = useState<Record<string, { revision: string; text: string }>>({});
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [listLoading, setListLoading] = useState(false);
 
@@ -80,6 +87,9 @@ export function SkillsPage() {
 
   const selectedIdRef = useRef<string | null>(null);
   const detailSeq = useRef(0);
+  const listSeq = useRef(0);
+  const previewSeq = useRef(0);
+  const listAbort = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
   const pageSize = 20;
 
@@ -91,6 +101,10 @@ export function SkillsPage() {
   useEffect(() => { selectedIdRef.current = selectedId; }, [selectedId]);
 
   const refreshList = useCallback(async () => {
+    const seq = ++listSeq.current;
+    listAbort.current?.abort();
+    const controller = new AbortController();
+    listAbort.current = controller;
     setListLoading(true);
     setListError(null);
     try {
@@ -99,29 +113,62 @@ export function SkillsPage() {
         pageSize,
         ...(q ? { q } : {}),
         ...(groupId ? { groupId } : {}),
-      });
-      if (!mountedRef.current) return;
+      }, controller.signal);
+      if (!mountedRef.current || seq !== listSeq.current) return;
       if (!Array.isArray(result.items)) throw new Error('技能列表响应格式错误');
       setItems(result.items);
       setTotal(result.total ?? result.items.length);
     } catch (cause) {
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || seq !== listSeq.current || controller.signal.aborted) return;
       setItems([]);
       setTotal(0);
       setListError(cause instanceof Error ? cause.message : '加载技能列表失败');
     } finally {
-      if (mountedRef.current) setListLoading(false);
+      if (mountedRef.current && seq === listSeq.current) setListLoading(false);
     }
   }, [page, q, groupId]);
 
   useEffect(() => { void refreshList(); }, [refreshList]);
 
   useEffect(() => {
+    if (listLoading || listError || items.length > 0 || page <= 1) return;
+    setPage(current => current - 1);
+  }, [listLoading, listError, items.length, page]);
+
+  useEffect(() => {
+    if (!expandedId) return;
+    const item = items.find(entry => entry.id === expandedId);
+    if (!item) return;
+    const cached = previews[item.id];
+    if (cached?.revision === item.revision) return;
+    const seq = ++previewSeq.current;
+    setPreviewLoading(true);
+    setPreviewError(null);
+    getSkillDetail(item.id).then(next => {
+      if (!mountedRef.current || seq !== previewSeq.current) return;
+      const text = next.published?.skillMd ?? next.draft?.skillMd ?? '';
+      setPreviews(current => ({
+        ...current,
+        [item.id]: { revision: item.revision, text },
+      }));
+    }).catch(cause => {
+      if (!mountedRef.current || seq !== previewSeq.current) return;
+      setPreviewError(cause instanceof Error ? cause.message : '预览加载失败');
+    }).finally(() => {
+      if (mountedRef.current && seq === previewSeq.current) setPreviewLoading(false);
+    });
+  }, [expandedId, items, previews]);
+
+  useEffect(() => {
     let active = true;
     listSkillGroups().then(result => {
-      if (active) setGroups(Array.isArray(result.items) ? result.items : []);
+      if (!active) return;
+      setGroupsUnavailable(false);
+      setGroups(Array.isArray(result.items) ? result.items : []);
     }).catch(() => {
-      if (active) setGroups([]);
+      if (!active) return;
+      setGroups([]);
+      setGroupsUnavailable(true);
     });
     return () => { active = false; };
   }, []);
@@ -181,6 +228,12 @@ export function SkillsPage() {
   const canPublish = detail?.canPublish === true;
   const canManage = detail?.canManage === true;
   const dirty = localSkillMd !== serverSkillMd;
+
+  function openSkill(id: string, nextTab: Tab) {
+    if (id !== selectedId && !confirmSkillSwitch(dirty)) return;
+    setSelectedId(id);
+    setTab(nextTab);
+  }
 
   async function withBusy(run: () => Promise<void>) {
     setBusy(true);
@@ -375,6 +428,7 @@ export function SkillsPage() {
 
   async function handleCreate(event: FormEvent) {
     event.preventDefault();
+    if (!confirmSkillSwitch(dirty)) return;
     await withBusy(async () => {
       const result = await createSkill({
         name: createName.trim(),
@@ -389,22 +443,61 @@ export function SkillsPage() {
     });
   }
 
+  async function publishFromCard(item: SkillManageListItem) {
+    if (!item.canPublish) return;
+    if (selectedId === item.id && !confirmSkillSwitch(dirty)) return;
+    await withBusy(async () => {
+      const versionPage = await listSkillVersions(item.id);
+      const draft = versionPage.items.find(version => version.state === 'draft');
+      if (!draft) throw new Error('没有可发布的草稿');
+      await publishSkill(item.id, { expectedRevision: item.revision, version: draft.version });
+      if (selectedIdRef.current === item.id) await loadDetail(item.id);
+      await refreshList();
+    });
+  }
+
+  async function setCardEnabled(item: SkillManageListItem, enabled: boolean) {
+    if (!item.canManage) return;
+    await withBusy(async () => {
+      const result = enabled
+        ? await enableSkill(item.id, item.revision)
+        : await disableSkill(item.id, item.revision);
+      if (selectedIdRef.current === item.id) {
+        setDetail(prev => prev && prev.skill.id === item.id ? { ...prev, skill: result.skill } : prev);
+      }
+      await refreshList();
+    });
+  }
+
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const workingVersion = detail?.draft?.version ?? null;
   const publishedVersion = detail?.skill.publishedVersion ?? null;
   const fileVersion = workingVersion ?? publishedVersion;
 
+  const sections = new Map<string, SkillManageListItem[]>();
+  for (const item of items) {
+    const label = !item.groupId
+      ? '未分组'
+      : (groupsUnavailable
+        ? '分组信息暂不可用'
+        : (groups.find(group => group.id === item.groupId)?.name ?? '分组信息暂不可用'));
+    const bucket = sections.get(label) ?? [];
+    bucket.push(item);
+    sections.set(label, bucket);
+  }
+
   return <section className="agent-center skills-page" role="region" aria-label="技能管理">
-    <div className="skills-layout">
+    <div className={selectedId ? 'skills-layout skills-layout-editing' : 'skills-layout'}>
       <aside className="skills-list-pane" aria-label="技能列表">
         <header className="skills-header">
           <div>
             <h1>技能管理</h1>
-            <p>维护私有草稿、发布与启用；保存不会自动发布。</p>
+            <p>管理你有维护权限的技能。保存不会自动发布。</p>
           </div>
           <div className="skills-header-actions">
             <button type="button" onClick={() => setCreateOpen(true)}>新建技能</button>
             <button type="button" onClick={() => setImportOpen(true)}>导入技能包</button>
+            <button type="button" onClick={() => void refreshList()}>刷新</button>
           </div>
         </header>
         <form className="skills-search" onSubmit={event => {
@@ -414,7 +507,7 @@ export function SkillsPage() {
         }}>
           <input
             aria-label="搜索技能"
-            placeholder="搜索名称"
+            placeholder="按技能名称搜索"
             value={qDraft}
             onChange={event => setQDraft(event.target.value)}
           />
@@ -428,28 +521,45 @@ export function SkillsPage() {
           </select>
           <button type="submit">搜索</button>
         </form>
+        {groupsUnavailable ? <p role="status">分组信息暂不可用</p> : null}
         {listLoading ? <p role="status">加载中…</p> : null}
         {listError ? <p role="alert">{listError}</p> : null}
         {!listLoading && !listError && items.length === 0 ? (
           <div className="skills-empty"><strong>暂无技能</strong><span>点击“新建技能”创建 private 草稿。</span></div>
         ) : null}
-        <ul className="skills-list">
-          {items.map(item => <li key={item.id}>
-            <button
-              type="button"
-              className={selectedId === item.id ? 'active' : undefined}
-              aria-current={selectedId === item.id ? 'true' : undefined}
-              onClick={() => { setSelectedId(item.id); setTab('editor'); }}
-            >
-              <strong>{item.canonicalName}</strong>
-              <small>
-                {item.enabled ? '启用' : '停用'}
-                {item.publishedVersion != null ? ` · 发布 v${item.publishedVersion}` : ' · 未发布'}
-                {item.canEdit ? ' · 可编辑' : ''}
-              </small>
-            </button>
-          </li>)}
-        </ul>
+        <div className="skill-card-groups">
+          {[...sections.entries()].map(([label, groupItems]) => (
+            <section key={label} aria-label={label}>
+              <header className="skill-card-group-header">
+                <h2>{label}</h2>
+                <span>本页 {groupItems.length} 项</span>
+              </header>
+              {groupItems.map(item => {
+                const cached = previews[item.id];
+                const preview = cached?.revision === item.revision ? cached.text : null;
+                return <SkillCard
+                  key={item.id}
+                  item={item}
+                  groupLabel={label}
+                  expanded={expandedId === item.id}
+                  preview={expandedId === item.id ? preview : null}
+                  previewLoading={expandedId === item.id && previewLoading && preview == null}
+                  previewError={expandedId === item.id ? previewError : null}
+                  busy={busy}
+                  onToggle={() => setExpandedId(current => current === item.id ? null : item.id)}
+                  onEdit={() => openSkill(item.id, 'editor')}
+                  onOpenVersions={() => openSkill(item.id, 'versions')}
+                  onOpenPermissions={() => openSkill(item.id, 'permissions')}
+                  onPublish={item.canPublish ? () => void publishFromCard(item) : undefined}
+                  onEnable={item.canManage && !item.enabled && item.publishedVersion != null
+                    ? () => void setCardEnabled(item, true) : undefined}
+                  onDisable={item.canManage && item.enabled
+                    ? () => void setCardEnabled(item, false) : undefined}
+                />;
+              })}
+            </section>
+          ))}
+        </div>
         <div className="skills-pagination">
           <button type="button" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>上一页</button>
           <span>{page} / {pageCount}</span>
@@ -457,11 +567,10 @@ export function SkillsPage() {
         </div>
       </aside>
 
-      <div className="skills-detail-pane" aria-label="技能详情">
-        {!selectedId ? <div className="skills-empty"><strong>选择技能</strong><span>从左侧打开可维护的技能。</span></div> : null}
-        {selectedId && detailLoading ? <p role="status">加载详情…</p> : null}
-        {selectedId && detailError ? <p role="alert">{detailError}</p> : null}
-        {selectedId && detail ? <>
+      {selectedId ? <SkillEditorPanel dirty={dirty} onRequestClose={() => setSelectedId(null)}>
+        {detailLoading ? <p role="status">加载详情…</p> : null}
+        {detailError ? <p role="alert">{detailError}</p> : null}
+        {detail ? <>
           <header className="skills-detail-header">
             <div>
               <h2>{detail.skill.canonicalName}</h2>
@@ -563,14 +672,14 @@ export function SkillsPage() {
             />
           ) : null}
         </> : null}
-      </div>
+      </SkillEditorPanel> : null}
     </div>
 
     <SkillImportDialog
       open={importOpen}
       onClose={() => setImportOpen(false)}
       onCommitted={(skillId) => {
-        setSelectedId(skillId);
+        openSkill(skillId, 'editor');
         void refreshList();
       }}
     />

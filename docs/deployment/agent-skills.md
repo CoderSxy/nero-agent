@@ -30,6 +30,12 @@
 | 本地 Vite | `web/vite.config.ts` 已代理 `/agent-skills` → `http://127.0.0.1:4111` |
 | ECS Nginx | 将 `agent-skills` 加入 API `location` 正则（与 `auth`/`finance`/`agent-scheduled-tasks` 同组），例如 `api\|auth\|finance\|agent-skills\|agent-scheduled-tasks\|model-catalog`。未登录 `GET /agent-skills/available` 应返回 `401 application/json`，不能回落到前端 `index.html`。 |
 
+关总开关时聊天原功能继续，技能 API 返回 503 `SKILLS_DISABLED`，界面文案为「技能功能未启用，请联系管理员配置」，且不可重试。空目录或未发布技能不是关闭：列表可为空，草稿不进入可调用目录。未登录是 401，无权限是 403，其他失败可重试。修改 `AGENT_SKILLS_ENABLED` 或两个存储目录后必须重启 Mastra 进程；只改前端不能打开总开关。脚本开关、Docker 网络、配额和磁盘保护保持独立，不因基础技能启用而打开。
+
+## 1.2 本地基础技能目录
+
+`SKILLS_STORAGE_ROOT` 与 `SKILLS_IMPORT_TEMP_ROOT` 必须是两个显式的管理员目录，不能是用户 workspace、仓库 `public` 或 `/tmp`。已有目录里的资源不要覆盖。生产启用不在本地 UI 验收范围内。
+
 ## 2. 沙箱 / 技能脚本镜像
 
 构建文件：**仅**使用仓库已有 [`sandbox/Dockerfile`](../../sandbox/Dockerfile)（与通用 `execute_command` 沙箱同一镜像）。不要另起未被部署引用的 Dockerfile。

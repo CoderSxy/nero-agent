@@ -161,8 +161,13 @@
   .mobile-agent-layout .scheduled-tasks-page,
   .mobile-agent-layout .skills-page { padding: 14px 16px calc(24px + env(safe-area-inset-bottom)); }
   .mobile-inbox-links { display: flex; flex-wrap: wrap; gap: 8px 12px; justify-content: flex-end; min-width: 0; }
-  .mobile-agent-layout .skills-layout { grid-template-columns: 1fr; }
+  .mobile-agent-layout .skills-layout, .mobile-agent-layout .skills-layout-editing { grid-template-columns: 1fr; }
+  .mobile-agent-layout .skills-layout-editing .skills-list-pane { display: none; }
+  .mobile-agent-layout .skills-layout-editing .skills-detail-pane {
+    position: fixed; inset: 0; z-index: 30; max-height: none; overflow: auto; border-radius: 0;
+  }
   .mobile-agent-layout .skills-page { overflow-x: clip; }
+  .skill-picker-popover { max-width: calc(100vw - 16px); }
 }
 
 @media (prefers-reduced-motion: reduce) {

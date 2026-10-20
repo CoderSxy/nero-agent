@@ -135,6 +135,13 @@ test(
       skillIds.push(created.skill.id);
       assert.equal(created.skill.enabled, false);
       assert.equal(created.skill.publishedVersion, null);
+      const draftList = await service.listManageable(actor(owner.id), { page: 1, pageSize: 20, q: name });
+      const draftRow = draftList.items.find((item) => item.id === created.skill.id);
+      assert.ok(draftRow);
+      assert.equal(draftRow.description, `Description for ${name}`);
+      assert.equal(Object.hasOwn(draftRow, 'skillMd'), false);
+      assert.equal(Object.hasOwn(draftRow, 'grants'), false);
+      assert.equal(Object.hasOwn(draftRow, 'audienceIds'), false);
 
       // enable unpublished fails
       await assert.rejects(
@@ -385,6 +392,40 @@ test(
         pageSize: 3,
       });
       assert.equal(disableEvents.items[0]?.event, 'disable');
+
+      const current = await repo.getSkill(created.skill.id);
+      assert.ok(current);
+      await service.saveDraft(actor(owner.id), {
+        skillId: created.skill.id,
+        expectedRevision: current.revision,
+        description: 'draft-only-secret',
+        skillMd: skillMd(name, '# secret body'),
+      });
+      const publishedList = await service.listManageable(actor(owner.id), { page: 1, pageSize: 20, q: name });
+      const publishedRow = publishedList.items.find((item) => item.id === created.skill.id);
+      assert.equal(publishedRow?.description, `Description for ${name}`);
+      assert.equal(publishedList.total, draftList.total);
+
+      const hiddenName = `mgmt-hidden-${suffix}`;
+      const hidden = await service.createDraft(actor(owner.id), {
+        name: hiddenName,
+        description: 'secret-draft',
+        skillMd: skillMd(hiddenName),
+      });
+      skillIds.push(hidden.skill.id);
+      await service.setMetadata(actor(owner.id), {
+        skillId: hidden.skill.id,
+        expectedRevision: hidden.skill.revision,
+        grants: [{ userId: member.id, permission: 'publish' }],
+      });
+      const publisherView = await service.listManageable(actor(member.id), {
+        page: 1, pageSize: 20, q: hiddenName,
+      });
+      const hiddenRow = publisherView.items.find((item) => item.id === hidden.skill.id);
+      assert.ok(hiddenRow);
+      assert.equal(hiddenRow.description, '');
+      assert.equal(hiddenRow.canPublish, true);
+      assert.equal(hiddenRow.canEdit, false);
     } finally {
       const p = getPool();
       if (skillIds.length) {
