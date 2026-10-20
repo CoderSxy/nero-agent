@@ -1,0 +1,850 @@
+web/src/agent/AgentComposer.tsx
+  s_2ecce69bb7dc9f::t_ac0f0535d08344 238-245
+  s_1893fab726f882::t_72385d3f7f9036 93-94
+  s_1893fab726f882::t_981c197f8e6ae6 11
+  s_2ecce69bb7dc9f::t_1d7a80538e54b6 12-13
+  s_1893fab726f882::t_4b1f1bbf3f5a5b 231,234-237
+  s_1893fab726f882::t_e00f61f7e7a175 108-111
+web/src/agent/skills/SkillSyncDialog.tsx
+  s_e2ff4331966321::t_ae8bff0320d47f 1-166
+web/src/agent/skills/SkillPicker.tsx
+  s_1893fab726f882::t_03eed59b9f8c63 1-27,29-33,35-38,40-49,54-55,68,70-75,95-142,145-152
+  s_1893fab726f882::t_7c15ecb8a7c571 143-144
+  s_1893fab726f882::t_2b255f8644fb88 28,34,39
+  s_1893fab726f882::t_704c3235d0e236 50-53,76-94
+  s_9f02ea9a04c319::t_8eae555c2244dc 56-67,69
+src/mastra/skills/policy.ts
+  s_f64c1e58c66c2a::t_8baf4edc1765d3 2-170
+  s_9f02ea9a04c319::t_c64c0fb014f16b 1
+tests/fixtures/skills/script-demo/assets/data.json
+  s_901a161528ea47::t_377cafdc12fcaa 1-6
+web/src/agent/ConfigPanel.test.tsx
+  s_1893fab726f882::t_9d59b19e698fc7 77-84,87-95
+  s_1893fab726f882::t_277bc7d0000764 85-86
+src/mastra/skills/execution-context.ts
+  s_9f02ea9a04c319::t_1b5ed136b4859c 38-48,85
+  s_0bdd16fd2b0fa8::t_14a38727a009f6 175,189
+  s_38eeebceaf02a1::t_a06f1ffdc54709 1
+  s_38eeebceaf02a1::t_e0d5e6f719a4ce 6-10,12-15,23,25-37,49-54,58,62-82,84,86-87,90-92,94-103,105-108,111,113-115,118,120,131
+  s_0bdd16fd2b0fa8::t_458d52c03f5130 55,109,116,123,128,191
+  s_0bdd16fd2b0fa8::t_012fa91c2a8294 2,24
+  s_0bdd16fd2b0fa8::t_8d4a2089c7aa35 16-22,56-57,59-61,112,119,121-122,125-127,130,134,137-138,145,147-150,152-157,159-174,176-188,190,192-214
+  s_9f02ea9a04c319::t_ef52b9293166ad 83
+  s_0bdd16fd2b0fa8::t_bf61e241f043d1 93,110,117,124,129,141,151
+  s_38eeebceaf02a1::t_15681bb13c6e50 104
+  s_38eeebceaf02a1::t_5576bcff759d34 132-133,135-136,139-140,142-144,146,158,215
+  s_9f02ea9a04c319::t_771dcefd3d78e0 3-5,11,88-89
+web/src/agent/ScheduledTasksPage.test.tsx
+  s_1893fab726f882::t_5ab36fc79a674a 217-233
+  s_1893fab726f882::t_4c4c6908c6ead0 22-25
+  s_1893fab726f882::t_38cd34613da1d5 93
+  s_1893fab726f882::t_970f25467af7d1 200
+  s_1893fab726f882::t_143c0c4c4d7bbd 173
+src/mastra/skills/factory.ts
+  s_38eeebceaf02a1::t_700945c2b5c712 135-138,140-142,145-146,149-150,153-154
+  s_0bdd16fd2b0fa8::t_40f91c89b045df 125-127
+  s_d95b0f8fa6c1fd::t_1c56fcb3261956 3-4,34,36,41,45-74,98-106,108,115,121,128-131
+  s_38eeebceaf02a1::t_eb86d19113d075 21-22,24-27,29,31-33,35,77-93,97,109-114,116-119,133-134,139,155
+  s_0bdd16fd2b0fa8::t_43435978e13da3 94-96
+  s_d95b0f8fa6c1fd::t_64a900bf766999 7-11,28,37-40,42-44,75-76,107
+  s_38eeebceaf02a1::t_27003f912fdc27 120,122-124,132
+  s_9f02ea9a04c319::t_46923491fa1c49 1-2,5-6,12-20,23,30,143-144,147-148,151-152
+src/mastra/skills/errors.ts
+  s_c655fc5a2339a0::t_7823991c4138e6 1-34
+  s_601c4266edbb02::t_046fb803681bca 35-41,49-56,115-118
+  s_e175227ea7c76d::t_09c6618b8fe5ac 42-45,57-72,108-114
+  s_e2ff4331966321::t_04f831785e6854 46-48
+  s_e2ff4331966321::t_227965f9189dcb 73-107
+src/mastra/skills/script-runner.ts
+  s_d95b0f8fa6c1fd::t_2d1c6b07afba03 142,144,147-151,157,160,164-170
+  s_d95b0f8fa6c1fd::t_ca806757dc2073 1-2,10-13,15-20,23-36,39-88,90-91,93-96,98-99,105-106,112-114,120-121,123-141,143,145-146,152-156,158-159,161-163,171-242,244-246,248-270,279,290,296,309,314-318,325-326,330,357,370-382
+  s_d95b0f8fa6c1fd::t_87f3ef4fc38060 89,92,97,100-104,107-111,115-119,122
+  s_d95b0f8fa6c1fd::t_45268a14cd9cad 271-278,280-289,291-295,297-308,310-313,319-324,327-329,331-356,358-369
+  s_d95b0f8fa6c1fd::t_4e80674787ffd3 243,247
+  s_d95b0f8fa6c1fd::t_60ee5aab3a8aac 37-38
+  s_9f02ea9a04c319::t_3fc6e40e979dda 3-9,14,21-22
+src/mastra/skills/shortcuts.ts
+  s_2ecce69bb7dc9f::t_ff7942949bea96 151
+  s_2ecce69bb7dc9f::t_d76cb18272487e 1-150,152-436
+tests/fixtures/skills/reference-demo/SKILL.md
+  s_901a161528ea47::t_519bf262099418 1-14
+web/src/agent/ConfigPanel.tsx
+  s_1893fab726f882::t_d211267c19f6e4 44-45,61-62
+  s_1893fab726f882::t_aff7737fabd8a6 14,17-19
+  s_1893fab726f882::t_51bd040f763cc3 46-60
+  s_1893fab726f882::t_f10c1c53d25b1b 29
+  s_1893fab726f882::t_bbe9caed08a405 5
+tests/skills-run-pins.test.ts
+  s_38eeebceaf02a1::t_129abb91ffbbef 184,190
+  s_38eeebceaf02a1::t_fb981f91ece872 1-183,185-189,191-251
+web/src/agent/skills/SkillImportDialog.test.tsx
+  s_e2ff4331966321::t_38d8c208a633d2 1-65
+web/src/agent/skills/SkillVersions.test.tsx
+  s_a316d46fb98dc1::t_e9779266f9e21d 1-88
+tests/fixtures/skills/script-demo/SKILL.md
+  s_901a161528ea47::t_6caff082569733 1-15
+web/src/agent/skills/SkillShortcutForm.tsx
+  s_2ecce69bb7dc9f::t_bc0f6a6245b72a 192
+  s_2ecce69bb7dc9f::t_1b0fce87294377 177
+  s_2ecce69bb7dc9f::t_c877d21554c00a 1-9,11-176,178-191,193-282
+  s_2ecce69bb7dc9f::t_a6bc0373a87e0f 10
+web/src/agent/MessageList.test.tsx
+  s_1893fab726f882::t_961071ed0cb771 605-625
+web/src/agent/skills/types.ts
+  s_1893fab726f882::t_069c12e2ef0036 118,157-163,196-204
+  s_2ecce69bb7dc9f::t_4c238346d8f5c7 164-195
+  s_e2ff4331966321::t_0dc42d48ab547f 119-156
+  s_a316d46fb98dc1::t_600a92acbdb50a 1-44,47-117
+  s_9f02ea9a04c319::t_68e32b6b326c6d 45-46
+src/mastra/skills/repository.ts
+  s_b88744824ef9a7::t_a3619455fb22d7 411-429,431-433
+  s_e175227ea7c76d::t_ca767bf605ea2b 1155-1177,1179-1182,1184-1196,1199-1301,1309-1348,1455
+  s_5f3922a9be6711::t_86a03c07ea99a2 1128-1136,1140
+  s_601c4266edbb02::t_5f05e2c68ba1b3 529-530,535,540,544
+  s_e2ff4331966321::t_002c78a4d69740 6
+  s_e2ff4331966321::t_a07a333f520a0e 434-447
+  s_b88744824ef9a7::t_e7b251ed5cdb15 10,14,16,25,27
+  s_38eeebceaf02a1::t_d0cde3185892e2 19,21
+  s_38eeebceaf02a1::t_8f054c776b8d33 1302-1308,1349-1353,1355-1368,1371-1381,1384-1396,1398-1405,1407-1408,1414-1425,1427-1435,1437-1447,1449-1450,1454
+  s_f64c1e58c66c2a::t_38620693ca167d 866-911
+  s_b88744824ef9a7::t_a1d4f869e08324 1456-1497,1503-1517,1519-1729,1741-1769
+  s_f64c1e58c66c2a::t_c7689af0449e26 349-361,363-368,380-388,392,394-396
+  s_601c4266edbb02::t_fb18772c38b324 1,5,7-9,12,17-18,20,22,26,28-29,31,51-86,98-101,108-111,117-155,168-218,223,229-230,236-288,290-322,369,372-373,375-379,390-391,393,397,472-476,482-497,500-528,532-534,536-539,542-543,545-597,599-614,616-633,635-641,643-649,745-778,780-839,841-865,912-928,930-949,951-972,975-978,980-994,1068-1073,1079-1092,1094-1103,1137-1139,1141-1146,1149-1154,1979-1984
+  s_e175227ea7c76d::t_6aedc1263760a3 112-116
+  s_38eeebceaf02a1::t_a06a5fcae5b908 448-463,465-468,470-471
+  s_601c4266edbb02::t_cda25edfc6b47e 219-222,224-228,231-235
+  s_e175227ea7c76d::t_68f6daf1620971 642
+  s_f64c1e58c66c2a::t_df4fa7d1f61a24 650-732
+  s_ef97f34d625495::t_c280e588bb587e 1730-1740
+  s_601c4266edbb02::t_f50d851c434c69 97,102-107,289,498,531,541,598,615,634,779,840,929,950,979,1074-1078,1093
+  s_e175227ea7c76d::t_67dee2f8043c88 13
+  s_e2ff4331966321::t_bac213859659a1 23-24
+  s_e175227ea7c76d::t_d9a712acb091b8 733-744
+  s_b88744824ef9a7::t_65b7e6ca371c79 1104-1127,1147-1148
+  s_f64c1e58c66c2a::t_dec6af6a9ea607 11,15
+  s_e175227ea7c76d::t_c72f36190560f1 323-329,331-348,374,389,398-410
+  s_ef97f34d625495::t_71c8ac86292fa5 430
+  s_38eeebceaf02a1::t_f7aa962100e11d 1354,1397,1436,1448
+  s_9f02ea9a04c319::t_52ccb3dc6ed38d 32-50,362,477-481,973-974,1037-1042,1062,1369-1370,1382-1383,1498-1502,1518,1883-1884
+  s_9f02ea9a04c319::t_1b5ed136b4859c 3,370-371,499
+  s_e175227ea7c76d::t_96a4d09a7f7c6e 87-96
+  s_9f02ea9a04c319::t_3f5fd700aec9ee 330,1178,1183,1197-1198
+  s_e2ff4331966321::t_6234db35c9484d 1770-1882,1885-1978
+  s_9f02ea9a04c319::t_ef52b9293166ad 464,469,1451-1453
+  s_f64c1e58c66c2a::t_67cd04523b8fe2 995-1036,1043-1061,1063-1067
+  s_e175227ea7c76d::t_bd03536fa088a2 156-167
+  s_9f02ea9a04c319::t_28712ad6a4b55b 2,4,30,1406,1409-1413,1426
+tests/scheduled-tasks-service.test.ts
+  s_0bdd16fd2b0fa8::t_5a3052e7e36776 48
+  s_0bdd16fd2b0fa8::t_d92d993c524ed5 407-428
+web/src/agent/skills/SkillSyncDialog.test.tsx
+  s_e2ff4331966321::t_22e3df0bb7df81 1-88
+web/src/App.test.tsx
+  s_a316d46fb98dc1::t_53447e82abcd8d 28-45
+tests/skills-script-container.test.ts
+  s_d95b0f8fa6c1fd::t_88337d088a85f2 1-75,77-134
+  s_123f0cf0d9955d::t_846fb7bee77d25 76
+src/mastra/skills/script-container.ts
+  s_d95b0f8fa6c1fd::t_83797766e70dbe 157
+  s_d95b0f8fa6c1fd::t_cf4454ab2220a2 1-8,13-154,160-168
+  s_d95b0f8fa6c1fd::t_8e01dfbb2345e5 155-156,158-159
+  s_9f02ea9a04c319::t_689f1b40fddfc5 9-12
+docs/agent-skills-verification.md
+  s_0bdd16fd2b0fa8::t_f44f0f1054ecee 575-598
+  s_901a161528ea47::t_149c7ea476f443 647-686,688-721
+  s_a316d46fb98dc1::t_caf7f53e1e6edf 148-149
+  s_b88744824ef9a7::t_4febaab552682e 722-763
+  s_601c4266edbb02::t_6ee4cc6fd4be6e 338-398
+  s_5f3922a9be6711::t_52c08916a16192 771-794
+  s_d95b0f8fa6c1fd::t_c4833b029ce298 599-646
+  s_a316d46fb98dc1::t_6e924e67be9ae4 795-812
+  s_e175227ea7c76d::t_d4113d702f7765 399-458
+  s_f64c1e58c66c2a::t_322aa95d1e1053 459-508
+  s_7fa647515489b4::t_a543cc3b55f78e 687
+  s_91cc7979226075::t_8c356430961a2d 1-2,4-142,156-275
+  s_c015cb40b1e52f::t_85eba87578b01a 813-833
+  s_c655fc5a2339a0::t_22457b3c66dabe 276-337
+  s_9f02ea9a04c319::t_2baa22e88a6458 3,919-924,926-930
+  s_38eeebceaf02a1::t_f4757dff8cc7c6 509-574
+  s_6bfbce2b6d1701::t_6a34722d0be079 834-918
+  s_5f3922a9be6711::t_dd49cc542263b1 764-770
+  s_7fa647515489b4::t_106609d0e57ab4 143-147,150-155
+  s_9f02ea9a04c319::t_eaa459c5e8fc9c 925
+tests/skills-repository.test.ts
+  s_601c4266edbb02::t_063589cd6b816f 278-282
+  s_601c4266edbb02::t_73b4dd3644fd1f 1-208,213,215-272,274-277,288-473
+  s_601c4266edbb02::t_ac64dd89e4acd4 209-212,214
+  s_601c4266edbb02::t_56e0a288834cf3 273,283-287
+src/mastra/scheduled-tasks/repository.ts
+  s_38eeebceaf02a1::t_28411bb64bf92e 119,123-124,136
+  s_38eeebceaf02a1::t_3ec86365c1f91c 29
+  s_38eeebceaf02a1::t_deb0032043085f 96
+  s_38eeebceaf02a1::t_06f3d4606b0fa8 71
+  s_38eeebceaf02a1::t_c7d56ebe5ba301 229-232
+docs/deployment/agent-skills.md
+  s_c015cb40b1e52f::t_36bf26b39bab34 83,85,87-90,92-98,100-121
+  s_c015cb40b1e52f::t_317a2bf665d2b5 138-148
+  s_b88744824ef9a7::t_cbe19d7b24caac 26-32
+  s_6bfbce2b6d1701::t_387d317d6e2f94 99
+  s_901a161528ea47::t_57f3b9d51effa0 1-25,33-82,84,86,91,122-137
+web/src/agent/skills/selection.ts
+  s_1893fab726f882::t_73b4ca29c8d142 1-26
+docs/deployment/ecs-release-from-local-build.md
+  s_b88744824ef9a7::t_ec82cafc98ce67 88-89
+src/mastra/skills/versions.ts
+  s_9f02ea9a04c319::t_3f5fd700aec9ee 25-27,155-175,206
+  s_f64c1e58c66c2a::t_740af421b62d60 100-121,129-130
+  s_38eeebceaf02a1::t_356b6e5eb074a9 372-374,380
+  s_f64c1e58c66c2a::t_371c5d4e05445f 230-231
+  s_f64c1e58c66c2a::t_cf1eb87aae3616 5-9
+  s_e175227ea7c76d::t_41ad70b15b52bb 2,13-23,29-99,123-128,131-154,176-205,207-222,224-229,232-371,375-379,381-392
+  s_9f02ea9a04c319::t_6320aa7497e10a 1,3-4,10-12,24,28,122,223
+src/mastra/skills/blob-store.ts
+  s_e175227ea7c76d::t_25a1c1b1fccfed 1-4,6,9-72,74-75,91-92,95-112,114-151,155-163,165-175
+  s_e175227ea7c76d::t_26739eb32b3f0a 5,73,76-90,93-94,113,152-154,164
+  s_9f02ea9a04c319::t_a25147240fa2f7 7-8
+tests/skills-gc-race.test.ts
+  s_9f02ea9a04c319::t_dc5b5221c0cf24 112-134,137-149,164
+  s_9f02ea9a04c319::t_fed3cad3c2de50 59-111
+  s_9f02ea9a04c319::t_133b8df6f6a5f2 135-136,150-163
+  s_9f02ea9a04c319::t_740aafd80cb580 1-58
+tests/skills-policy.test.ts
+  s_f64c1e58c66c2a::t_cb7d89c6bf0c84 1-271
+tests/skills-storage.test.ts
+  s_e175227ea7c76d::t_f358a253a7fef5 34-36
+  s_e175227ea7c76d::t_5c13fdb2a102fb 1-33,37-218,220-221,224-300
+  s_e175227ea7c76d::t_b75f8750be97fc 219,222-223
+web/src/agent/AgentChat.test.tsx
+  s_6bfbce2b6d1701::t_dec59837e79ba4 5
+  s_2ecce69bb7dc9f::t_d2a1e1557686c3 44
+  s_6bfbce2b6d1701::t_ed168527426051 915,917
+  s_1893fab726f882::t_6552ab958fe9c4 933
+  s_1893fab726f882::t_fdafae734753d4 54
+  s_1893fab726f882::t_03ac46308d09a1 884-914,916,918-932,934-945,948-965
+  s_1893fab726f882::t_596ef9c5ac7c2f 41-43,45
+  s_1893fab726f882::t_0ab0d03c2cda85 946-947
+src/mastra/skills/processor.ts
+  s_c015cb40b1e52f::t_2299904a073fad 324-326
+  s_0bdd16fd2b0fa8::t_0939809298a565 2,5-6,48-51,76-93,100,103-115,120-135,212,233,244,252,255-269,274,292-293,297-312,329,338,352,447,450-451,457-460,464-465,467-486
+  s_38eeebceaf02a1::t_3ce58164cbfa67 1,4,7-8,12-15,17-21,23-47,52-75,94-99,101-102,116-119,136-137,144-150,152-211,213-232,234-243,245-251,253-254,270-273,275-279,288,290-291,313-316,318-323,327-328,330-337,339-340,345-351,353-361,371,376,390-446,449,453-456,461-463,466,487
+  s_38eeebceaf02a1::t_d14c3851ed5b0e 138-143,151
+  s_38eeebceaf02a1::t_304cbd46d70ab4 280-287
+  s_38eeebceaf02a1::t_d496c893d423b2 289,294-296,317
+  s_9f02ea9a04c319::t_6b6fb4832efdb3 3,9-11,16,22,341-344,362-370,372-375,377-389,448,452
+web/src/agent/scheduled-tasks-api.ts
+  s_1893fab726f882::t_bfb687bf12c3d6 46
+  s_1893fab726f882::t_2769cc05185866 22
+tests/skills-agent.integration.test.ts
+  s_0bdd16fd2b0fa8::t_cb4a12b06dab9f 209-215,223
+  s_38eeebceaf02a1::t_17b55be806ef97 509-512,514,516,520,528,531,533,536
+  s_38eeebceaf02a1::t_bbcddc4adc8956 24
+  s_38eeebceaf02a1::t_17f365604c9f07 462-465,467-468,472
+  s_0bdd16fd2b0fa8::t_9c0ccf60db762c 650,652-656
+  s_38eeebceaf02a1::t_cdc20f1060dd55 651
+  s_0bdd16fd2b0fa8::t_1434be761841fc 332,336-339,344,348-349,351-368,373-390,392,395,410-425
+  s_0bdd16fd2b0fa8::t_11f7a855fa6f08 508,513
+  s_38eeebceaf02a1::t_da206cb1615c69 333,393-394,396-397
+  s_0bdd16fd2b0fa8::t_16d29ab7c43017 466
+  s_0bdd16fd2b0fa8::t_31c28373b4f398 335,340-343,345-347,350,369-372
+  s_38eeebceaf02a1::t_ceeed85e5767a2 1-23,27-29,35-41,43-208,216-222,224-331,334,391,398-409,426,428,430-437,439-461,469-471,473-507,515,517-519,521-527,529-530,532,534-535,537-555,579-600,625-647,657-681
+  s_0bdd16fd2b0fa8::t_60002817e0f757 25-26,30-34,42
+  s_38eeebceaf02a1::t_9257305ad171a9 427,429,438
+  s_38eeebceaf02a1::t_fedb30731a876c 601-624,648
+  s_38eeebceaf02a1::t_1e7f38404986e5 649
+  s_0bdd16fd2b0fa8::t_bf5d290e8de85c 556-578
+tests/skills-concurrency.test.ts
+  s_5f3922a9be6711::t_4700d3e993990c 232,238
+  s_5f3922a9be6711::t_1b8616d3cd9f5f 1-224,239-357
+  s_5f3922a9be6711::t_523dc315056ea4 225-231,233-237
+tests/skills-management.test.ts
+  s_5f3922a9be6711::t_f7c04046726c06 323-328
+  s_5f3922a9be6711::t_66d2a984f5ec2a 1-322,329-420
+src/mastra/scheduled-tasks/service.ts
+  s_0bdd16fd2b0fa8::t_57a0cb4d8d254e 216-218
+web/src/agent/skills/SkillEditor.test.tsx
+  s_a316d46fb98dc1::t_4a6317d2eb3044 1-68
+tests/skills-reconcile.test.ts
+  s_c015cb40b1e52f::t_b04753e02c2dcf 163,169-175
+  s_c015cb40b1e52f::t_4f72cfef416d98 190
+  s_c015cb40b1e52f::t_fe2ac9c829faf9 1-162,164-168,176-189,191-406
+src/mastra/skills/sync.ts
+  s_e2ff4331966321::t_ade59c0b7b81fc 263,267,271
+  s_e2ff4331966321::t_e646a816f0545c 334
+  s_e2ff4331966321::t_4fe7b5ae5157fe 395
+  s_e2ff4331966321::t_803246ee7f2f72 1-4,8-12,16-22,25-262,264-266,268-270,272-277,279-280,282-333,335-394,396-641
+  s_e2ff4331966321::t_fd53c1ccd6a099 278,281
+  s_9f02ea9a04c319::t_4c0b87e87930d1 5-7,13-15,23-24
+docs/skills-nine-fixes-verification.md
+  s_9f02ea9a04c319::t_2baa22e88a6458 35-39
+  s_9f02ea9a04c319::t_640ecc40cd5e9b 1-34
+src/mastra/skills/script-resolve.ts
+  s_d95b0f8fa6c1fd::t_ae1dc8da5936b5 6-7,10-12,14-23,26-30,45-49
+  s_d95b0f8fa6c1fd::t_028e4869bd17b3 8-9,13,24-25,31-44
+  s_9f02ea9a04c319::t_8725a11c83c02c 1-5
+web/src/agent/skills/skills-api.test.ts
+  s_a316d46fb98dc1::t_96d4f8ee2c1f83 1-35
+web/src/agent/mobile/mobile.css
+  s_a316d46fb98dc1::t_e344a516bfe9c7 161-165
+tests/skills-script-runner.test.ts
+  s_d95b0f8fa6c1fd::t_f3187d08d4fc23 22-24
+  s_6bfbce2b6d1701::t_2925687f07a67e 37-40
+  s_d95b0f8fa6c1fd::t_9048e88252db96 15-18
+  s_d95b0f8fa6c1fd::t_a4f3fd9b0cc0ed 1-14,19-21,25-36,41-487
+web/src/agent/skills/SkillFiles.test.tsx
+  s_a316d46fb98dc1::t_71757dab5ca481 1-36
+docs/superpowers/plans/2026-10-19-agent-skills.md
+  s_b88744824ef9a7::t_69bdbb383078f1 162-166
+  s_5f3922a9be6711::t_b9c68366ff7a19 174-177
+  s_9f02ea9a04c319::t_b8cd8c54b1d612 76,126-128,193,195
+  s_9f02ea9a04c319::t_098f4ec43bcf50 1-75,77-125,129-161,167-173,178-192,194,196-273
+tests/fixtures/skills/reference-demo/references/checklist.md
+  s_901a161528ea47::t_30c977ff80bcc2 1-5
+web/src/agent/skills/SkillEditor.tsx
+  s_a316d46fb98dc1::t_cb3606e34ed8bc 4-15,18-30,33,35-46,51-54,56-60,74-76
+  s_2ecce69bb7dc9f::t_c2220516006fb4 55
+  s_a316d46fb98dc1::t_698425e069d6be 1-3,34,47-50,61-68,70-71,73
+  s_2ecce69bb7dc9f::t_d4dff1bb8f2ad8 31-32
+  s_a316d46fb98dc1::t_b109c7080cca0f 69,72
+  s_2ecce69bb7dc9f::t_673a33da77a81b 16-17
+web/src/agent/ManageMenu.tsx
+  s_a316d46fb98dc1::t_ae76039961eb78 28-29,35-36
+  s_a316d46fb98dc1::t_519b818c228bf9 14
+tests/skills-long-conversation.test.ts
+  s_c015cb40b1e52f::t_8d7debea58d37c 329-330
+  s_c015cb40b1e52f::t_779cad98784010 337
+  s_c015cb40b1e52f::t_0ed79805f7f6bd 1-18,20-116,118-328,331-334,338-396,439-443
+  s_9f02ea9a04c319::t_e6bceb388e8963 19,117,397-438
+  s_c015cb40b1e52f::t_e14e36cdf82abe 335-336
+src/mastra/skills/tools.ts
+  s_38eeebceaf02a1::t_7df635eb9cd350 1-4,8,11,20-24,34-73,76-78,80-83,93,95-99,101-105,107-109,111-115,118-119,123-138,140,142-156,158-172,174-178,235
+  s_0bdd16fd2b0fa8::t_3344bfccd13b92 139,141,157,173
+  s_d95b0f8fa6c1fd::t_e0e8c1cfe78806 27
+  s_0bdd16fd2b0fa8::t_78c5fff3194935 9-10,19,25
+  s_d95b0f8fa6c1fd::t_50791bab3aaad6 179-180,186-199,220-234
+  s_d95b0f8fa6c1fd::t_043e5a3f78b73e 181-185,200-219
+  s_0bdd16fd2b0fa8::t_89783adbd9c5a5 74-75,79,84-92,94,100,106
+  s_d95b0f8fa6c1fd::t_a29dd96ca36609 26,28-33
+  s_9f02ea9a04c319::t_ed12390534a24e 5-7,12-18,110,116-117,120-122
+migrations/010_agent_skills.sql
+  s_601c4266edbb02::t_b567efd5eb1fac 27-28
+  s_601c4266edbb02::t_33de1777bedaa6 1-26,29-161
+src/mastra/sandbox/factory.ts
+  s_d95b0f8fa6c1fd::t_6f702a37240a1e 1,5-9,23-40
+src/mastra/index.ts
+  s_38eeebceaf02a1::t_9b9d8480f29138 34
+  s_c015cb40b1e52f::t_35038fa074659c 32
+  s_c015cb40b1e52f::t_ac4eea17c91f9e 98
+  s_b88744824ef9a7::t_f44bfd99b983e5 35
+  s_b88744824ef9a7::t_ab29cbd49e9fe1 61
+  s_38eeebceaf02a1::t_82e6909b361444 72-74
+src/mastra/sandbox/docker/client.ts
+  s_901a161528ea47::t_0e48dc55b14847 23-41,47-48
+web/src/agent/skills/SkillPermissions.tsx
+  s_9f02ea9a04c319::t_68e32b6b326c6d 8,24,31
+  s_a316d46fb98dc1::t_f32985cda8dc17 1-7,9-23,25-30,32-116
+web/src/agent/skills/SkillVersions.tsx
+  s_a316d46fb98dc1::t_b3a19766e5fa93 1-95
+tests/skills-review-fixes.test.ts
+  s_9f02ea9a04c319::t_61230df91d3f26 1-47,49,51-57,60-105,109-151,153-166
+  s_9f02ea9a04c319::t_f34c47d45d050f 48,50,58-59,106-108,152
+web/src/agent/skills/SkillShortcutForm.test.tsx
+  s_2ecce69bb7dc9f::t_e56a7ff098809a 111
+  s_2ecce69bb7dc9f::t_db624df80e5e50 50
+  s_2ecce69bb7dc9f::t_bd04251c1cfc9c 1-2,5-8,10-13,15-49,51-55,60-73,77-95,103-110,112-139
+  s_2ecce69bb7dc9f::t_7af09edbc2cfd9 3
+  s_2ecce69bb7dc9f::t_bd901f51d20053 96-102
+  s_2ecce69bb7dc9f::t_d3983c649cfabf 56-59
+  s_2ecce69bb7dc9f::t_9c6daf73deaff7 4,9,14
+  s_2ecce69bb7dc9f::t_029ab47724c990 74-76
+src/mastra/skills/types.ts
+  s_f64c1e58c66c2a::t_3f7514f197e812 2
+  s_e2ff4331966321::t_663a906a8df974 144-189
+  s_601c4266edbb02::t_7051696225ac5c 56,62-143,190-200,206-214,217
+  s_d95b0f8fa6c1fd::t_d9885f4c2c3c05 375-385
+  s_9f02ea9a04c319::t_52ccb3dc6ed38d 400-401
+  s_b88744824ef9a7::t_d2016cc88f883a 451-497
+  s_c655fc5a2339a0::t_3709b93ff13eed 3-55
+  s_b88744824ef9a7::t_84a2444bf69392 215-216
+  s_e175227ea7c76d::t_032bd545a0c2b0 218-277
+  s_f64c1e58c66c2a::t_4b47e9ad0654db 278-294,314-374,386-399,402-450,498-509
+  s_38eeebceaf02a1::t_44b4106303834c 295-313
+  s_f64c1e58c66c2a::t_d35486bef4df64 57-61
+  s_b88744824ef9a7::t_a8e47d5e2fff5f 510-527
+  s_b88744824ef9a7::t_0a1b0b53f7872c 201-205
+  s_9f02ea9a04c319::t_d862ffbbfd5580 1
+sandbox/Dockerfile
+  s_901a161528ea47::t_634fddb38ecaf0 2-9,11-31
+  s_901a161528ea47::t_8b46d82de18b08 1
+web/src/agent/mobile/MobileInbox.tsx
+  s_a316d46fb98dc1::t_2f9fa81f60e274 53-56
+web/src/styles.css
+  s_a316d46fb98dc1::t_235edc564d60be 87-89
+  s_a316d46fb98dc1::t_4aad40ee2601dd 17-18
+  s_e2ff4331966321::t_d4de1e06dfbee0 74-78
+  s_a316d46fb98dc1::t_987256aa0defba 50-73,79-86,90-101
+  s_2ecce69bb7dc9f::t_e018fdd3577591 297-302
+  s_1893fab726f882::t_0fa2f03b1933f2 310-317
+  s_a316d46fb98dc1::t_266c15d8c375af 519-528
+src/mastra/sandbox/cleaner.ts
+  s_d95b0f8fa6c1fd::t_112105bdf780c5 1,5,13-63
+  s_123f0cf0d9955d::t_d3032859afa379 64
+src/mastra/skills/agent-bindings.ts
+  s_0bdd16fd2b0fa8::t_cdd81c07e4b6a9 1,3-67
+  s_9f02ea9a04c319::t_b26333807fe6a1 2
+web/src/agent/skills/SkillPicker.test.tsx
+  s_1893fab726f882::t_c2bf9faa759785 81
+  s_1893fab726f882::t_ec2b9d16f66cc4 1-80,82-151
+src/mastra/skills/reconcile.ts
+  s_c015cb40b1e52f::t_7ac134bb13faf7 1-4,14-79,81-534,544-573,575-580,582-591,593-617
+  s_9f02ea9a04c319::t_38ea1bddf56aff 5-13,80,535-543,574,581,592
+web/src/agent/skills/SkillsPage.test.tsx
+  s_a316d46fb98dc1::t_7fed2e1074bc30 305-307
+  s_a316d46fb98dc1::t_40e856eb234c72 1-78,81-177,197-208,213-304,308-312
+  s_9f02ea9a04c319::t_96a9a6858f5b5b 79-80,178-196
+  s_a316d46fb98dc1::t_a45e6d1469f9dd 209-212
+src/mastra/skills/package.ts
+  s_9f02ea9a04c319::t_52ccb3dc6ed38d 127
+  s_7fa647515489b4::t_3c4d477b8b7671 425
+  s_c655fc5a2339a0::t_b6436437f04576 471-473
+  s_c655fc5a2339a0::t_2d6c617070a7e3 3
+  s_c655fc5a2339a0::t_785d8b9b6099d8 308-317,331-350
+  s_e2ff4331966321::t_6ad5614b8e71a0 484-488
+  s_c655fc5a2339a0::t_9e07523c343052 232-241,243
+  s_c655fc5a2339a0::t_040b7caa63f9c8 28
+  s_c655fc5a2339a0::t_cd78002e24e2fd 1-2,4-10,13-18,20-27,29-31,33,35-41,45-126,128-231,242,244-291,300,304-305,320,325,327-330,351-353,355-356,377-411,413-424,426-470,474-483,489-496
+  s_c655fc5a2339a0::t_c78b22f4bcaf30 357-376
+  s_e2ff4331966321::t_55bbdd0eab3f00 412
+  s_c655fc5a2339a0::t_a526c1f75a1ee2 292-299,301-303,306-307,318-319,321-324,326
+  s_9f02ea9a04c319::t_7c43de583631f1 11-12,19,32,34,42-44,354
+web/src/agent/skills/SkillPermissions.test.tsx
+  s_a316d46fb98dc1::t_854ae5a527c244 1-10,12-33,35,44-45,49-50,54,56-57,59-69
+  s_9f02ea9a04c319::t_68e32b6b326c6d 11,58
+  s_9f02ea9a04c319::t_f5ce15dabf92ea 34,36-43,46-48,51-53,55
+web/src/agent/AgentChat.tsx
+  s_1893fab726f882::t_de8e341d543959 522,527-528
+  s_1893fab726f882::t_ae2380ba44fdf7 21-23
+  s_1893fab726f882::t_755e57439adc3e 455
+  s_1893fab726f882::t_dc3dc1b8dac8b2 55-56
+  s_1893fab726f882::t_3c873b6637cead 87-90
+  s_1893fab726f882::t_d4456cc0823811 193,199
+  s_1893fab726f882::t_43cae07b2029fb 533,538-539
+  s_1893fab726f882::t_9818fa5a0d9f71 418-421
+  s_1893fab726f882::t_558f7e70d1ab50 75
+  s_1893fab726f882::t_7bc9b0e5ff29d9 192,194-198
+  s_1893fab726f882::t_f7c506b1cd259a 408
+  s_1893fab726f882::t_3d331b822be4ce 161-162
+  s_1893fab726f882::t_282ebdec3c3a1f 465-466,472-474,476-478
+package.json
+  s_c655fc5a2339a0::t_c161ab05da6141 44
+  s_c655fc5a2339a0::t_f74e87537d3fca 39
+web/src/App.tsx
+  s_a316d46fb98dc1::t_4fe82c3593811e 7
+  s_a316d46fb98dc1::t_6000699db6fbbd 112
+docs/superpowers/specs/2026-10-19-agent-skills-design.md
+  s_9f02ea9a04c319::t_d13164f82ce1ae 1-67,69-71,73-144,146,149-220,222-248
+  s_9f02ea9a04c319::t_b8cd8c54b1d612 68,72,145,147-148,221
+web/src/agent/MessageList.tsx
+  s_1893fab726f882::t_038bbf55b542e2 266
+  s_1893fab726f882::t_27fd384dfb8505 15-16
+src/mastra/skills/validation.ts
+  s_e175227ea7c76d::t_abb54a8d9fc9a1 24-25,53-59
+  s_c655fc5a2339a0::t_a4f53215fa2686 292,296
+  s_f64c1e58c66c2a::t_24a8e6b38b06fe 26-32
+  s_b88744824ef9a7::t_b282286b6d8e16 41-44
+  s_c655fc5a2339a0::t_e757990de69370 200-212
+  s_38eeebceaf02a1::t_437ccf5bf26e0c 33-40,46-52
+  s_c655fc5a2339a0::t_38fd2e5a8911e1 1-2,5-23,45,60-199,213-291,293-295,297-322
+  s_9f02ea9a04c319::t_80ef7a42dc804a 3-4
+src/mastra/skills/service.ts
+  s_38eeebceaf02a1::t_823d70cbe94175 106-107
+  s_9f02ea9a04c319::t_52ccb3dc6ed38d 422,432,438-450,521,753,821-822,875
+  s_2ecce69bb7dc9f::t_c823d7ede061cb 1
+  s_e2ff4331966321::t_bb9a9762e5eb13 185-194
+  s_b88744824ef9a7::t_c9077de6c45e98 947-997,1004-1020,1022-1058,1060-1061,1102,1134-1139,1146-1216
+  s_ef97f34d625495::t_61259ef1ae4ff9 1140-1145
+  s_f64c1e58c66c2a::t_eb86103be73e98 2,8-10,12-15,17,21-22,25,27-34,36-37,41-42,44-56,58,63,72-75,77,80-82,85-100,105,108-115,120-129,134-140,165-166,201-256,259,261-353,355-421,423-431,433-437,451-452,466-470,522-545,566,572-676,690-752,755-759,761-800,809-815,817,823-825,837-839,853-854,856-874,876-898,916-946,998-1003,1021,1087,1217-1218
+  s_38eeebceaf02a1::t_7f865d8857cbe6 453-465
+  s_f64c1e58c66c2a::t_4c2358b207e977 677
+  s_f64c1e58c66c2a::t_bc74ab37be8146 754,760
+  s_b88744824ef9a7::t_749e597252747e 899-915
+  s_ef97f34d625495::t_5d689bb6df8e22 1059
+  s_38eeebceaf02a1::t_ca2191a447132e 471-503,505-520
+  s_b88744824ef9a7::t_89f5d9696f98b9 101-104,116-119,130-133,141-164,167-184
+  s_2ecce69bb7dc9f::t_ede5dca9df00d3 65
+  s_b88744824ef9a7::t_369a1ba775a585 801-808,816,818-820,826-836,840-852,855
+  s_b88744824ef9a7::t_3a70dd219fc1d8 23-24,26,35,38-40,43,57,59,78-79,84
+  s_2ecce69bb7dc9f::t_ad097870fa4ea2 1067-1086,1096,1098-1101
+  s_f64c1e58c66c2a::t_831841f3010d0b 678-689
+  s_b88744824ef9a7::t_bbb3ace5f48a60 546-565
+  s_2ecce69bb7dc9f::t_1d8ad8b5762f97 195-200
+  s_2ecce69bb7dc9f::t_41060a6880505c 64,66-69,71
+  s_d95b0f8fa6c1fd::t_d3a1c150cacf68 257-258,260
+  s_e2ff4331966321::t_4095a3c26aad1b 354
+  s_38eeebceaf02a1::t_511a15d53355c9 567-571
+  s_2ecce69bb7dc9f::t_f7f32f1b689e94 1104-1107,1109,1113-1116
+  s_2ecce69bb7dc9f::t_461a01cc75c732 1103,1108,1110-1112,1117-1133
+  s_e2ff4331966321::t_4f0b2994059464 1062-1066
+  s_b88744824ef9a7::t_e01535e9f523a7 11,16
+  s_9f02ea9a04c319::t_3cd5c45b87dc15 3-7,18-20,60-62,70,76,83,504,1088-1095,1097
+scripts/skills-import.ts
+  s_38eeebceaf02a1::t_7f0386ac3d19c5 18,46-48,80-83
+  s_38eeebceaf02a1::t_28fc934a031330 1-17,19-45,49-79,84-191
+web/vite.config.ts
+  s_b88744824ef9a7::t_f80475c6e61bbb 16
+web/src/agent/skills/SkillsPage.tsx
+  s_2ecce69bb7dc9f::t_1c198d8e185631 38
+  s_e2ff4331966321::t_32c3c09319a219 551
+  s_a316d46fb98dc1::t_cd741a603bb08c 2-4,8-37,39-75,78-370,372-375,377-406,408-481,483-505,508-520,536-550,553-558,560-568,577-608
+  s_e2ff4331966321::t_9e37e446935a8e 569-576
+  s_a316d46fb98dc1::t_e1c171ed1b7568 376
+  s_e2ff4331966321::t_decdd1b24f506f 521-535
+  s_e2ff4331966321::t_3cba0706ca149e 76-77
+  s_2ecce69bb7dc9f::t_f34b30cad17602 5
+  s_9f02ea9a04c319::t_68e32b6b326c6d 371,559
+  s_2ecce69bb7dc9f::t_e3fb7a3a60fd36 482
+  s_2ecce69bb7dc9f::t_8d2eb629e92501 552
+  s_2ecce69bb7dc9f::t_1bf633dfe6ed7f 506-507
+  s_e2ff4331966321::t_af745c6938d365 6-7
+  s_a316d46fb98dc1::t_5ca92248a83f33 1
+  s_e2ff4331966321::t_6a6ff369264014 407
+migrations/011_agent_skill_run_pins.sql
+  s_38eeebceaf02a1::t_2ece396dc09816 19-20
+  s_38eeebceaf02a1::t_23832069895968 1-18,21-38
+tests/fixtures/skills/script-demo/skill-runtime.json
+  s_901a161528ea47::t_f138681e88d94e 1-7
+tests/skills-routes.test.ts
+  s_ef97f34d625495::t_d1057216ba71ac 173-184
+  s_2ecce69bb7dc9f::t_6152eec9605d70 108-111
+  s_2ecce69bb7dc9f::t_3a351ddfc220d7 91-93,99
+  s_b88744824ef9a7::t_a6c95917b845a0 1-90,94-98,100-107,112-113,116-172,185-231,239-342
+  s_ef97f34d625495::t_54450bdec732df 232-238
+  s_2ecce69bb7dc9f::t_5df54cf22e112d 114-115
+web/src/agent/ScheduledTasksPage.tsx
+  s_1893fab726f882::t_dab8a601d8ee1d 20
+  s_1893fab726f882::t_9fd3050625cfa7 56-57
+  s_1893fab726f882::t_43a6dd18537aa0 77-78
+  s_1893fab726f882::t_a189f758364619 38-39
+  s_1893fab726f882::t_b0798a1d1d93fa 99-101
+  s_1893fab726f882::t_fa76df2571b5ab 378-383
+web/src/agent/message-parts.test.ts
+  s_1893fab726f882::t_c91720b86ee2ea 7
+  s_1893fab726f882::t_3a7409bf613661 82-108
+tests/fixtures/skills/script-demo/scripts/to_csv.py
+  s_901a161528ea47::t_10638c8c0276be 1-19
+src/mastra/skills/routes.ts
+  s_b88744824ef9a7::t_4fee63394f6469 1-2,12-17,19-47,54-75,77-164,166-242,250-329,366-587,660-725,755-759
+  s_b88744824ef9a7::t_40408b302abdd1 76
+  s_e2ff4331966321::t_af4097ee0fbd6c 18
+  s_e2ff4331966321::t_4ea9e902bb44d2 330-365
+  s_2ecce69bb7dc9f::t_131e3ee05e555c 51-53
+  s_b88744824ef9a7::t_e2f10f1107ea66 165
+  s_2ecce69bb7dc9f::t_d9a539ad416779 629-659
+  s_e2ff4331966321::t_1ad6ad88800701 726-754
+  s_e2ff4331966321::t_9ea0e6e13d4f97 588-628
+  s_2ecce69bb7dc9f::t_08ee8387d83880 243-249
+  s_e2ff4331966321::t_8886f4f2ace4ef 48-50
+  s_9f02ea9a04c319::t_db62bc44184925 3-11
+web/src/agent/skills/skills-api.ts
+  s_2ecce69bb7dc9f::t_fe6342cec161f4 16-17,19-20
+  s_e2ff4331966321::t_f542088a71c81f 8-9
+  s_1893fab726f882::t_dc67f6c4bcc7de 15
+  s_2ecce69bb7dc9f::t_ecff2a06113e0e 340-362
+  s_a316d46fb98dc1::t_578f2dc8a1c855 1-7,10-14,18,21-58,72-280,363-368
+  s_1893fab726f882::t_03ee0dd7606211 59-71
+  s_e2ff4331966321::t_628cbb65798ea1 281-339
+web/src/agent/skills/SkillImportDialog.tsx
+  s_e2ff4331966321::t_6a837d809591fa 1-97
+tests/skills-sync.test.ts
+  s_e2ff4331966321::t_4ee3445086cd0b 1-5,7-345
+  s_e2ff4331966321::t_99bf1e81ad32cd 6
+scripts/skills-gc.ts
+  s_c015cb40b1e52f::t_a216a52f84c1cd 1-47
+web/src/agent/skills/SkillExecutionBadge.tsx
+  s_1893fab726f882::t_d9660ae94235e4 1-20
+tests/skills-execution-probe.test.ts
+  s_91cc7979226075::t_c5d7e30d365ce3 1-249
+tests/skills-package.test.ts
+  s_c655fc5a2339a0::t_ae44bf3d73bc8b 276-277,281-284,287-300
+  s_c655fc5a2339a0::t_8d96d92960b503 394,405,408-426,433
+  s_c655fc5a2339a0::t_97f4cef5ded82b 5-6
+  s_c655fc5a2339a0::t_1dbdd8f1f4c851 1-4,7-33,35-41,43-47,49-213,216-253,256-258,261-275,278-280,285-286,301-393,395-404,406-407,427-432,434-446,449-450,454-521
+  s_c655fc5a2339a0::t_7e3d64f637d4d2 214-215
+  s_c655fc5a2339a0::t_e7214655bacfc8 34,42,48
+  s_c655fc5a2339a0::t_5272a9a5a52363 447-448,451-453
+  s_c655fc5a2339a0::t_72b47e14feb1ac 254-255,259-260
+web/src/agent/AgentPage.tsx
+  s_1893fab726f882::t_94ca23711e3076 158-165
+  s_1893fab726f882::t_d713334ee75651 327
+  s_1893fab726f882::t_6f7cbd1436b451 24-25
+  s_1893fab726f882::t_9528062fca9c4b 41-42
+  s_1893fab726f882::t_53b2e59307b270 341
+tests/skills-docker.integration.test.ts
+  s_901a161528ea47::t_be6d7b70d24967 481-482
+  s_901a161528ea47::t_954ebb801802b4 1-22,24-25,27-476,478-479,483-532,534-538,540-561,565-572,574-576,578-579,581-582,585,587,589-591,593-596,598-608,610-624
+  s_901a161528ea47::t_89656f8b7bf2d4 533,539,562-564,573,577,580,583-584,586,588,592
+  s_901a161528ea47::t_ea3d0af5d1e557 23,26
+  s_901a161528ea47::t_78f09890f0e7a8 597,609
+  s_901a161528ea47::t_f0dab1bf4f2d00 477,480
+src/mastra/skills/config.ts
+  s_e175227ea7c76d::t_4b19f686938e21 16-30
+  s_d95b0f8fa6c1fd::t_3e90cd65c45fb9 42-64
+  s_c655fc5a2339a0::t_24e5b7f14622eb 1-15,31-41
+src/mastra/skills/runtime.ts
+  s_d95b0f8fa6c1fd::t_c9a4c90ae7f7b6 18,21
+  s_d95b0f8fa6c1fd::t_4414adc117520d 2-17,19-20,22-41
+  s_9f02ea9a04c319::t_8fdc86d15b11fe 1
+src/mastra/scheduled-tasks/validation.ts
+  s_38eeebceaf02a1::t_3cd408d421994a 161-180,190
+web/src/agent/skills/SkillFiles.tsx
+  s_a316d46fb98dc1::t_cfd109ee3cd1f6 1-79
+web/src/agent/message-parts.ts
+  s_1893fab726f882::t_a8f34a86a2334d 110-237
+tests/skills-shortcuts.test.ts
+  s_2ecce69bb7dc9f::t_769560722dd2f1 1-48,50-267,269,271-358
+  s_2ecce69bb7dc9f::t_068b97829188da 49
+  s_2ecce69bb7dc9f::t_84831245e71dcf 268,270
+web/src/agent/AgentPage.test.tsx
+  s_6bfbce2b6d1701::t_939c0d6f7a6ffa 48
+  s_1893fab726f882::t_dec14a27e1f8b5 47,49
+src/mastra/scheduled-tasks/types.ts
+  s_38eeebceaf02a1::t_5c72eb10ca488c 14-15,31
+  s_38eeebceaf02a1::t_712650b5565a3d 71
+src/mastra/agents/agent.ts
+  s_0bdd16fd2b0fa8::t_b8bebd80b4060f 23
+  s_38eeebceaf02a1::t_000ceb17b4f6cb 24-27
+  s_0bdd16fd2b0fa8::t_862876edfc5ce7 105-107
+  s_38eeebceaf02a1::t_c7f66fd69b0c28 99-101,120
+src/mastra/skills/release-store.ts
+  s_e175227ea7c76d::t_4cfd7d6ef2a18c 1-5,10-329
+  s_9f02ea9a04c319::t_3b6757c3e579fc 6-9
+tests/skills-import-http.test.ts
+  s_e2ff4331966321::t_e8fe8c8d1aba29 154-157
+  s_e2ff4331966321::t_10f870b54e1bff 1-5,7-153,158-313
+  s_e2ff4331966321::t_711125ec389a63 6
+web/src/agent/ModelSettingsMenu.test.tsx
+  s_a316d46fb98dc1::t_f4a6cefc4a7980 25,28
+  s_a316d46fb98dc1::t_0b54526f98b33c 18
+src/mastra/scheduled-tasks/hooks.ts
+  s_38eeebceaf02a1::t_aa1cc4c9cd640d 17
+  s_38eeebceaf02a1::t_6820ea0474d255 229-234
+  s_38eeebceaf02a1::t_73efc1b6c98269 70-75,80-83
+  s_0bdd16fd2b0fa8::t_1fb0f02f51ad68 115-117,123,130,133
+  s_0bdd16fd2b0fa8::t_4545df2aab1c9f 13-16
+tests/skills-publish.test.ts
+  s_e175227ea7c76d::t_dcc89784b1b6b4 1,3-74,76-175,182-201,234,241-242,244,247,276,316,332,367,369,392,449,451,481-513,516,518-525
+  s_e175227ea7c76d::t_4e8e1a24c860e9 2,75,176-181,202-233,235-240,243,245-246,248-275,277-315,317-331,333-366,368,370-391,393-448,450,452-480,514-515,517
+tests/skills-http.integration.test.ts
+  s_b88744824ef9a7::t_0012457875374c 1-172,175,181,183-187,189-292,295-322
+  s_b88744824ef9a7::t_32142bb5d14c04 173-174,176,182,188
+  s_ef97f34d625495::t_af3ad5dc419487 293-294
+  s_b88744824ef9a7::t_08a009764d3942 177-180
+tests/skills-runtime.test.ts
+  s_f64c1e58c66c2a::t_9775816807bb49 1-161,163-166,168-239,250-310,312-439,443-469
+  s_6bfbce2b6d1701::t_c86853a7a8b0b5 162,167
+  s_6bfbce2b6d1701::t_a509ee043cefe4 440-442
+  s_f64c1e58c66c2a::t_291d283678d573 311
+  s_6bfbce2b6d1701::t_066e0959ef4cc0 240-249
+migrations/012_agent_skill_experience.sql
+  s_2ecce69bb7dc9f::t_6cc4596c753c43 17-19
+  s_e2ff4331966321::t_02c62d1d38defd 1-16,20-43
+migrations/013_skill_load_recovery_index.sql
+  s_879867236d665f::t_36de1833679ef0 1-4
+package-lock.json
+  s_c655fc5a2339a0::t_00ad53e07b72ca 21,26,2751-2761,7560
+src/mastra/files/attachment-persistence-processor.ts
+  s_9f02ea9a04c319::t_1bda5bb5c132b2 21-28,74,99,121,123,129,193
+src/mastra/files/attachments.ts
+  s_9f02ea9a04c319::t_93bf4d1bced8ae 127
+src/mastra/files/tools.ts
+  s_9f02ea9a04c319::t_9fc83b02dd8847 223
+src/mastra/skills/storage-lock.ts
+  s_9f02ea9a04c319::t_cbfc42ced0532d 1-66
+tests/skills-factory.test.ts
+  s_9f02ea9a04c319::t_7663075e6a4827 1-39
+tests/skills-storage-lock.test.ts
+  s_9f02ea9a04c319::t_0e5ba7c9145990 1-34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1de3fdf85352b6783dd68e4b74b7598b31f9a7bf",
+  "prompts": {},
+  "sessions": {
+    "s_0bdd16fd2b0fa8": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "fb591f31-4212-4818-90ff-5fbe69a31238",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_123f0cf0d9955d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5dfafe9c-a6ab-40d6-a8fa-aa641b33d8d8",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_1893fab726f882": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c8dabde3-e257-4cb0-8bca-284f3f59f1fd",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_2ecce69bb7dc9f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "88419ab4-e204-4cf8-aefe-38c0de277c88",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_38eeebceaf02a1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "086fe53b-017b-47e7-82f8-4784f68bfca9",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_5f3922a9be6711": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d3d0139c-ff71-447f-84b6-7f01976ed023",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_601c4266edbb02": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1149f5c4-993a-473a-9e68-2f7c9e230392",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_6bfbce2b6d1701": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "7966c6be-8497-4985-accd-ecbe869fe248",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_7fa647515489b4": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "32ad95a3-1808-44f4-ae88-c4ea71014525",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_879867236d665f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a143dd-35cd-7960-be70-fdc66221d78b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_901a161528ea47": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b14e64a4-d62f-4d6f-bc21-84bb9f3310ce",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_91cc7979226075": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ddc9751a-1f33-4bec-878e-50f88112240e",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_9f02ea9a04c319": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1487b-d970-7ac0-9426-dfa36f7f72a2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_a316d46fb98dc1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1e7754bb-187d-40a5-9506-960d774f7e8b",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_b88744824ef9a7": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "7319c090-1bfd-4799-b951-a96892c2a83c",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_c015cb40b1e52f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "390e2592-4af6-48dd-83c7-d810f33bb950",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_c655fc5a2339a0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "da3ed1c4-2c3e-4090-a387-4e5060be6453",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_d95b0f8fa6c1fd": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c389400a-b477-4f1b-b5d7-1f38437a1f0d",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_e175227ea7c76d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d29ad52a-a6d1-4207-90bf-05d58eb41406",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_e2ff4331966321": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "14e0de1f-9c6f-42a3-a40c-ffe7691d6b1e",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_ef97f34d625495": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "105e0585-617d-4b7c-b2cb-0b7761a701dc",
+        "model": "composer-2.5-fast"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_f64c1e58c66c2a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e73292db-f9fc-498d-b858-1e8c6d4bc41a",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
