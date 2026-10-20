@@ -17,7 +17,8 @@
     "db:migrate": "node --env-file-if-exists=.env --import tsx scripts/migrate.ts",
     "db:local:setup": "node scripts/setup-local-postgres.mjs",
     "db:import:libsql": "node --env-file-if-exists=.env --import tsx scripts/import-libsql.ts",
-    "user:create": "node --env-file-if-exists=.env --import tsx scripts/create-user.ts"
+    "user:create": "node --env-file-if-exists=.env --import tsx scripts/create-user.ts",
+    "build:egress": "node node_modules/esbuild/bin/esbuild src/mastra/sandbox/network/main.ts --bundle --platform=node --format=esm --outfile=sandbox/egress/dist/proxy.mjs"
   },
   "keywords": [],
   "author": "",

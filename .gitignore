@@ -18,3 +18,6 @@ src/mastra/public/
 *.duckdb
 *.duckdb.wal
 .superpowers/
+
+# Generated standalone egress proxy
+sandbox/egress/dist/
