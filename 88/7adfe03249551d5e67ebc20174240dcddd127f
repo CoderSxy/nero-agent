@@ -1,0 +1,33 @@
+src/mastra/sandbox/docker/client.ts
+  s_b64514dd091221::t_848a6cd2fd1364 7-8,78
+src/mastra/sandbox/docker/config.ts
+  s_b64514dd091221::t_04cc1ef06a92de 1,25-26,45,54,70,74
+src/mastra/sandbox/docker/provider.ts
+  s_b64514dd091221::t_1eabe99d9b7850 6-8,20,25-36,52-54,94-95
+src/mastra/sandbox/network/docker-engine.ts
+  s_b64514dd091221::t_22fa63a3b82178 1-17
+src/mastra/sandbox/network/manager.ts
+  s_b64514dd091221::t_85d46763f6e804 1-63
+src/mastra/sandbox/network/proxy.ts
+  s_b64514dd091221::t_5722cdf2ee3c14 27
+src/mastra/sandbox/types.ts
+  s_b64514dd091221::t_4ec47d16bb7601 23
+tests/sandbox-network-manager.test.ts
+  s_b64514dd091221::t_715e4db99cc6d3 1-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "887adfe03249551d5e67ebc20174240dcddd127f",
+  "prompts": {},
+  "sessions": {
+    "s_b64514dd091221": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15936-a458-79d1-b9aa-5807fd10438c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
