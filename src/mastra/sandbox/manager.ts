@@ -1,3 +1,4 @@
+import { getSandboxRuntimeConfig } from './runtime-config';
 import type { ThreadLookup } from '../auth/thread-guard';
 import { assertThreadOwned } from '../auth/thread-guard';
 import { isSandboxCommandsEnabled, sandboxCommandTimeoutMs } from '../workspace/config';
@@ -16,6 +17,12 @@ export class SandboxManager {
 
   ownerFor(userId: string): SandboxOwner {
     return { userId, sandboxId: sandboxIdFor(userId) };
+  }
+
+  async executeBash(request: Pick<ExecutionRequest, 'auth' | 'threadId' | 'abortSignal'> & { script: string }): Promise<SandboxCommandResult> {
+    if (!getSandboxRuntimeConfig().bashEnabled) throw new Error('Bash execution is disabled');
+    if (!request.script || request.script.includes('\0') || Buffer.byteLength(request.script, 'utf8') > 65536) throw new Error('Invalid Bash script (maximum 64KiB)');
+    return this.execute({ ...request, command: 'bash', args: ['--noprofile', '--norc', '-c', request.script] });
   }
 
   async execute(request: ExecutionRequest): Promise<SandboxCommandResult> {
