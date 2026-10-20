@@ -1,0 +1,25 @@
+sandbox/Dockerfile
+  s_b64514dd091221::t_77957fed9b5e1a 1-5,7-16
+src/mastra/sandbox/manager.ts
+  s_b64514dd091221::t_c81f5c06e3bd81 1-2,47-53,57
+src/mastra/sandbox/task-runtime.ts
+  s_b64514dd091221::t_4aec8e5f2ae56c 1-36
+tests/sandbox-task-runtime.test.ts
+  s_b64514dd091221::t_aecc10dfd1d3cc 1-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "df476935388b36a2335b80caedd6997591cf154d",
+  "prompts": {},
+  "sessions": {
+    "s_b64514dd091221": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15936-a458-79d1-b9aa-5807fd10438c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
