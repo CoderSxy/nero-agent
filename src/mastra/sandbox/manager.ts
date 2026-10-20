@@ -1,3 +1,5 @@
+import { prepareTaskRuntime } from './task-runtime';
+import { sandboxNetworkManager } from './network/manager';
 import { getSandboxRuntimeConfig } from './runtime-config';
 import type { ThreadLookup } from '../auth/thread-guard';
 import { assertThreadOwned } from '../auth/thread-guard';
@@ -42,9 +44,17 @@ export class SandboxManager {
       request.threadId,
       async () => {
         await this.provider.ensureRunning(owner, root);
+        const config=getSandboxRuntimeConfig();
+        const runtime=(config.bashEnabled||config.dependenciesEnabled||config.networkMode==='public-http')?await prepareTaskRuntime({
+          execute:(cmd,args,opts)=>this.provider.execute(owner,cmd,args,opts),cwd:containerPath,
+          imageDigest:process.env.SANDBOX_IMAGE??'',dependenciesEnabled:config.dependenciesEnabled,
+          proxyUrl:config.networkMode==='public-http'?(await (await sandboxNetworkManager()).ensure(owner)).proxyUrl:undefined,
+          abortSignal:request.abortSignal,
+        }):undefined;
         const started = Date.now();
         const result = await this.provider.execute(owner, request.command, request.args, {
           cwd: containerPath,
+          env: runtime?.env,
           timeoutMs: sandboxCommandTimeoutMs(),
           abortSignal: request.abortSignal,
         });
