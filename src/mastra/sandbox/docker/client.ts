@@ -4,6 +4,8 @@ import type Docker from 'dockerode';
 
 export type DockerInspect = {
   Id: string;
+  Created?: string | number;
+  NetworkSettings?: { Networks?: Record<string,unknown> };
   State: { Running: boolean; Status: string };
   Config?: { Labels?: Record<string, string>; User?: string };
   HostConfig?: DockerCreateOptions['HostConfig'];
@@ -73,6 +75,7 @@ export async function createDockerodeEngine(dockerInstance?: Docker): Promise<Do
         AttachStdout: true,
         AttachStderr: true,
         User: '10001:10001',
+        Env: options.env,
       });
       const stream = await exec.start({ hijack: true, stdin: false });
       const stdout: Buffer[] = [];

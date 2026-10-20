@@ -20,6 +20,7 @@ export type SandboxInspect = {
 };
 
 export type SandboxExecuteOptions = {
+  env?: string[];
   cwd: string;
   timeoutMs: number;
   abortSignal?: AbortSignal;

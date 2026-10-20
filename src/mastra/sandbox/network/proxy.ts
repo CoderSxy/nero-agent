@@ -24,7 +24,7 @@ export function createEgressProxy(deps:{resolve?:(host:string,port:number)=>Prom
  });
  server.headersTimeout=15000;server.requestTimeout=60000;
  server.on('connect',async(req,socket,head)=>{
-  socket.on('error',()=>socket.destroy());socket.setTimeout(30000,()=>socket.destroy());
+  socket.on('error',()=>socket.destroy());(socket as net.Socket).setTimeout(30000,()=>socket.destroy());
   let target:PublicTarget;
   try{
    const match=/^([a-zA-Z0-9.-]+):(80|443)$/.exec(req.url??'');

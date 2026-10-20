@@ -3,6 +3,9 @@ import type { DockerEngine } from './client';
 import type { SandboxProvider } from '../provider';
 import type { SandboxRegistry } from '../registry';
 import type { SandboxCommandResult, SandboxExecuteOptions, SandboxInspect, SandboxOwner } from '../types';
+import { getSandboxRuntimeConfig, runtimeFingerprint } from '../runtime-config';
+import { sandboxNetworkManager, type SandboxNetworkManager } from '../network/manager';
+import { assertSandboxImage } from './config';
 import { sandboxMaxConcurrent } from '../../workspace/config';
 
 const USER_LABEL = 'nero.sandbox.user';
@@ -14,11 +17,23 @@ export class DockerSandboxProvider implements SandboxProvider {
   constructor(
     private readonly engine: DockerEngine,
     private readonly registry: SandboxRegistry,
+    private readonly networks?: SandboxNetworkManager,
   ) {}
 
   async ensureRunning(owner: SandboxOwner, workspaceRoot: string): Promise<SandboxInspect> {
     return this.withProvisionLock(() => this.withLock(owner.userId, async () => {
-      const existing = await this.reconcile(owner, workspaceRoot);
+      const network=getSandboxRuntimeConfig().networkMode==='public-http' ? await (this.networks??await sandboxNetworkManager()).ensure(owner) : undefined;
+      const fingerprint=runtimeFingerprint(assertSandboxImage());
+      let existing = await this.reconcile(owner, workspaceRoot);
+      if(existing?.containerId){
+        const info=await this.engine.inspect(existing.containerId);
+        const old=info?.Config?.Labels?.['nero.sandbox.fingerprint'];
+        // Legacy offline containers have no fingerprint; replace them when advanced features turn on.
+        const advanced=getSandboxRuntimeConfig();
+        if((old&&old!==fingerprint)||(!old&&(advanced.networkMode!=='none'||advanced.dependenciesEnabled||advanced.bashEnabled)) || (info?.HostConfig?.NetworkMode??'none')!==(network?.networkId??'none')){
+          await this.engine.remove(existing.containerId,true);await this.registry.clearContainer(owner,'missing');existing=undefined;
+        }
+      }
       if (existing?.status === 'running' && existing.containerId) {
         await this.registry.upsert({ ...existing, lastActiveAt: Date.now() });
         return { sandboxId: owner.sandboxId, status: 'running', workspaceRoot };
@@ -34,8 +49,9 @@ export class DockerSandboxProvider implements SandboxProvider {
       const options = dockerSandboxCreateOptions(workspaceRoot, {
         [USER_LABEL]: owner.userId,
         'nero.sandbox.id': owner.sandboxId,
-      });
-      validateDockerCreateConfig(options, workspaceRoot);
+        'nero.sandbox.fingerprint': fingerprint,
+      }, network);
+      validateDockerCreateConfig(options, workspaceRoot, network);
       const created = await this.engine.create(options);
       await this.engine.start(created.id);
       await this.registry.upsert({
@@ -75,6 +91,8 @@ export class DockerSandboxProvider implements SandboxProvider {
       const record = await this.registry.getByUser(owner.userId);
       if (record?.containerId) await this.engine.remove(record.containerId, true);
       await this.registry.clearContainer(owner, 'missing');
+      if(this.networks)await this.networks.removeIdle(owner);
+      else if(getSandboxRuntimeConfig().networkMode==='public-http')await (await sandboxNetworkManager()).removeIdle(owner);
     });
   }
 

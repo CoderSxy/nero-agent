@@ -1,3 +1,4 @@
+import type { SandboxNetworkContext } from '../network/manager';
 import { resolve } from 'node:path';
 import { assertContained, workspaceBase } from '../../workspace/path';
 
@@ -21,6 +22,8 @@ export type DockerHostConfig = {
   NanoCpus?: number;
   Tmpfs?: Record<string, string>;
   Binds?: string[];
+  Sysctls?: Record<string,string>;
+  PortBindings?: Record<string,unknown>;
 };
 
 export type DockerCreateOptions = {
@@ -39,7 +42,7 @@ export function assertSandboxImage(): string {
   return image;
 }
 
-export function dockerSandboxCreateOptions(workspaceRoot: string, labels: Record<string, string> = {}): DockerCreateOptions {
+export function dockerSandboxCreateOptions(workspaceRoot: string, labels: Record<string, string> = {}, network?: SandboxNetworkContext): DockerCreateOptions {
   const root = assertUserWorkspaceRoot(workspaceRoot);
   return {
     Image: assertSandboxImage(),
@@ -48,7 +51,7 @@ export function dockerSandboxCreateOptions(workspaceRoot: string, labels: Record
     Labels: { 'nero.sandbox': '1', ...labels },
     HostConfig: {
       Privileged: false,
-      NetworkMode: 'none',
+      NetworkMode: network?.networkId ?? 'none',
       PidMode: '',
       ReadonlyRootfs: true,
       CapDrop: ['ALL'],
@@ -64,11 +67,11 @@ export function dockerSandboxCreateOptions(workspaceRoot: string, labels: Record
   };
 }
 
-export function validateDockerCreateConfig(options: DockerCreateOptions, workspaceRoot: string): void {
+export function validateDockerCreateConfig(options: DockerCreateOptions, workspaceRoot: string, network?: SandboxNetworkContext): void {
   const root = assertUserWorkspaceRoot(workspaceRoot);
   if (options.User !== SANDBOX_UID_GID) throw new Error('Sandbox user must be 10001:10001');
   if (options.HostConfig?.ReadonlyRootfs !== true) throw new Error('Sandbox root filesystem must be read-only');
-  if (options.HostConfig?.NetworkMode !== 'none') throw new Error('Sandbox network must be none');
+  if (options.HostConfig?.NetworkMode !== (network?.networkId ?? 'none')) throw new Error('Sandbox network must be none');
   if (options.HostConfig?.Privileged) throw new Error('Sandbox must not be privileged');
   if (options.HostConfig?.PidMode === 'host') {
     throw new Error('Sandbox must not use host PID or host network');
