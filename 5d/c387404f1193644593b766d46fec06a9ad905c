@@ -1,0 +1,117 @@
+docs/superpowers/specs/2026-10-20-sandbox-public-network-design.md
+  s_ec5b4d773b50bb::t_7e25b3c299aeee 3,135
+docs/skill-general-capabilities-proposal.md
+  s_ec5b4d773b50bb::t_7e25b3c299aeee 5
+.env.example
+  s_ec5b4d773b50bb::t_928b0b1de63239 49-55
+.gitignore
+  s_ec5b4d773b50bb::t_204ecaf3e01cd8 21-23
+docs/deployment/agent-skills.md
+  s_ec5b4d773b50bb::t_9324ca11416b10 3-4
+docs/deployment/sandbox-public-network.md
+  s_ec5b4d773b50bb::t_ea17603b866cde 1-76
+docs/deployment/workspace-sandbox-ecs.md
+  s_ec5b4d773b50bb::t_92c8e13678ab26 38-40
+docs/sandbox-public-network-verification.md
+  s_ec5b4d773b50bb::t_e53eacfe74acb1 1-66
+docs/superpowers/plans/2026-10-20-sandbox-public-network.md
+  s_ec5b4d773b50bb::t_eb620493079a7e 1-156
+package-lock.json
+  s_ec5b4d773b50bb::t_6a7bd27344d5c5 35-36
+package.json
+  s_ec5b4d773b50bb::t_c1735a984495c8 20-23,56-57
+sandbox/Dockerfile
+  s_ec5b4d773b50bb::t_01d26751008df5 1-5,7-17
+sandbox/egress/Dockerfile
+  s_ec5b4d773b50bb::t_fa6ae7e8893d9e 1-7
+scripts/build-egress.mjs
+  s_ec5b4d773b50bb::t_d9c0f4bba61ae3 1-2
+src/mastra/agents/agent.ts
+  s_ec5b4d773b50bb::t_7a2da8d4833c72 86-87
+src/mastra/index.ts
+  s_ec5b4d773b50bb::t_28f4f60d56b173 13-14,72,100
+src/mastra/sandbox/docker/client.ts
+  s_ec5b4d773b50bb::t_6bfc1bfebefbd9 7-9,11,17,50,81
+src/mastra/sandbox/docker/config.ts
+  s_ec5b4d773b50bb::t_db9fe8126cc028 1,25-26,45,54,70,74
+src/mastra/sandbox/docker/network-state.ts
+  s_ec5b4d773b50bb::t_7a8c824576503a 1-9
+src/mastra/sandbox/docker/provider.ts
+  s_ec5b4d773b50bb::t_04709af45e4595 6-9,21,26-76,78-93,123-124
+src/mastra/sandbox/factory.ts
+  s_ec5b4d773b50bb::t_42a11e140f4f65 10-11,26-29,55-59
+src/mastra/sandbox/manager.ts
+  s_ec5b4d773b50bb::t_09b6e92077887b 1-3,24-29,47-53,57,61
+src/mastra/sandbox/network/docker-engine.ts
+  s_ec5b4d773b50bb::t_373b4c069d4eb0 1-38
+src/mastra/sandbox/network/main.ts
+  s_ec5b4d773b50bb::t_7c2e0eb6ab7ce3 1-3
+src/mastra/sandbox/network/manager.ts
+  s_ec5b4d773b50bb::t_2b8ca866685460 1-133
+src/mastra/sandbox/network/policy.ts
+  s_ec5b4d773b50bb::t_217fd18da30173 1-29
+src/mastra/sandbox/network/proxy.ts
+  s_ec5b4d773b50bb::t_bdbce57863b56f 1-66
+src/mastra/sandbox/runtime-config.ts
+  s_ec5b4d773b50bb::t_413d9ea1289086 1-13
+src/mastra/sandbox/task-runtime.ts
+  s_ec5b4d773b50bb::t_dbd75e6295ae05 1-64
+src/mastra/sandbox/tool.ts
+  s_ec5b4d773b50bb::t_a8e62f1b38f06f 9,47-61,69
+src/mastra/sandbox/types.ts
+  s_ec5b4d773b50bb::t_10a481db666202 23
+src/mastra/skills/factory.ts
+  s_ec5b4d773b50bb::t_e97b0f3fef3607 1-3,94-101
+src/mastra/skills/materialize.ts
+  s_ec5b4d773b50bb::t_ac11c6e4abb033 1-52
+src/mastra/skills/package.ts
+  s_ec5b4d773b50bb::t_79daed80184f24 55
+src/mastra/skills/runtime.ts
+  s_ec5b4d773b50bb::t_256825608d7697 5,24-25
+src/mastra/skills/script-container.ts
+  s_ec5b4d773b50bb::t_89132067bf236f 1,22,31,101,133
+src/mastra/skills/script-runner.ts
+  s_ec5b4d773b50bb::t_484c6286f7728a 1-5,35,74,208,228-246,306-308,310,319,327-333,337,341,348
+src/mastra/skills/service.ts
+  s_ec5b4d773b50bb::t_c2d8131b62b66a 1,88,262-264,520,562
+src/mastra/skills/tools.ts
+  s_ec5b4d773b50bb::t_f2817e74a70a91 189,231-242
+src/mastra/skills/types.ts
+  s_ec5b4d773b50bb::t_1074df7a3ef6f1 3
+tests/docker-sandbox.integration.test.ts
+  s_ec5b4d773b50bb::t_59112cd8226d85 188-198
+tests/sandbox-bash.test.ts
+  s_ec5b4d773b50bb::t_f507bacbe2c1a2 1-47
+tests/sandbox-egress-policy.test.ts
+  s_ec5b4d773b50bb::t_6ebf9efbb66b51 1-18
+tests/sandbox-egress-proxy.test.ts
+  s_ec5b4d773b50bb::t_33017c0a4f194a 1-24
+tests/sandbox-network-manager.test.ts
+  s_ec5b4d773b50bb::t_39dbcdc017edfa 1-27
+tests/sandbox-provision-rollback.test.ts
+  s_ec5b4d773b50bb::t_c3ffafcbe00d50 1-32
+tests/sandbox-public.integration.test.ts
+  s_ec5b4d773b50bb::t_9fe8e5516452a9 1-108
+tests/sandbox-task-runtime.test.ts
+  s_ec5b4d773b50bb::t_e78c4119111fbe 1-34
+tests/skills-materialize.test.ts
+  s_ec5b4d773b50bb::t_d5e68c21a78c91 1-65
+tests/skills-script-runner.test.ts
+  s_ec5b4d773b50bb::t_3b13bf88ac5218 262-264,282
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5dc387404f1193644593b766d46fec06a9ad905c",
+  "prompts": {},
+  "sessions": {
+    "s_ec5b4d773b50bb": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ef14e613-31f2-4d5b-8aed-ae90b561d2d3",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
