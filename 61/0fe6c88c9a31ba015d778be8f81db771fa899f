@@ -1,0 +1,32 @@
+src/mastra/agents/turn-policy-processor.ts
+  s_b64514dd091221::t_7081b04e4f5cc0 24
+  s_b64514dd091221::t_9a22d328d27e6e 1-11,13-16,18-23,25-51,53
+  s_b64514dd091221::t_28fce05aa7e2fa 12,17,52
+tests/turn-policy.test.ts
+  s_b64514dd091221::t_e627b6d2dc4254 1-29
+tests/chart-delivery.integration.test.ts
+  s_b64514dd091221::t_0a762dba2dfde5 24
+  s_b64514dd091221::t_c3cbb702c53fd1 1-23,25-31
+src/mastra/agents/turn-policy.ts
+  s_b64514dd091221::t_06d1d83440ff85 1-47
+docs/superpowers/plans/2026-10-21-agent-chart-execution-quality.md
+  s_b64514dd091221::t_e7105474b17751 15
+src/mastra/agents/agent.ts
+  s_b64514dd091221::t_65348a536d5871 8,59-60,94,106-107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "610fe6c88c9a31ba015d778be8f81db771fa899f",
+  "prompts": {},
+  "sessions": {
+    "s_b64514dd091221": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15936-a458-79d1-b9aa-5807fd10438c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
