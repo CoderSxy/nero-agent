@@ -1,0 +1,32 @@
+tests/run-progress.test.ts
+  s_b64514dd091221::t_dafee281bdf698 7,11,17-22
+  s_b64514dd091221::t_8d2bf72bce4f1b 1-6,8-10,12-16
+src/mastra/agents/run-progress.ts
+  s_b64514dd091221::t_d0b0be3cebc596 1-31
+src/mastra/agents/turn-messages.ts
+  s_b64514dd091221::t_8ec0e2838134f9 1-7
+src/mastra/agents/turn-policy-processor.ts
+  s_b64514dd091221::t_db96ac16589da3 2-3,17-27,30-32,41-46
+tests/chart-delivery.integration.test.ts
+  s_b64514dd091221::t_a82dd6c75e8df5 32-37
+tests/run-progress.integration.test.ts
+  s_b64514dd091221::t_91026d7e037aaa 1-17
+tests/turn-policy.test.ts
+  s_b64514dd091221::t_6b138ba19fdc9a 30-34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5fa30a75a1e4ce1713217fcfe780b128708c8e84",
+  "prompts": {},
+  "sessions": {
+    "s_b64514dd091221": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15936-a458-79d1-b9aa-5807fd10438c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
