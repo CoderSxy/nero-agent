@@ -3,6 +3,10 @@ import type { DockerEngine } from './client';
 import type { SandboxProvider } from '../provider';
 import type { SandboxRegistry } from '../registry';
 import type { SandboxCommandResult, SandboxExecuteOptions, SandboxInspect, SandboxOwner } from '../types';
+import { getSandboxRuntimeConfig, runtimeFingerprint } from '../runtime-config';
+import { sandboxNetworkManager, type SandboxNetworkManager } from '../network/manager';
+import { networkAttachmentsMatch } from './network-state';
+import { assertSandboxImage } from './config';
 import { sandboxMaxConcurrent } from '../../workspace/config';
 
 const USER_LABEL = 'nero.sandbox.user';
@@ -14,39 +18,80 @@ export class DockerSandboxProvider implements SandboxProvider {
   constructor(
     private readonly engine: DockerEngine,
     private readonly registry: SandboxRegistry,
+    private readonly networks?: SandboxNetworkManager,
   ) {}
 
   async ensureRunning(owner: SandboxOwner, workspaceRoot: string): Promise<SandboxInspect> {
     return this.withProvisionLock(() => this.withLock(owner.userId, async () => {
-      const existing = await this.reconcile(owner, workspaceRoot);
-      if (existing?.status === 'running' && existing.containerId) {
-        await this.registry.upsert({ ...existing, lastActiveAt: Date.now() });
+      let existing = await this.reconcile(owner, workspaceRoot);
+      const assertCapacity = async () => {
+        const running = (await this.engine.findLabeled('nero.sandbox', '1')).filter(c => c.State.Running).length;
+        if (running >= sandboxMaxConcurrent()) throw new Error('Running sandbox limit reached');
+      };
+      // Reject new/restarting users before allocating a proxy or either network.
+      if (existing?.status !== 'running') await assertCapacity();
+      const config = getSandboxRuntimeConfig();
+      const image = assertSandboxImage();
+      const fingerprint = runtimeFingerprint(image);
+      let networks: SandboxNetworkManager | undefined;
+      let attemptedContainer: string | undefined;
+      try {
+        networks = config.networkMode === 'public-http' ? (this.networks ?? await sandboxNetworkManager()) : undefined;
+        const network = await networks?.ensure(owner);
+        if (existing?.containerId) {
+          const info = await this.engine.inspect(existing.containerId);
+          const old = info?.Config?.Labels?.['nero.sandbox.fingerprint'];
+          const expectedImage = await this.engine.resolveImageId?.(image);
+          if ((expectedImage && info?.Image !== expectedImage)
+            || !networkAttachmentsMatch(info, [network?.networkId ?? 'none'])
+            || (old && old !== fingerprint)
+            || (!old && (config.networkMode !== 'none' || config.dependenciesEnabled || config.bashEnabled))
+            || (info?.HostConfig?.NetworkMode ?? 'none') !== (network?.networkId ?? 'none')) {
+            await this.engine.remove(existing.containerId, true);
+            await this.registry.clearContainer(owner, 'missing');
+            existing = undefined;
+          }
+        }
+        if (existing?.status === 'running' && existing.containerId) {
+          await this.registry.upsert({ ...existing, lastActiveAt: Date.now() });
+          return { sandboxId: owner.sandboxId, status: 'running', workspaceRoot };
+        }
+        await assertCapacity();
+        if (existing?.status === 'stopped' && existing.containerId) {
+          attemptedContainer = existing.containerId;
+          await this.engine.start(existing.containerId);
+          await this.registry.upsert({ ...existing, status: 'running', lastActiveAt: Date.now() });
+          return { sandboxId: owner.sandboxId, status: 'running', workspaceRoot };
+        }
+        const options = dockerSandboxCreateOptions(workspaceRoot, {
+          [USER_LABEL]: owner.userId,
+          'nero.sandbox.id': owner.sandboxId,
+          'nero.sandbox.fingerprint': fingerprint,
+        }, network);
+        validateDockerCreateConfig(options, workspaceRoot, network);
+        const created = await this.engine.create(options);
+        attemptedContainer = created.id;
+        await this.engine.start(created.id);
+        await this.registry.upsert({ userId: owner.userId, sandboxId: owner.sandboxId,
+          containerId: created.id, status: 'running', workspaceRoot, lastActiveAt: Date.now() });
         return { sandboxId: owner.sandboxId, status: 'running', workspaceRoot };
+      } catch (error) {
+        if (attemptedContainer) {
+          try {
+            await this.engine.remove(attemptedContainer, true);
+            await this.registry.clearContainer(owner, 'missing');
+          } catch (cleanupError) { console.error('Sandbox provisioning rollback failed', cleanupError); }
+        }
+        if (networks) {
+          // The caller's commandQueue entry must finish before removeIdle checks busy state.
+          // Other active commands/skill containers still protect the user's shared egress.
+          const cleanup = networks;
+          setImmediate(() => void cleanup.removeIdle(owner).catch(cleanupError => {
+            console.error('Sandbox egress rollback failed', cleanupError);
+          }));
+        }
+        throw error;
       }
-      const running = (await this.engine.findLabeled('nero.sandbox', '1'))
-        .filter(container => container.State.Running).length;
-      if (running >= sandboxMaxConcurrent()) throw new Error('Running sandbox limit reached');
-      if (existing?.status === 'stopped' && existing.containerId) {
-        await this.engine.start(existing.containerId);
-        await this.registry.upsert({ ...existing, status: 'running', lastActiveAt: Date.now() });
-        return { sandboxId: owner.sandboxId, status: 'running', workspaceRoot };
-      }
-      const options = dockerSandboxCreateOptions(workspaceRoot, {
-        [USER_LABEL]: owner.userId,
-        'nero.sandbox.id': owner.sandboxId,
-      });
-      validateDockerCreateConfig(options, workspaceRoot);
-      const created = await this.engine.create(options);
-      await this.engine.start(created.id);
-      await this.registry.upsert({
-        userId: owner.userId,
-        sandboxId: owner.sandboxId,
-        containerId: created.id,
-        status: 'running',
-        workspaceRoot,
-        lastActiveAt: Date.now(),
-      });
-      return { sandboxId: owner.sandboxId, status: 'running', workspaceRoot };
     }));
   }
 
@@ -75,6 +120,8 @@ export class DockerSandboxProvider implements SandboxProvider {
       const record = await this.registry.getByUser(owner.userId);
       if (record?.containerId) await this.engine.remove(record.containerId, true);
       await this.registry.clearContainer(owner, 'missing');
+      if(this.networks)await this.networks.removeIdle(owner);
+      else if(this.engine.resolveImageId)await (await sandboxNetworkManager()).removeIdle(owner);
     });
   }
 

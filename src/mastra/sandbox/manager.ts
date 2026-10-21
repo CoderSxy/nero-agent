@@ -1,3 +1,6 @@
+import { prepareTaskRuntime } from './task-runtime';
+import { sandboxNetworkManager } from './network/manager';
+import { getSandboxRuntimeConfig } from './runtime-config';
 import type { ThreadLookup } from '../auth/thread-guard';
 import { assertThreadOwned } from '../auth/thread-guard';
 import { isSandboxCommandsEnabled, sandboxCommandTimeoutMs } from '../workspace/config';
@@ -18,6 +21,12 @@ export class SandboxManager {
     return { userId, sandboxId: sandboxIdFor(userId) };
   }
 
+  async executeBash(request: Pick<ExecutionRequest, 'auth' | 'threadId' | 'abortSignal'> & { script: string }): Promise<SandboxCommandResult> {
+    if (!getSandboxRuntimeConfig().bashEnabled) throw new Error('Bash execution is disabled');
+    if (!request.script || request.script.includes('\0') || Buffer.byteLength(request.script, 'utf8') > 65536) throw new Error('Invalid Bash script (maximum 64KiB)');
+    return this.execute({ ...request, command: 'bash', args: ['--noprofile', '--norc', '-c', request.script] });
+  }
+
   async execute(request: ExecutionRequest): Promise<SandboxCommandResult> {
     if (!isSandboxCommandsEnabled()) {
       throw new Error('Sandbox commands are disabled');
@@ -35,12 +44,21 @@ export class SandboxManager {
       request.threadId,
       async () => {
         await this.provider.ensureRunning(owner, root);
+        const config=getSandboxRuntimeConfig();
+        const runtime=(config.bashEnabled||config.dependenciesEnabled||config.networkMode==='public-http')?await prepareTaskRuntime({
+          execute:(cmd,args,opts)=>this.provider.execute(owner,cmd,args,opts),cwd:containerPath,
+          imageDigest:process.env.SANDBOX_IMAGE??'',dependenciesEnabled:config.dependenciesEnabled,
+          proxyUrl:config.networkMode==='public-http'?(await (await sandboxNetworkManager()).ensure(owner)).proxyUrl:undefined,
+          abortSignal:request.abortSignal,
+        }):undefined;
         const started = Date.now();
         const result = await this.provider.execute(owner, request.command, request.args, {
           cwd: containerPath,
+          env: runtime?.env,
           timeoutMs: sandboxCommandTimeoutMs(),
           abortSignal: request.abortSignal,
         });
+        if(runtime?.warnings.length)result.stderr=[...runtime.warnings,result.stderr].filter(Boolean).join('\n');
         commandAuditSummary({
           userId: request.auth.userId,
           threadId: request.threadId,

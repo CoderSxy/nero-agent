@@ -1,6 +1,6 @@
 import type { AuthContext } from '../auth/auth-context';
 
-export type SkillRuntimeNetwork = 'none' | 'server-tools';
+export type SkillRuntimeNetwork = 'none' | 'server-tools' | 'public';
 
 export type SkillRuntimeManifest = {
   schemaVersion: 1;

@@ -1,3 +1,8 @@
+import { getSandboxRuntimeConfig } from '../sandbox/runtime-config';
+import { sandboxNetworkManager } from '../sandbox/network/manager';
+import { sandboxIdFor } from '../sandbox/types';
+import { prepareTaskRuntime } from '../sandbox/task-runtime';
+import { materializeSkillExecution } from './materialize';
 import { readdir } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import type { ThreadLookup } from '../auth/thread-guard';
@@ -27,7 +32,7 @@ const MAX_ARGS_TOTAL_BYTES = 16 * 1024;
 const OUTPUT_TRUNCATE_BYTES = 64 * 1024;
 const DEFAULT_TIMEOUT_MS = 60_000;
 const MAX_TIMEOUT_MS = 120_000;
-const SHELL_META_RE = /[;&|`$<>\\\n\r]/
+const SHELL_META_RE = /[\0]/
 
 const INTERPRETERS = {
   python3: 'python3',
@@ -66,6 +71,7 @@ export type SkillScriptRunnerDeps = {
 };
 
 export type SkillScriptRunner = {
+  prepareResources?: (ctx: SkillExecutionContext, skillName: string, signal?: AbortSignal) => Promise<SkillResult<{containerPath:string;manifestHash:string}>>;
   execute: (
     ctx: SkillExecutionContext,
     input: SkillScriptExecuteInput,
@@ -199,6 +205,7 @@ async function listThreadRelativeArtifacts(threadHostPath: string): Promise<stri
     for (const entry of entries) {
       const abs = join(dir, entry.name);
       if (entry.isDirectory()) {
+        if(entry.name==='.runtime'||entry.name==='node_modules'||entry.name==='.venv'||entry.name.startsWith('node_modules.incompatible-'))continue;
         await walk(abs);
       } else if (entry.isFile()) {
         out.push(relative(threadHostPath, abs).replace(/\\/g, '/'));
@@ -218,6 +225,25 @@ export function createSkillScriptRunner(deps: SkillScriptRunnerDeps): SkillScrip
   );
 
   return {
+    async prepareResources(ctx, skillName, signal) {
+      if(!isSkillScriptExecutionEnabled())return fail('RUNTIME_UNAVAILABLE','Skill execution unavailable');
+      assertHostQuotaReady();
+      const resolved=await deps.resolve(ctx,skillName);if(!resolved.ok)return resolved;
+      const task=await ensureThreadDirectory(ctx.auth,ctx.threadId,deps.lookup);
+      const workspaceRoot=await ensureUserWorkspace(ctx.auth);
+      return queue.run(ctx.auth.userId,ctx.threadId,async()=>{
+        const options=createSkillScriptContainerOptions({workspaceRoot,releaseRoot:resolved.data.releaseRoot,imageDigest:deps.imageDigest,labels:{[`${SKILL_SCRIPT_RUN_LABEL}.user`]:ctx.auth.userId,[`${SKILL_SCRIPT_RUN_LABEL}.skill`]:resolved.data.pin.skillId}});
+        validateSkillScriptContainerOptions(options,{workspaceRoot,releaseRoot:resolved.data.releaseRoot});
+        let containerId:string|undefined;
+        try {
+          const created=await deps.engine.create(options);containerId=created.id;await deps.engine.start(containerId);
+          const copy=await materializeSkillExecution({pin:resolved.data.pin,taskContainerRoot:task.containerPath,abortSignal:signal,execute:(cmd,args,opts)=>deps.engine.exec(containerId!,cmd,args,opts)});
+          return {ok:true as const,skill:resolved.data.pin,data:{containerPath:copy.containerRoot,manifestHash:resolved.data.pin.manifestHash}};
+        } finally {
+          if(containerId)await destroyWithRetry(deps.engine,containerId,removeRetries);
+        }
+      },signal);
+    },
     async execute(ctx, input, signal) {
       if (!isSkillScriptExecutionEnabled()) {
         return fail('RUNTIME_UNAVAILABLE', 'Skill script execution is unavailable');
@@ -277,7 +303,11 @@ export function createSkillScriptRunner(deps: SkillScriptRunnerDeps): SkillScrip
               return fail('ABORTED', 'Skill script execution was cancelled');
             }
 
+            const runtimeConfig=getSandboxRuntimeConfig();
+            const network=runtimeManifest?.network==='public'
+              ? await (await sandboxNetworkManager()).ensure({userId:ctx.auth.userId,sandboxId:sandboxIdFor(ctx.auth.userId)}) : undefined;
             const options = createSkillScriptContainerOptions({
+              network,
               workspaceRoot,
               releaseRoot,
               labels: {
@@ -286,7 +316,7 @@ export function createSkillScriptRunner(deps: SkillScriptRunnerDeps): SkillScrip
               },
               imageDigest: deps.imageDigest,
             });
-            validateSkillScriptContainerOptions(options, { workspaceRoot, releaseRoot });
+            validateSkillScriptContainerOptions(options, { workspaceRoot, releaseRoot, network });
 
             let containerId: string | undefined;
             try {
@@ -294,21 +324,28 @@ export function createSkillScriptRunner(deps: SkillScriptRunnerDeps): SkillScrip
               containerId = created.id;
               await deps.engine.start(containerId);
 
-              const containerScript = `/skill/${scriptPath}`;
+              const advanced=runtimeConfig.dependenciesEnabled||network;
+              const runtime=advanced?await prepareTaskRuntime({execute:(cmd,args,opts)=>deps.engine.exec(containerId!,cmd,args,opts),cwd:containerPath,imageDigest:deps.imageDigest,dependenciesEnabled:runtimeConfig.dependenciesEnabled,proxyUrl:network?.proxyUrl,abortSignal:signal}):undefined;
+              let containerScript = `/skill/${scriptPath}`;
+              if(interpreter==='node'&&runtimeConfig.dependenciesEnabled){
+                const copy=await materializeSkillExecution({pin,taskContainerRoot:containerPath,abortSignal:signal,execute:(cmd,args,opts)=>deps.engine.exec(containerId!,cmd,args,opts)});
+                containerScript=copy.entrypoint(scriptPath);
+              }
               // Argv form only — never compose a shell command string.
               const result = await deps.engine.exec(
                 containerId,
-                interpreter,
+                interpreter==='python3'&&runtime ? runtime.python : interpreter,
                 [containerScript, ...args],
                 {
                   cwd: containerPath,
+                  env: runtime?.env,
                   timeoutMs,
                   abortSignal: signal,
                 },
               );
 
               const stdout = truncate(result.stdout ?? '');
-              const stderr = truncate(result.stderr ?? '');
+              const stderr = truncate([...(runtime?.warnings??[]),result.stderr??''].filter(Boolean).join('\n'));
               const after = await listThreadRelativeArtifacts(threadHostPath);
               const artifactRelativePaths = after.filter((p) => !before.has(p));
 

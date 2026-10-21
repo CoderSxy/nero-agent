@@ -35,3 +35,6 @@
 8. 回滚：关闭 feature flag，停止带 `nero.sandbox=1` 标签的容器，保留表和 `/data/mastra/users`。
 
 管理员旧 `workspace/` 不得自动映射到普通用户。使用 `node scripts/migrate-admin-workspace.mjs` 列出文件并等待确认。
+
+
+通用 Bash、公开网络与任务依赖环境的新增配置、目标宿主验收和回滚见 [部署说明](sandbox-public-network.md)。本次未修改 ECS 上的开关或部署。

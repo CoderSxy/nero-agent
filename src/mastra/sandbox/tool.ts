@@ -6,6 +6,7 @@ import type { Mastra } from '@mastra/core/mastra';
 import type { RequestContext } from '@mastra/core/request-context';
 import { isSandboxCommandsEnabled } from '../workspace/config';
 import { sandboxProvider } from './factory';
+import { getSandboxRuntimeConfig } from './runtime-config';
 import { SandboxManager } from './manager';
 
 const commandInput = z.object({
@@ -43,6 +44,21 @@ export function createExecuteCommandTool(managerFactory?: (lookup: ThreadLookup)
   });
 }
 
+export function createExecuteBashTool(managerFactory?: (lookup: ThreadLookup) => SandboxManager) {
+  return createTool({
+    id: 'execute_bash',
+    description: '在当前会话目录执行完整 Bash 脚本，支持管道、变量、重定向和多行。每次是新 shell；文件与任务依赖保留，export/cd 不跨调用保留。不得传入 userId/cwd。',
+    inputSchema: z.object({ threadId: z.string().min(1), script: z.string().min(1).max(65536) }),
+    execute: async (input, context) => {
+      const auth = trustedAuth(context.requestContext);
+      const lookup = await memoryLookup(context);
+      const manager = managerFactory?.(lookup) ?? new SandboxManager(await sandboxProvider(), lookup);
+      return manager.executeBash({ auth, ...input, abortSignal: context.abortSignal });
+    },
+  });
+}
+export const executeBashTool = createExecuteBashTool();
+
 export const executeCommandTool = createExecuteCommandTool();
 
 export function sandboxTools() {
@@ -50,5 +66,5 @@ export function sandboxTools() {
     && process.env.SANDBOX_PROVIDER === 'docker'
     && process.env.WORKSPACE_HOST_QUOTA_VERIFIED === 'true'
     && process.env.SANDBOX_FILE_WRITE_ENABLED === 'true'
-    ? { execute_command: executeCommandTool } : {};
+    ? { execute_command: executeCommandTool, ...(getSandboxRuntimeConfig().bashEnabled ? { execute_bash: executeBashTool } : {}) } : {};
 }

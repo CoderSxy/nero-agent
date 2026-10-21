@@ -2,7 +2,7 @@
 
 日期：2026-10-20。依据：用户提供的 Cursor 对话、nero-agent 当前源码、参考项目本地源码、Agent Skills 官方规范及本项目已安装 Mastra 文档。
 
-更新：用户已明确将 Bash、公开网络、任务内安装依赖作为正式需求。下文保留原分析过程，但其中“默认离线、运行时不安装依赖”的推荐已被 [新版正式设计](superpowers/specs/2026-10-20-sandbox-public-network-design.md) 替代。新版设计尚待评审，运行代码尚未实现这些变更。
+更新：用户已明确将 Bash、公开网络、任务内安装依赖作为正式需求。下文保留原分析过程，但其中“默认离线、运行时不安装依赖”的推荐已被 [新版正式设计](superpowers/specs/2026-10-20-sandbox-public-network-design.md) 替代。新版设计已获用户确认；代码和验证情况见 [验收记录](sandbox-public-network-verification.md)。
 
 本文是分析与建议，不表示能力已实现或已经验收。未修改运行代码，未运行 PPT 包。用户未提供 ppt-master.zip，因此不对其具体依赖和执行结果作保证。
 
