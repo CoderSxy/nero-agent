@@ -4,15 +4,17 @@ import type Docker from 'dockerode';
 
 export type DockerInspect = {
   Id: string;
+  Image?: string;
   Created?: string | number;
   NetworkSettings?: { Networks?: Record<string,unknown> };
   State: { Running: boolean; Status: string };
-  Config?: { Labels?: Record<string, string>; User?: string };
+  Config?: { Labels?: Record<string, string>; User?: string; Image?:string };
   HostConfig?: DockerCreateOptions['HostConfig'];
   Mounts?: Array<{ Source: string; Destination: string }>;
 };
 
 export interface DockerEngine {
+  resolveImageId?(image: string): Promise<string>;
   create(options: DockerCreateOptions): Promise<{ id: string }>;
   start(id: string): Promise<void>;
   inspect(id: string): Promise<DockerInspect | null>;
@@ -45,6 +47,7 @@ export async function createDockerodeEngine(dockerInstance?: Docker): Promise<Do
   const { default: DockerConstructor } = await import('dockerode');
   const docker = dockerInstance ?? new DockerConstructor();
   return {
+    async resolveImageId(image){const ref=await resolveImageRef(docker,image);return (await docker.getImage(ref!).inspect()).Id},
     async create(options) {
       const Image = await resolveImageRef(docker, options.Image);
       const container = await docker.createContainer({ ...options, Image });

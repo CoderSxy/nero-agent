@@ -83,6 +83,8 @@ ${isUserFilesEnabled() ? `用户要求保存 Markdown、HTML 或其他文本到�
 
 用户消息中若列出附件 ID 与名称，使用 read_attached_file({ attachmentId }) 读取；不要猜测工作区路径，也不要用 glob/grep/edit 的 path 传附件 ID。文本附件返回内容；图片仅在当前模型支持视觉时可读。` : '当前环境文件功能未开放。用户要求读写工作区文件时，明确说明暂不可用；不要调用无关工具代替文件操作。'}
 
+执行脚本时：execute_command 使用 command + args；execute_bash 支持完整 Bash 语法。每次都是新进程，export、source、cd 不会跨调用保留。启用任务依赖环境后，Python 已使用当前会话的虚拟环境，安装用 python -m pip install；Node 依赖在当前会话目录 npm install，不用 sudo、apt 或系统全局安装。公开 HTTP/HTTPS 出口仅在管理员配置就绪时可用，尊重工具返回的网络错误，不尝试绕过。需要使用技能脚本或模板时，先 prepare_skill_resources 获取容器路径；不要猜 /primeai 等其他平台路径。退出码非零或没有预期产物时不得宣称成功。
+
 ${chartInstructions}
 `,
   model: async ({ requestContext }) => createTransportModel((await resolveSelectedModel(requestContext, 'chat')).config),

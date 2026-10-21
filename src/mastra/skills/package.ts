@@ -52,7 +52,7 @@ const UNIX_S_IFBLK = 0o060000;
 const UNIX_S_IFIFO = 0o010000;
 const UNIX_S_IFSOCK = 0o140000;
 
-const RUNTIME_NETWORKS = new Set(['none', 'server-tools']);
+const RUNTIME_NETWORKS = new Set(['none', 'server-tools', 'public']);
 const RUNTIME_RUNTIMES = new Set(['python3', 'node', 'bash']);
 
 function unixModeOf(entry: Entry): number {

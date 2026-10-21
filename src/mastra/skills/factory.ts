@@ -1,3 +1,6 @@
+import { sandboxTools } from '../sandbox/tool';
+import { isUserFilesEnabled } from '../files/policy';
+import { userFileTools } from '../files/tools';
 import { getPool } from '../auth/db';
 import type { ThreadLookup } from '../auth/thread-guard';
 import type { Mastra } from '@mastra/core/mastra';
@@ -88,7 +91,14 @@ export function getSkillRuntime(): SkillRuntimeBundle {
   const blobStore = createBlobStore({ root });
   const releaseStore = createReleaseStore({ root, blobStore });
   const versionService = createSkillVersionService({ repository, blobStore, releaseStore, pool });
-  const service = createSkillService({ repository, blobStore, releaseStore, versionService, pool });
+  const service = createSkillService({ repository, blobStore, releaseStore, versionService, pool,
+    registeredToolIds:actor=>[
+      'ask_user','web_fetch','web_search','skill','skill_read','skill_search',
+      ...(isUserFilesEnabled()?Object.keys(userFileTools):[]),...Object.keys(sandboxTools()),
+      ...(isSkillScriptExecutionEnabled()?['run_skill_script','prepare_skill_resources']:[]),
+      ...(actor.roles.includes('admin')?['start_schedule','stop_schedule']:[]),
+    ],
+  });
 
   const processor = createSkillProcessor({ service, repository });
   const onActivation = (event: SkillActivationEvent, requestContext: RequestContext) => {

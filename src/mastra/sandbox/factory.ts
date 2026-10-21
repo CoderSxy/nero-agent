@@ -7,6 +7,8 @@ import {
   cleanupOrphanSkillScriptContainers,
   startSandboxCleanup,
 } from './cleaner';
+import { sandboxNetworkManager } from './network/manager';
+import { isSandboxCommandsEnabled } from '../workspace/config';
 import { commandQueue } from './execution-queue';
 
 let shared: SandboxProvider | undefined;
@@ -21,7 +23,10 @@ export async function sandboxProvider(): Promise<SandboxProvider> {
   initializing = (async () => {
     const registry = new SandboxRegistry();
     const engine = await createDockerodeEngine();
-    const provider = new DockerSandboxProvider(engine, registry);
+    // Restore cleanup even after switching back to offline mode.
+    const networks=await sandboxNetworkManager();
+    await networks.sweep();
+    const provider = new DockerSandboxProvider(engine, registry, networks);
     const cleaner = new SandboxCleaner(
       provider,
       registry,
@@ -46,4 +51,9 @@ export async function sandboxProvider(): Promise<SandboxProvider> {
   } finally {
     initializing = undefined;
   }
+}
+
+export function startSandboxReconcile():void {
+  if(isSandboxCommandsEnabled()&&process.env.SANDBOX_PROVIDER==='docker')
+    void sandboxProvider().catch(error=>console.error('Sandbox reconciliation failed',error));
 }

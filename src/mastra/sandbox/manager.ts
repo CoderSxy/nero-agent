@@ -58,6 +58,7 @@ export class SandboxManager {
           timeoutMs: sandboxCommandTimeoutMs(),
           abortSignal: request.abortSignal,
         });
+        if(runtime?.warnings.length)result.stderr=[...runtime.warnings,result.stderr].filter(Boolean).join('\n');
         commandAuditSummary({
           userId: request.auth.userId,
           threadId: request.threadId,

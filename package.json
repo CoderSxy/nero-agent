@@ -18,7 +18,9 @@
     "db:local:setup": "node scripts/setup-local-postgres.mjs",
     "db:import:libsql": "node --env-file-if-exists=.env --import tsx scripts/import-libsql.ts",
     "user:create": "node --env-file-if-exists=.env --import tsx scripts/create-user.ts",
-    "build:egress": "node node_modules/esbuild/bin/esbuild src/mastra/sandbox/network/main.ts --bundle --platform=node --format=esm --outfile=sandbox/egress/dist/proxy.mjs"
+    "build:egress": "node scripts/build-egress.mjs",
+    "test:sandbox:public": "SANDBOX_PUBLIC_INTEGRATION=true node --import tsx --test tests/sandbox-public.integration.test.ts",
+    "test:sandbox:runtime": "SANDBOX_RUNTIME_INTEGRATION=true node --import tsx --test tests/sandbox-public.integration.test.ts"
   },
   "keywords": [],
   "author": "",
@@ -51,6 +53,7 @@
     "concurrently": "9.2.0",
     "mastra": "1.31.3",
     "tsx": "^4.21.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "esbuild": "0.28.2"
   }
 }

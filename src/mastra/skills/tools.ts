@@ -186,7 +186,7 @@ export function createSkillTools(deps: SkillToolsDeps): ToolsInput {
     const run_skill_script = createTool({
       id: 'run_skill_script',
       description:
-        'Run an allowed entrypoint under scripts/ for a pinned skill inside an isolated network-none container. Pass path + args only — never hostPath, cwd, image, or shell strings.',
+        'Run an allowed entrypoint under scripts/ for a pinned skill inside an isolated container with its declared network policy and task dependencies. Pass path + args only — never hostPath, cwd, image, or shell strings.',
       inputSchema: z.object({
         skillName: z.string().min(1).max(SKILL_LIMITS.CANONICAL_NAME_MAX),
         path: z.string().min(1).max(SKILL_LIMITS.PATH_MAX_CHARS),
@@ -228,7 +228,18 @@ export function createSkillTools(deps: SkillToolsDeps): ToolsInput {
         return toolResultEnvelope(result);
       },
     });
-    return { ...tools, run_skill_script } as ToolsInput;
+    const prepare_skill_resources=createTool({
+      id:'prepare_skill_resources',
+      description:'Copy an authorized pinned skill into the current task for Bash use. Returns a container path; never a host path. Copy is writable, published original is immutable. Re-prepare restores original content.',
+      inputSchema:z.object({skillName:z.string().min(1).max(SKILL_LIMITS.CANONICAL_NAME_MAX)}),
+      execute:async(input,context)=>{
+        const {ctx}=await executionFromToolContext(deps,context);
+        const runner=deps.scriptRunner??(deps.createScriptRunner&&deps.resolveThreadLookup?await deps.createScriptRunner(await deps.resolveThreadLookup(context)):undefined);
+        if(!runner?.prepareResources)return toolResultEnvelope({ok:false,code:'RUNTIME_UNAVAILABLE',message:'Skill resources unavailable'});
+        return toolResultEnvelope(await runner.prepareResources(ctx,input.skillName,context.abortSignal));
+      },
+    });
+    return { ...tools, run_skill_script, prepare_skill_resources } as ToolsInput;
   }
 
   return tools;

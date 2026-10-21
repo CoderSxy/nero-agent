@@ -185,3 +185,14 @@ test('real docker isolation is skipped unless SANDBOX_DOCKER_INTEGRATION=true', 
   const options = dockerSandboxCreateOptions(`${process.env.WORKSPACE_ROOT}/users/${USER_A}/workspace`);
   validateDockerCreateConfig(options, `${process.env.WORKSPACE_ROOT}/users/${USER_A}/workspace`);
 });
+
+test('provider rebuilds a container attached to an unexpected additional network',async()=>{
+ process.env.SANDBOX_IMAGE=DIGEST_IMAGE;process.env.SANDBOX_NETWORK_MODE='none';
+ process.env.WORKSPACE_ROOT=await mkdtemp(join(tmpdir(),'drift-root-'));
+ const engine=new MemoryDockerEngine();const registry=new SandboxRegistry();const provider=new DockerSandboxProvider(engine,registry);
+ const owner={userId:USER_A,sandboxId:sandboxIdFor(USER_A)};const root=process.env.WORKSPACE_ROOT+'/users/'+USER_A+'/workspace';
+ await provider.ensureRunning(owner,root);const original=engine.created[0];
+ original.NetworkSettings={Networks:{none:{NetworkID:'none'},unexpected:{NetworkID:'public-net'}}};
+ await provider.ensureRunning(owner,root);
+ assert.ok(!engine.created.includes(original),'unsafe attached container must be replaced');
+});

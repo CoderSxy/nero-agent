@@ -1,3 +1,4 @@
+import { getSandboxRuntimeConfig } from '../sandbox/runtime-config';
 import type { Pool, PoolClient } from 'pg';
 import { Readable } from 'node:stream';
 import { withSkillStorageReadLock } from './storage-lock';
@@ -84,6 +85,7 @@ import {
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipWriter } from '@zip.js/zip.js';
 
 export type SkillServiceDeps = {
+  registeredToolIds?: (actor:SkillActor)=>Iterable<string>;
   repository: SkillRepository;
   blobStore: BlobStore;
   releaseStore: ReleaseStore;
@@ -257,7 +259,9 @@ function availabilityFromRuntime(
   registeredToolIds: Iterable<string> = [],
   scriptTexts?: Record<string, string>,
 ): SkillActivation['availability'] {
-  return reportSkillRuntimeCompatibility(runtime, { registeredToolIds, scriptTexts });
+  let publicNetworkAvailable=false;
+  try { publicNetworkAvailable=getSandboxRuntimeConfig().networkMode==='public-http'; } catch { /* Invalid deployment is unavailable. */ }
+  return reportSkillRuntimeCompatibility(runtime, { registeredToolIds, scriptTexts, publicNetworkAvailable });
 }
 
 function sliceTextLines(
@@ -513,7 +517,7 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
         baseUri: `skill://${pin.skillId}/${pin.version}/`,
         resources: summaries,
         hasMoreResources: files.length > SKILL_LIMITS.LOAD_RESOURCE_SUMMARY_MAX,
-        availability: availabilityFromRuntime(version.runtimeManifest),
+        availability: availabilityFromRuntime(version.runtimeManifest, deps.registeredToolIds?.(ctx.auth)??[]),
       },
     };
   }
@@ -555,7 +559,7 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
           description: description || version.description,
           version: version.version,
           userInvocable: true,
-          availability: availabilityFromRuntime(version.runtimeManifest),
+          availability: availabilityFromRuntime(version.runtimeManifest, deps.registeredToolIds?.(actor)??[]),
         });
       }
       return { items, total: page.total, page: page.page, pageSize: page.pageSize };

@@ -5,6 +5,7 @@ import type { SandboxRegistry } from '../registry';
 import type { SandboxCommandResult, SandboxExecuteOptions, SandboxInspect, SandboxOwner } from '../types';
 import { getSandboxRuntimeConfig, runtimeFingerprint } from '../runtime-config';
 import { sandboxNetworkManager, type SandboxNetworkManager } from '../network/manager';
+import { networkAttachmentsMatch } from './network-state';
 import { assertSandboxImage } from './config';
 import { sandboxMaxConcurrent } from '../../workspace/config';
 
@@ -28,9 +29,10 @@ export class DockerSandboxProvider implements SandboxProvider {
       if(existing?.containerId){
         const info=await this.engine.inspect(existing.containerId);
         const old=info?.Config?.Labels?.['nero.sandbox.fingerprint'];
+        const expectedImage=await this.engine.resolveImageId?.(assertSandboxImage());
         // Legacy offline containers have no fingerprint; replace them when advanced features turn on.
         const advanced=getSandboxRuntimeConfig();
-        if((old&&old!==fingerprint)||(!old&&(advanced.networkMode!=='none'||advanced.dependenciesEnabled||advanced.bashEnabled)) || (info?.HostConfig?.NetworkMode??'none')!==(network?.networkId??'none')){
+        if((expectedImage&&info?.Image!==expectedImage)||!networkAttachmentsMatch(info,[network?.networkId??'none'])||(old&&old!==fingerprint)||(!old&&(advanced.networkMode!=='none'||advanced.dependenciesEnabled||advanced.bashEnabled)) || (info?.HostConfig?.NetworkMode??'none')!==(network?.networkId??'none')){
           await this.engine.remove(existing.containerId,true);await this.registry.clearContainer(owner,'missing');existing=undefined;
         }
       }
@@ -92,7 +94,7 @@ export class DockerSandboxProvider implements SandboxProvider {
       if (record?.containerId) await this.engine.remove(record.containerId, true);
       await this.registry.clearContainer(owner, 'missing');
       if(this.networks)await this.networks.removeIdle(owner);
-      else if(getSandboxRuntimeConfig().networkMode==='public-http')await (await sandboxNetworkManager()).removeIdle(owner);
+      else if(this.engine.resolveImageId)await (await sandboxNetworkManager()).removeIdle(owner);
     });
   }
 

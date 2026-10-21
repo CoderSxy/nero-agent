@@ -259,8 +259,9 @@ test('script runner: no entrypoint / path outside scripts / absolute path / shel
     path: 'scripts/main.py',
     args: ['ok; rm -rf /'],
   });
-  assert.equal(shell.ok, false);
-  if (!shell.ok) assert.equal(shell.code, 'SCRIPT_NOT_ALLOWED');
+  assert.equal(shell.ok, true); // argv is literal text; shell syntax is not evaluated.
+  const nul=await runner.execute(ctx(),{skillName:'demo-skill',path:'scripts/main.py',args:['a\0b']});
+  assert.equal(nul.ok,false);
 
   const tooMany = await runner.execute(ctx(), {
     skillName: 'demo-skill',
@@ -278,7 +279,7 @@ test('script runner: no entrypoint / path outside scripts / absolute path / shel
   assert.equal(huge.ok, false);
   if (!huge.ok) assert.equal(huge.code, 'SCRIPT_NOT_ALLOWED');
 
-  assert.equal(engine.created.length, 0);
+  assert.equal(engine.created.length, 1); // only the literal-argv success creates a container.
 });
 
 test('script runner: exec uses interpreter argv (not shell -c); destroys container after', async () => {

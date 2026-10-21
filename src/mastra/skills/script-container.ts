@@ -1,3 +1,4 @@
+import type { SandboxNetworkContext } from '../sandbox/network/manager';
 import { resolve } from 'node:path';
 import {
   SANDBOX_MEMORY_BYTES,
@@ -18,6 +19,7 @@ const RELEASE_PATH_RE =
   /\/releases\/[0-9a-f-]{36}\/\d+\/[a-f0-9]{64}$/i;
 
 export type SkillScriptContainerInput = {
+  network?: SandboxNetworkContext;
   workspaceRoot: string;
   /** Absolute host path to a single verified pin release — INTERNAL ONLY. */
   releaseRoot: string;
@@ -26,6 +28,7 @@ export type SkillScriptContainerInput = {
 };
 
 export type SkillScriptContainerContext = {
+  network?: SandboxNetworkContext;
   workspaceRoot: string;
   releaseRoot: string;
 };
@@ -95,7 +98,7 @@ export function createSkillScriptContainerOptions(
     },
     HostConfig: {
       Privileged: false,
-      NetworkMode: 'none',
+      NetworkMode: input.network?.networkId ?? 'none',
       PidMode: '',
       ReadonlyRootfs: true,
       CapDrop: ['ALL'],
@@ -127,7 +130,7 @@ export function validateSkillScriptContainerOptions(
   if (options.HostConfig?.ReadonlyRootfs !== true) {
     throw new Error('Skill script root filesystem must be read-only');
   }
-  if (options.HostConfig?.NetworkMode !== 'none') {
+  if (options.HostConfig?.NetworkMode !== (context.network?.networkId ?? 'none')) {
     throw new Error('Skill script network must be none');
   }
   if (options.HostConfig?.Privileged) {

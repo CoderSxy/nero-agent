@@ -2,6 +2,7 @@ import type { SkillAvailability, SkillRuntimeManifest } from './types';
 
 export type SkillRuntimeCompatInput = {
   registeredToolIds: Iterable<string>;
+  publicNetworkAvailable?: boolean;
   /** Optional script bodies keyed by entrypoint path — used to detect bare outbound HTTP. */
   scriptTexts?: Record<string, string>;
 };
@@ -20,7 +21,8 @@ export function reportSkillRuntimeCompatibility(
   if (!runtime) return 'instructions-only';
   if (runtime.entrypoints.length === 0) return 'instructions-only';
 
-  if (runtime.network === 'server-tools') {
+  if (runtime.network === 'public' && !input.publicNetworkAvailable) return 'network-unavailable';
+  {
     const registered = new Set(input.registeredToolIds);
     if (runtime.requiredTools.some((id) => !registered.has(id))) {
       return 'missing-tools';

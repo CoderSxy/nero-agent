@@ -10,6 +10,7 @@ import {
 } from '@mastra/observability';
 import { agent } from './agents/agent';
 import { authRoutes } from './auth/routes';
+import { startSandboxReconcile } from './sandbox/factory';
 import { executeBashTool, executeCommandTool } from './sandbox/tool';
 import { startScheduleTool, stopScheduleTool } from './tools/schedule-tools';
 import { tavilySearchTool } from './tools/tavily-search-tool';
@@ -96,3 +97,4 @@ export const mastra = new Mastra({
 
 startScheduledTaskReconcile(mastra.schedules);
 startSkillsReconcile();
+startSandboxReconcile();
