@@ -15,6 +15,7 @@ import { SkillExecutionBadge } from './skills/SkillExecutionBadge';
 import { ChineseAskUser, ChineseToolApproval } from './ChineseToolInteractions';
 import { ChineseObservationComplete } from './ChineseObservationComplete';
 import { isUserMessage } from './pending-user-message';
+import './tool-row.css';
 
 type AskUserPayload = { question: string; options?: { label: string; description?: string }[];
   selectionMode?: 'single_select' | 'multi_select' };
@@ -335,7 +336,7 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
           return <div key={`${tool.id}-${index}`} className="tool-row">
           <ToolCall defaultOpen={needsApproval} status={tool.state === 'call' && isRunning ? 'running' : 'idle'}>
             <ToolCallTrigger><ToolCallHeader><Icon size={16} aria-hidden="true" />
-              <span>{label}</span>{detail && <span className="tool-detail">{detail}</span>}
+              <span className="tool-label">{label}</span>{detail && <span className="tool-detail">{detail}</span>}
               {tool.state === 'call' && isRunning && <LoaderCircle className="tool-progress" size={14} aria-hidden="true" />}
             </ToolCallHeader></ToolCallTrigger>
             <ToolCallContent><ToolCallMono copyText={summarize(tool.args)}>{summarize(tool.args)}</ToolCallMono>

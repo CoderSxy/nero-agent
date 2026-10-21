@@ -1,0 +1,23 @@
+/* Playground marks this header .inline-block after .flex, so the row is not a flex
+   container unless we set display here. CJK min-content is one character, and a long
+   nowrap URL would otherwise shrink 「读取网页」 into a tall column. */
+.tool-row [data-slot='collapsible-trigger'] > span {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.tool-row [data-slot='collapsible-trigger'] > span > svg,
+.tool-label,
+.tool-progress {
+  flex: none;
+}
+
+.tool-label {
+  white-space: nowrap;
+}
+
+.tool-detail {
+  flex: 1 1 0;
+}
