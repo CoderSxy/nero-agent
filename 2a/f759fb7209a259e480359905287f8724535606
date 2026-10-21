@@ -1,0 +1,33 @@
+.env.example
+  s_b64514dd091221::t_b7f65709e0ac42 49-55
+docs/deployment/agent-skills.md
+  s_b64514dd091221::t_0e23e4d44f273e 3-4
+docs/deployment/sandbox-public-network.md
+  s_b64514dd091221::t_10dbeb654f3298 1-76
+docs/deployment/workspace-sandbox-ecs.md
+  s_b64514dd091221::t_84441b558d53c8 38-40
+docs/sandbox-public-network-verification.md
+  s_b64514dd091221::t_e64d941bdc7e61 1-62
+docs/skill-general-capabilities-proposal.md
+  s_b64514dd091221::t_74dd77973a5942 1-166
+docs/superpowers/plans/2026-10-20-sandbox-public-network.md
+  s_b64514dd091221::t_8c66a6536ef4fb 1-156
+docs/superpowers/specs/2026-10-20-sandbox-public-network-design.md
+  s_b64514dd091221::t_9d8192fe2679d4 1-135
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2af759fb7209a259e480359905287f8724535606",
+  "prompts": {},
+  "sessions": {
+    "s_b64514dd091221": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15936-a458-79d1-b9aa-5807fd10438c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
