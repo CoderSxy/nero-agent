@@ -1,0 +1,33 @@
+docs/superpowers/plans/2026-10-21-agent-chart-execution-quality.md
+  s_b64514dd091221::t_b5a44f5ab82eac 1-141
+web/src/agent/MessageList.tsx
+  s_840ee8eaa08a6a::t_15ff9815ae4c42 18
+  s_840ee8eaa08a6a::t_a6bb41d017960c 339
+web/src/agent/tool-row.css
+  s_840ee8eaa08a6a::t_21f11d47352879 1-3
+  s_840ee8eaa08a6a::t_85ff0cdf7a559b 4-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "da3d174509e867367370953e014c5b568ade3ec8",
+  "prompts": {},
+  "sessions": {
+    "s_840ee8eaa08a6a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "34a33c99-de11-44e9-8f5b-b06d3fbe220a",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_b64514dd091221": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15936-a458-79d1-b9aa-5807fd10438c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
