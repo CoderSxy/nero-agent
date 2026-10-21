@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- 本文仅交付方案；实施沿用本会话直接执行方式，在独立 worktree 中开展，不修改当前未提交的 MessageList.tsx / tool-row.css。
+- 本文仅交付方案；实施按用户最新确认在当前工作区直接开展，不创建 worktree，不修改当前未提交的 MessageList.tsx / tool-row.css。
 - Mastra 工作前读取项目 mastra 技能，以本地已安装文档和类型为准；通过 package.json 的 dev/build 脚本运行。
 - agents/tools/workflows/scorers 在 src/mastra/index.ts 注册；新增 processor 在 Agent 的处理链显式装配。
 - 鉴权、用户/线程隔离、文件版本检查、技能 pin、取消/恢复能力保持有效。

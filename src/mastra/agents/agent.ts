@@ -5,6 +5,7 @@ import { LocalFilesystem, LocalSandbox, Workspace } from '@mastra/core/workspace
 import { temporalProcessor } from '../temporal/processor';
 import { temporalInstructions } from '../temporal/instructions';
 import { chartInstructions } from './chart-instructions';
+import { createTurnPolicyProcessor } from './turn-policy-processor';
 import { memoryForRequest } from './memory-model';
 import { startScheduleTool, stopScheduleTool } from '../tools/schedule-tools';
 import type { RequestContext } from '@mastra/core/request-context';
@@ -55,6 +56,8 @@ function isAdmin(requestContext: RequestContext): boolean {
   }
 }
 
+const turnPolicyProcessor = createTurnPolicyProcessor();
+
 export const agent = new Agent({
   id: 'agent',
   name: '智能体',
@@ -88,6 +91,7 @@ ${isUserFilesEnabled() ? `用户要求保存 Markdown、HTML 或其他文本到�
 ${chartInstructions}
 `,
   model: async ({ requestContext }) => createTransportModel((await resolveSelectedModel(requestContext, 'chat')).config),
+  maxProcessorRetries: 1,
   defaultOptions: {
     maxSteps: 100,
     autoResumeSuspendedTools: true,
@@ -99,8 +103,8 @@ ${chartInstructions}
   },
   tools: ({ requestContext }) => resolveAgentTools(requestContext),
   // App skill/skill_read/skill_search only — do NOT configure native Agent.skills auto-tools.
-  inputProcessors: [temporalProcessor, attachmentPersistenceProcessor, resolveSkillAgentProcessor()],
-  outputProcessors: [attachmentPersistenceProcessor, resolveSkillAgentProcessor()],
+  inputProcessors: [temporalProcessor, attachmentPersistenceProcessor, resolveSkillAgentProcessor(), turnPolicyProcessor],
+  outputProcessors: [attachmentPersistenceProcessor, resolveSkillAgentProcessor(), turnPolicyProcessor],
   signals: [new TaskSignalProvider()],
 });
 
