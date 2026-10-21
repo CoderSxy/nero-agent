@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>NERO AGENT — Direction B / Evidence</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#f2ebdd}
+  body{font-family:"Hiragino Sans GB","Heiti SC","Helvetica Neue",sans-serif;color:#171513}
+  .slide{position:relative;width:1920px;height:1080px;overflow:hidden;background:
+    radial-gradient(800px 500px at 92% 88%,rgba(209,72,45,.07),transparent 65%),#f2ebdd}
+  .slide::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.24;
+    background-image:linear-gradient(rgba(23,21,19,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(23,21,19,.07) 1px,transparent 1px);
+    background-size:80px 80px;mask-image:linear-gradient(160deg,black,transparent 85%)}
+  .slide::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.12;
+    background-image:radial-gradient(rgba(23,21,19,.8) .55px,transparent .55px);background-size:4px 4px}
+  .top{position:absolute;left:68px;right:68px;top:44px;display:flex;justify-content:space-between;border-top:2px solid #171513;padding-top:12px;z-index:4}
+  .brandline{font:700 18px/1 "Avenir Next",sans-serif;letter-spacing:.16em}
+  .brandline span{font-weight:500;color:#6b6252}
+  .meta{font:500 12px/1.55 "SF Mono",Menlo,monospace;color:#6b6252;letter-spacing:.05em}
+  .meta b{color:#d1482d;font-weight:600}
+  .left{position:absolute;left:68px;top:154px;width:760px;z-index:3}
+  .eyebrow{display:flex;align-items:center;gap:12px;font:500 14px/1 "SF Mono",Menlo,monospace;color:#6b6252;letter-spacing:.1em;margin-bottom:28px}
+  .eyebrow::before{content:"";width:42px;height:2px;background:#d1482d}
+  h2{margin:0;font-family:"Songti SC","STSong",serif;font-size:96px;font-weight:700;line-height:1.07;letter-spacing:-.045em}
+  h2 em{font-style:normal;color:#d1482d}
+  .quote{margin:44px 0 0;padding-left:24px;border-left:2px solid #d1482d;font-family:"Songti SC","STSong",serif;font-size:34px;line-height:1.65;color:#3e392f}
+  .quote span{display:block;margin-top:18px;font-family:"Hiragino Sans GB","Heiti SC",sans-serif;font-size:16px;line-height:1.7;color:#756b5b}
+  .table{position:absolute;right:68px;top:154px;width:900px;z-index:3;border-top:2px solid #171513}
+  .row{display:grid;grid-template-columns:150px 1fr 300px;gap:22px;padding:21px 0 19px;border-bottom:1px solid rgba(23,21,19,.25);align-items:start}
+  .row .name{font-size:24px;font-weight:650;letter-spacing:-.02em}
+  .row .name small{display:block;margin-top:6px;font:500 10px/1 "SF Mono",Menlo,monospace;color:#9a8f7c;letter-spacing:.08em}
+  .row p{margin:0;font-size:17px;line-height:1.65;color:#4e473c}
+  .row .edge{font:500 12px/1.6 "SF Mono",Menlo,monospace;color:#8b806e}
+  .row .edge b{display:block;color:#d1482d;font-weight:600;margin-bottom:5px;font-size:10px;letter-spacing:.08em}
+  .shot{position:absolute;right:68px;bottom:52px;width:900px;height:220px;border:1px solid #171513;background:#fffdf7;padding:8px;z-index:2;overflow:hidden}
+  .shot img{width:100%;height:100%;object-fit:cover;object-position:0 0;filter:grayscale(.15) saturate(.8) contrast(1.02)}
+  .shotcap{position:absolute;right:68px;bottom:22px;width:900px;display:flex;justify-content:space-between;font:500 11px/1.4 "SF Mono",Menlo,monospace;color:#7d7260;z-index:3}
+  .shotcap b{color:#d1482d}
+  .mark{position:absolute;left:68px;bottom:58px;font:500 12px/1.6 "SF Mono",Menlo,monospace;color:#8b806e;letter-spacing:.04em}
+</style>
+</head>
+<body>
+<main class="slide">
+  <header class="top"><div class="brandline">NERO <span>/ AGENT</span></div><div class="meta"><b>PRODUCT NOTES / 02</b><br>能力与边界</div></header>
+
+  <section class="left">
+    <div class="eyebrow">一间工作间</div>
+    <h2>四种证据，<br>同一个<em>会话</em>。</h2>
+    <div class="quote">“不是更会聊天。<br>是更能把事做完。”<span>这句话是产品判断，不是营销口号。它决定了界面、权限和调度的每一个取舍。</span></div>
+  </section>
+
+  <section class="table">
+    <div class="row"><div class="name">搜索<small>SEARCH / FETCH</small></div><p>把外部资料带进当前上下文，回答之后还能继续引用。</p><div class="edge"><b>边界</b>Tavily / web_fetch</div></div>
+    <div class="row"><div class="name">文件<small>WORKSPACE</small></div><p>按用户与会话落盘；查找、读取、精确编辑，写入带版本校验。</p><div class="edge"><b>边界</b>expectedEtag；功能默认关闭</div></div>
+    <div class="row"><div class="name">调度<small>CRON</small></div><p>任务按周期在隔离线程执行，管理页能看日志、暂停和恢复。</p><div class="edge"><b>边界</b>每次运行独立线程</div></div>
+    <div class="row"><div class="name">技能<small>SKILLS</small></div><p>把一套做法导入、发布、复用；对话里用斜杠命令选择。</p><div class="edge"><b>边界</b>版本、权限、发布状态</div></div>
+  </section>
+
+  <div class="shot"><img src="../assets/screenshots/desktop-management.jpg" alt="技能管理列表"></div>
+  <div class="shotcap"><span><b>图 02</b> / 技能管理：版本、权限、发布、停用</span><span>实际界面 / 1920 × 963</span></div>
+  <div class="mark">READ THE BOUNDARIES BEFORE THE FEATURES</div>
+</main>
+</body>
+</html>

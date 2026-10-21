@@ -1,0 +1,33 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>02 · Product judgment</title><link rel="stylesheet" href="base.css"><style>
+.s02-left{position:absolute;left:72px;top:158px;width:760px;z-index:4}
+.s02-left h2{margin:0;font-size:82px;line-height:1.08;letter-spacing:-.035em}
+.s02-left h2 em{font-style:normal;color:var(--accent)}
+.s02-left .body{margin-top:34px;max-width:650px}
+.s02-quote{position:absolute;left:72px;bottom:112px;width:760px;border-left:2px solid var(--accent);padding-left:22px;font-family:var(--serif);font-size:34px;line-height:1.55;color:var(--fg);z-index:4}
+.s02-quote small{display:block;margin-top:12px;font:500 16px/1.5 var(--mono);color:var(--dim);font-family:var(--mono)}
+.s02-table{position:absolute;right:72px;top:158px;width:1000px;z-index:4;border-top:1px solid var(--line)}
+.s02-head{display:grid;grid-template-columns:1fr 1fr;gap:0;padding:14px 0;border-bottom:1px solid var(--line)}
+.s02-head div{font:500 16px/1 var(--mono);letter-spacing:.08em;color:var(--dim)}
+.s02-head div:last-child{color:var(--accent)}
+.s02-row{display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid var(--line-soft);min-height:108px}
+.s02-cell{padding:20px 24px 18px 0}.s02-cell+.s02-cell{padding-left:24px;border-left:1px solid var(--line-soft)}
+.s02-cell span{display:block;font:500 16px/1.4 var(--mono);color:var(--dim);margin-bottom:8px}
+.s02-cell p{margin:0;font-size:23px;line-height:1.55;color:var(--muted);font-weight:300}
+.s02-cell.new p{color:var(--fg);font-weight:400}
+.s02-cell.new p::before{content:"";display:inline-block;width:7px;height:7px;background:var(--accent);margin-right:10px;vertical-align:middle}
+.s02-cell.old p{text-decoration:line-through;text-decoration-color:rgba(154,162,148,.45)}
+.s02-foot{position:absolute;right:72px;bottom:60px;width:1000px;font:500 16px/1.6 var(--mono);color:var(--dim);text-align:right;z-index:4}
+.s02-foot b{color:var(--accent);font-weight:500}
+</style></head><body><main class="slide">
+<header class="topbar"><div class="brand"><div class="mark">N</div><div class="brand-name">NERO <span>/ AGENT</span></div></div><div class="status"><span class="dot"></span>PRODUCT JUDGMENT / 01</div></header>
+<section class="s02-left"><div class="kicker" style="margin-bottom:30px">为什么不是另一个聊天框</div><h2>聊天框很多，<br>能留下来的<em>工作台</em><br>很少。</h2><p class="body">一次性问答解决“知道”，持续工作解决“做完”。差别不在模型，而在会话结束后，东西还在不在。</p></section>
+<div class="s02-quote">“不是再加一个聊天框，<br>而是换一种工作方式。”<small>WORKBENCH, NOT CHAT LOG</small></div>
+<section class="s02-table">
+<div class="s02-head"><div>普通对话</div><div>NERO AGENT</div></div>
+<div class="s02-row"><div class="s02-cell old"><span>SESSION</span><p>关掉页面，上下文消失</p></div><div class="s02-cell new"><span>WORKSPACE</span><p>文件留在会话工作区</p></div></div>
+<div class="s02-row"><div class="s02-cell old"><span>MEMORY</span><p>每次重新解释背景</p></div><div class="s02-cell new"><span>MEMORY</span><p>会话记忆与线程隔离</p></div></div>
+<div class="s02-row"><div class="s02-cell old"><span>SCHEDULE</span><p>任务靠人记得回来</p></div><div class="s02-cell new"><span>SCHEDULE</span><p>cron 定时任务自己跑</p></div></div>
+<div class="s02-row"><div class="s02-cell old"><span>TOOLS</span><p>搜索、文件、技能散在外部</p></div><div class="s02-cell new"><span>TOOLS</span><p>同一入口完成查、写、跑</p></div></div>
+</section>
+<div class="s02-foot"><b>结论</b> / 会话不是终点，是一张可以回来的桌面。</div>
+</main></body></html>

@@ -147,7 +147,7 @@ export function AgentShell({ user, onLogout }: { user: CurrentUser; onLogout: ()
       <header className="mobile-app-header">
         {inbox ? <button type="button" className="mobile-header-circle" aria-label="打开我的信息" onClick={() => setProfileOpen(true)}>
           {user.displayName?.charAt(0) || <UserRound size={20} />}</button>
-          : <button type="button" className="mobile-header-circle" aria-label={returnTo === '/history' ? '返回历史对话' : '返回 Inbox'}
+          : <button type="button" className="mobile-header-circle" aria-label={returnTo === '/history' ? '返回历史对话' : '返回首页'}
             onClick={() => navigate(returnTo)}><ArrowLeft size={21} /></button>}
         {threadId && <strong>{activeThread?.title || '会话'}</strong>}
         {inbox && <button type="button" className="mobile-header-circle" aria-label="搜索会话" onClick={() => navigate('/history', { state: { openSearch: true } })}><Search size={20} /></button>}

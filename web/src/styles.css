@@ -2,6 +2,8 @@
 @import '@mastra/playground-ui/style.css';
 
 html, body, #root { min-height: 100%; height: 100%; margin: 0; }
+:root { --status-warning: #d9a63c; --status-danger: #e05252; }
+.light { --status-warning: #8a6100; --status-danger: #b42318; }
 body { background: var(--background); color: var(--foreground); font-family: Inter, system-ui, sans-serif; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: .55; }
@@ -291,6 +293,19 @@ button.danger { color: var(--destructive); }
 .chat-shell--empty .chat-welcome { max-height: 140px; margin-bottom: 24px; opacity: 1; }
 .chat-welcome h1 { margin: 0; background: linear-gradient(90deg, #6b7cff, #9a5cff, #6b7cff); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; font-size: clamp(25px, 2.5vw, 32.5px); font-weight: 700; text-align: center; animation: welcome-gradient-shift 6s linear infinite; }
 @keyframes welcome-gradient-shift { from { background-position: 0% 50%; } to { background-position: 200% 50%; } }
+.observation-pill { display: inline-flex; align-items: center; gap: 6px; margin: 4px 0; padding: 4px 8px; border-radius: 7px; background: color-mix(in srgb, var(--foreground) 6%, transparent); color: var(--muted-foreground); font-size: 12px; line-height: 1.4; }
+.observation-pill svg { flex: none; }
+.model-status { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; max-width: min(calc(100% - 96px), 52rem); margin: 0 auto 10px; color: var(--muted-foreground); font-size: 12px; line-height: 1.5; }
+.model-status-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--muted-foreground); }
+.model-status--loading .model-status-dot { background: var(--foreground); animation: model-status-pulse 1.4s ease-in-out infinite; }
+.model-status--error .model-status-dot { background: var(--status-danger); }
+.model-status--blocked .model-status-dot { background: var(--status-warning); }
+.model-status-text { min-width: 0; }
+.model-status-action { flex: none; padding: 2px 0; border: 0; border-radius: 4px; background: transparent; color: var(--foreground); font: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.model-status-action:hover { text-decoration-thickness: 2px; }
+.model-status-action:focus-visible { outline: 2px solid var(--foreground); outline-offset: 3px; }
+@keyframes model-status-pulse { 0%, 100% { opacity: .35; } 50% { opacity: .9; } }
+@media (max-width: 767px) { .model-status { align-items: flex-start; max-width: none; margin: 0 0 8px; padding: 0 4px; } .model-status-dot { margin-top: 6px; } .model-status-action { display: inline-flex; align-items: center; min-height: 44px; } }
 .chat-title { display: block; min-width: 0; max-width: 100%; overflow: hidden; padding: 8px 30px; color: var(--foreground); text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
 .light .chat-title { color: #111827; }
 .message-list { padding: 28px 0 24px; display: flex; flex-direction: column; gap: 24px; min-width: 0; max-width: 100%; }
@@ -592,7 +607,7 @@ button.danger { color: var(--destructive); }
   .skills-list-pane, .skills-detail-pane { padding: 12px; }
   .skill-editor-body { height: min(48vh, 420px); }
 }
-@media (prefers-reduced-motion: reduce) { .chat-shell::after, .chat-shell [data-slot='chat-shell-dock'] [data-slot='chat-shell-column'], .chat-welcome, .process-reasoning summary::before { transition: none; } .chat-welcome h1, .tool-progress, .process-status svg, .run-status svg, .process-reasoning__streaming, .skill-picker-popover { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .chat-shell::after, .chat-shell [data-slot='chat-shell-dock'] [data-slot='chat-shell-column'], .chat-welcome, .process-reasoning summary::before { transition: none; } .chat-welcome h1, .tool-progress, .process-status svg, .run-status svg, .process-reasoning__streaming, .skill-picker-popover, .model-status--loading .model-status-dot { animation: none; } }
 
 /* Mobile skills are the second level of the plus menu. */
 .skill-picker-backdrop { position: fixed; inset: 0; z-index: 49; background: #0006; }
@@ -600,3 +615,47 @@ button.danger { color: var(--destructive); }
 .skill-picker-popover.is-mobile .skill-picker-panel { width: 100%; }
 .skill-picker-popover.is-mobile [role='listbox'] { max-height: min(42dvh, 360px); }
 .skill-picker-popover.is-mobile .skill-picker-header-actions button { width: 36px; height: 36px; }
+
+.tool-approval { margin-top: 10px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
+.tool-approval__header { display: flex; align-items: center; gap: 6px; color: var(--foreground); font-size: 13px; }
+.tool-approval__header svg { color: var(--status-warning); }
+.tool-approval__lead { margin: 6px 0 0; color: var(--muted-foreground); font-size: 12px; line-height: 1.5; }
+.tool-approval__detail { margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: color-mix(in srgb, var(--foreground) 5%, transparent); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.tool-approval__actions { display: flex; gap: 8px; margin-top: 12px; }
+.tool-approval__actions button { min-height: 44px; padding: 0 16px; border: 1px solid var(--border); border-radius: 9px; background: transparent; color: var(--foreground); font-size: 13px; }
+.tool-approval__actions button:hover { background: color-mix(in srgb, var(--foreground) 6%, transparent); }
+.tool-approval__actions button:focus-visible { outline: 2px solid var(--foreground); outline-offset: 2px; }
+.tool-approval__decline { color: var(--muted-foreground); }
+.tool-approval__status { margin: 10px 0 0; color: var(--muted-foreground); font-size: 12px; }
+
+.ask-user { margin-top: 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
+.ask-user__header { display: flex; align-items: center; gap: 6px; padding: 10px 14px 0; color: var(--muted-foreground); font-size: 12px; }
+.ask-user__body { padding: 8px 14px 14px; }
+.ask-user__question { display: block; margin: 0 0 10px; color: var(--foreground); font-size: 14px; font-weight: 600; line-height: 1.5; }
+.ask-user__options { display: grid; gap: 8px; }
+.ask-user__option { display: flex; align-items: flex-start; gap: 9px; padding: 10px 11px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; }
+.ask-user__option:hover { background: color-mix(in srgb, var(--foreground) 4%, transparent); }
+.ask-user__option:has(input:checked) { border-color: var(--foreground); }
+.ask-user__option input { flex: none; width: 16px; height: 16px; margin-top: 2px; accent-color: var(--foreground); }
+.ask-user__option span { display: grid; gap: 2px; min-width: 0; }
+.ask-user__option strong { font-size: 13px; font-weight: 600; }
+.ask-user__option small { color: var(--muted-foreground); font-size: 12px; line-height: 1.45; }
+.ask-user__text-row { display: flex; gap: 8px; }
+.ask-user__input { flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid var(--border); border-radius: 9px; background: var(--background); color: var(--foreground); font: inherit; font-size: 13px; }
+.ask-user__input:focus-visible { outline: 2px solid var(--foreground); outline-offset: 2px; }
+.ask-user__submit { min-height: 44px; padding: 0 16px; border: 1px solid var(--border); border-radius: 9px; background: transparent; color: var(--foreground); font-size: 13px; }
+.ask-user__submit:hover { background: color-mix(in srgb, var(--foreground) 6%, transparent); }
+.ask-user__submit:focus-visible { outline: 2px solid var(--foreground); outline-offset: 2px; }
+.ask-user__submit:disabled { opacity: .55; }
+.ask-user__pending { display: flex; align-items: center; gap: 5px; margin: 8px 0 0; color: var(--muted-foreground); font-size: 12px; }
+.ask-user__result { margin: 0; color: var(--muted-foreground); font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
+.ask-user__result.is-error { color: var(--status-danger); }
+
+.observation-complete { margin: 4px 0; min-width: 0; }
+.observation-complete > .observation-pill { min-height: 44px; border: 0; font-family: inherit; text-align: left; }
+.observation-complete__body { margin: 4px 0 0 20px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; color: var(--muted-foreground); font-size: 12px; overflow-wrap: anywhere; }
+.observation-complete__stats { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.observation-complete__section { margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--border); }
+.observation-complete__section > button { display: flex; align-items: center; gap: 4px; min-height: 44px; padding: 4px 0; border: 0; background: transparent; color: var(--foreground); font: inherit; text-align: left; }
+.observation-complete button:focus-visible { outline: 2px solid var(--foreground); outline-offset: 2px; }
+.observation-complete__body pre { max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }

@@ -4,8 +4,6 @@ import { Message } from '@mastra/playground-ui/components/Message';
 import { MarkdownRenderer } from '@mastra/playground-ui/components/MarkdownRenderer';
 import { RichMarkdownRenderer } from './markdown/markdown-renderer';
 import { ToolCall, ToolCallTrigger, ToolCallHeader, ToolCallContent, ToolCallMono } from '@mastra/playground-ui/components/ai/tool-call';
-import { ToolApproval } from '@mastra/playground-ui/components/ai/tool-approval';
-import { AskUser } from '@mastra/playground-ui/components/ai/ask-user';
 import { ObservationMarkerBadge } from '@mastra/playground-ui/domains/chat/tools/badges/observation-marker-badge';
 import { Copy, Globe2, Wrench, Terminal, LoaderCircle } from 'lucide-react';
 import type { PreparedAttachment } from './attachment-client';
@@ -14,6 +12,8 @@ import { parseAttachmentIdsFromText } from './attachment-protocol';
 import { fetchWorkspaceFile } from './client';
 import { messageParts, skillActivations, streamError, summarize, type ToolPart } from './message-parts';
 import { SkillExecutionBadge } from './skills/SkillExecutionBadge';
+import { ChineseAskUser, ChineseToolApproval } from './ChineseToolInteractions';
+import { ChineseObservationComplete } from './ChineseObservationComplete';
 import { isUserMessage } from './pending-user-message';
 
 type AskUserPayload = { question: string; options?: { label: string; description?: string }[];
@@ -49,11 +49,20 @@ function settled(state: string) {
   return state === 'result' || state === 'output-available' || state === 'output-error' || state === 'output-denied';
 }
 
+const TOOL_LABELS: Record<string, string> = {
+  search_web: '搜索网页', web_search: '搜索网页', tavily_search: '搜索网页',
+  web_fetch: '读取网页', fetch_url: '读取网页',
+  execute_command: '执行命令', run_command: '执行命令',
+  read_file: '读取文件', write_file: '写入文件', edit_file: '编辑文件', edit: '编辑文件',
+  glob: '查找文件', grep: '搜索内容', read_attached_file: '读取附件', list_files: '列出文件',
+  task_write: '更新任务', ask_user: '询问用户', schedule_task: '创建定时任务',
+};
+
 function toolPresentation(name: string) {
-  if (/search|browse/i.test(name)) return { label: 'Search the web', Icon: Globe2 };
-  if (/fetch/i.test(name)) return { label: 'Web fetch', Icon: Wrench };
-  if (/execute|command|shell/i.test(name)) return { label: 'Run command', Icon: Terminal };
-  return { label: name.replaceAll('_', ' '), Icon: Wrench };
+  if (/search|browse/i.test(name)) return { label: '搜索网页', Icon: Globe2 };
+  if (/fetch/i.test(name)) return { label: '读取网页', Icon: Wrench };
+  if (/execute|command|shell/i.test(name)) return { label: '执行命令', Icon: Terminal };
+  return { label: TOOL_LABELS[name] ?? name.replaceAll('_', ' '), Icon: Wrench };
 }
 
 function toolDetail(name: string, args: unknown) {
@@ -191,21 +200,27 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
   pendingApprovalIds?: ReadonlySet<string>;
   threadAttachments?: PreparedAttachment[];
 }) {
-  const [pending, setPending] = useState<string | null>(null);
+  const [pending, setPending] = useState<ReadonlySet<string>>(() => new Set());
   const busy = useRef(new Set<string>());
   async function decide(id: string, action: 'approve' | 'decline') {
     if (busy.current.has(id) || approvals[id]) return;
-    busy.current.add(id); setPending(id);
+    busy.current.add(id); setPending(current => new Set(current).add(id));
     try { await (action === 'approve' ? onApprove(id) : onDecline(id)); }
     catch { /* AgentChat presents the API error; leave the decision available. */ }
-    finally { busy.current.delete(id); setPending(null); }
+    finally {
+      busy.current.delete(id);
+      setPending(current => { const next = new Set(current); next.delete(id); return next; });
+    }
   }
   async function answer(id: string, value: string | string[]) {
     if (busy.current.has(id) || approvals[id]) return;
-    busy.current.add(id); setPending(id);
+    busy.current.add(id); setPending(current => new Set(current).add(id));
     try { await onAnswer(id, value); }
     catch { /* AgentChat shows the error; keep the question available. */ }
-    finally { busy.current.delete(id); setPending(null); }
+    finally {
+      busy.current.delete(id);
+      setPending(current => { const next = new Set(current); next.delete(id); return next; });
+    }
   }
   const rows = messages.map((message, sourceIndex) => ({
     message,
@@ -268,13 +283,31 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
           {attachments.map(item => <HistoryAttachmentCard key={item.attachmentId} attachment={item} />)}
         </div>}
         {parts.map((part, index) => {
-          if (part.kind === 'observation') return <ObservationMarkerBadge key={part.cycleId ?? index}
-            toolName={part.state === 'running' || part.state === 'buffering' ? 'Observing' : 'Observed'} args={{}}
-            metadata={{ omData: part.data }} />;
+          if (part.kind === 'observation') {
+            const streamingObservation = part.state === 'running' || part.state === 'buffering';
+            if (streamingObservation) {
+              const om = record(part.data) ?? {};
+              const count = typeof om.tokensToObserve === 'number' ? om.tokensToObserve
+                : typeof om.tokensToBuffer === 'number' ? om.tokensToBuffer : null;
+              const tokens = count === null ? '' : ` ~${(count / 1000).toFixed(1)}k tokens`;
+              const label = om.operationType === 'reflection' ? '反思中' : '观察中';
+              return <div key={part.cycleId ?? index} className="observation-pill" role="status"
+                data-om-badge={part.cycleId ?? ''} data-om-state={part.state === 'buffering' ? 'buffering' : 'loading'}
+                data-om-type={om.operationType === 'reflection' ? 'reflection' : 'observation'}>
+                <LoaderCircle className="tool-progress" size={13} aria-hidden="true" />
+                <span>{label}{tokens}</span>
+              </div>;
+            }
+            if (part.state === 'complete' || part.state === 'buffering-complete' || part.state === 'activated') {
+              return <ChineseObservationComplete key={part.cycleId ?? index} data={part.data} />;
+            }
+            return <ObservationMarkerBadge key={part.cycleId ?? index} toolName="已观察" args={{}}
+              metadata={{ omData: part.data }} />;
+          }
           if (part.kind === 'reasoning') return <details key={index} className="process-reasoning" open>
-            <summary className={part.streaming ? 'process-reasoning__streaming' : undefined}>Reasoning</summary>
+            <summary className={part.streaming ? 'process-reasoning__streaming' : undefined}>推理过程</summary>
             <div className="process-reasoning__content">
-              <MarkdownRenderer streaming={part.streaming}>{part.redacted ? 'Reasoning was redacted by the provider.' : part.text}</MarkdownRenderer>
+              <MarkdownRenderer streaming={part.streaming}>{part.redacted ? '提供方已隐去推理内容。' : part.text}</MarkdownRenderer>
             </div>
           </details>;
           if (part.kind === 'text') {
@@ -290,8 +323,8 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
             const result = record(tool.result);
             const output = typeof result?.content === 'string'
               ? { content: result.content, isError: result.isError === true } : undefined;
-            return <AskUser key={`${tool.id}-${index}`} payload={payload} result={output}
-              isAnswered={approvals[tool.id]?.status === 'approved'} isSubmitting={pending === tool.id}
+            return <ChineseAskUser key={`${tool.id}-${index}`} payload={payload} result={output}
+              isAnswered={approvals[tool.id]?.status === 'approved'} isSubmitting={pending.has(tool.id)}
               onSubmit={value => void answer(tool.id, value)} />;
           }
           const unresolved = !settled(tool.state);
@@ -311,11 +344,11 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
           </ToolCall>
           {tool.state === 'output-denied' && <p className="muted">已拒绝执行</p>}
           {suspension && unresolved && !needsApproval && <p className="muted" role="status">工具已暂停，等待后续输入</p>}
-          {needsApproval && <ToolApproval toolName={tool.name}
-            status={approvals[tool.id]?.status} disabled={pending === tool.id || !!approvals[tool.id]}
+          {needsApproval && <ChineseToolApproval toolName={label}
+            status={approvals[tool.id]?.status} disabled={pending.has(tool.id) || !!approvals[tool.id]}
             onApprove={() => void decide(tool.id, 'approve')} onDecline={() => void decide(tool.id, 'decline')}>
             <span className="muted">{summarize(tool.args)}</span>
-          </ToolApproval>}
+          </ChineseToolApproval>}
           </div>;
         })}
         {runningProcess && !parts.some(part => part.kind === 'observation' &&

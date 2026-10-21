@@ -1,0 +1,33 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>05 · Workspace</title><link rel="stylesheet" href="base.css"><style>
+.s05-left{position:absolute;left:72px;top:148px;width:850px;z-index:4}
+.s05-left h2{margin:0;font-size:72px;line-height:1.08;letter-spacing:-.035em}
+.s05-left h2 em{font-style:normal;color:var(--accent)}
+.s05-left .body{margin-top:24px;max-width:760px}
+.s05-tree{margin-top:26px;font:500 20px/1.7 var(--mono);color:#c9d2c4;background:#0b0d0a;border:1px solid var(--line);padding:22px 24px;white-space:pre}
+.s05-tree .hi{color:var(--accent)}
+.s05-tree .dim{color:var(--dim)}
+.s05-right{position:absolute;right:72px;top:148px;width:810px;z-index:4}
+.s05-rules{border-top:1px solid var(--line)}
+.s05-rule{display:grid;grid-template-columns:190px 1fr;gap:18px;padding:18px 0;border-bottom:1px solid var(--line-soft)}
+.s05-rule b{font:500 16px/1.4 var(--mono);color:var(--accent);letter-spacing:.04em}
+.s05-rule span{font-size:21px;line-height:1.55;color:var(--muted)}
+.s05-etag{margin-top:22px;padding:20px 22px;border:1px solid rgba(199,255,74,.36);background:rgba(199,255,74,.04)}
+.s05-etag small{display:block;font:500 16px/1 var(--mono);color:var(--accent);letter-spacing:.07em;margin-bottom:10px}
+.s05-etag code{font:500 20px/1.6 var(--mono);color:var(--fg)}
+.s05-etag p{margin:8px 0 0;font-size:18px;line-height:1.55;color:var(--muted)}
+.s05-foot{position:absolute;left:72px;right:72px;bottom:48px;display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:16px;font:500 16px/1.5 var(--mono);color:var(--dim);z-index:5}
+.s05-foot b{color:var(--accent);font-weight:500}
+</style></head><body><main class="slide">
+<header class="topbar"><div class="brand"><div class="mark">N</div><div class="brand-name">NERO <span>/ AGENT</span></div></div><div class="status"><span class="dot"></span>WORKSPACE / FILES</div></header>
+<section class="s05-left"><div class="kicker" style="margin-bottom:28px">工作区</div><h2>文件不属于聊天记录，<br>属于<em>工作区</em>。</h2><p class="body">每个用户有独立根目录，文件按会话落盘。查找、读取、编辑都在应用内完成；写入是一次可验证的提交，不是覆盖。</p>
+<div class="s05-tree"><span class="hi">WORKSPACE_ROOT/</span>
+  users/&lt;userId&gt;/
+    <span class="dim">threads/&lt;threadId&gt;/</span>
+      report.md
+      data.csv
+    <span class="dim">uploads/&lt;uuid&gt;/</span>
+      source.pdf</div></section>
+<section class="s05-right"><div class="s05-rules"><div class="s05-rule"><b>SCOPE</b><span>默认当前会话；只有明确要求时才进入个人工作区。</span></div><div class="s05-rule"><b>SEARCH</b><span><code>glob</code> 找路径，<code>grep</code> 取命中行与 ETag。</span></div><div class="s05-rule"><b>EDIT</b><span><code>edit</code> 做一次精确替换，零次或多次匹配都拒绝。</span></div><div class="s05-rule"><b>QUOTA</b><span>按用户配额与文件数上限，列表和删除后会扫描对账。</span></div></div>
+<div class="s05-etag"><small>EXPECTED VERSION</small><code>expectedEtag: "sha256:…"</code><p>版本冲突返回 <span class="accent">STALE_VERSION</span>。重新读取，再编辑；不用旧 ETag 覆盖。</p></div></section>
+<footer class="s05-foot"><span><b>USER_FILES_ENABLED=false</b> / 默认关闭，门禁验证后开启</span><span>可验证的写入优先于便利</span></footer>
+</main></body></html>

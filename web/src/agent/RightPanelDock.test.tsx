@@ -13,7 +13,7 @@ describe('right panel dock', () => {
     const onResize = vi.fn();
     render(<RightPanelDock config={<div>配置内容</div>} files={<div>文件内容</div>}
       width={320} maxWidth={620} onResize={onResize} />);
-    fireEvent.click(screen.getByRole('button', { name: '打开 Config 面板' }));
+    fireEvent.click(screen.getByRole('button', { name: '打开配置面板' }));
     const handle = screen.getByRole('separator', { name: '调整右侧面板宽度' });
     const down = new MouseEvent('pointerdown', { bubbles: true, button: 0, clientX: 900 });
     const move = new MouseEvent('pointermove', { bubbles: true, button: 0, clientX: 800 });
@@ -27,21 +27,21 @@ describe('right panel dock', () => {
     dock();
     expect(screen.queryByText('配置内容')).toBeNull();
     expect(screen.queryByText('文件内容')).toBeNull();
-    expect(screen.getByRole('button', { name: '打开 Config 面板' }).getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByRole('button', { name: '打开配置面板' }).getAttribute('aria-pressed')).toBe('false');
     expect(screen.queryByRole('separator', { name: '调整右侧面板宽度' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: '打开 Config 面板' }));
+    fireEvent.click(screen.getByRole('button', { name: '打开配置面板' }));
     expect(screen.getByText('配置内容')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: '收起 Config 面板' }));
+    fireEvent.click(screen.getByRole('button', { name: '收起配置面板' }));
     await waitFor(() => expect(screen.queryByText('配置内容')).toBeNull());
     expect(screen.queryByText('文件内容')).toBeNull();
   });
 
   it('finishes closing one panel before opening the other, even after rapid clicks', async () => {
     dock();
-    fireEvent.click(screen.getByRole('button', { name: '打开 Config 面板' }));
+    fireEvent.click(screen.getByRole('button', { name: '打开配置面板' }));
     fireEvent.click(screen.getByRole('button', { name: '打开文件管理面板' }));
     expect(screen.queryByText('文件内容')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: '打开 Config 面板' }));
+    fireEvent.click(screen.getByRole('button', { name: '打开配置面板' }));
     fireEvent.click(screen.getByRole('button', { name: '打开文件管理面板' }));
     await waitFor(() => expect(screen.getByText('文件内容')).toBeTruthy());
     expect(screen.queryByText('配置内容')).toBeNull();
@@ -50,8 +50,8 @@ describe('right panel dock', () => {
 
   it('does not reopen during the exit when a closed panel is followed by another click', async () => {
     dock();
-    fireEvent.click(screen.getByRole('button', { name: '打开 Config 面板' }));
-    fireEvent.click(screen.getByRole('button', { name: '收起 Config 面板' }));
+    fireEvent.click(screen.getByRole('button', { name: '打开配置面板' }));
+    fireEvent.click(screen.getByRole('button', { name: '收起配置面板' }));
     fireEvent.click(screen.getByRole('button', { name: '打开文件管理面板' }));
     expect(screen.queryByText('文件内容')).toBeNull();
     await waitFor(() => expect(screen.getByText('文件内容')).toBeTruthy());

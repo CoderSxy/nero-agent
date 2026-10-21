@@ -1,0 +1,72 @@
+/* NERO AGENT / Direction A — shared deck tokens */
+:root {
+  --bg: #08090b;
+  --bg-2: #0d0f10;
+  --fg: #f3f5ee;
+  --muted: #9aa294;
+  --dim: #6f786b;
+  --line: rgba(255,255,255,.16);
+  --line-soft: rgba(255,255,255,.09);
+  --accent: #c7ff4a;
+  --accent-soft: rgba(199,255,74,.14);
+  --violet: #7c5cfc;
+  --blue: #4e9bff;
+  --warn: #ffb45c;
+  --mono: "SF Mono", "Menlo", "Monaco", monospace;
+  --sans: "Hiragino Sans GB", "Heiti SC", "Helvetica Neue", sans-serif;
+  --serif: "Songti SC", "STSong", serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+body { font-family: var(--sans); color: var(--fg); -webkit-font-smoothing: antialiased; font-synthesis: none; }
+.slide { position: relative; width: 1920px; height: 1080px; overflow: hidden; background:
+  radial-gradient(1100px 700px at 82% 18%, rgba(124,92,252,.12), transparent 62%),
+  radial-gradient(900px 600px at 12% 92%, rgba(199,255,74,.045), transparent 60%),
+  var(--bg); }
+.slide::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .20;
+  background-image: linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px);
+  background-size: 96px 96px; mask-image: linear-gradient(to bottom, black, transparent 92%); }
+.slide::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .14;
+  background-image: radial-gradient(rgba(255,255,255,.45) .6px, transparent .6px); background-size: 5px 5px; }
+.corner { position: absolute; width: 56px; height: 56px; border-color: var(--accent); border-style: solid; pointer-events: none; }
+.corner.tl { left: 32px; top: 32px; border-width: 1px 0 0 1px; }
+.corner.br { right: 32px; bottom: 32px; border-width: 0 1px 1px 0; }
+.topbar { position: absolute; left: 72px; right: 72px; top: 48px; display: flex; align-items: center; justify-content: space-between; z-index: 6; }
+.brand { display: flex; align-items: center; gap: 13px; }
+.mark { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: linear-gradient(145deg,#8a65ff,#4e9bff); color: #fff; font: 800 21px/1 "Avenir Next", sans-serif; letter-spacing: -.04em; }
+.brand-name { font: 700 17px/1 "Avenir Next", sans-serif; letter-spacing: .18em; }
+.brand-name span { font-weight: 500; color: #8c9486; }
+.status { display: flex; align-items: center; gap: 10px; font: 500 16px/1 var(--mono); color: var(--muted); letter-spacing: .06em; }
+.status .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 18px rgba(199,255,74,.8); }
+.kicker { display: flex; align-items: center; gap: 12px; font: 500 16px/1 var(--mono); color: var(--muted); letter-spacing: .10em; }
+.kicker::before { content: ""; width: 42px; height: 1px; background: var(--accent); }
+.kicker.no-line::before { display: none; }
+.display { font-family: var(--sans); font-weight: 650; letter-spacing: -.035em; line-height: 1.04; }
+.display em { font-style: normal; color: var(--accent); }
+.serif { font-family: var(--serif); }
+.body { font-size: 27px; line-height: 1.75; color: var(--muted); font-weight: 300; }
+.body strong { color: var(--fg); font-weight: 500; }
+.mono { font-family: var(--mono); }
+.label { font: 500 16px/1.55 var(--mono); color: var(--dim); letter-spacing: .04em; }
+.tag { display: inline-flex; align-items: center; gap: 8px; padding: 7px 10px; border: 1px solid var(--line); font: 500 16px/1 var(--mono); color: var(--muted); letter-spacing: .04em; }
+.tag.live { border-color: rgba(199,255,74,.4); color: var(--accent); }
+.rule { height: 1px; background: var(--line); }
+.soft { color: var(--muted); }
+.accent { color: var(--accent); }
+.warn { color: var(--warn); }
+.bottom-line { position: absolute; left: 72px; right: 72px; bottom: 48px; display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid var(--line); padding-top: 16px; z-index: 6; }
+.bottom-line .note { font: 500 16px/1.55 var(--mono); color: var(--dim); letter-spacing: .03em; }
+.bottom-line .note b { color: var(--muted); font-weight: 500; }
+.shot { position: relative; padding: 12px; border: 1px solid rgba(199,255,74,.32); background: #0e100d; box-shadow: 0 38px 120px rgba(0,0,0,.55); }
+.shot::before { content: ""; position: absolute; left: 12px; right: 12px; top: 12px; height: 34px; background: #171914; border-bottom: 1px solid rgba(255,255,255,.09); z-index: 2; }
+.shot::after { content: "NERO AGENT / LIVE UI"; position: absolute; top: 22px; left: 32px; z-index: 3; font: 500 12px/1 var(--mono); color: var(--dim); letter-spacing: .10em; }
+.shot img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; filter: saturate(.9) contrast(1.02); }
+.caption { display: flex; justify-content: space-between; margin-top: 16px; font: 500 16px/1.5 var(--mono); color: var(--dim); letter-spacing: .02em; }
+.caption b { color: var(--accent); font-weight: 500; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); }
+.code { font: 500 18px/1.75 var(--mono); color: #c9d2c4; background: #0b0d0a; border: 1px solid var(--line); padding: 22px 24px; white-space: pre; }
+.code .k { color: var(--accent); }
+.code .c { color: var(--dim); }

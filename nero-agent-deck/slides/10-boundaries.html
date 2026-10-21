@@ -1,0 +1,29 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>10 · Boundaries</title><link rel="stylesheet" href="base.css"><style>
+.s10-head{position:absolute;left:72px;top:138px;width:1180px;z-index:4}
+.s10-head h2{margin:0;font-size:78px;line-height:1.08;letter-spacing:-.035em}
+.s10-head h2 em{font-style:normal;color:var(--accent)}
+.s10-head .body{margin-top:20px;max-width:1080px}
+.s10-cols{position:absolute;left:72px;right:72px;top:442px;display:grid;grid-template-columns:repeat(3,1fr);gap:48px;z-index:4}
+.s10-col{border-top:1px solid var(--line);padding-top:18px}
+.s10-col h3{margin:0 0 8px;font-size:28px;font-weight:600}
+.s10-col .state{display:inline-block;font:500 16px/1 var(--mono);letter-spacing:.05em;padding:7px 9px;border:1px solid rgba(199,255,74,.35);color:var(--accent);margin-bottom:16px}
+.s10-col .state.warn{border-color:rgba(255,180,92,.4);color:var(--warn)}
+.s10-list{margin:0;padding:0;list-style:none}
+.s10-list li{display:grid;grid-template-columns:22px 1fr;gap:10px;padding:11px 0;border-bottom:1px solid var(--line-soft);font-size:20px;line-height:1.5;color:var(--muted)}
+.s10-list li::before{content:"";width:7px;height:7px;background:var(--accent);margin-top:9px}
+.s10-list li.warn::before{background:var(--warn)}
+.s10-footer{position:absolute;left:72px;right:72px;bottom:48px;border-top:1px solid var(--line);padding-top:16px;z-index:5}
+.s10-footer .title{font:500 16px/1 var(--mono);color:var(--accent);letter-spacing:.06em;margin-bottom:10px}
+.s10-open{display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+.s10-open div{padding-right:20px;font-size:18px;line-height:1.5;color:var(--muted)}.s10-open div+div{padding-left:20px;border-left:1px solid var(--line-soft)}
+.s10-open b{display:block;color:var(--warn);font-weight:500;margin-bottom:4px;font-size:16px;font-family:var(--mono)}
+</style></head><body><main class="slide">
+<header class="topbar"><div class="brand"><div class="mark">N</div><div class="brand-name">NERO <span>/ AGENT</span></div></div><div class="status"><span class="dot"></span>BOUNDARIES / EXPLICIT GATES</div></header>
+<section class="s10-head"><div class="kicker" style="margin-bottom:24px">能力边界</div><h2>默认关闭，<br><em>显式开启</em>。</h2><p class="body">权限不是功能列表里的一个开关，是发布前的门禁。没有验证过的能力，保持关闭；开启之后，仍然有配额、审计和版本。</p></section>
+<section class="s10-cols">
+<div class="s10-col"><h3>账号</h3><span class="state">准入门槛</span><ul class="s10-list"><li>管理员创建账号，不开放自助注册。</li><li>登录会话在当前标签页保存，退出即撤销。</li><li>Studio 仅管理员可进。</li></ul></div>
+<div class="s10-col"><h3>沙箱</h3><span class="state warn">默认关闭</span><ul class="s10-list"><li class="warn">命令执行：<code>SANDBOX_COMMANDS_ENABLED=false</code>。</li><li class="warn">沙箱写入：等宿主配额实测后再开。</li><li class="warn">用户文件：<code>USER_FILES_ENABLED=false</code>。</li></ul></div>
+<div class="s10-col"><h3>数据</h3><span class="state">服务端持有</span><ul class="s10-list"><li>每用户独立工作区，按会话落盘。</li><li>模型 Key 加密保存，前端拿不到明文。</li><li>写入带 ETag，冲突不覆盖。</li></ul></div>
+</section>
+<footer class="s10-footer"><div class="title">CURRENT STATE / 未完成，不假装完成</div><div class="s10-open"><div><b>PERMISSIONS</b>细粒度权限表只建表，尚未启用。</div><div><b>WORKFLOWS</b>没有自定义 workflows，Studio 入口已隐藏。</div><div><b>KEY ROTATION</b>模型密钥不支持轮换，丢失需重录。</div><div><b>MULTI-TENANT</b>是否面向外部多用户，尚未确认。</div></div></footer>
+</main></body></html>

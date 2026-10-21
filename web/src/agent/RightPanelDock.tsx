@@ -32,8 +32,8 @@ export function RightPanelDock({ config, files, width = 320, maxWidth = 620, onR
     {active && onResize && <PanelResizeHandle side="right" width={width} min={280} max={maxWidth}
       onResize={onResize} />}
     <div className="right-panel-toggles" role="group" aria-label="右侧面板">
-      <button type="button" aria-label={desired === 'config' ? '收起 Config 面板' : '打开 Config 面板'}
-        title="Config" aria-expanded={active === 'config'} aria-pressed={desired === 'config'}
+      <button type="button" aria-label={desired === 'config' ? '收起配置面板' : '打开配置面板'}
+        title="配置" aria-expanded={active === 'config'} aria-pressed={desired === 'config'}
         onClick={() => choose('config')}><Settings2 size={18} /></button>
       <button type="button" aria-label={desired === 'files' ? '收起文件管理面板' : '打开文件管理面板'}
         title="文件管理" aria-expanded={active === 'files'} aria-pressed={desired === 'files'}

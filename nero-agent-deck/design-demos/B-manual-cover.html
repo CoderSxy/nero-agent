@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>NERO AGENT — Direction B / Cover</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#f2ebdd}
+  body{font-family:"Hiragino Sans GB","Heiti SC","Helvetica Neue",sans-serif;color:#171513}
+  .slide{position:relative;width:1920px;height:1080px;overflow:hidden;background:
+    radial-gradient(900px 500px at 90% 15%,rgba(209,72,45,.08),transparent 65%),
+    radial-gradient(700px 500px at 6% 90%,rgba(95,86,68,.07),transparent 66%),#f2ebdd}
+  .slide::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.32;
+    background-image:linear-gradient(rgba(23,21,19,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(23,21,19,.08) 1px,transparent 1px);
+    background-size:80px 80px;mask-image:linear-gradient(135deg,black,transparent 80%)}
+  .slide::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.14;
+    background-image:radial-gradient(rgba(23,21,19,.8) .55px,transparent .55px);background-size:4px 4px}
+  .top{position:absolute;left:68px;right:68px;top:44px;display:flex;justify-content:space-between;align-items:flex-start;border-top:2px solid #171513;padding-top:12px;z-index:4}
+  .brandline{font:700 18px/1 "Avenir Next",sans-serif;letter-spacing:.16em}
+  .brandline span{font-weight:500;color:#6b6252}
+  .meta{text-align:right;font:500 12px/1.55 "SF Mono",Menlo,monospace;color:#6b6252;letter-spacing:.05em}
+  .meta b{color:#d1482d;font-weight:600}
+  .tick{position:absolute;left:68px;right:68px;top:104px;height:14px;display:flex;justify-content:space-between;z-index:3}
+  .tick i{display:block;width:1px;height:7px;background:#9b907f}.tick i:nth-child(5n){height:14px;background:#171513}
+  .titleblock{position:absolute;left:68px;top:180px;width:930px;z-index:3}
+  .eyebrow{display:flex;align-items:center;gap:12px;font:500 14px/1 "SF Mono",Menlo,monospace;color:#6b6252;letter-spacing:.1em;margin-bottom:30px}
+  .eyebrow::before{content:"";width:42px;height:2px;background:#d1482d}
+  h1{margin:0;font-family:"Songti SC","STSong",serif;font-weight:700;font-size:126px;line-height:1.04;letter-spacing:-.045em}
+  h1 em{font-style:normal;position:relative;display:inline-block;white-space:nowrap;isolation:isolate}
+  h1 em::after{content:"";position:absolute;left:0;right:0;bottom:7px;height:10px;background:#d1482d;opacity:.92;z-index:-1}
+  .lede{margin:38px 0 0;width:760px;font-size:26px;line-height:1.8;color:#514b40;font-weight:300}
+  .lede b{font-weight:600;color:#171513}
+  .visual{position:absolute;right:68px;top:188px;width:780px;z-index:2}
+  .plate{border:1px solid #171513;background:#fffdf7;padding:10px;box-shadow:12px 12px 0 rgba(23,21,19,.07)}
+  .plate img{display:block;width:100%;height:510px;object-fit:cover;object-position:50% 0;filter:grayscale(.2) saturate(.82) contrast(1.02)}
+  .caption{display:flex;justify-content:space-between;margin-top:16px;font:500 12px/1.5 "SF Mono",Menlo,monospace;color:#6b6252;letter-spacing:.03em}
+  .caption b{color:#d1482d;font-weight:600}
+  .side{position:absolute;right:24px;top:742px;writing-mode:vertical-rl;font:500 11px/1 "SF Mono",Menlo,monospace;color:#8c8170;letter-spacing:.14em}
+  .bottom{position:absolute;left:68px;right:68px;bottom:54px;display:grid;grid-template-columns:1.15fr repeat(4,.72fr);border-top:1px solid #171513;z-index:4}
+  .cell{padding:16px 20px 0 0}.cell+.cell{padding-left:20px;border-left:1px solid rgba(23,21,19,.22)}
+  .cell small{display:block;font:500 11px/1 "SF Mono",Menlo,monospace;color:#8c8170;letter-spacing:.08em;margin-bottom:8px}
+  .cell strong{font-size:16px;font-weight:600;color:#171513}
+  .stamp{position:absolute;right:68px;bottom:138px;width:130px;height:130px;border:2px solid #d1482d;border-radius:50%;display:grid;place-items:center;text-align:center;color:#d1482d;transform:rotate(-8deg);z-index:4}
+  .stamp span{font:700 12px/1.5 "SF Mono",Menlo,monospace;letter-spacing:.08em}
+  .stamp em{font-style:normal;display:block;font:500 9px/1.4 "SF Mono",Menlo,monospace;letter-spacing:.04em;margin-top:4px}
+</style>
+</head>
+<body>
+<main class="slide">
+  <header class="top">
+    <div class="brandline">NERO <span>/ AGENT</span></div>
+    <div class="meta"><b>产品说明 / 2026.10</b><br>自托管 · 中文优先 · 单机 ECS</div>
+  </header>
+  <div class="tick"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+  <section class="titleblock">
+    <div class="eyebrow">基于 MASTRA 的工作台</div>
+    <h1>工作，<br><em>留在原地</em>。</h1>
+    <p class="lede">会话不是终点。文件、记忆、调度，都留在同一张桌面上。<br><b>下一次打开，接着做。</b></p>
+  </section>
+
+  <section class="visual">
+    <div class="plate"><img src="../assets/screenshots/desktop-slash.jpg" alt="nero-agent 输入框与技能选择"></div>
+    <div class="caption"><span><b>图 01</b> / 会话输入与技能选择</span><span>1920 × 963 / 实际界面</span></div>
+  </section>
+
+  <div class="stamp"><span>自托管<br>MASTRA</span><em>SESSION / FILES / CRON</em></div>
+  <div class="side">A WORKBENCH, NOT A CHAT LOG</div>
+
+  <footer class="bottom">
+    <div class="cell"><small>产品判断</small><strong>持续工作优先于单次问答</strong></div>
+    <div class="cell"><small>SEARCH</small><strong>网络搜索</strong></div>
+    <div class="cell"><small>FILES</small><strong>工作区文件</strong></div>
+    <div class="cell"><small>SCHEDULE</small><strong>周期任务</strong></div>
+    <div class="cell"><small>SKILLS</small><strong>可复用能力</strong></div>
+  </footer>
+</main>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
 import { ChatShell } from '@mastra/playground-ui/components/ChatShell';
 import type { GetAgentResponse, GetMemoryConfigResponse } from '@mastra/client-js';
@@ -27,6 +27,25 @@ import type { SkillActivationView } from './message-parts';
 function completeModels(models: Partial<ModelSettings>): ModelSettings | null {
   return models.chatModel && models.memoryModel
     ? { chatModel: models.chatModel, memoryModel: models.memoryModel } : null;
+}
+
+function ModelStatusNotice({ status, error, isAdmin, onRetry }: {
+  status: 'loading' | 'error' | 'blocked' | 'ready';
+  error: string | null;
+  isAdmin: boolean;
+  onRetry: () => void;
+}) {
+  if (status === 'ready') return null;
+  const message = status === 'loading' ? '正在加载模型列表…'
+    : status === 'error' ? '模型列表加载失败，暂时无法发送消息。'
+      : isAdmin ? '还没有启用的公共默认模型。在 Studio 的模型目录中启用一个后即可开始。'
+        : '管理员尚未配置公共默认模型，暂时无法开始会话。';
+  return <div className={`model-status model-status--${status}`}
+    role={status === 'error' ? 'alert' : 'status'} title={error ?? undefined}>
+    <span className="model-status-dot" aria-hidden="true" />
+    <span className="model-status-text">{message}</span>
+    {status === 'error' && <button type="button" className="model-status-action" onClick={onRetry}>重试</button>}
+  </div>;
 }
 
 export function AgentPage() {
@@ -69,6 +88,7 @@ export function AgentPage() {
   const [configLoading, setConfigLoading] = useState(true);
   const [catalog, setCatalog] = useState<SafeModel[] | null>(null);
   const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [catalogLoading, setCatalogLoading] = useState(true);
   const [threadMetadata, setThreadMetadata] = useState<unknown>(null);
   const [metadataThreadId, setMetadataThreadId] = useState<string | null>(null);
   const [financeEnabled, setFinanceEnabled] = useState(false);
@@ -100,6 +120,12 @@ export function AgentPage() {
     : selected ? null
       : threadRead?.invalid ? '该会话使用的模型已不可用，请重新选择模型'
         : !defaults ? '请先配置公共默认模型' : '请重新选择模型';
+  const modelStatus: 'loading' | 'error' | 'blocked' | 'ready' = catalogLoading ? 'loading'
+    : catalogError ? 'error'
+      : catalog && !defaults ? 'blocked' : 'ready';
+  const isAdmin = user.roles.includes('admin');
+  const modelStatusNotice = <ModelStatusNotice status={modelStatus} error={catalogError}
+    isAdmin={isAdmin} onRetry={() => void loadCatalog()} />;
   const names = new Map((catalog ?? []).map(model => [model.ref, model.displayName]));
   const configModels = selected
     ? { chatModel: names.get(selected.chatModel) ?? selected.chatModel,
@@ -121,21 +147,27 @@ export function AgentPage() {
       return changed ? next : current;
     });
   }, [list.threads]);
+  const loadCatalog = useCallback(() => {
+    setCatalogLoading(true);
+    setCatalogError(null);
+    return getSelectableModels()
+      .then(items => setCatalog(items))
+      .catch(cause => setCatalogError(cause instanceof Error ? cause.message : '加载模型列表失败'))
+      .finally(() => setCatalogLoading(false));
+  }, []);
   useEffect(() => {
     let active = true;
-    Promise.allSettled([client.getAgent(AGENT_ID).details(), client.getMemoryConfig({ agentId: AGENT_ID }),
-      getSelectableModels()])
-      .then(([agentResult, memoryResult, catalogResult]) => {
+    Promise.allSettled([client.getAgent(AGENT_ID).details(), client.getMemoryConfig({ agentId: AGENT_ID })])
+      .then(([agentResult, memoryResult]) => {
         if (!active) return;
         if (agentResult.status === 'fulfilled') setAgent(agentResult.value);
         else setConfigError('加载智能体配置失败');
         if (memoryResult.status === 'fulfilled') setMemory(memoryResult.value);
-        if (catalogResult.status === 'fulfilled') setCatalog(catalogResult.value);
-        else setCatalogError(catalogResult.reason instanceof Error ? catalogResult.reason.message : '加载模型列表失败');
         setConfigLoading(false);
       });
+    void loadCatalog();
     return () => { active = false; };
-  }, []);
+  }, [loadCatalog]);
   useEffect(() => {
     let active = true;
     void getFinanceCapabilities().then(result => { if (active) setFinanceEnabled(result.enabled); })
@@ -290,7 +322,7 @@ export function AgentPage() {
         onSourceChange={setThreadSource} onNavigate={path => navigate(path)}
         onOpenThread={id => navigate(`/agent/${encodeURIComponent(id)}`)}
         loading={list.loading} error={list.error} modelCount={catalog?.length}
-        composer={<MobileComposerDock>{landingComposer}</MobileComposerDock>} /> : loadingThread ? <div className="empty-chat">加载会话中…</div> : threadId && !notice ?
+        composer={<MobileComposerDock>{modelStatusNotice}{landingComposer}</MobileComposerDock>} /> : loadingThread ? <div className="empty-chat">加载会话中…</div> : threadId && !notice ?
         <AgentChat key={threadId} title={list.threads.find(thread => thread.id === threadId)?.title || '未命名会话'}
           threadId={threadId} resourceId={user.id} initialMessages={messages} models={selected}
           scheduledRun={scheduledRun}
@@ -334,6 +366,7 @@ export function AgentPage() {
           </ChatShell.Content></ChatShell.Viewport></ChatShell.Stage>
           <ChatShell.Dock><ChatShell.Column>
             <div className="chat-welcome"><h1>有什么可以帮你？</h1></div>
+            {modelStatusNotice}
             {landingComposer}
           </ChatShell.Column></ChatShell.Dock>
         </ChatShell>}

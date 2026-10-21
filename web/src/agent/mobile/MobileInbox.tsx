@@ -25,7 +25,7 @@ export function MobileInbox({ threads, source, onSourceChange, onNavigate, onOpe
   composer: ReactNode;
 }) {
   const scheduled = source === 'schedule';
-  return <section className="mobile-inbox" aria-label="Inbox">
+  return <section className="mobile-inbox" aria-label="首页">
     <h1>NERO</h1>
     <div className="mobile-inbox-cards" aria-label="概览">
       <button type="button" className="mobile-overview-card" aria-label={`${scheduled ? '调度对话' : '历史对话'}，${threads.length} 个会话`}

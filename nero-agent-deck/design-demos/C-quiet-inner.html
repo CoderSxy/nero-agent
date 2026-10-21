@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>NERO AGENT — Direction C / Time</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#f4f6f2}
+  body{font-family:"Hiragino Sans GB","Heiti SC","Helvetica Neue",sans-serif;color:#0a2342}
+  .slide{position:relative;width:1920px;height:1080px;overflow:hidden;background:
+    radial-gradient(1000px 700px at 15% 80%,rgba(28,76,255,.045),transparent 70%),linear-gradient(180deg,#f8f9f6,#f1f4ef)}
+  .slide::before{content:"";position:absolute;left:72px;right:72px;top:136px;height:1px;background:rgba(10,35,66,.12)}
+  .top{position:absolute;left:72px;right:72px;top:46px;display:flex;justify-content:space-between;align-items:center;z-index:3}
+  .brand{display:flex;align-items:center;gap:12px}
+  .mark{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(145deg,#7c5cfc,#4e9bff);color:white;font:800 19px/1 "Avenir Next",sans-serif}
+  .brandname{font:700 17px/1 "Avenir Next",sans-serif;letter-spacing:.16em}
+  .brandname span{font-weight:500;color:#79847e}
+  .meta{font:500 12px/1 "SF Mono",Menlo,monospace;color:#6c7a73;letter-spacing:.09em}
+  .meta b{color:#1c4cff;font-weight:500}
+  h2{position:absolute;left:72px;top:182px;margin:0;font-family:"Songti SC","STSong",serif;font-weight:600;font-size:100px;line-height:1.08;letter-spacing:-.05em;z-index:3}
+  h2 em{font-style:normal;color:#1c4cff}
+  .intro{position:absolute;left:76px;top:404px;width:610px;font-size:25px;line-height:1.8;color:#596962;font-weight:300;z-index:3}
+  .legend{position:absolute;right:72px;top:208px;width:950px;display:flex;justify-content:space-between;font:500 11px/1 "SF Mono",Menlo,monospace;color:#89968f;letter-spacing:.08em;z-index:3}
+  .timeline{position:absolute;left:72px;right:72px;top:540px;height:300px;z-index:3}
+  .line{position:absolute;left:0;right:0;top:62px;height:1px;background:linear-gradient(90deg,#1c4cff 0 6%,rgba(10,35,66,.22) 6% 100%)}
+  .columns{position:absolute;left:0;right:0;top:0;display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;gap:56px}
+  .col{position:relative;padding-top:62px}
+  .dot{position:absolute;top:56px;left:0;width:13px;height:13px;border-radius:50%;background:#f4f6f2;border:1px solid rgba(10,35,66,.35)}
+  .col:first-child .dot{background:#1c4cff;border-color:#1c4cff;box-shadow:0 0 0 6px rgba(28,76,255,.10)}
+  .time{font-family:"Songti SC","STSong",serif;font-size:54px;font-weight:600;letter-spacing:-.03em;line-height:1;margin-bottom:22px}
+  .col h3{margin:0 0 12px;font-size:23px;font-weight:600;letter-spacing:-.01em}
+  .col p{margin:0;font-size:16px;line-height:1.7;color:#68776f;font-weight:300;max-width:270px}
+  .col small{display:block;margin-top:20px;font:500 10px/1.5 "SF Mono",Menlo,monospace;color:#8e9b94;letter-spacing:.05em}
+  .quote{position:absolute;left:76px;bottom:72px;width:1040px;font-family:"Songti SC","STSong",serif;font-size:33px;line-height:1.5;color:#0a2342;z-index:3}
+  .quote span{color:#1c4cff}
+  .shot{position:absolute;right:72px;bottom:52px;width:690px;height:196px;border:1px solid rgba(10,35,66,.16);background:white;padding:7px;overflow:hidden;z-index:2}
+  .shot img{width:100%;height:100%;object-fit:cover;object-position:50% 0;filter:saturate(.65) contrast(1.02)}
+  .shotcap{position:absolute;right:72px;bottom:24px;width:690px;font:500 10px/1.4 "SF Mono",Menlo,monospace;color:#89968f;text-align:right;z-index:3}
+</style>
+</head>
+<body>
+<main class="slide">
+  <header class="top"><div class="brand"><div class="mark">N</div><div class="brandname">NERO <span>/ AGENT</span></div></div><div class="meta"><b>TIME SCALE</b> / 04 LAYERS</div></header>
+
+  <h2>同一张桌面，<br>四种<em>时间尺度</em>。</h2>
+  <p class="intro">从一次搜索，到几天后自动回来。工作只需要一个能留住上下文的地方。</p>
+  <div class="legend"><span>NOW</span><span>MINUTES</span><span>DAYS</span><span>MONTHS</span></div>
+
+  <section class="timeline">
+    <div class="line"></div>
+    <div class="columns">
+      <div class="col"><span class="dot"></span><div class="time">秒</div><h3>搜索</h3><p>Tavily 与网页读取，把外部信息带进当前对话。</p><small>SEARCH / FETCH</small></div>
+      <div class="col"><span class="dot"></span><div class="time">分钟</div><h3>编辑</h3><p>在工作区查找、读取、改写，文件留在会话目录里。</p><small>GLOB / GREP / EDIT</small></div>
+      <div class="col"><span class="dot"></span><div class="time">天</div><h3>调度</h3><p>定时任务在隔离线程执行，管理页有状态和日志。</p><small>CRON / RUNS</small></div>
+      <div class="col"><span class="dot"></span><div class="time">长期</div><h3>沉淀</h3><p>模型目录与技能版本，让下一次不用从零开始。</p><small>MODELS / SKILLS</small></div>
+    </div>
+  </section>
+
+  <div class="quote">“不是一次性的问答，<span>是可以回来的工作台。</span>”</div>
+  <div class="shot"><img src="../assets/screenshots/normal-message-ok.jpg" alt="nero-agent 对话界面"></div>
+  <div class="shotcap">图 02 / 同一会话里的回答与输入框</div>
+</main>
+</body>
+</html>

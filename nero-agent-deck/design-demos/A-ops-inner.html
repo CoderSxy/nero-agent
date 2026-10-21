@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>NERO AGENT — Direction A / Loop</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #08090b; }
+  body { font-family: "Hiragino Sans GB", "Heiti SC", "Helvetica Neue", sans-serif; color: #f4f6ef; }
+  .slide { position: relative; width: 1920px; height: 1080px; overflow: hidden; background:
+    radial-gradient(1000px 600px at 82% 72%, rgba(124,92,252,.10), transparent 66%),
+    #08090b; }
+  .slide::before { content:""; position:absolute; inset:0; opacity:.23; pointer-events:none;
+    background-image: linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
+    background-size: 96px 96px; mask-image: linear-gradient(to bottom, black, transparent 92%); }
+  .topbar { position:absolute; left:72px; right:72px; top:54px; display:flex; align-items:center; justify-content:space-between; }
+  .brand { display:flex; align-items:center; gap:13px; }
+  .mark { width:35px; height:35px; border-radius:9px; display:grid; place-items:center; background:linear-gradient(145deg,#8a65ff,#4e9bff); color:#fff; font:800 19px/1 "Avenir Next",sans-serif; }
+  .brand-name { font:700 15px/1 "Avenir Next",sans-serif; letter-spacing:.18em; }
+  .brand-name span { font-weight:500; color:#8c9287; }
+  .kicker { font:500 13px/1 "SF Mono",Menlo,monospace; color:#8d9488; letter-spacing:.1em; }
+  .kicker b { color:#c7ff4a; font-weight:500; }
+  .head { position:absolute; left:72px; top:142px; width:760px; }
+  .label { display:flex; align-items:center; gap:12px; color:#aab1a1; font:500 14px/1 "SF Mono",Menlo,monospace; letter-spacing:.11em; margin-bottom:30px; }
+  .label::before { content:""; width:36px; height:1px; background:#c7ff4a; }
+  h2 { margin:0; font-size:80px; line-height:1.08; letter-spacing:-.03em; font-weight:620; }
+  h2 em { font-style:normal; color:#c7ff4a; }
+  .sub { margin:28px 0 0; font-size:24px; line-height:1.7; color:#9da595; font-weight:300; max-width:660px; }
+  .loop { position:absolute; left:72px; top:560px; width:1420px; height:300px; }
+  .rail { position:absolute; left:0; right:0; top:58px; height:1px; background:linear-gradient(90deg,#c7ff4a 0 18%, #3a4037 18% 100%); }
+  .nodes { position:absolute; left:0; right:0; top:0; display:grid; grid-template-columns:repeat(4,1fr); }
+  .node { position:relative; padding-top:0; }
+  .num { width:58px; height:58px; border:1px solid #596154; display:grid; place-items:center; background:#08090b; font:500 17px/1 "SF Mono",Menlo,monospace; color:#c7ff4a; position:relative; z-index:2; }
+  .node:nth-child(2) .num, .node:nth-child(3) .num, .node:nth-child(4) .num { color:#9aa392; border-color:#363c33; }
+  .node h3 { margin:46px 0 0; font-size:30px; font-weight:600; letter-spacing:-.01em; }
+  .node p { margin:14px 0 0; width:280px; font-size:17px; line-height:1.65; color:#8d9587; font-weight:300; }
+  .node small { display:block; margin-top:20px; font:500 11px/1.5 "SF Mono",Menlo,monospace; color:#5f665b; letter-spacing:.06em; text-transform:none; }
+  .return { position:absolute; left:0; top:272px; width:1260px; height:58px; overflow:visible; }
+  .return path { fill:none; stroke:#535a4f; stroke-width:1; stroke-dasharray:4 5; }
+  .return-label { position:absolute; left:470px; bottom:-2px; padding:0 12px; background:#08090b; color:#7e8777; font:500 11px/1 "SF Mono",Menlo,monospace; letter-spacing:.08em; }
+  .evidence { position:absolute; right:72px; top:142px; width:320px; }
+  .evidence .shot { width:320px; height:222px; border:1px solid #30362e; padding:7px; background:#11130f; }
+  .evidence img { width:100%; height:100%; object-fit:cover; object-position:0 0; filter:saturate(.75) contrast(1.05); }
+  .evidence .cap { margin-top:10px; font:500 11px/1.55 "SF Mono",Menlo,monospace; color:#656d60; }
+  .evidence .cap b { color:#aab2a1; font-weight:500; }
+  .specs { position:absolute; left:72px; right:72px; bottom:50px; display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid rgba(255,255,255,.14); }
+  .spec { padding:18px 24px 0 0; }
+  .spec + .spec { padding-left:24px; border-left:1px solid rgba(255,255,255,.1); }
+  .spec b { display:block; font:500 12px/1 "SF Mono",Menlo,monospace; color:#c7ff4a; letter-spacing:.08em; margin-bottom:9px; }
+  .spec span { font-size:16px; color:#8d9587; line-height:1.5; }
+  .vert { position:absolute; right:26px; top:770px; writing-mode:vertical-rl; font:500 11px/1 "SF Mono",Menlo,monospace; color:#4e554a; letter-spacing:.14em; }
+</style>
+</head>
+<body>
+<main class="slide">
+  <header class="topbar">
+    <div class="brand"><div class="mark">N</div><div class="brand-name">NERO <span>/ AGENT</span></div></div>
+    <div class="kicker">WORK LOOP / <b>04 STAGES</b></div>
+  </header>
+
+  <section class="head">
+    <div class="label">工作闭环</div>
+    <h2>不是问答结束，<br>而是<em>下一次开始</em>。</h2>
+    <p class="sub">一次会话里，外部信息被带进来，文件被写下去，记忆留下来，任务按周期再回来。四件事不是四个产品，而是一条路径。</p>
+  </section>
+
+  <section class="loop">
+    <div class="rail"></div>
+    <div class="nodes">
+      <div class="node">
+        <div class="num">01</div>
+        <h3>查</h3>
+        <p>Tavily 搜索与网页读取，把外部资料带进当前上下文。</p>
+        <small>SEARCH / FETCH</small>
+      </div>
+      <div class="node">
+        <div class="num">02</div>
+        <h3>写</h3>
+        <p>在工作区里查找、读取、精确编辑；每次写入都带版本校验。</p>
+        <small>GLOB / GREP / EDIT</small>
+      </div>
+      <div class="node">
+        <div class="num">03</div>
+        <h3>记</h3>
+        <p>会话记忆与线程隔离，下一次回来还能接上上一次的上下文。</p>
+        <small>MEMORY / THREAD</small>
+      </div>
+      <div class="node">
+        <div class="num">04</div>
+        <h3>跑</h3>
+        <p>定时任务在独立线程执行；暂停、恢复、日志都留在管理页。</p>
+        <small>CRON / ISOLATED RUN</small>
+      </div>
+    </div>
+    <svg class="return" viewBox="0 0 1260 58" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M1210 12 C1210 50 1110 50 1020 50 L120 50 C50 50 30 34 30 14"/>
+    </svg>
+    <div class="return-label">下一次自动回来</div>
+  </section>
+
+  <aside class="evidence">
+    <div class="shot"><img src="../assets/screenshots/desktop-management.jpg" alt="技能管理界面"></div>
+    <div class="cap"><b>技能管理</b> / 版本、权限、发布与停用</div>
+  </aside>
+
+  <section class="specs">
+    <div class="spec"><b>MAX STEPS</b><span>单次运行最多 100 步</span></div>
+    <div class="spec"><b>TASK SKILLS</b><span>单个定时任务最多绑定 5 个技能</span></div>
+    <div class="spec"><b>WRITE CHECK</b><span>编辑需要 expectedEtag，冲突不覆盖</span></div>
+    <div class="spec"><b>SANDBOX</b><span>命令与文件写入默认关闭</span></div>
+  </section>
+  <div class="vert">NOT A CHAT LOG / A WORKBENCH THAT CONTINUES</div>
+</main>
+</body>
+</html>

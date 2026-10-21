@@ -1,0 +1,31 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>03 · Work loop</title><link rel="stylesheet" href="base.css"><style>
+.s03-head{position:absolute;left:72px;top:144px;width:860px;z-index:4}
+.s03-head h2{margin:0;font-size:76px;line-height:1.08;letter-spacing:-.035em}
+.s03-head h2 em{font-style:normal;color:var(--accent)}
+.s03-head .body{margin-top:26px;max-width:760px}
+.s03-loop{position:absolute;left:72px;right:72px;top:548px;height:330px;z-index:4}
+.s03-rail{position:absolute;left:0;right:0;top:56px;height:1px;background:linear-gradient(90deg,var(--accent) 0 20%, #3a4037 20% 100%)}
+.s03-nodes{position:absolute;left:0;right:0;top:0;display:grid;grid-template-columns:repeat(4,1fr)}
+.s03-node{position:relative}.s03-num{width:58px;height:58px;border:1px solid #596154;display:grid;place-items:center;background:var(--bg);font:500 18px/1 var(--mono);color:var(--accent);position:relative;z-index:2}
+.s03-node:nth-child(2) .s03-num,.s03-node:nth-child(3) .s03-num,.s03-node:nth-child(4) .s03-num{color:#9aa392;border-color:#363c33}
+.s03-node h3{margin:40px 0 0;font-size:32px;font-weight:600}
+.s03-node p{margin:12px 0 0;width:325px;font-size:20px;line-height:1.65;color:var(--muted);font-weight:300}
+.s03-node small{display:block;margin-top:16px;font:500 16px/1.5 var(--mono);color:var(--dim)}
+.s03-return{position:absolute;left:0;top:278px;width:1420px;height:50px}
+.s03-return path{fill:none;stroke:#535a4f;stroke-width:1;stroke-dasharray:4 5}
+.s03-return-label{position:absolute;left:520px;bottom:-2px;padding:0 12px;background:var(--bg);color:var(--dim);font:500 16px/1 var(--mono)}
+.s03-specs{position:absolute;left:72px;right:72px;bottom:48px;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);z-index:4}
+.s03-spec{padding:16px 24px 0 0}.s03-spec+.s03-spec{padding-left:24px;border-left:1px solid var(--line-soft)}
+.s03-spec b{display:block;font:500 16px/1 var(--mono);color:var(--accent);letter-spacing:.06em;margin-bottom:7px}
+.s03-spec span{font-size:18px;line-height:1.5;color:var(--muted)}
+</style></head><body><main class="slide">
+<header class="topbar"><div class="brand"><div class="mark">N</div><div class="brand-name">NERO <span>/ AGENT</span></div></div><div class="status"><span class="dot"></span>WORK LOOP / 04 STAGES</div></header>
+<section class="s03-head"><div class="kicker" style="margin-bottom:28px">工作闭环</div><h2>不是问答结束，<br>而是<em>下一次开始</em>。</h2><p class="body">一次会话里，外部信息被带进来，文件被写下去，记忆留下来，任务按周期再回来。四件事不是四个产品，而是一条路径。</p></section>
+<section class="s03-loop"><div class="s03-rail"></div><div class="s03-nodes">
+<div class="s03-node"><div class="s03-num">01</div><h3>查</h3><p>Tavily 搜索与网页读取，把外部资料带进当前上下文。</p><small>SEARCH / FETCH</small></div>
+<div class="s03-node"><div class="s03-num">02</div><h3>写</h3><p>在工作区里查找、读取、精确编辑；每次写入都带版本校验。</p><small>GLOB / GREP / EDIT</small></div>
+<div class="s03-node"><div class="s03-num">03</div><h3>记</h3><p>会话记忆与线程隔离，下一次回来还能接上上一次的上下文。</p><small>MEMORY / THREAD</small></div>
+<div class="s03-node"><div class="s03-num">04</div><h3>跑</h3><p>定时任务在独立线程执行；暂停、恢复、日志都留在管理页。</p><small>CRON / ISOLATED RUN</small></div>
+</div><svg class="s03-return" viewBox="0 0 1420 50" preserveAspectRatio="none" aria-hidden="true"><path d="M1360 10 C1360 44 1260 44 1160 44 L120 44 C50 44 30 30 30 12"/></svg><div class="s03-return-label">下一次自动回来</div></section>
+<section class="s03-specs"><div class="s03-spec"><b>MAX STEPS</b><span>单次运行最多 100 步</span></div><div class="s03-spec"><b>TASK SKILLS</b><span>单个定时任务最多绑定 5 个技能</span></div><div class="s03-spec"><b>WRITE CHECK</b><span>编辑需要 expectedEtag，冲突不覆盖</span></div><div class="s03-spec"><b>SANDBOX</b><span>命令与文件写入默认关闭</span></div></section>
+</main></body></html>

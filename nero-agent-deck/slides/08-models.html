@@ -1,0 +1,26 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>08 · Model catalog</title><link rel="stylesheet" href="base.css"><style>
+.s08-head{position:absolute;left:72px;top:142px;width:1180px;z-index:4}
+.s08-head h2{margin:0;font-size:70px;line-height:1.08;letter-spacing:-.035em}
+.s08-head h2 em{font-style:normal;color:var(--accent)}
+.s08-head .body{margin-top:20px;max-width:1080px}
+.s08-cols{position:absolute;left:72px;right:72px;top:430px;display:grid;grid-template-columns:1fr 1fr;gap:48px;z-index:4}
+.s08-card{border-top:1px solid var(--line);padding-top:18px}
+.s08-card h3{margin:0 0 8px;font-size:28px;font-weight:600}
+.s08-card>p{margin:0 0 16px;font-size:19px;line-height:1.55;color:var(--muted)}
+.s08-card .mono{font:500 16px/1.7 var(--mono);color:var(--dim)}
+.s08-diagram{position:absolute;left:72px;right:72px;bottom:128px;display:grid;grid-template-columns:1fr 160px 1fr 160px 1fr;align-items:center;gap:0;z-index:4}
+.s08-box{border:1px solid var(--line);background:rgba(255,255,255,.025);padding:16px 18px}
+.s08-box small{display:block;font:500 16px/1 var(--mono);color:var(--accent);letter-spacing:.06em;margin-bottom:7px}
+.s08-box b{font-size:20px;font-weight:500;color:var(--fg)}
+.s08-arrow{text-align:center;font:500 16px/1.4 var(--mono);color:var(--dim)}
+.s08-strip{position:absolute;left:72px;right:72px;bottom:48px;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);padding-top:14px;z-index:4}
+.s08-strip div{padding-right:20px}.s08-strip div+div{padding-left:20px;border-left:1px solid var(--line-soft)}
+.s08-strip b{display:block;font:500 16px/1 var(--mono);color:var(--accent);margin-bottom:7px}
+.s08-strip span{font-size:17px;line-height:1.5;color:var(--muted)}
+</style></head><body><main class="slide">
+<header class="topbar"><div class="brand"><div class="mark">N</div><div class="brand-name">NERO <span>/ AGENT</span></div></div><div class="status"><span class="dot"></span>MODEL CATALOG / SERVER-SIDE KEYS</div></header>
+<section class="s08-head"><div class="kicker" style="margin-bottom:26px">模型目录</div><h2>模型是目录，<br>不是散落在环境变量里的 <em>Key</em>。</h2><p class="body">公共模型由管理员维护，私有模型每人独立。浏览器只看到模型标识；密钥在服务端加密保存，调用时也不回传前端。</p></section>
+<section class="s08-cols"><div class="s08-card"><h3>公共模型</h3><p>管理员维护，所有登录用户可选。至少一个启用的公共默认模型，聊天和 Studio 才能运行。</p><div class="mono">provider / modelId / baseURL / supportsVision / default</div></div><div class="s08-card"><h3>私有模型</h3><p>每个用户独立维护，仅本人可见、可选、可调用。编辑时留空 Key 表示保留原 Key。</p><div class="mono">OpenAI-compatible chat only<br>no self-registration</div></div></section>
+<section class="s08-diagram"><div class="s08-box"><small>BROWSER</small><b>模型标识</b></div><div class="s08-arrow">request<br>＋ thread model ref</div><div class="s08-box"><small>MASTRA SERVER</small><b>解密 Key，发起调用</b></div><div class="s08-arrow">HTTPS<br>allowlist</div><div class="s08-box"><small>ENDPOINT</small><b>OpenAI-compatible</b></div></section>
+<footer class="s08-strip"><div><b>AES-256-GCM</b><span>API Key 服务端加密保存</span></div><div><b>ALLOWLIST</b><span>只允许批准的 HTTPS 源</span></div><div><b>DNS CHECK</b><span>拒绝环回、内网与云元数据地址</span></div><div><b>NO REDIRECT</b><span>模型请求拒绝重定向</span></div></footer>
+</main></body></html>

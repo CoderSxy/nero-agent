@@ -16,9 +16,9 @@ describe('read only agent configuration', () => {
     expect(screen.getByText('web_search')).toBeTruthy();
     expect(screen.getByText('工作流')).toBeTruthy();
     expect(screen.getByText('处理器')).toBeTruthy();
-    expect(screen.getByText('Skills')).toBeTruthy();
+    expect(screen.getByText('技能')).toBeTruthy();
     expect(screen.getByText('评分器')).toBeTruthy();
-    expect(screen.getByText('System Prompt')).toBeTruthy();
+    expect(screen.getByText('系统提示词')).toBeTruthy();
     expect(screen.getAllByText('Enabled').length).toBeGreaterThan(0);
     expect(screen.getByText('你是一个智能体。')).toBeTruthy();
   });
@@ -33,7 +33,7 @@ describe('read only agent configuration', () => {
     render(<ConfigPanel agent={{ name: '智能体', tools: {}, instructions: '**加粗**' } as never}
       loading={false} error={null} />);
     expect(screen.getByText('加粗').tagName).toBe('STRONG');
-    fireEvent.click(screen.getByRole('button', { name: 'Source' }));
+    fireEvent.click(screen.getByRole('button', { name: '源码' }));
     expect(screen.getByText('**加粗**')).toBeTruthy();
   });
   it('does not count the same processor twice across input and output', () => {
@@ -71,7 +71,7 @@ describe('read only agent configuration', () => {
     render(<ConfigPanel agent={{ name: '智能体', workspaceId: 'agent-workspace', tools: {} } as never}
       memory={null} loading={false} error={null} />);
     fireEvent.click(screen.getByRole('button', { name: '展开工作区' }));
-    expect(screen.getByText('Agent 配置：agent-workspace')).toBeTruthy();
+    expect(screen.getByText('智能体配置：agent-workspace')).toBeTruthy();
     expect(screen.queryByRole('tree')).toBeNull();
   });
   it('keeps the available catalog separate from skills loaded this turn', () => {

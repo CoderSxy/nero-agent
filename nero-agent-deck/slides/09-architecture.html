@@ -1,0 +1,36 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>09 · Architecture</title><link rel="stylesheet" href="base.css"><style>
+.s09-head{position:absolute;left:72px;top:138px;width:1100px;z-index:4}
+.s09-head h2{margin:0;font-size:68px;line-height:1.08;letter-spacing:-.035em}
+.s09-head h2 em{font-style:normal;color:var(--accent)}
+.s09-head .body{margin-top:18px;max-width:980px}
+.s09-diagram{position:absolute;left:72px;right:72px;top:396px;bottom:98px;z-index:4}
+.s09-layer{position:absolute;left:0;right:0;border:1px solid var(--line);background:rgba(255,255,255,.02);padding:18px 22px}
+.s09-layer .layer-label{position:absolute;left:22px;top:-12px;background:var(--bg);padding:0 8px;font:500 16px/1 var(--mono);color:var(--accent);letter-spacing:.06em}
+.s09-top{top:0;height:118px;display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.s09-top .node{border-left:1px solid var(--line-soft);padding-left:18px}.s09-top .node:first-child{border-left:0;padding-left:0}
+.s09-top b{display:block;font-size:24px;font-weight:600;margin-bottom:6px}.s09-top span{font-size:18px;line-height:1.5;color:var(--muted)}
+.s09-core{top:158px;height:190px;border-color:rgba(199,255,74,.42);background:rgba(199,255,74,.035)}
+.s09-core h3{margin:4px 0 6px;font-size:30px;font-weight:600}.s09-core>p{margin:0 0 16px;font-size:19px;line-height:1.5;color:var(--muted)}
+.s09-core-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+.s09-core-grid div{padding-right:18px}.s09-core-grid div+div{padding-left:18px;border-left:1px solid var(--line-soft)}
+.s09-core-grid b{display:block;font:500 16px/1 var(--mono);color:var(--accent);margin-bottom:6px}
+.s09-core-grid span{font-size:17px;line-height:1.45;color:var(--muted)}
+.s09-bottom{top:388px;height:150px;display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+.s09-bottom .node{padding-right:18px}.s09-bottom .node+div{padding-left:18px;border-left:1px solid var(--line-soft)}
+.s09-bottom b{display:block;font-size:21px;font-weight:600;margin-bottom:6px}.s09-bottom span{font-size:17px;line-height:1.45;color:var(--muted)}
+.s09-lines{position:absolute;left:0;right:0;top:118px;height:40px;display:flex;justify-content:space-around;font:500 16px/1 var(--mono);color:var(--dim)}
+.s09-lines span{position:relative;padding-top:14px}.s09-lines span::before{content:"";position:absolute;left:50%;top:0;width:1px;height:10px;background:var(--line)}
+.s09-foot{position:absolute;right:72px;bottom:48px;font:500 16px/1.5 var(--mono);color:var(--dim);text-align:right;z-index:5}
+.s09-foot b{color:var(--accent);font-weight:500}
+</style></head><body><main class="slide">
+<header class="topbar"><div class="brand"><div class="mark">N</div><div class="brand-name">NERO <span>/ AGENT</span></div></div><div class="status"><span class="dot"></span>ARCHITECTURE / SELF-HOSTED</div></header>
+<section class="s09-head"><div class="kicker" style="margin-bottom:24px">系统剖面</div><h2>Mastra 在中间，<br>数据在两侧，<em>沙箱在下层</em>。</h2><p class="body">一个自托管单机形态：React 前端、Mastra 服务、PostgreSQL、DuckDB、Docker 沙箱与 Nginx Studio 网关。</p></section>
+<section class="s09-diagram">
+<div class="s09-layer s09-top"><div class="layer-label">SURFACE</div><div class="node"><b>用户页面</b><span>React 19 / Vite 6 / Tailwind 4<br>会话、工作区、技能、定时任务</span></div><div class="node"><b>Mastra Studio</b><span>仅管理员进入<br>Nginx 网关 / 独立登录</span></div></div>
+<div class="s09-lines"><span>HTTP / SSE</span><span>HTTP / auth</span></div>
+<div class="s09-layer s09-core"><div class="layer-label">CORE</div><h3>Mastra Server · Agent Runtime</h3><p>Agent 定义、工具调用、记忆、文件、定时任务、技能与模型目录。</p><div class="s09-core-grid"><div><b>AGENT</b><span>maxSteps 100<br>中文优先</span></div><div><b>TOOLS</b><span>Tavily / files<br>finance / sandbox</span></div><div><b>SCHEDULE</b><span>cron / isolated<br>thread per run</span></div><div><b>SKILLS</b><span>versions / grants<br>pinned at fire</span></div></div></div>
+<div class="s09-lines"><span>SQL</span><span>observability</span><span>sandbox API</span><span>deploy</span></div>
+<div class="s09-layer s09-bottom"><div class="layer-label">SUBSTRATE</div><div class="node"><b>PostgreSQL</b><span>用户、会话、记忆、任务、模型目录</span></div><div class="node"><b>DuckDB</b><span>开发环境可观测性</span></div><div class="node"><b>Docker Sandbox</b><span>命令执行；默认关闭</span></div><div class="node"><b>ECS / Nginx</b><span>单机生产形态</span></div></div>
+</section>
+<div class="s09-foot"><b>版本</b> / Mastra 1.71 · React 19 · Vite 6 · Tailwind 4</div>
+</main></body></html>

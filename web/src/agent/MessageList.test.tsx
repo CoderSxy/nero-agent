@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { MessageList } from './MessageList';
 
@@ -219,7 +219,7 @@ describe('message tools and stream state', () => {
     ] } };
     const { container } = render(<MessageList messages={[message] as never} isRunning error={null}
       onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
-    expect(screen.getByText('Reasoning')).toBeTruthy();
+    expect(screen.getByText('推理过程')).toBeTruthy();
     expect(screen.getByText('正在规划搜索')).toBeTruthy();
     expect(screen.getByText('苏州天气')).toBeTruthy();
     expect(container.querySelector('.process-message--running')).toBeTruthy();
@@ -250,7 +250,7 @@ describe('message tools and stream state', () => {
     ] } };
     render(<MessageList messages={[message] as never} isRunning error={null}
       onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
-    expect(screen.getByText('Observing ~42.6k tokens')).toBeTruthy();
+    expect(screen.getByText('观察中 ~42.6k tokens')).toBeTruthy();
     expect(screen.queryByText('正在处理…')).toBeNull();
   });
   it('shows one expandable completed observation with Studio details', () => {
@@ -264,19 +264,34 @@ describe('message tools and stream state', () => {
     const { container } = render(<MessageList messages={[message] as never} isRunning={false} error={null}
       onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
     expect(container.querySelectorAll('[data-om-badge="c1"]')).toHaveLength(1);
-    fireEvent.click(screen.getByRole('button', { name: /Observed 93\.5k→382 tokens/ }));
-    expect(screen.getByText('Input: 93.5k')).toBeTruthy();
-    expect(screen.getByText('Output: 382')).toBeTruthy();
-    expect(screen.getByText('Compression: 245x')).toBeTruthy();
-    expect(screen.getByText('Duration:')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /已观察 93\.5k→382 tokens/ }));
+    expect(screen.getByText('输入：93.5k')).toBeTruthy();
+    expect(screen.getByText('输出：382')).toBeTruthy();
+    expect(screen.getByText('压缩：245x')).toBeTruthy();
+    expect(screen.getByText('耗时：')).toBeTruthy();
     expect(screen.getByText('Research summary')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Observations' }));
+    fireEvent.click(screen.getByRole('button', { name: '观察内容' }));
     expect(screen.queryByText('Research summary')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Current Task' }));
+    fireEvent.click(screen.getByRole('button', { name: '当前任务' }));
     expect(screen.getByText('Continue research')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Suggested Response' }));
+    fireEvent.click(screen.getByRole('button', { name: '建议回复' }));
     expect(screen.getByText('Answer concisely')).toBeTruthy();
   });
+  it('localizes completed reflection and preserves extraction values and failures', () => {
+    const message = { id: 'reflection', role: 'assistant', content: { format: 2, parts: [
+      { type: 'data-om-observation-end', data: { cycleId: 'reflection-1', operationType: 'reflection',
+        tokensObserved: 2000, observationTokens: 100, observations: '* 反思摘要',
+        extractedValues: { profile: { name: 'Nero' } }, extractionFailures: [{ slug: 'preference', error: '无法提取' }] } },
+    ] } };
+    render(<MessageList messages={[message] as never} isRunning={false} error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+    expect(screen.getByRole('button', { name: /已反思 2.0k→100 tokens/ }).getAttribute('aria-expanded')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: /提取结果/ }));
+    expect(screen.getByText(/"name": "Nero"/)).toBeTruthy();
+    expect(screen.getByText('无法提取')).toBeTruthy();
+    expect(screen.queryByText(/Observed|Reflected|Extractions/)).toBeNull();
+  });
+
   it('shows a buffered observation from saved messages with its expandable contents', () => {
     const messages = [
       { id: 'buffer-start', role: 'assistant', content: { format: 2, parts: [
@@ -292,7 +307,7 @@ describe('message tools and stream state', () => {
       onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
     expect(container.querySelectorAll('[data-om-badge="buffer-1"]')).toHaveLength(1);
     expect(container.querySelector('[data-om-state="buffering-complete"]')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /Buffered observations 14\.7k→272 tokens/ }));
+    fireEvent.click(screen.getByRole('button', { name: /已缓冲观察 14\.7k→272 tokens/ }));
     expect(screen.getByText('User asked about Suzhou weather')).toBeTruthy();
   });
   it('shows buffering progress and failure without leaving a stale progress marker', () => {
@@ -301,7 +316,7 @@ describe('message tools and stream state', () => {
     ] } };
     const props = { isRunning: true, error: null, onApprove: vi.fn(), onDecline: vi.fn(), onAnswer: vi.fn() };
     const view = render(<MessageList messages={[start] as never} {...props} />);
-    expect(screen.getByText('Buffering reflection ~2.0k tokens')).toBeTruthy();
+    expect(screen.getByText('反思中 ~2.0k tokens')).toBeTruthy();
     view.rerender(<MessageList messages={[start, { id: 'buffer-failed', role: 'assistant', content: { format: 2, parts: [
       { type: 'data-om-buffering-failed', data: { cycleId: 'buffer-2', operationType: 'reflection', error: 'model unavailable' } },
     ] } }] as never} {...props} isRunning={false} />);
@@ -316,9 +331,9 @@ describe('message tools and stream state', () => {
     ] } };
     const props = { error: null, onApprove: vi.fn(), onDecline: vi.fn(), onAnswer: vi.fn() };
     const view = render(<MessageList messages={[message] as never} isRunning {...props} />);
-    expect(screen.getByText('Buffering observations ~6.8k tokens')).toBeTruthy();
+    expect(screen.getByText('观察中 ~6.8k tokens')).toBeTruthy();
     view.rerender(<MessageList messages={[message] as never} isRunning={false} {...props} />);
-    expect(screen.queryByText('Buffering observations ~6.8k tokens')).toBeNull();
+    expect(screen.queryByText('观察中 ~6.8k tokens')).toBeNull();
     expect(screen.getByText('已经完成的回答')).toBeTruthy();
   });
   it('hides an old orphan spinner while another turn is running', () => {
@@ -343,7 +358,7 @@ describe('message tools and stream state', () => {
     ] } };
     render(<MessageList messages={[message] as never} isRunning={false} error={null}
       onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: /Buffered observations 9\.0k→363 tokens/ }));
+    fireEvent.click(screen.getByRole('button', { name: /已缓冲观察 9\.0k→363 tokens/ }));
     expect(screen.getByText('用户想要秋季旅行建议')).toBeTruthy();
     expect(screen.queryByText('No observations')).toBeNull();
   });
@@ -372,7 +387,7 @@ describe('message tools and stream state', () => {
     const { container } = render(<MessageList messages={messages as never} isRunning={false} error={null}
       onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
     expect(container.querySelector('[data-om-badge="activation-1"][data-om-state="activated"]')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /Observed 14\.7k→272 tokens/ }));
+    fireEvent.click(screen.getByRole('button', { name: /已观察 14\.7k→272 tokens/ }));
     expect(screen.getByText('Activated weather notes')).toBeTruthy();
     expect(screen.getByText('reflection failed')).toBeTruthy();
   });
@@ -399,7 +414,7 @@ describe('message tools and stream state', () => {
     ] } };
     render(<MessageList messages={[message] as never} isRunning={false} error={null}
       onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: /Extractions \(1\).*1 failed/ }));
+    fireEvent.click(screen.getByRole('button', { name: /提取结果（1）.*1 项失败/ }));
     expect(screen.getByText('score')).toBeTruthy();
     expect(screen.getByText('42')).toBeTruthy();
     expect(screen.getByText('unavailable')).toBeTruthy();
@@ -524,6 +539,36 @@ describe('message tools and stream state', () => {
     expect(approve).toHaveBeenCalledTimes(1);
     resolve();
   });
+  it.each(['approve', 'decline'] as const)('keeps concurrent %s requests pending independently and retries failures', async action => {
+    let failA!: (cause: Error) => void;
+    let failB!: (cause: Error) => void;
+    const decide = vi.fn((id: string) => new Promise<void>((_, reject) => {
+      if (id === 'A') failA = reject;
+      else failB = reject;
+    }));
+    const message = (id: string) => ({ id, role: 'assistant', content: { format: 2, parts: [
+      { type: 'tool-invocation', toolInvocation: { state: 'approval-requested', toolCallId: id,
+        toolName: 'execute_command', args: { command: id } } },
+    ] } });
+    render(<MessageList messages={[message('A'), message('B')] as never} isRunning={false} error={null}
+      onApprove={decide} onDecline={decide} onAnswer={vi.fn()} />);
+    const [a, b] = screen.getAllByRole('button', { name: action === 'approve' ? '批准执行' : '拒绝' });
+    fireEvent.click(a);
+    fireEvent.click(b);
+    expect(a).toHaveProperty('disabled', true);
+    expect(b).toHaveProperty('disabled', true);
+    await act(async () => { failA(new Error('network')); });
+    expect(a).toHaveProperty('disabled', false);
+    expect(b).toHaveProperty('disabled', true);
+    fireEvent.click(b);
+    expect(decide.mock.calls.filter(([id]) => id === 'B')).toHaveLength(1);
+    await act(async () => { failB(new Error('network')); });
+    expect(b).toHaveProperty('disabled', false);
+    fireEvent.click(b);
+    expect(decide.mock.calls.filter(([id]) => id === 'B')).toHaveLength(2);
+    await act(async () => { failB(new Error('network')); });
+  });
+
   it('does not offer approval for an ordinary running tool', () => {
     const message = { ...pendingMessage, content: { ...pendingMessage.content, parts: [
       { type: 'tool-invocation', toolInvocation: { state: 'call', toolCallId: 'tool-1', toolName: 'search', args: {} } },

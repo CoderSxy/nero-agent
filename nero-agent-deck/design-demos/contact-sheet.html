@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>NERO AGENT — 六格方向板</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#e9e5db;color:#171513;font-family:"Hiragino Sans GB","Heiti SC","Helvetica Neue",sans-serif}
+  .page{width:1920px;min-height:1080px;margin:0 auto;padding:54px 72px 46px;background:#f2ebdd}
+  header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #171513;padding-bottom:14px;margin-bottom:24px}
+  h1{font-family:"Songti SC","STSong",serif;font-size:42px;margin:0;font-weight:700;letter-spacing:-.04em}
+  .meta{font:500 11px/1.6 "SF Mono",Menlo,monospace;color:#6b6252;text-align:right}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .card{background:#fffdf7;border:1px solid rgba(23,21,19,.28);padding:10px 10px 13px}
+  .mini{height:246px;position:relative;overflow:hidden;border:1px solid rgba(23,21,19,.14)}
+  .label{display:flex;justify-content:space-between;gap:12px;margin-top:11px;font:500 11px/1.5 "SF Mono",Menlo,monospace;color:#6b6252}
+  .label b{font-size:14px;color:#171513;font-family:"Hiragino Sans GB",sans-serif}
+  .label em{font-style:normal;color:#d1482d}
+  .dark{background:#08090b;color:#f4f6ef}
+  .paper{background:#f2ebdd;color:#171513}
+  .cool{background:#f4f6f2;color:#0a2342}
+  .blue{background:#08234a;color:#eaf3ff}
+  .ink{background:#efe7d6;color:#181512}
+  .brut{background:#f8f8f6;color:#101010}
+  .mtitle{position:absolute;left:24px;top:50px;font-family:"Songti SC","STSong",serif;font-weight:700;line-height:1.1;letter-spacing:-.05em}
+  .mline{position:absolute;left:24px;height:2px;width:54px;top:34px;background:currentColor;opacity:.55}
+  .mimg{position:absolute;right:24px;top:52px;width:48%;height:110px;background:rgba(255,255,255,.72);border:1px solid currentColor;opacity:.55}
+  .mfoot{position:absolute;left:24px;right:24px;bottom:22px;height:1px;background:currentColor;opacity:.3}
+  .mfoot::after{content:"";position:absolute;left:0;top:-3px;width:38%;height:7px;background:currentColor;opacity:.45}
+  .accent{color:#c7ff4a}.red{color:#d1482d}.cobalt{color:#1c4cff}.cyan{color:#80cfff}.yellow{color:#f2c84b}
+  .kicker{position:absolute;left:24px;top:20px;font:500 9px/1 "SF Mono",Menlo,monospace;letter-spacing:.12em;opacity:.7}
+  .stripe{position:absolute;left:0;top:0;bottom:0;width:8px;background:currentColor;opacity:.85}
+  .stripe.redbar{background:#d1482d;color:#d1482d}
+  .stripe.bluebar{background:#1c4cff;color:#1c4cff}
+  .stripe.yellowbar{background:#f2c84b;color:#f2c84b}
+  .big{position:absolute;left:24px;bottom:28px;font:700 74px/1 "Avenir Next",sans-serif;letter-spacing:-.07em;opacity:.12}
+  footer{display:flex;justify-content:space-between;margin-top:26px;border-top:1px solid rgba(23,21,19,.3);padding-top:14px;font:500 11px/1.5 "SF Mono",Menlo,monospace;color:#6b6252}
+  footer b{color:#d1482d}
+</style>
+</head>
+<body>
+<div class="page">
+  <header><h1>六个候选，三个方向</h1><div class="meta">先画骨架，再挑三张做完整版<br>NERO AGENT / 2026.10</div></header>
+  <div class="grid">
+    <div class="card"><div class="mini dark"><div class="stripe" style="color:#c7ff4a"></div><div class="kicker">A / OPERATOR CONSOLE</div><div class="mtitle" style="font-size:36px;width:55%">一次对话，<br><span class="accent">持续工作</span>。</div><div class="mimg"></div><div class="mfoot"></div><div class="big">01</div></div><div class="label"><b>A · 控制台</b><em>selected</em></div></div>
+    <div class="card"><div class="mini paper"><div class="stripe redbar"></div><div class="kicker">B / FIELD MANUAL</div><div class="mtitle" style="font-size:38px;width:55%">工作，<br><span class="red">留在原地</span>。</div><div class="mimg"></div><div class="mfoot"></div><div class="big">02</div></div><div class="label"><b>B · 工程手册</b><em>selected</em></div></div>
+    <div class="card"><div class="mini cool"><div class="stripe bluebar"></div><div class="kicker">C / QUIET SYSTEM</div><div class="mtitle" style="font-size:36px;width:55%">让工作，<br>有地方<span class="cobalt">留下</span>。</div><div class="mimg"></div><div class="mfoot"></div><div class="big">03</div></div><div class="label"><b>C · 安静系统</b><em>selected</em></div></div>
+    <div class="card"><div class="mini blue"><div class="stripe" style="color:#80cfff"></div><div class="kicker">D / BLUEPRINT</div><div class="mtitle" style="font-size:34px;width:60%">系统<br><span class="cyan">剖面</span></div><div class="mimg" style="border-color:#80cfff"></div><div class="mfoot"></div><div class="big">04</div></div><div class="label"><b>D · 蓝图</b><em>备选</em></div></div>
+    <div class="card"><div class="mini ink"><div class="stripe redbar"></div><div class="kicker">E / INK EDITORIAL</div><div class="mtitle" style="font-size:34px;width:55%">工作<br><span class="red">留在桌面</span></div><div class="mimg"></div><div class="mfoot"></div><div class="big">05</div></div><div class="label"><b>E · 墨色编辑</b><em>备选</em></div></div>
+    <div class="card"><div class="mini brut"><div class="stripe yellowbar"></div><div class="kicker">F / BRUTAL TERMINAL</div><div class="mtitle" style="font-size:32px;width:62%;font-family:Avenir Next,sans-serif;font-weight:800;letter-spacing:-.06em">WORK<br>STAYS.</div><div class="mimg" style="background:#101010;border-color:#101010"></div><div class="mfoot"></div><div class="big">06</div></div><div class="label"><b>F · 粗野终端</b><em>备选</em></div></div>
+  </div>
+  <footer><span><b>取舍：</b>A 的现场感、B 的可信度、C 的呼吸感，三种语法差异最大。</span><span>三张完整版见 index.html</span></footer>
+</div>
+</body>
+</html>

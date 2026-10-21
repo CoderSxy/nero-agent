@@ -163,7 +163,7 @@ describe('Agent page model selection', () => {
     })));
     threadItems = [{ id: 'thread-1', title: '移动端会话', resourceId: 'agent', updatedAt: '2026-10-16T00:00:00Z' }];
     renderPage('/agent/new');
-    expect(await screen.findByRole('region', { name: 'Inbox' })).toBeTruthy();
+    expect(await screen.findByRole('region', { name: '首页' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '历史对话，1 个会话' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '文件管理' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '模型列表' })).toBeTruthy();
@@ -176,7 +176,7 @@ describe('Agent page model selection', () => {
       addEventListener: vi.fn(), removeEventListener: vi.fn(),
     })));
     renderPage('/agent/thread-1');
-    expect(await screen.findByRole('button', { name: '返回 Inbox' })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: '返回首页' })).toBeTruthy();
   });
   it('types directly in the mobile composer without creating a thread until send', async () => {
     vi.stubGlobal('matchMedia', vi.fn().mockImplementation((query: string) => ({
@@ -314,7 +314,7 @@ describe('Agent page model selection', () => {
   it('connects both bounded resize handles to the page layout', () => {
     const { container } = renderPage();
     const left = screen.getByRole('separator', { name: '调整左侧面板宽度' });
-    fireEvent.click(screen.getByRole('button', { name: '打开 Config 面板' }));
+    fireEvent.click(screen.getByRole('button', { name: '打开配置面板' }));
     const right = screen.getByRole('separator', { name: '调整右侧面板宽度' });
     fireEvent.keyDown(left, { key: 'End' });
     expect((container.querySelector('.agent-layout') as HTMLElement).style.getPropertyValue('--left-panel-width'))
@@ -326,7 +326,7 @@ describe('Agent page model selection', () => {
     vi.stubGlobal('innerWidth', 1400);
     const { container } = renderPage();
     const left = screen.getByRole('separator', { name: '调整左侧面板宽度' });
-    fireEvent.click(screen.getByRole('button', { name: '打开 Config 面板' }));
+    fireEvent.click(screen.getByRole('button', { name: '打开配置面板' }));
     const right = screen.getByRole('separator', { name: '调整右侧面板宽度' });
     fireEvent.keyDown(left, { key: 'End' });
     fireEvent.keyDown(right, { key: 'End' });
@@ -658,6 +658,22 @@ describe('history search', () => {
     fireEvent.click(screen.getByRole('button', {name:'发送'}));
     await waitFor(() => expect(screen.getByTestId('handoff-skills').textContent).toBe(id));
     expect(screen.getByTestId('auto-send').textContent).toBe('true');
+  });
+
+  it('surfaces a model catalog failure on the landing page and retries', async () => {
+    getSelectableModels.mockRejectedValueOnce(new Error('模型目录不可达'));
+    renderPage('/agent/new');
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('模型列表加载失败');
+    getSelectableModels.mockResolvedValueOnce([model(flash, '默认模型', { isDefault: true })]);
+    fireEvent.click(screen.getByRole('button', { name: '重试' }));
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+  });
+
+  it('explains the missing public default model to a regular user', async () => {
+    getSelectableModels.mockResolvedValue([model(pro, 'Pro')]);
+    renderPage('/agent/new');
+    expect(await screen.findByText(/管理员尚未配置公共默认模型/)).toBeTruthy();
   });
 
 });

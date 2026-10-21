@@ -29,7 +29,7 @@ export function ConfigPanel({ agent, memory, models, loading, error, availableCa
   const catalogNames = availableCatalog ?? names(agent?.skills);
   const scorers = names(extra?.scorers);
   return <aside className="config-panel" aria-label="智能体配置">
-    <header className="config-header"><h2>Config</h2><span>只读</span></header>
+    <header className="config-header"><h2>配置</h2><span>只读</span></header>
     <div className="config-body">
       {loading && <p>加载配置中…</p>}
       {error && <p role="alert" className="error">{error}</p>}
@@ -37,11 +37,11 @@ export function ConfigPanel({ agent, memory, models, loading, error, availableCa
         <ConfigGroup tone="tools" icon={<Wrench size={18} />} title="工具"
           summary={<span className="config-count">{tools.length}</span>}><Chips items={tools} /></ConfigGroup>
         <ConfigGroup tone="workflow" icon={<Workflow size={18} />} title="工作流"
-          summary={!workflows.length ? 'None' : workflows.length}>{workflows.length > 0 && <Chips items={workflows} />}</ConfigGroup>
+          summary={!workflows.length ? '未配置' : workflows.length}>{workflows.length > 0 && <Chips items={workflows} />}</ConfigGroup>
         <ConfigGroup tone="processors" icon={<Cpu size={18} />} title="处理器"
-          summary={!processors.length ? 'None' : processors.length}>{processors.length > 0 && <Chips items={processors} />}</ConfigGroup>
-        <ConfigGroup tone="skills" icon={<Sparkles size={18} />} title="Skills"
-          summary={!catalogNames.length ? 'None' : catalogNames.length}>
+          summary={!processors.length ? '未配置' : processors.length}>{processors.length > 0 && <Chips items={processors} />}</ConfigGroup>
+        <ConfigGroup tone="skills" icon={<Sparkles size={18} />} title="技能"
+          summary={!catalogNames.length ? '未配置' : catalogNames.length}>
           <div className="config-skill-split">
             <section aria-label="可用目录">
               <h4>可用目录</h4>
@@ -49,7 +49,7 @@ export function ConfigPanel({ agent, memory, models, loading, error, availableCa
             </section>
             <section aria-label="本轮加载">
               <h4>本轮加载</h4>
-              {turnActivations.length === 0 ? <span className="config-none">None</span> : <ul className="skill-execution-badges">
+              {turnActivations.length === 0 ? <span className="config-none">本轮未加载</span> : <ul className="skill-execution-badges">
                 {turnActivations.map(item => <li key={`${item.serverExecutionId}/${item.skillId}/${item.version ?? ''}/${item.status}`}
                   data-status={item.status}>
                   {item.status === 'failed' ? '加载失败' : '已加载'} {item.name}
@@ -61,13 +61,13 @@ export function ConfigPanel({ agent, memory, models, loading, error, availableCa
           </div>
         </ConfigGroup>
         <ConfigGroup tone="scorers" icon={<Gauge size={18} />} title="评分器"
-          summary={!scorers.length ? 'None' : scorers.length}>{scorers.length > 0 && <Chips items={scorers} />}</ConfigGroup>
+          summary={!scorers.length ? '未配置' : scorers.length}>{scorers.length > 0 && <Chips items={scorers} />}</ConfigGroup>
         <ConfigGroup tone="memory" icon={<Brain size={18} />} title="记忆">
           {memoryConfig ? <>
             <dl className="config-details">
               <dt>状态</dt><dd><Status enabled /></dd>
-              <dt>Last Messages</dt><dd><span className="config-chip">{typeof memoryConfig.lastMessages === 'number' ? memoryConfig.lastMessages : '未提供'}</span></dd>
-              <dt>Auto-generate Titles</dt><dd><Status enabled={Boolean('generateTitle' in memoryConfig && memoryConfig.generateTitle)} /></dd>
+              <dt>最近消息数</dt><dd><span className="config-chip">{typeof memoryConfig.lastMessages === 'number' ? memoryConfig.lastMessages : '未提供'}</span></dd>
+              <dt>自动生成标题</dt><dd><Status enabled={Boolean('generateTitle' in memoryConfig && memoryConfig.generateTitle)} /></dd>
               {models?.memoryModel && <><dt>记忆模型</dt><dd>{models.memoryModel}</dd></>}
             </dl>
             <button type="button" className="config-detail-toggle" onClick={() => toggle('memory')}
@@ -77,12 +77,12 @@ export function ConfigPanel({ agent, memory, models, loading, error, availableCa
               <dt>状态</dt><dd><Status enabled={Boolean(memoryConfig.observationalMemory?.enabled)} /></dd>
               {memoryConfig.observationalMemory?.observationModel && <><dt>模型</dt><dd>{display(memoryConfig.observationalMemory.observationModel)}</dd></>}
             </dl>}
-          </> : <p className="config-none">None</p>}
+          </> : <p className="config-none">未配置</p>}
         </ConfigGroup>
-        <ConfigGroup tone="prompt" icon={<FileText size={18} />} title="System Prompt"
+        <ConfigGroup tone="prompt" icon={<FileText size={18} />} title="系统提示词"
           summary={<span className="config-tabs"><button type="button" aria-pressed={promptView === 'read'}
-            onClick={() => setPromptView('read')}>Read</button><button type="button" aria-pressed={promptView === 'source'}
-              onClick={() => setPromptView('source')}>Source</button></span>}>
+            onClick={() => setPromptView('read')}>阅读</button><button type="button" aria-pressed={promptView === 'source'}
+              onClick={() => setPromptView('source')}>源码</button></span>}>
           {promptView === 'read' ? <div className="config-prompt config-prompt--read">
             <ReactMarkdown>{display(agent.instructions)}</ReactMarkdown></div> :
             <pre className="config-prompt">{display(agent.instructions)}</pre>}
@@ -97,7 +97,7 @@ export function ConfigPanel({ agent, memory, models, loading, error, availableCa
         <ConfigGroup tone="workspace" icon={<FileText size={18} />} title="工作区"
           summary={<button type="button" className="config-collapse" aria-label={`${open.workspace ? '收起' : '展开'}工作区`}
             onClick={() => toggle('workspace')}>{open.workspace ? '−' : '＋'}</button>}>
-          {open.workspace && <div className="config-workspace">{agent.workspaceId ? <p>Agent 配置：{agent.workspaceId}</p> : <p>未提供</p>}</div>}
+          {open.workspace && <div className="config-workspace">{agent.workspaceId ? <p>智能体配置：{agent.workspaceId}</p> : <p>未提供</p>}</div>}
         </ConfigGroup>
       </div>}
     </div>

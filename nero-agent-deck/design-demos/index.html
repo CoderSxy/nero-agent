@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NERO AGENT — 三个方向</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#0c0d0f;color:#eef1e9;font-family:"Hiragino Sans GB","Heiti SC","Helvetica Neue",sans-serif}
+  .wrap{max-width:1840px;margin:0 auto;padding:44px 0 54px}
+  header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid rgba(255,255,255,.18);padding-bottom:18px;margin-bottom:28px}
+  h1{font-family:"Songti SC","STSong",serif;font-size:44px;font-weight:600;letter-spacing:-.04em;margin:0}
+  .meta{font:500 12px/1.6 "SF Mono",Menlo,monospace;color:#8b948a;text-align:right;letter-spacing:.04em}
+  .meta b{color:#c7ff4a;font-weight:500}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:40px}
+  .direction{min-width:0}
+  .direction h2{font:600 20px/1.3 "Hiragino Sans GB",sans-serif;margin:0 0 6px;letter-spacing:-.01em}
+  .direction h2 span{color:#8b948a;font-weight:400;margin-left:8px;font-size:14px}
+  .direction p{font-size:14px;line-height:1.65;color:#9da59b;margin:0 0 14px;min-height:46px}
+  .frame{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;border:1px solid rgba(255,255,255,.16);background:#111;margin-bottom:14px}
+  .frame iframe{position:absolute;left:0;top:0;width:1920px;height:1080px;border:0;transform:scale(.3);transform-origin:top left}
+  .frame a{position:absolute;inset:0;z-index:2}
+  .frame::after{content:"打开完整页";position:absolute;right:10px;bottom:10px;z-index:3;font:500 11px/1 "SF Mono",Menlo,monospace;color:#eef1e9;background:rgba(0,0,0,.6);padding:7px 9px;opacity:0;transition:.15s}
+  .frame:hover::after{opacity:1}
+  .tag{display:inline-block;font:500 11px/1 "SF Mono",Menlo,monospace;letter-spacing:.08em;color:#c7ff4a;border:1px solid rgba(199,255,74,.35);padding:6px 8px;margin-top:2px}
+  footer{margin-top:34px;padding-top:18px;border-top:1px solid rgba(255,255,255,.14);display:flex;justify-content:space-between;gap:20px;font:500 12px/1.6 "SF Mono",Menlo,monospace;color:#7f877d}
+  footer b{color:#c7ff4a;font-weight:500}
+  a{color:inherit;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><h1>NERO AGENT / 三个方向</h1><div style="font-size:14px;color:#8b948a;margin-top:8px">同一个平台，三种叙事方式。每版两页，先看语法，不看完成度。</div></div>
+    <div class="meta"><b>A / B / C</b><br>1920 × 1080 · HTML DECK<br>2026.10</div>
+  </header>
+
+  <div class="grid">
+    <section class="direction">
+      <h2>A · 控制台 <span>OPS</span></h2>
+      <p>深石墨 + 信号绿。把平台当成一台正在运行的工作台：真实界面、运行参数、闭环路径。</p>
+      <div class="frame"><iframe src="A-ops-cover.html" title="A 控制台封面"></iframe><a href="A-ops-cover.html" target="_blank" aria-label="打开 A 控制台封面"></a></div>
+      <div class="frame"><iframe src="A-ops-inner.html" title="A 控制台内页"></iframe><a href="A-ops-inner.html" target="_blank" aria-label="打开 A 控制台内页"></a></div>
+      <span class="tag">技术感 / 现场感 / 深色</span>
+    </section>
+
+    <section class="direction">
+      <h2>B · 工程手册 <span>FIELD MANUAL</span></h2>
+      <p>暖纸 + 朱红 + 宋体。把产品当成一份可查阅的说明书：能力、边界、证据，一页一条。</p>
+      <div class="frame"><iframe src="B-manual-cover.html" title="B 工程手册封面"></iframe><a href="B-manual-cover.html" target="_blank" aria-label="打开 B 工程手册封面"></a></div>
+      <div class="frame"><iframe src="B-manual-inner.html" title="B 工程手册内页"></iframe><a href="B-manual-inner.html" target="_blank" aria-label="打开 B 工程手册内页"></a></div>
+      <span class="tag">可信 / 编辑感 / 暖色</span>
+    </section>
+
+    <section class="direction">
+      <h2>C · 安静系统 <span>QUIET SYSTEM</span></h2>
+      <p>冷白 + 钴蓝 + 大量留白。把产品当成一段时间：从秒到天，工作如何被留下。</p>
+      <div class="frame"><iframe src="C-quiet-cover.html" title="C 安静系统封面"></iframe><a href="C-quiet-cover.html" target="_blank" aria-label="打开 C 安静系统封面"></a></div>
+      <div class="frame"><iframe src="C-quiet-inner.html" title="C 安静系统内页"></iframe><a href="C-quiet-inner.html" target="_blank" aria-label="打开 C 安静系统内页"></a></div>
+      <span class="tag">克制 / 呼吸感 / 冷色</span>
+    </section>
+  </div>
+
+  <footer>
+    <span>选定一个方向后，我把它扩展成完整 11 页，出 PDF；需要可编辑再出 PPTX。</span>
+    <span><b>备选</b> / <a href="contact-sheet.html">六格方向板</a></span>
+  </footer>
+</div>
+</body>
+</html>
