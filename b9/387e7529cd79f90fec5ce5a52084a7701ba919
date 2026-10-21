@@ -1,0 +1,51 @@
+nero-agent-deck/NERO-AGENT.html
+  s_c386d1e6f15cb4::t_e708f0bfb1ed42 1-310,312-345,347-386,388-430
+  s_c386d1e6f15cb4::t_c7c53837e49a4e 311
+  s_c386d1e6f15cb4::t_3f9984b703c559 346
+  s_c386d1e6f15cb4::t_9dcf399a2f3e41 387
+docs/superpowers/specs/2026-10-20-sandbox-public-network-design.md
+  s_b64514dd091221::t_9a10f6220e85a2 1-135
+docs/skill-general-capabilities-proposal.md
+  s_b64514dd091221::t_09a20ab21854be 1-4,7-166
+  s_b64514dd091221::t_9a10f6220e85a2 5-6
+web/src/agent/ChineseObservationComplete.tsx
+  s_c386d1e6f15cb4::t_e32ea76974d2e0 2-29,33-80
+  s_b64514dd091221::t_9d4229f8e3d6f7 1,30-32
+web/src/agent/MessageList.test.tsx
+  s_c386d1e6f15cb4::t_354e795129ad25 417
+  s_c386d1e6f15cb4::t_632b9a5b5d6480 4,222,253,267-271,273,275,277,280-294,310,319,334,336,361,390,542-571
+web/src/agent/ChineseToolInteractions.tsx
+  s_c386d1e6f15cb4::t_058ba939d0cc25 1-103
+  s_c386d1e6f15cb4::t_fe24aa34623e13 104-110
+web/src/agent/MessageList.tsx
+  s_c386d1e6f15cb4::t_058ba939d0cc25 16,52-60,62-65,203,207,210-213,217,220-223,286-306,308,310,326-327,347-348
+  s_c386d1e6f15cb4::t_dce11a7ee8a8d1 15,351
+nero-agent-deck/DELIVERY.md
+  s_c386d1e6f15cb4::t_8d784b07675b09 1-29
+web/src/styles.css
+  s_b64514dd091221::t_ced1bf40c1527c 5-6,296-308,610,618-661
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b9387e7529cd79f90fec5ce5a52084a7701ba919",
+  "prompts": {},
+  "sessions": {
+    "s_b64514dd091221": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15936-a458-79d1-b9aa-5807fd10438c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_c386d1e6f15cb4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15c74-4e33-7411-8f27-a40626eecc19",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
