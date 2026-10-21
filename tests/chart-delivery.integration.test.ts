@@ -29,3 +29,9 @@ test('failed repair is explicit and finite',async()=>{
  const result=await agent.generate('请给折线图');
  assert.equal(requests.length,2);assert.match(result.text,/图表未能生成/);
 });
+test('a new canonical user signal changes delivery intent within the same run',async()=>{
+ const p=createTurnPolicyProcessor();const state={};const tools={web_fetch:{},write_file:{}};
+ const invoke=(text:string,id:string)=>p.processInputStep({state,tools,messages:[{id,role:'signal',type:'notification',content:{parts:[{type:'text',text}],metadata:{signal:{type:'user'}}}}],stepNumber:0} as any) as any;
+ const first=invoke('给我天气趋势图','one');assert.equal(first.tools.write_file,undefined);
+ const next=invoke('现在改成HTML看板','two');assert.equal(next.tools,undefined,'general artifact mode must preserve original tools');
+});

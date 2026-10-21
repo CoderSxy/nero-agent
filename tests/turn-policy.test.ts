@@ -27,3 +27,8 @@ test('chart completion requires closed strict JSON and actual matching data seri
  assert.equal(validateInlineChart('```echarts\n{"series":[]}').ok,false);
  assert.equal(validateInlineChart('```echarts\n{"series":[{"type":"line","data":[1e999]}]}\n```').ok,false);
 });
+test('style-only followups inherit a confirmed inline chart but concept questions do not restrict tools',()=>{
+ assert.equal(policy('换成红色',{previousDeliveryMode:'inline-chart'}).deliveryMode,'inline-chart');
+ assert.equal(policy('解释什么是趋势图').deliveryMode,'general');
+ assert.equal(policy('不要保存文件，只给我趋势图').deliveryMode,'inline-chart');
+});
