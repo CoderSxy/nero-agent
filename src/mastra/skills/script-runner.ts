@@ -230,9 +230,18 @@ export function createSkillScriptRunner(deps: SkillScriptRunnerDeps): SkillScrip
       assertHostQuotaReady();
       const resolved=await deps.resolve(ctx,skillName);if(!resolved.ok)return resolved;
       const task=await ensureThreadDirectory(ctx.auth,ctx.threadId,deps.lookup);
+      const workspaceRoot=await ensureUserWorkspace(ctx.auth);
       return queue.run(ctx.auth.userId,ctx.threadId,async()=>{
-        const copy=await materializeSkillExecution({pin:resolved.data.pin,verifiedReleaseRoot:resolved.data.releaseRoot,taskHostRoot:task.hostPath,taskContainerRoot:task.containerPath});
-        return {ok:true as const,skill:resolved.data.pin,data:{containerPath:copy.containerRoot,manifestHash:resolved.data.pin.manifestHash}};
+        const options=createSkillScriptContainerOptions({workspaceRoot,releaseRoot:resolved.data.releaseRoot,imageDigest:deps.imageDigest,labels:{[`${SKILL_SCRIPT_RUN_LABEL}.user`]:ctx.auth.userId,[`${SKILL_SCRIPT_RUN_LABEL}.skill`]:resolved.data.pin.skillId}});
+        validateSkillScriptContainerOptions(options,{workspaceRoot,releaseRoot:resolved.data.releaseRoot});
+        let containerId:string|undefined;
+        try {
+          const created=await deps.engine.create(options);containerId=created.id;await deps.engine.start(containerId);
+          const copy=await materializeSkillExecution({pin:resolved.data.pin,taskContainerRoot:task.containerPath,abortSignal:signal,execute:(cmd,args,opts)=>deps.engine.exec(containerId!,cmd,args,opts)});
+          return {ok:true as const,skill:resolved.data.pin,data:{containerPath:copy.containerRoot,manifestHash:resolved.data.pin.manifestHash}};
+        } finally {
+          if(containerId)await destroyWithRetry(deps.engine,containerId,removeRetries);
+        }
       },signal);
     },
     async execute(ctx, input, signal) {
@@ -319,7 +328,7 @@ export function createSkillScriptRunner(deps: SkillScriptRunnerDeps): SkillScrip
               const runtime=advanced?await prepareTaskRuntime({execute:(cmd,args,opts)=>deps.engine.exec(containerId!,cmd,args,opts),cwd:containerPath,imageDigest:deps.imageDigest,dependenciesEnabled:runtimeConfig.dependenciesEnabled,proxyUrl:network?.proxyUrl,abortSignal:signal}):undefined;
               let containerScript = `/skill/${scriptPath}`;
               if(interpreter==='node'&&runtimeConfig.dependenciesEnabled){
-                const copy=await materializeSkillExecution({pin,verifiedReleaseRoot:releaseRoot,taskHostRoot:threadHostPath,taskContainerRoot:containerPath});
+                const copy=await materializeSkillExecution({pin,taskContainerRoot:containerPath,abortSignal:signal,execute:(cmd,args,opts)=>deps.engine.exec(containerId!,cmd,args,opts)});
                 containerScript=copy.entrypoint(scriptPath);
               }
               // Argv form only — never compose a shell command string.

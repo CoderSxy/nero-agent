@@ -58,7 +58,7 @@ Node skill 复用的是当前会话根目录的 node_modules。若在子项目�
 
 run_skill_script 按发布入口、权限、pin 运行，Python 复用任务 venv；Node 使用固定版本的任务副本并从上级解析任务 node_modules，支持 CJS/ESM。发布原件仍挂载 /skill:ro。
 
-需要直接使用技能目录的 Bash 时，先调用 prepare_skill_resources({skillName})。工具返回当前 pin 的容器目录，并复制 scripts、templates 等原布局。复制版可写，重新准备会恢复发布内容；发布原件不变。不要把 skill:// 当作 shell 目录，也不要假设 argv 会展开 ${SKILL_DIR}。
+需要直接使用技能目录的 Bash 时，先调用 prepare_skill_resources({skillName})。工具返回当前 pin 的容器目录，并复制 scripts、templates 等原布局。复制在只挂载该用户工作区与只读技能发布目录的非 root 临时容器内完成。复制版可写，重新准备会恢复发布内容；发布原件不变。不要把 skill:// 当作 shell 目录，也不要假设 argv 会展开 ${SKILL_DIR}。
 
 ready 表示声明与部署配置匹配，不保证第三方依赖或完整工作流已通过验收；执行时仍实际检查出口与进程状态。
 

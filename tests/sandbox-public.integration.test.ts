@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
-import {mkdtemp,mkdir,writeFile,chmod,rm,readFile,access} from 'node:fs/promises';
+import {mkdtemp,mkdir,writeFile,chmod,rm,readFile,access,rename,symlink} from 'node:fs/promises';
 import {tmpdir} from 'node:os';import {join} from 'node:path';
 import {createDockerodeEngine} from '../src/mastra/sandbox/docker/client';
 import {DockerSandboxProvider} from '../src/mastra/sandbox/docker/provider';
@@ -10,6 +10,8 @@ import {SandboxManager} from '../src/mastra/sandbox/manager';
 import {sandboxNetworkManager} from '../src/mastra/sandbox/network/manager';
 import {authContextFromUser} from '../src/mastra/auth/auth-context';
 import {ensureThreadDirectory} from '../src/mastra/workspace/manager';
+import {materializeSkillExecution} from '../src/mastra/skills/materialize';
+import {createSkillScriptContainerOptions} from '../src/mastra/skills/script-container';
 import {createSkillScriptRunner} from '../src/mastra/skills/script-runner';
 import type {SkillRuntimeManifest} from '../src/mastra/skills/types';
 const enabled=process.env.SANDBOX_PUBLIC_INTEGRATION==='true';
@@ -58,6 +60,32 @@ test('live Docker: Bash, public-only HTTP, task pip/npm and skill Python/CJS/ESM
  for(const script of manifest.entrypoints){const result=await runner.execute(context,{skillName:'demo',path:script});assert.equal(result.ok,true);if(result.ok)assert.equal(result.data.exitCode,0,result.data.stderr)}
  const resources=await runner.prepareResources!(context,'demo');assert.equal(resources.ok,true);
  if(resources.ok)await run(`python '${resources.data.containerPath}/scripts/main.py'`);
+ // Pause the real sandbox copy after directory validation, then reproduce the
+ // ancestor swap from the review using a host-only victim outside the bind mount.
+ const outside=join(root,'host-only-victim');
+ const outsidePackage=join(outside,skillId,hash,'package');await mkdir(outsidePackage,{recursive:true});
+ await writeFile(join(outsidePackage,'sentinel'),'unchanged');
+ const copyContainer=await engine.create(createSkillScriptContainerOptions({workspaceRoot:join(process.env.WORKSPACE_ROOT!,'users',userId,'workspace'),releaseRoot,imageDigest:process.env.SANDBOX_IMAGE!,labels:{'nero.skill-run.user':userId}}));
+ await engine.start(copyContainer.id);
+ const skillsDir=join(task.hostPath,'.runtime','skills'),backup=join(task.hostPath,'.runtime','skills-before-race');
+ let swapped=false;
+ try {
+  const copy=materializeSkillExecution({pin,taskContainerRoot:task.containerPath,execute:(command,args,options)=>{
+   const barrier=`pathlib.Path(${JSON.stringify(task.containerPath+'/.copy-ready')}).write_text('ready')\nwhile not pathlib.Path(${JSON.stringify(task.containerPath+'/.copy-proceed')}).exists(): __import__('time').sleep(0.01)\ncopy(source,destination)`;
+   return engine.exec(copyContainer.id,command,[args[0],args[1].replace('copy(source,destination)',barrier),...args.slice(2)],options);
+  }});
+  const rejection=assert.rejects(copy,/Skill resource preparation failed/);
+  for(let attempts=0;attempts<500;attempts++){try{await access(join(task.hostPath,'.copy-ready'));break}catch{await new Promise(r=>setTimeout(r,10))}}
+  await access(join(task.hostPath,'.copy-ready'));
+  await rename(skillsDir,backup);await symlink(outside,skillsDir);swapped=true;
+  await writeFile(join(task.hostPath,'.copy-proceed'),'go');await rejection;
+  assert.equal(await readFile(join(outsidePackage,'sentinel'),'utf8'),'unchanged');
+  await assert.rejects(()=>access(join(outsidePackage,'SKILL.md')));
+ } finally {
+  if(swapped){await rm(skillsDir);await rename(backup,skillsDir)}
+  await engine.remove(copyContainer.id,true);
+ }
+ t.diagnostic('Post-validation ancestor replacement cannot write outside the container mount');
  await writeFile(join(releaseRoot,'scripts/offline.py'),'import urllib.request\ntry:\n urllib.request.urlopen("https://pypi.org",timeout=3)\nexcept Exception:\n print("offline")\nelse:\n raise RuntimeError("unexpected egress")');
  manifest={...manifest,network:'none',entrypoints:['scripts/offline.py']};const offlineResult=await runner.execute(context,{skillName:'demo',path:'scripts/offline.py'});assert.equal(offlineResult.ok,true);if(offlineResult.ok)assert.equal(offlineResult.data.exitCode,0,offlineResult.data.stderr);
  await run('if touch /platform-root-write 2>/dev/null; then exit 9; fi');

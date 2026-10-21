@@ -3,8 +3,16 @@ import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,readFile,symlink} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
 import {tmpdir} from 'node:os';import {join} from 'node:path';
-import {materializeSkillExecution} from '../src/mastra/skills/materialize';
+import {materializeSkillExecution as sandboxMaterialize} from '../src/mastra/skills/materialize';
 import {reportSkillRuntimeCompatibility} from '../src/mastra/skills/runtime';
+// Test adapter executes the platform copy script in temporary test directories only.
+async function materializeSkillExecution(input:any){
+ const result=await sandboxMaterialize({pin:input.pin,taskContainerRoot:input.taskContainerRoot,execute:async(command,args)=>{
+   try {const output=execFileSync(command,[args[0],args[1],input.verifiedReleaseRoot,input.taskHostRoot,...args.slice(4)],{encoding:'utf8'});return{exitCode:0,stdout:output,stderr:''}}
+   catch(e:any){return{exitCode:1,stdout:e.stdout??'',stderr:e.stderr??String(e)}}
+ }});
+ return {...result,hostRoot:join(input.taskHostRoot,'.runtime','skills',input.pin.skillId,input.pin.manifestHash,'package')};
+}
 test('skill resources preserve structure, repair tampering and reject symlink escape',async()=>{
  const root=await mkdtemp(join(tmpdir(),'skill-copy-'));const release=join(root,'release');const task=join(root,'task');await mkdir(join(release,'scripts'),{recursive:true});await mkdir(task);
  await writeFile(join(release,'scripts/main.mjs'),'export default 1');await writeFile(join(release,'SKILL.md'),'skill');
@@ -46,4 +54,12 @@ test('public skill still requires its declared platform tools',()=>{
  const manifest={schemaVersion:1 as const,runtimes:['python3' as const],entrypoints:['scripts/main.py'],requiredTools:['web_search'],network:'public' as const};
  assert.equal(reportSkillRuntimeCompatibility(manifest,{registeredToolIds:[],publicNetworkAvailable:true}),'missing-tools');
  assert.equal(reportSkillRuntimeCompatibility(manifest,{registeredToolIds:['web_search'],publicNetworkAvailable:true}),'ready');
+});
+
+test('materialization delegates all destination writes to the sandbox executor',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'copy-executor-')),task=join(root,'task'),release=join(root,'release');await mkdir(task);await mkdir(release);await writeFile(join(release,'proof.txt'),'resource');
+ let calls=0;
+ await sandboxMaterialize({pin:{skillId:'11111111-1111-4111-8111-111111111111',name:'demo',version:1,manifestHash:'d'.repeat(64)},verifiedReleaseRoot:release,taskHostRoot:task,taskContainerRoot:'/workspace/threads/t',execute:async()=>{calls++;return{exitCode:0,stdout:'',stderr:''}}} as any);
+ assert.equal(calls,1,'host must delegate the copy to the sandbox');
+ const {access}=await import('node:fs/promises');await assert.rejects(()=>access(join(task,'.runtime')));
 });
