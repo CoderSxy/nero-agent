@@ -1,0 +1,29 @@
+web/src/agent/use-reconciled-chat-messages.test.tsx
+  s_b64514dd091221::t_dafee281bdf698 1-21
+web/src/agent/AgentChat.test.tsx
+  s_b64514dd091221::t_5ba4e553554fec 3,8-14,59
+web/src/agent/AgentChat.tsx
+  s_b64514dd091221::t_3c73186e933755 15,192-193
+web/src/agent/chat-message-reconciliation.test.ts
+  s_b64514dd091221::t_3aaf05568fa284 1-33
+web/src/agent/chat-message-reconciliation.ts
+  s_b64514dd091221::t_4a70176a31a3c5 1-38
+web/src/agent/use-reconciled-chat-messages.ts
+  s_b64514dd091221::t_19de71594febe8 1-30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cbaf17cbf11882bc6b4b2f35bebdb32c9de2b93d",
+  "prompts": {},
+  "sessions": {
+    "s_b64514dd091221": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15936-a458-79d1-b9aa-5807fd10438c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
