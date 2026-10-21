@@ -1,0 +1,33 @@
+import {describe,it,expect} from 'vitest';
+import {reconcileChatMessages,historyCoversLive} from './chat-message-reconciliation';
+const msg=(id:string,parts:any[],role='assistant')=>({id,role,content:{format:2,parts}} as any);
+const text=(text:string)=>({type:'text',text});
+const tool=(id:string)=>({type:'tool-invocation',toolInvocation:{toolCallId:id,toolName:'web_search',state:'result',args:{},result:'data'}});
+describe('terminal history reconciliation',()=>{
+ it('replaces a cumulative final live snapshot with its persisted final steps without repeating tools',()=>{
+  const history=[msg('a',[tool('search'),text('已取数')]),msg('final',[text('图表完成')])];
+  const live=[history[0],msg('final',[tool('search'),text('已取数'),{type:'reasoning',reasoning:'earlier'},text('图表完成')])];
+  expect(historyCoversLive(history,live)).toBe(true);
+  expect(reconcileChatMessages({history,live,settled:true})).toEqual(history);
+ });
+ it('never drops unsaved deltas or a newly started turn',()=>{
+  const history=[msg('a',[text('old')])];const live=[msg('a',[text('new')])];
+  expect(historyCoversLive(history,live)).toBe(false);
+  expect(reconcileChatMessages({history,live,settled:true})).toEqual(live);
+  expect(reconcileChatMessages({history,live,settled:false})).toEqual(live);
+ });
+ it('retains distinct same-content calls and errors',()=>{
+  const history=[msg('a',[tool('one'),tool('two'),text('done')])];
+  expect(reconcileChatMessages({history,live:history,settled:true})[0].content.parts).toHaveLength(3);
+ });
+ it('preserves late memory completion markers without reviving cumulative reasoning',()=>{
+  const history=[msg('f',[text('done')])];const marker={type:'data-om-buffering-end',data:{cycleId:'one'}};
+  const live=[msg('f',[{type:'reasoning',reasoning:'old'},text('done'),marker])];
+  expect(reconcileChatMessages({history,live,settled:true})[0].content.parts).toEqual([text('done'),marker]);
+ });
+ it('rejects snapshots missing new tool results or a pending user echo',()=>{
+  const h=[msg('f',[text('done')])];
+  expect(historyCoversLive(h,[msg('f',[tool('new'),text('done')])])).toBe(false);
+  expect(historyCoversLive(h,[...h,msg('user2',[text('again')],'user')])).toBe(false);
+ });
+});

@@ -1,9 +1,16 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentChat } from './AgentChat';
 import type { ModelRef, SafeModel } from './model-catalog-client';
 import type { PendingUserMessage } from './pending-user-message';
+
+const animationsDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'getAnimations');
+beforeAll(() => Object.defineProperty(Element.prototype, 'getAnimations', { configurable: true, writable: true, value: () => [] }));
+afterAll(() => {
+  if (animationsDescriptor) Object.defineProperty(Element.prototype, 'getAnimations', animationsDescriptor);
+  else Reflect.deleteProperty(Element.prototype, 'getAnimations');
+});
 
 const sendMessage = vi.fn();
 const cancelRun = vi.fn();
@@ -49,6 +56,7 @@ vi.mock('./attachment-client', () => ({
   listThreadAttachments: (...args: unknown[]) => listThreadAttachments(...args),
 }));
 beforeEach(() => {
+  vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
   listThreadAttachments.mockResolvedValue([]);
   fetchWorkspaceFile.mockResolvedValue(new Blob(['x'], { type: 'application/octet-stream' }));
   listAvailableSkills.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 50 });

@@ -12,6 +12,7 @@ import {
 import { AgentComposer, type WorkspaceDragItem } from './AgentComposer';
 import { buildAgentAttachmentMessage, DEFAULT_ATTACHMENT_PROMPT } from './attachment-protocol';
 import { MessageList } from './MessageList';
+import { useReconciledChatMessages } from './use-reconciled-chat-messages';
 import { createModelRequestContext, type ModelSettings } from './model-settings';
 import type { ModelRef, SafeModel } from './model-catalog-client';
 import { nextPendingUserMessage, withPendingUserMessages, type PendingUserMessage } from './pending-user-message';
@@ -188,7 +189,8 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     })();
   }, [attachmentRefreshVersion]);
 
-  const visibleMessages = withPendingUserMessages(chat.messages, pendingUserMessages);
+  const reconciledMessages = useReconciledChatMessages({ messages: chat.messages, isRunning: chat.isRunning, threadId, resourceId });
+  const visibleMessages = withPendingUserMessages(reconciledMessages, pendingUserMessages);
   const reportedActivations = useRef('');
   useEffect(() => {
     const next = visibleMessages.flatMap(message => message.role === 'assistant' ? skillActivations(message) : []);
