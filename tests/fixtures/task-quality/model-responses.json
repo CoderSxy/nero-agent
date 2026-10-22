@@ -1,0 +1,9 @@
+{
+  "live": false,
+  "note": "Canned assistant texts for the fixture suite. They are not sent to a provider.",
+  "responses": {
+    "weather-complete": "已提交完整预报。",
+    "weather-condition-missing": "只有温度曲线。",
+    "ordinary-answer": "相对湿度是空气中实际水汽与同温度饱和水汽的比例。"
+  }
+}

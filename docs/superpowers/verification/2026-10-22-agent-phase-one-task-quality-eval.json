@@ -1,0 +1,643 @@
+{
+  "mode": "fixture",
+  "passed": 20,
+  "skipped": 0,
+  "blocked": 0,
+  "hardFailures": 0,
+  "price": null,
+  "elapsedMs": 23,
+  "cases": [
+    {
+      "caseId": "weather-complete",
+      "modelRef": "fixture",
+      "expectedStatus": "complete",
+      "actualStatus": "complete",
+      "verification": "verified",
+      "coverage": {
+        "met": [
+          "weather.location",
+          "weather.range",
+          "weather.condition",
+          "weather.temperature",
+          "weather.precipitation",
+          "weather.humidity",
+          "delivery.chart"
+        ],
+        "missing": [],
+        "unverified": []
+      },
+      "sourceChecks": [
+        "task-quality-processor",
+        "contract-injected"
+      ],
+      "modelCalls": 0,
+      "toolCalls": 0,
+      "repairCalls": 0,
+      "timingsMs": 14,
+      "price": null,
+      "passed": true,
+      "skipped": false,
+      "blocked": false,
+      "hardFailure": false
+    },
+    {
+      "caseId": "weather-temperature-only",
+      "modelRef": "fixture",
+      "expectedStatus": "complete",
+      "actualStatus": "complete",
+      "verification": "verified",
+      "coverage": {
+        "met": [
+          "weather.location",
+          "weather.range",
+          "weather.temperature",
+          "delivery.chart"
+        ],
+        "missing": [],
+        "unverified": []
+      },
+      "sourceChecks": [
+        "task-quality-processor",
+        "contract-injected"
+      ],
+      "modelCalls": 0,
+      "toolCalls": 0,
+      "repairCalls": 0,
+      "timingsMs": 1,
+      "price": null,
+      "passed": true,
+      "skipped": false,
+      "blocked": false,
+      "hardFailure": false
+    },
+    {
+      "caseId": "weather-humidity",
+      "modelRef": "fixture",
+      "expectedStatus": "complete",
+      "actualStatus": "complete",
+      "verification": "verified",
+      "coverage": {
+        "met": [
+          "weather.location",
+          "weather.range",
+          "weather.condition",
+          "weather.temperature",
+          "weather.precipitation",
+          "weather.humidity",
+          "delivery.chart"
+        ],
+        "missing": [],
+        "unverified": []
+      },
+      "sourceChecks": [
+        "task-quality-processor",
+        "contract-injected"
+      ],
+      "modelCalls": 0,
+      "toolCalls": 0,
+      "repairCalls": 0,
+      "timingsMs": 0,
+      "price": null,
+      "passed": true,
+      "skipped": false,
+      "blocked": false,
+      "hardFailure": false
+    },
+    {
+      "caseId": "weather-condition-missing",
+      "modelRef": "fixture",
+      "expectedStatus": "partial",
+      "actualStatus": "partial",
+      "verification": "verified",
+      "coverage": {
+        "met": [
+          "weather.location",
+          "weather.range",
+          "weather.temperature",
+          "weather.precipitation",
+          "weather.humidity",
+          "delivery.chart"
+        ],
+        "missing": [
+          "weather.condition"
+        ],
+        "unverified": []
+      },
+      "sourceChecks": [
+        "task-quality-processor",
+        "contract-injected"
+      ],
+      "modelCalls": 0,
+      "toolCalls": 0,
+      "repairCalls": 0,
+      "timingsMs": 0,
+      "price": null,
+      "passed": true,
+      "skipped": false,
+      "blocked": false,
+      "hardFailure": false
+    },
+    {
+      "caseId": "weather-precipitation-missing",
+      "modelRef": "fixture",
+      "expectedStatus": "partial",
+      "actualStatus": "partial",
+      "verification": "verified",
+      "coverage": {
+        "met": [
+          "weather.location",
+          "weather.range",
+          "weather.condition",
+          "weather.temperature",
+          "weather.humidity",
+          "delivery.chart"
+        ],
+        "missing": [
+          "weather.precipitation"
+        ],
+        "unverified": []
+      },
+      "sourceChecks": [
+        "task-quality-processor",
+        "contract-injected"
+      ],
+      "modelCalls": 0,
+      "toolCalls": 0,
+      "repairCalls": 0,
+      "timingsMs": 0,
+      "price": null,
+      "passed": true,
+      "skipped": false,
+      "blocked": false,
+      "hardFailure": false
+    },
+    {
+      "caseId": "weather-range-invalid",
+      "modelRef": "fixture",
+      "expectedStatus": "partial",
+      "actualStatus": "partial",
+      "verification": "verified",
+      "coverage": {
+        "met": [
+          "weather.location",
+          "weather.condition",
+          "weather.temperature",
+          "weather.precipitation",
+          "weather.humidity",
+          "delivery.chart"
+        ],
+        "missing": [
+          "weather.range"
+        ],
+        "unverified": []
+      },
+      "sourceChecks": [
+        "task-quality-processor",
+        "contract-injected"
+      ],
+      "modelCalls": 0,
+      "toolCalls": 0,
+      "repairCalls": 0,
+      "timingsMs": 0,
+      "price": null,
+      "passed": true,
+      "skipped": false,
+      "blocked": false,
+      "hardFailure": false
+    },
+    {
+      "caseId": "weather-humidity-hours-missing",
+      "modelRef": "fixture",
+      "expectedStatus": "partial",
+      "actualStatus": "partial",
+      "verification": "verified",
+      "coverage": {
+        "met": [
+          "weather.location",
+          "weather.range",
+          "weather.condition",
+          "weather.temperature",
+          "weather.precipitation",
+          "delivery.chart"
+        ],
+        "missing": [
+          "weather.humidity"
+        ],
+        "unverified": []
+      },
+      "sourceChecks": [
+        "task-quality-processor",
+        "contract-injected"
+      ],
+      "modelCalls": 0,
+      "toolCalls": 0,
+      "repairCalls": 0,
+      "timingsMs": 0,
+      "price": null,
+      "passed": true,
+      "skipped": false,
+      "blocked": false,
+      "hardFailure": false
+    },
+    {
+      "caseId": "weather-code-unknown",
+      "modelRef": "fixture",
+      "expectedStatus": "partial",
+      "actualStatus": "partial",
+      "verification": "verified",
+      "coverage": {
+        "met": [
+          "weather.location",
+          "weather.range",
+          "weather.temperature",
+          "weather.precipitation",
+          "weather.humidity",
+          "delivery.chart"
+        ],
+        "missing": [
+          "weather.condition"
+        ],
+        "unverified": []
+      },
+      "sourceChecks": [
+        "task-quality-processor",
+        "contract-injected"
+      ],
+      "modelCalls": 0,
+      "toolCalls": 0,
+      "repairCalls": 0,
+      "timingsMs": 0,
+      "price": null,
+      "passed": true,
+      "skipped": false,
+      "blocked": false,
+      "hardFailure": false
+    },
+    {
+      "caseId": "gateway-ignores-schema",
+      "modelRef": "fixture",
+      "expectedStatus": "partial",
+      "actualStatus": "partial",
+      "verification": "verified",
+      "coverage": {
+        "met": [
+          "weather.location",
+          "weather.range",
+          "weather.condition",
+          "weather.temperature",
+          "weather.precipitation",
+          "weather.humidity"
+        ],
+        "missing": [
+          "delivery.chart"
+        ],
+        "unverified": []
+      },
+      "sourceChecks": [
+        "task-quality-processor",
+        "contract-injected",
+        "selectStructuredDelivery"
+      ],
+      "modelCalls": 0,
+      "toolCalls": 0,
+      "repairCalls": 0,
+      "timingsMs": 1,
+      "price": null,
+      "passed": true,
+      "skipped": false,
+      "blocked": false,
+      "hardFailure": false
+    },
+    {
+      "caseId": "forced-tool-unsupported",
+      "modelRef": "fixture",
+      "expectedStatus": "complete",
+      "actualStatus": "complete",
+      "verification": "verified",
+      "coverage": {
+        "met": [
+          "weather.location",
+          "weather.range",
+          "weather.condition",
+          "weather.temperature",
+          "weather.precipitation",
+          "weather.humidity",
+          "delivery.chart"
+        ],
+        "missing": [],
+        "unverified": []
+      },
+      "sourceChecks": [
+        "task-quality-processor",
+        "contract-injected",
+        "selectStructuredDelivery"
+      ],
+      "modelCalls": 0,
+      "toolCalls": 0,
+      "repairCalls": 0,
+      "timingsMs": 0,
+      "price": null,
+      "passed": true,
+      "skipped": false,
+      "blocked": false,
+      "hardFailure": false
+    },
+    {
+      "caseId": "wrapped-tool-schema",
+      "modelRef": "fixture",
+      "expectedStatus": "complete",
+      "actualStatus": "complete",
+      "verification": "verified",
+      "coverage": {
+        "met": [
+          "weather.location",
+          "weather.range",
+          "weather.condition",
+          "weather.temperature",
+          "weather.precipitation",
+          "weather.humidity",
+          "delivery.chart"
+        ],
+        "missing": [],
+        "unverified": []
+      },
+      "sourceChecks": [
+        "task-quality-processor",
+        "contract-injected",
+        "withChartDataFetch"
+      ],
+      "modelCalls": 0,
+      "toolCalls": 0,
+      "repairCalls": 0,
+      "timingsMs": 1,
+      "price": null,
+      "passed": true,
+      "skipped": false,
+      "blocked": false,
+      "hardFailure": false
+    },
+    {
+      "caseId": "blob-missing",
+      "modelRef": "fixture",
+      "expectedStatus": "complete",
+      "actualStatus": "complete",
+      "verification": "model-assessed",
+      "coverage": {
+        "met": [],
+        "missing": [],
+        "unverified": [
+          "generic.explicit.1"
+        ]
+      },
+      "sourceChecks": [
+        "task-quality-processor",
+        "contract-injected",
+        "inspectSkillStorage"
+      ],
+      "modelCalls": 0,
+      "toolCalls": 0,
+      "repairCalls": 0,
+      "timingsMs": 0,
+      "price": null,
+      "passed": true,
+      "skipped": false,
+      "blocked": false,
+      "hardFailure": false
+    },
+    {
+      "caseId": "release-tree-missing",
+      "modelRef": "fixture",
+      "expectedStatus": "complete",
+      "actualStatus": "complete",
+      "verification": "model-assessed",
+      "coverage": {
+        "met": [],
+        "missing": [],
+        "unverified": [
+          "generic.explicit.1"
+        ]
+      },
+      "sourceChecks": [
+        "task-quality-processor",
+        "contract-injected",
+        "inspectSkillStorage"
+      ],
+      "modelCalls": 0,
+      "toolCalls": 0,
+      "repairCalls": 0,
+      "timingsMs": 2,
+      "price": null,
+      "passed": true,
+      "skipped": false,
+      "blocked": false,
+      "hardFailure": false
+    },
+    {
+      "caseId": "cross-user-diagnosis",
+      "modelRef": "fixture",
+      "expectedStatus": "complete",
+      "actualStatus": "complete",
+      "verification": "model-assessed",
+      "coverage": {
+        "met": [],
+        "missing": [],
+        "unverified": [
+          "generic.explicit.1"
+        ]
+      },
+      "sourceChecks": [
+        "task-quality-processor",
+        "contract-injected",
+        "memory-budget-owner"
+      ],
+      "modelCalls": 0,
+      "toolCalls": 0,
+      "repairCalls": 0,
+      "timingsMs": 0,
+      "price": null,
+      "passed": true,
+      "skipped": false,
+      "blocked": false,
+      "hardFailure": false
+    },
+    {
+      "caseId": "file-request",
+      "modelRef": "fixture",
+      "expectedStatus": "failed",
+      "actualStatus": "failed",
+      "verification": "verified",
+      "coverage": {
+        "met": [],
+        "missing": [
+          "delivery.file"
+        ],
+        "unverified": []
+      },
+      "sourceChecks": [
+        "task-quality-processor",
+        "contract-injected"
+      ],
+      "modelCalls": 0,
+      "toolCalls": 0,
+      "repairCalls": 0,
+      "timingsMs": 0,
+      "price": null,
+      "passed": true,
+      "skipped": false,
+      "blocked": false,
+      "hardFailure": false
+    },
+    {
+      "caseId": "ordinary-answer",
+      "modelRef": "fixture",
+      "expectedStatus": "complete",
+      "actualStatus": "complete",
+      "verification": "model-assessed",
+      "coverage": {
+        "met": [],
+        "missing": [],
+        "unverified": [
+          "generic.explicit.1"
+        ]
+      },
+      "sourceChecks": [
+        "task-quality-processor",
+        "contract-injected"
+      ],
+      "modelCalls": 0,
+      "toolCalls": 0,
+      "repairCalls": 0,
+      "timingsMs": 0,
+      "price": null,
+      "passed": true,
+      "skipped": false,
+      "blocked": false,
+      "hardFailure": false
+    },
+    {
+      "caseId": "budget-stop",
+      "modelRef": "fixture",
+      "expectedStatus": "failed",
+      "actualStatus": "failed",
+      "verification": "verified",
+      "coverage": {
+        "met": [],
+        "missing": [
+          "weather.location",
+          "weather.range",
+          "weather.condition",
+          "weather.temperature",
+          "weather.precipitation",
+          "weather.humidity",
+          "delivery.chart"
+        ],
+        "unverified": []
+      },
+      "sourceChecks": [
+        "task-quality-processor",
+        "contract-injected",
+        "memory-budget-limit"
+      ],
+      "modelCalls": 0,
+      "toolCalls": 0,
+      "repairCalls": 0,
+      "timingsMs": 0,
+      "price": null,
+      "passed": true,
+      "skipped": false,
+      "blocked": false,
+      "hardFailure": false
+    },
+    {
+      "caseId": "duplicate-outcome",
+      "modelRef": "fixture",
+      "expectedStatus": "partial",
+      "actualStatus": "partial",
+      "verification": "verified",
+      "coverage": {
+        "met": [
+          "weather.location",
+          "weather.range",
+          "weather.temperature",
+          "weather.precipitation",
+          "weather.humidity",
+          "delivery.chart"
+        ],
+        "missing": [
+          "weather.condition"
+        ],
+        "unverified": []
+      },
+      "sourceChecks": [
+        "task-quality-processor",
+        "contract-injected",
+        "prefer-task-outcome"
+      ],
+      "modelCalls": 0,
+      "toolCalls": 0,
+      "repairCalls": 0,
+      "timingsMs": 4,
+      "price": null,
+      "passed": true,
+      "skipped": false,
+      "blocked": false,
+      "hardFailure": false
+    },
+    {
+      "caseId": "history-style-followup",
+      "modelRef": "fixture",
+      "expectedStatus": "complete",
+      "actualStatus": "complete",
+      "verification": "model-assessed",
+      "coverage": {
+        "met": [],
+        "missing": [],
+        "unverified": [
+          "generic.explicit.1"
+        ]
+      },
+      "sourceChecks": [
+        "task-quality-processor",
+        "contract-injected",
+        "inheritsVerifiedChart"
+      ],
+      "modelCalls": 0,
+      "toolCalls": 0,
+      "repairCalls": 0,
+      "timingsMs": 0,
+      "price": null,
+      "passed": true,
+      "skipped": false,
+      "blocked": false,
+      "hardFailure": false
+    },
+    {
+      "caseId": "html-skill-attachment",
+      "modelRef": "fixture",
+      "expectedStatus": "complete",
+      "actualStatus": "complete",
+      "verification": "model-assessed",
+      "coverage": {
+        "met": [],
+        "missing": [],
+        "unverified": [
+          "generic.explicit.1"
+        ]
+      },
+      "sourceChecks": [
+        "task-quality-processor",
+        "contract-injected",
+        "html-not-verified-weather"
+      ],
+      "modelCalls": 0,
+      "toolCalls": 0,
+      "repairCalls": 0,
+      "timingsMs": 0,
+      "price": null,
+      "passed": true,
+      "skipped": false,
+      "blocked": false,
+      "hardFailure": false
+    }
+  ]
+}

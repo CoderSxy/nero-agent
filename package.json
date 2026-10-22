@@ -18,6 +18,8 @@
     "db:local:setup": "node scripts/setup-local-postgres.mjs",
     "db:import:libsql": "node --env-file-if-exists=.env --import tsx scripts/import-libsql.ts",
     "skills:doctor": "node --env-file-if-exists=.env --import tsx scripts/skills-doctor.ts",
+    "eval:task-quality": "node --import tsx scripts/eval-task-quality.ts",
+    "eval:task-quality:live": "node --env-file-if-exists=.env --import tsx scripts/eval-task-quality.ts --live",
     "user:create": "node --env-file-if-exists=.env --import tsx scripts/create-user.ts",
     "build:egress": "node scripts/build-egress.mjs",
     "test:sandbox:public": "SANDBOX_PUBLIC_INTEGRATION=true node --import tsx --test tests/sandbox-public.integration.test.ts",
