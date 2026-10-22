@@ -1,0 +1,162 @@
+.composer-context-rail {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  margin: 0 2px 8px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding: 2px 2px 4px;
+  scrollbar-color: color-mix(in srgb, var(--foreground) 28%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
+.composer-attachment-card {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  max-width: 190px;
+  min-width: 0;
+  padding: 4px 4px 4px 6px;
+  border: 1px solid color-mix(in srgb, #8ea2ff 32%, var(--border));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--card) 86%, #8ea2ff);
+  color: var(--foreground);
+  font-size: 12px;
+}
+
+.light .composer-attachment-card {
+  border-color: #dbeafe;
+  background: #f8fafc;
+  color: #475569;
+}
+
+.composer-attachment-card.is-failed {
+  border-color: color-mix(in srgb, var(--destructive) 55%, var(--border));
+}
+
+.composer-attachment-kind {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  color: #a5b4fc;
+}
+
+.light .composer-attachment-kind { color: #4f46e5; }
+
+.composer-attachment-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.composer-attachment-meta strong,
+.composer-attachment-meta em {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.composer-attachment-meta strong { font-size: 12px; font-weight: 600; }
+.composer-attachment-meta small { display: none; }
+.composer-attachment-meta em { flex: none; color: color-mix(in srgb, var(--foreground) 58%, #818cf8); font-size: 11px; font-style: normal; }
+
+.composer-attachment-thumb {
+  display: block;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+}
+
+.composer-attachment-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+.composer-attachment-remove {
+  position: static;
+  top: auto;
+  right: auto;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted-foreground);
+}
+
+.composer-attachment-remove:hover { background: color-mix(in srgb, currentColor 12%, transparent); color: var(--foreground); }
+.composer-attachment-remove:focus-visible { outline: 2px solid var(--foreground); outline-offset: 1px; }
+
+.composer-attachment-retry {
+  flex: none;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--destructive) 14%, var(--card));
+  color: var(--foreground);
+  font-size: 11px;
+}
+
+.skill-picker-chips.is-composer {
+  display: flex;
+  flex: none;
+  flex-wrap: nowrap;
+  gap: 6px;
+  align-items: center;
+  min-width: max-content;
+}
+
+.skill-picker-chips.is-composer .skill-chip {
+  position: relative;
+  max-width: 190px;
+  height: 30px;
+  gap: 5px;
+  padding: 0 4px 0 8px;
+  overflow: hidden;
+  border-radius: 7px;
+  border-color: color-mix(in srgb, #c4b5fd 38%, var(--border));
+  background: color-mix(in srgb, #4c1d95 42%, var(--card));
+  color: #ddd6fe;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1;
+}
+
+.light .skill-picker-chips.is-composer .skill-chip {
+  border-color: color-mix(in srgb, #7c3aed 28%, transparent);
+  background: #f5f3ff;
+  color: #6d28d9;
+}
+
+.skill-picker-chips.is-composer .skill-chip.is-invalid {
+  color: var(--status-danger);
+  border-color: color-mix(in srgb, var(--status-danger) 55%, var(--border));
+  background: color-mix(in srgb, var(--status-danger) 12%, var(--card));
+}
+
+.skill-chip-icon { display: inline-flex; flex: none; align-items: center; color: inherit; }
+.skill-chip-copy { display: grid; min-width: 0; }
+.skill-chip-copy small { display: none; }
+.skill-chip-copy strong { overflow: hidden; font: inherit; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+
+.skill-picker-chips.is-composer .skill-chip button {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border-radius: 999px;
+}
+
+.skill-picker-chips.is-composer .skill-chip button:hover { background: color-mix(in srgb, currentColor 14%, transparent); }
+.skill-picker-chips.is-composer .skill-chip button:focus-visible { outline: 2px solid currentColor; outline-offset: 1px; }

@@ -155,7 +155,41 @@
   .composer-add-menu { z-index: 72; }
   .composer-image-preview-backdrop { z-index: 76; }
   .mobile-agent-layout .composer-model-trigger { max-width: min(48vw, 210px); }
-  .mobile-agent-layout .composer-attachment-row { flex-wrap: nowrap; overflow-x: auto; }
+  .mobile-inline-composer .composer-context-rail { gap: 10px; margin: 0 0 8px; padding: 2px 0 4px; }
+  .mobile-inline-composer .composer-attachment-card,
+  .light .mobile-inline-composer .composer-attachment-card,
+  .mobile-inline-composer .skill-picker-chips.is-composer .skill-chip,
+  .light .mobile-inline-composer .skill-picker-chips.is-composer .skill-chip {
+    position: relative; width: 142px; height: 88px; max-width: none; align-items: center; gap: 9px;
+    padding: 10px 28px 10px 11px; border: 1px solid var(--mobile-border); border-radius: 12px;
+    background: var(--mobile-surface); color: var(--mobile-text);
+  }
+  .mobile-inline-composer .composer-attachment-card.is-image {
+    width: 88px; padding: 0; overflow: hidden; justify-content: center;
+  }
+  .mobile-inline-composer .composer-attachment-card.is-image .composer-attachment-meta,
+  .mobile-inline-composer .composer-attachment-card.is-image .composer-attachment-kind { display: none; }
+  .mobile-inline-composer .composer-attachment-card.is-image .composer-attachment-thumb { width: 100%; height: 100%; border-radius: 0; }
+  .mobile-inline-composer .composer-attachment-kind,
+  .mobile-inline-composer .skill-chip-icon { width: 22px; height: 22px; color: #a391e5; }
+  .mobile-inline-composer .composer-attachment-kind svg,
+  .mobile-inline-composer .skill-chip-icon svg { width: 20px; height: 20px; }
+  .mobile-inline-composer .composer-attachment-meta,
+  .mobile-inline-composer .skill-chip-copy { display: grid; gap: 4px; align-content: center; }
+  .mobile-inline-composer .composer-attachment-meta small,
+  .mobile-inline-composer .skill-chip-copy small { display: block; color: var(--mobile-muted); font-size: 11px; font-weight: 450; line-height: 1; }
+  .mobile-inline-composer .composer-attachment-meta strong,
+  .mobile-inline-composer .skill-chip-copy strong { font-size: 13px; font-weight: 500; }
+  .mobile-inline-composer .composer-attachment-meta em.is-size { display: none; }
+  .mobile-inline-composer .composer-attachment-meta em.is-status { display: block; color: var(--mobile-muted); font-size: 11px; }
+  .mobile-inline-composer .composer-attachment-remove,
+  .mobile-inline-composer .skill-picker-chips.is-composer .skill-chip button {
+    position: absolute; top: 4px; right: 4px; width: 25px; height: 25px;
+    border-radius: 50%; background: #00000094; color: #fff;
+  }
+  .mobile-inline-composer .composer-attachment-remove:hover,
+  .mobile-inline-composer .skill-picker-chips.is-composer .skill-chip button:hover { background: #000000c7; color: #fff; }
+  .mobile-inline-composer .skill-picker-chips.is-composer .skill-chip.is-invalid { color: #ffb4b4; border-color: #df6666; }
   .workspace-file-picker-backdrop { z-index: 74; align-items: end; padding: 0; }
   .workspace-file-picker { width: 100%; max-height: 82dvh; border-radius: 20px 20px 0 0; padding-bottom: env(safe-area-inset-bottom); }
   .mobile-agent-layout .scheduled-tasks-page,

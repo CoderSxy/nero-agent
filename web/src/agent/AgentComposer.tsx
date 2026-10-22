@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type ClipboardEvent, type DragEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { Composer, ComposerActions, ComposerBox, ComposerInput, ComposerRing } from '@mastra/playground-ui/components/Composer';
-import { ArrowUp, Check, ChevronDown, Plus, Search, Square, X } from 'lucide-react';
+import { ArrowUp, Check, ChevronDown, FileText, Image as ImageIcon, Plus, Search, Square, X } from 'lucide-react';
 import { fetchWorkspaceFile } from './client';
 import {
   formatBytes, IMAGE_ACCEPT, IMAGE_MIME, isImageAttachment, WORKSPACE_FILE_MIME, type ComposerAttachment,
@@ -55,17 +55,23 @@ function AttachmentCard({ attachment, onRemove, onRetry, onPreview }: {
   }, [isImage, attachment.path, attachment.source]);
 
   const title = attachment.path || attachment.name;
-  return <div className={`composer-attachment-card${attachment.state === 'failed' ? ' is-failed' : ''}`}
+  const showThumb = Boolean(isImage && thumbUrl);
+  const status = attachment.state === 'uploading' ? '上传中…'
+    : attachment.state === 'failed' ? (attachment.error || '上传失败')
+      : null;
+  return <div className={`composer-attachment-card${showThumb ? ' is-image' : ' is-file'}${attachment.state === 'failed' ? ' is-failed' : ''}`}
     aria-label={`附件 ${attachment.name}`} title={title}>
-    {isImage && thumbUrl ? <button type="button" className="composer-attachment-thumb" aria-label={`预览 ${attachment.name}`}
+    {showThumb && thumbUrl ? <button type="button" className="composer-attachment-thumb" aria-label={`预览 ${attachment.name}`}
       onClick={() => onPreview?.(attachment, thumbUrl)}>
-      <img src={thumbUrl} alt={attachment.name} />
-    </button> : <div className="composer-attachment-meta">
+      <img src={thumbUrl} alt="" />
+    </button> : <span className="composer-attachment-kind" aria-hidden="true">
+      {isImage ? <ImageIcon size={16} /> : <FileText size={16} />}
+    </span>}
+    <span className="composer-attachment-meta">
+      <small>{isImage ? '图片' : '文件'}</small>
       <strong>{attachment.name}</strong>
-      <small>{attachment.state === 'uploading' ? '上传中…'
-        : attachment.state === 'failed' ? (attachment.error || '上传失败')
-          : formatBytes(attachment.size)}</small>
-    </div>}
+      {status ? <em className="is-status">{status}</em> : !showThumb ? <em className="is-size">{formatBytes(attachment.size)}</em> : null}
+    </span>
     {attachment.state === 'failed' && <button type="button" className="composer-attachment-retry"
       aria-label={`重试 ${attachment.name}`} onClick={() => onRetry?.(attachment.key)}>重试</button>}
     <button type="button" className="composer-attachment-remove"
@@ -378,6 +384,12 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
     return () => document.removeEventListener('pointerdown', close);
   }, [skillOpen]);
 
+  const contextAttachments = [
+    ...attachments.filter(file => isImageAttachment(file) && file.state === 'ready'),
+    ...attachments.filter(file => !(isImageAttachment(file) && file.state === 'ready')),
+  ];
+  const showContextRail = contextAttachments.length > 0 || (selectedSkillIds?.length ?? 0) > 0;
+
   return <div ref={composerRef} className={`agent-composer${mobileInline ? ' mobile-inline-composer' : ''}`}
     onDragOver={onDragOver} onDrop={onDrop} onPaste={onPaste}>
     {onSelectedSkillIdsChange && <SkillShortcutDock disabled={isRunning || sendDisabled} scopeKey={skillScopeKey}
@@ -408,18 +420,18 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
       {financeSaving && <span role="status">保存分类中…</span>}
     </div>
     <Composer onSubmit={event => { event.preventDefault(); if (canSend) onSend(); }}>
-    {attachments.length > 0 && <div className="composer-attachment-row" aria-label="已选择的文件">
-      {attachments.map(file => <AttachmentCard key={file.key} attachment={file}
+    {showContextRail && <div className="composer-context-rail" aria-label="已添加内容">
+      {contextAttachments.map(file => <AttachmentCard key={file.key} attachment={file}
         onRemove={removeAttachment} onRetry={onRetryAttachment}
         onPreview={(item, url) => setPreview({ key: item.key, name: item.name, url })} />)}
+      {onSelectedSkillIdsChange && <SkillSelectionChips tone="composer" value={selectedSkillIds ?? []} catalog={skillCatalog}
+        phase={skillPhase} disabled={isRunning || sendDisabled} preserveMissing={preserveMissingSkills}
+        onRemove={id => onSelectedSkillIdsChange((selectedSkillIds ?? []).filter(item => item !== id))} />}
     </div>}
     {imageUnsupported && <p className="composer-image-warning" role="status">
       当前模型不支持图片，请切换支持图片的模型
     </p>}
     <ComposerRing busy={isRunning}><ComposerBox>
-      {onSelectedSkillIdsChange && <SkillSelectionChips value={selectedSkillIds ?? []} catalog={skillCatalog}
-        phase={skillPhase} disabled={isRunning || sendDisabled} preserveMissing={preserveMissingSkills}
-        onRemove={id => onSelectedSkillIdsChange((selectedSkillIds ?? []).filter(item => item !== id))} />}
       <ComposerInput ref={inputRef} aria-label="发送消息" placeholder={mobileInline ? '向智能体发送消息…' : '向智能体发送消息，输入 / 选择技能…'} value={draft}
         autoFocus={autoFocus} onFocus={onInputFocus}
         onChange={event => {

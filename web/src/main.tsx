@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { App } from './App';
 import './styles.css';
 import './agent/mobile/mobile.css';
+import './agent/composer-context.css';
 
 const queryClient = new QueryClient();
 
