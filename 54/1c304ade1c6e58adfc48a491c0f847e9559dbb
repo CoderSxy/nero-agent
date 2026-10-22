@@ -1,0 +1,82 @@
+web/src/agent/skills/SkillCard.test.tsx
+  s_b2b6e310d315d1::t_b538f86af50c1e 64-80
+src/mastra/skills/health-repository.ts
+  s_b2b6e310d315d1::t_1f1faf4cb41c67 1-3,5-11,13-99
+  s_b2b6e310d315d1::t_66ba27688a3ff9 4,12
+src/mastra/skills/types.ts
+  s_b2b6e310d315d1::t_7e134b058c898a 321-322
+  s_b2b6e310d315d1::t_ad570d5ed77664 504
+  s_b2b6e310d315d1::t_2e87be8ad3b104 330
+  s_b2b6e310d315d1::t_24196f38c32e75 463-464
+tests/skills-routes.test.ts
+  s_b2b6e310d315d1::t_58666308fa3887 94-95
+  s_b2b6e310d315d1::t_6b27cc5b94e935 393
+  s_b2b6e310d315d1::t_732e752c596399 345-392,394-398
+src/mastra/skills/routes.ts
+  s_b2b6e310d315d1::t_f3742774d6fa17 507-536
+web/src/agent/skills/types.ts
+  s_b2b6e310d315d1::t_81ca8302300595 77
+  s_b2b6e310d315d1::t_b0539eb59cca0a 168-169
+  s_b2b6e310d315d1::t_dd311976a105fb 210
+  s_b2b6e310d315d1::t_5b825c260a8302 43-44
+web/src/agent/skills/SkillPicker.tsx
+  s_b2b6e310d315d1::t_c79c9988b79307 67
+  s_b2b6e310d315d1::t_5a9f12809147ee 226
+tests/skills-health.test.ts
+  s_b2b6e310d315d1::t_2cd7a610746df5 1-214
+package.json
+  s_b2b6e310d315d1::t_490af76c8e481b 20
+src/mastra/skills/service.ts
+  s_b2b6e310d315d1::t_4571099c3cc97f 1033-1037
+  s_b2b6e310d315d1::t_6de264877aa258 631-633,640-643
+  s_b2b6e310d315d1::t_9c8d1795d9cf61 1174-1225
+  s_b2b6e310d315d1::t_18ec5f831a0dfb 212-216
+  s_b2b6e310d315d1::t_947eb74a9b76e2 87-94
+  s_b2b6e310d315d1::t_b98e109a257212 85
+  s_b2b6e310d315d1::t_951b8a5da76d0d 408-445
+  s_b2b6e310d315d1::t_1e37b5c050a86f 615
+  s_b2b6e310d315d1::t_3ca98bb9309cc6 86
+tests/skills-reconcile.test.ts
+  s_b2b6e310d315d1::t_fc04821bb46350 407-436
+web/src/agent/skills/SkillPicker.test.tsx
+  s_b2b6e310d315d1::t_e82a0ddb8f60cb 353-362
+src/mastra/skills/reconcile.ts
+  s_b2b6e310d315d1::t_1ae5b34935ca08 101
+  s_b2b6e310d315d1::t_f90c19f1348adf 110
+  s_b2b6e310d315d1::t_82120ab6e5ffa4 89-94,96
+  s_b2b6e310d315d1::t_a602b2f82212fc 173-174,178-182,187
+  s_b2b6e310d315d1::t_100aa5401acfa1 10-11
+  s_b2b6e310d315d1::t_960ec6fe195957 112,207-215
+  s_b2b6e310d315d1::t_ab08a8ee261e28 219-222
+  s_b2b6e310d315d1::t_1ddd3bba0a2962 164-172
+  s_b2b6e310d315d1::t_f15ee8098f9b9d 42-47,53
+scripts/skills-doctor.ts
+  s_b2b6e310d315d1::t_dcc912a3ba39b3 1-84
+src/mastra/skills/health.ts
+  s_b2b6e310d315d1::t_cd0f988d318a8c 7
+  s_b2b6e310d315d1::t_72b86fff0125b9 1-6,8,10-320
+  s_b2b6e310d315d1::t_f0175371f7184a 9
+web/src/agent/skills/SkillVersions.tsx
+  s_b2b6e310d315d1::t_8637431ca57576 73
+docs/superpowers/verification/2026-10-22-agent-phase-one-task-quality.md
+  s_b2b6e310d315d1::t_68b0cae17d4166 42-59
+web/src/agent/skills/SkillCard.tsx
+  s_b2b6e310d315d1::t_06fd73702cf1cb 64-65
+  s_b2b6e310d315d1::t_a4a26c69904fae 16-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "541c304ade1c6e58adfc48a491c0f847e9559dbb",
+  "prompts": {},
+  "sessions": {
+    "s_b2b6e310d315d1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f06b165b-6ef9-49b8-87f9-48e93c0bfd93",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
