@@ -1,0 +1,60 @@
+src/mastra/agents/turn-policy-processor.ts
+  s_b2b6e310d315d1::t_89f7fa74f62d6b 141
+  s_b2b6e310d315d1::t_d7708226e3e2e1 15
+  s_b2b6e310d315d1::t_3d60c2b2e78fc9 190-191,193
+  s_b2b6e310d315d1::t_b87064cb881d7e 192
+  s_b2b6e310d315d1::t_1272e902daf862 188-189
+src/mastra/agents/run-metrics.ts
+  s_b2b6e310d315d1::t_cbfb766e155e46 3
+  s_b2b6e310d315d1::t_7467a1bddc85fd 22-23
+  s_b2b6e310d315d1::t_169d2c0806e5e0 55,61-62
+tests/run-metrics.test.ts
+  s_b2b6e310d315d1::t_f655fad09ee5d8 2
+  s_b2b6e310d315d1::t_481b7d0d457f43 16-21
+web/src/agent/message-parts.test.ts
+  s_b2b6e310d315d1::t_19a5eef3986c54 122-125
+  s_b2b6e310d315d1::t_e11dfe10746f31 132-138
+web/src/agent/task-outcome.ts
+  s_b2b6e310d315d1::t_483c5be0faa30e 1-23
+web/src/agent/chat-message-reconciliation.test.ts
+  s_b2b6e310d315d1::t_f53da131cc6f1e 39-44
+  s_b2b6e310d315d1::t_5ce638a0147525 45-51
+web/src/agent/task-outcome.test.ts
+  s_b2b6e310d315d1::t_a12d022923941b 1-24
+tests/task-quality-agent.integration.test.ts
+  s_b2b6e310d315d1::t_2c891501526072 11-13
+  s_b2b6e310d315d1::t_3954934e79b172 1-10,14-35
+web/src/agent/chat-message-reconciliation.ts
+  s_b2b6e310d315d1::t_b2291cb26827b7 47-51
+  s_b2b6e310d315d1::t_94e47e7215c5b1 42
+  s_b2b6e310d315d1::t_ea875e00d0a55d 2
+src/mastra/agents/task-quality/processor.ts
+  s_b2b6e310d315d1::t_25c6257c819418 4-8,16-19,21-23,25-26,28,33-34,36,39,41,43,47-48,50-51,55,129,140
+  s_b2b6e310d315d1::t_47b1cd88b51913 2-3,9-10,29,31-32,37,40,42,45,52,65-67,75-76
+  s_b2b6e310d315d1::t_ab1ca63c041549 1,11-15,20,24,27,30,35,38,44,46,49,53-54,56-64,68-74,77-128,130-139
+src/mastra/agents/task-quality/run-control-repository.ts
+  s_b2b6e310d315d1::t_ed454e82a28f28 91-106
+src/mastra/agents/agent.ts
+  s_b2b6e310d315d1::t_7651ea19d00325 121-122
+  s_b2b6e310d315d1::t_c68c9ffe7a80c3 9-10
+  s_b2b6e310d315d1::t_c91712b9bbbae2 64-69
+web/src/agent/message-parts.ts
+  s_b2b6e310d315d1::t_7efce0ec8ae033 65-68
+  s_b2b6e310d315d1::t_93e52c57174885 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3a307cd5f5c8e1345e0da902d4dcafde1f27c023",
+  "prompts": {},
+  "sessions": {
+    "s_b2b6e310d315d1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f06b165b-6ef9-49b8-87f9-48e93c0bfd93",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
