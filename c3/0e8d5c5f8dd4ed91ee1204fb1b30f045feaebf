@@ -1,0 +1,48 @@
+src/mastra/agents/weather/evidence.ts
+  s_b2b6e310d315d1::t_c57215d4b71875 3,21-25,28,34-35,47,50,55,64-72,82,84,87-88,99-105,108,113,115-122,125-131,133-134,137
+  s_b2b6e310d315d1::t_3779e0afd730d6 1-2,4-20,26-27,29-33,36-46,48-49,51-54,56-63,73-81,83,85-86,89-91,106-107,109-112,114,123-124,132,135-136,138-139
+  s_b2b6e310d315d1::t_457ff8b47cdb7f 92-98
+src/mastra/agents/weather/codes.ts
+  s_b2b6e310d315d1::t_d1133daf85a638 1-40
+tests/weather-aggregate.test.ts
+  s_b2b6e310d315d1::t_1b954a12e565ce 1-13
+src/mastra/agents/weather/aggregate.ts
+  s_b2b6e310d315d1::t_1556c3434d965a 1-30
+src/mastra/agents/chart-instructions.ts
+  s_b2b6e310d315d1::t_f3e466475f9649 16-17
+tests/weather-evidence.test.ts
+  s_b2b6e310d315d1::t_a1fce67c06bf13 1-110
+docs/superpowers/verification/2026-10-22-agent-phase-one-task-quality.md
+  s_b2b6e310d315d1::t_2651a851a214df 79-87
+  s_b2b6e310d315d1::t_b1ba9ebc63e2f1 88-99
+src/mastra/agents/chart-data.ts
+  s_b2b6e310d315d1::t_d4dc0e65854f24 46,51
+  s_b2b6e310d315d1::t_33e40aee61ec83 92-100
+  s_b2b6e310d315d1::t_6e04a64637e264 69-89
+  s_b2b6e310d315d1::t_f6fb7b8697194d 4-5
+tests/fixtures/task-quality/weather/open-meteo-sample.json
+  s_b2b6e310d315d1::t_09b0f3015b080e 1-20
+src/mastra/agents/weather/types.ts
+  s_b2b6e310d315d1::t_e076e0537a6482 13
+  s_b2b6e310d315d1::t_2197ac79d1528b 1-12,14-73
+src/mastra/agents/weather/requirements.ts
+  s_b2b6e310d315d1::t_c7ff740336ebb2 1-9
+src/mastra/agents/chart-data-tool.ts
+  s_b2b6e310d315d1::t_613a46722b655a 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c30e8d5c5f8dd4ed91ee1204fb1b30f045feaebf",
+  "prompts": {},
+  "sessions": {
+    "s_b2b6e310d315d1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f06b165b-6ef9-49b8-87f9-48e93c0bfd93",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
