@@ -57,8 +57,27 @@ Schema：隔离库 `127.0.0.1|localhost:5433/nero_agent` 上，测试在事务�
 
 定向恢复仍走原来的 reconcile、锁和 staging。测试在临时目录重建 `skill-a`，没有改仓库外的真实技能目录。
 
+## Task 3：模型能力探针
+
+`node --env-file-if-exists=.env --import tsx --test tests/model-capabilities.test.ts tests/model-routes.test.ts tests/model-transport.test.ts tests/model-resolver.test.ts tests/model-security.test.ts tests/model-schema.test.ts tests/model-catalog-db.test.ts tests/model-admin-page.test.ts`：34 通过。
+
+`npm run test --prefix web -- src/agent/PrivateModelMenu.test.tsx src/agent/ModelSettingsMenu.test.tsx`：14 通过。
+
+`node --import tsx --test tests/turn-policy.test.ts`：7 通过。
+
+- 探针默认关闭。`MODEL_CAPABILITY_PROBE_ENABLED` 不是 `true` 时，私有模型探针返回 400，说明不会发起请求。公共模型的非管理员探针返回 404。
+- 模拟供应商：工具、强制工具和 JSON Schema 都回传随机 nonce 时为 supported。忽略工具、错误 nonce、忽略 schema 为 unsupported。timeout、429、5xx 为 unknown。协议明确不支持为 unsupported。chat 与 responses 都覆盖。请求体含 `inputSchema`，不含 API key。
+- 指纹按 scope、记录 ID、owner、规范化 baseUrl、apiMode、provider、model、credential revision 和探针版本计算。两个用户的同名私有模型不共享。改 baseUrl、apiMode、modelId 或 revision 后旧结果失效。超过 7 天回到 unknown。60 秒内重复为 429，同一连接已有探针时为 busy。
+- 更换 API key 的 PATCH 在同一条更新里把 `credential_revision` 从 1 增到 2。诊断表随模型外键 `ON DELETE CASCADE` 删除。
+- `supportsStructuredOutputs` 只有 `jsonSchema === 'supported'` 才为 true。未探测或 unknown 走 compatible-fallback，图表仍使用现有 structuredOutput。工具可用但 schema 不支持时走 data-tool。`forcedToolChoice === 'unsupported'` 时不再强制 toolChoice。
+- 对话模型在解析后读取 `nero-agent.model-capabilities`。记忆模型不打开结构化输出。
+- 私有模型列表显示未验证、已通过或不兼容，以及检查时间。只有点击“检测能力”才发请求。网络错误显示在页面上，不改当前模型，也不刷新对话所选模型。
+- 这些通过来自模拟响应，不是真实供应商探测。
+
+隔离库 `127.0.0.1:5433/nero_agent` 已执行 `npm run db:migrate`，应用了 `014_agent_phase_one_quality.sql`。迁移只增加列和表。
+
 ## 尚未验收
 
 - 全量测试、web 测试、`tsc`、`npm run build`。
-- `npm run db:migrate` 尚未把 014 应用到持久库。
 - Docker public sandbox、live 模型评测、浏览器天气验收。
+- 真实供应商能力探针。默认配置不会自动发起。

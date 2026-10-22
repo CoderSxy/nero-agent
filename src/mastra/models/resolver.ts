@@ -2,6 +2,8 @@ import type { OpenAICompatibleConfig } from '@mastra/core/llm';
 import type { RequestContext } from '@mastra/core/request-context';
 import { trustedUser } from '../auth/auth-context';
 import type { AuthUser } from '../auth/service';
+import { capabilityFingerprint, freshCapabilities, MODEL_CAPABILITIES_CONTEXT_KEY, unknownCapabilities } from './capabilities';
+import { latestCapabilityReport } from './capability-repository';
 import { decryptApiKey } from './crypto';
 import { assertAllowedEndpoint, normalizeModelEndpoint } from './endpoint-policy';
 import { listEnabledPublic } from './repository';
@@ -10,6 +12,7 @@ import { ModelCatalogError, parseModelRef, toModelRef, type ModelRef } from './t
 
 export const chatModelRefContextKey = 'nero-agent.chat-model-ref';
 export const memoryModelRefContextKey = 'nero-agent.memory-model-ref';
+export const modelCapabilitiesContextKey = MODEL_CAPABILITIES_CONTEXT_KEY;
 export type ModelPurpose = 'chat' | 'memory';
 
 export type SelectedModel = { ref: ModelRef; config: OpenAICompatibleConfig };
@@ -58,5 +61,26 @@ export async function resolveSelectedModel(
   const chatRef = readRef(requestContext, chatModelRefContextKey);
   const memoryRef = purpose === 'memory' ? readRef(requestContext, memoryModelRefContextKey) : undefined;
   const ref = memoryRef ?? chatRef ?? (await defaultPublicRef());
-  return { ref, config: await resolveModel(ref, user) };
+  const selected = { ref, config: await resolveModel(ref, user) };
+  requestContext.set(modelCapabilitiesContextKey, await readFreshCapabilities(ref, user));
+  return selected;
+}
+
+async function readFreshCapabilities(ref: ModelRef, user: AuthUser) {
+  try {
+    const record = await findAuthorizedModel(ref, user);
+    const fingerprint = capabilityFingerprint({
+      scope: record.scope,
+      id: record.id,
+      ownerId: record.userId,
+      baseUrl: record.baseUrl,
+      apiMode: record.apiMode,
+      providerId: record.providerId,
+      modelId: record.modelId,
+      credentialRevision: record.credentialRevision,
+    });
+    return freshCapabilities(await latestCapabilityReport(record.scope, record.id), fingerprint, Date.now());
+  } catch {
+    return unknownCapabilities();
+  }
 }

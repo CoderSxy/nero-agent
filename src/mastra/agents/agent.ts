@@ -11,6 +11,7 @@ import { memoryForRequest } from './memory-model';
 import { startScheduleTool, stopScheduleTool } from '../tools/schedule-tools';
 import type { RequestContext } from '@mastra/core/request-context';
 import { resolveSelectedModel, trustedUserFrom } from '../models/resolver';
+import { MODEL_CAPABILITIES_CONTEXT_KEY, type ModelCapabilityReport } from '../models/capabilities';
 import { createTransportModel } from '../models/transport';
 import { tavilySearchTool } from '../tools/tavily-search-tool';
 import { isWorkspaceResolverEnabled } from '../workspace/config';
@@ -92,7 +93,11 @@ ${isUserFilesEnabled() ? `用户要求保存 Markdown、HTML 或其他文本到�
 
 ${chartInstructions}
 `,
-  model: async ({ requestContext }) => createTransportModel((await resolveSelectedModel(requestContext, 'chat')).config),
+  model: async ({ requestContext }) => {
+    const selected = await resolveSelectedModel(requestContext, 'chat');
+    const capabilities = requestContext.get(MODEL_CAPABILITIES_CONTEXT_KEY) as ModelCapabilityReport | undefined;
+    return createTransportModel(selected.config, { jsonSchema: capabilities?.jsonSchema });
+  },
   maxProcessorRetries: 1,
   defaultOptions: {
     maxSteps: 100,

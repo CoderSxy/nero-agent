@@ -33,6 +33,12 @@ export interface SafeModel {
   supportsVision: boolean;
   catalogMetadata?: CatalogMetadata | null;
   isDefault?: boolean;
+  capabilities?: {
+    toolCalling: 'supported' | 'unsupported' | 'unknown';
+    forcedToolChoice: 'supported' | 'unsupported' | 'unknown';
+    jsonSchema: 'supported' | 'unsupported' | 'unknown';
+    checkedAt: string | null;
+  };
 }
 
 export interface PrivateModelInput {
@@ -82,6 +88,16 @@ export async function updatePrivateModel(ref: ModelRef, patch: PrivateModelPatch
 
 export async function deletePrivateModel(ref: ModelRef): Promise<void> {
   await privateRequest(`/model-catalog/private/${ref.slice('private:'.length)}`, { method: 'DELETE' }, '删除模型失败');
+}
+
+export async function probePrivateModel(ref: ModelRef): Promise<NonNullable<SafeModel['capabilities']>> {
+  const body = await privateRequest(
+    `/model-catalog/private/${ref.slice('private:'.length)}/capabilities/probe`,
+    { method: 'POST' },
+    '检测模型能力失败',
+  ) as { capabilities?: SafeModel['capabilities'] };
+  if (!body.capabilities) throw new Error('模型能力响应格式错误');
+  return body.capabilities;
 }
 
 export async function getSelectableModels(): Promise<SafeModel[]> {

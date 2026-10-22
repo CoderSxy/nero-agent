@@ -10,6 +10,7 @@ import {isTurnUserMessage} from './turn-messages';
 import { decideNextStep, progressFromMessages } from './run-progress';
 import { readSelectedSkillIds } from '../skills/execution-context';
 import { resolveTurnPolicy, validateInlineChart, type TurnPolicy } from './turn-policy';
+import { MODEL_CAPABILITIES_CONTEXT_KEY, selectStructuredDelivery, type ModelCapabilityReport } from '../models/capabilities';
 
 // The provider may ignore toolChoice:none. Finish locally rather than making
 // another paid call or aborting the run (which would lose its saved progress).
@@ -22,6 +23,22 @@ function localResponse(text: string): CachedLLMStepResponse {
     { type: 'finish', payload: { stepResult: { reason: 'stop' }, output: { usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 } }, metadata: {}, messages: { all: [], user: [], nonUser: [] } } },
   ] };
 }
+function capabilitiesOf(requestContext: { get(key: string): unknown } | undefined): ModelCapabilityReport | undefined {
+  return requestContext?.get(MODEL_CAPABILITIES_CONTEXT_KEY) as ModelCapabilityReport | undefined;
+}
+
+function chartSchemaOutput(requestContext: { get(key: string): unknown } | undefined) {
+  const delivery = selectStructuredDelivery(capabilitiesOf(requestContext));
+  if (delivery === 'data-tool' || delivery === 'unavailable') return {};
+  return { structuredOutput: { schema: chartSubmissionSchema, jsonPromptInjection: false, errorStrategy: 'warn' as const } };
+}
+
+function chartToolChoice(requestContext: { get(key: string): unknown } | undefined) {
+  return capabilitiesOf(requestContext)?.forcedToolChoice === 'unsupported'
+    ? 'auto' as const
+    : { type: 'tool' as const, toolName: 'submit_chart_data' };
+}
+
 const TAG = '<turn-delivery-v1>';
 const INLINE_TOOLS = new Set(['web_search', 'web_fetch', 'ask_user', 'finance_search', 'finance_interface_info', 'finance_fetch']);
 function messageText(message: any): string {
@@ -61,14 +78,13 @@ export function createTurnPolicyProcessor() {
       state.progress = progressFromMessages(messages, state.progress as ReturnType<typeof progressFromMessages> | undefined);
       const decision = decideNextStep(state.progress as ReturnType<typeof progressFromMessages>, policy.deliveryMode === 'inline-chart', stepNumber);
       state.progressDecision = decision;
-      const chartOutput = policy.deliveryMode === 'inline-chart' ? {
-        structuredOutput: { schema: chartSubmissionSchema, jsonPromptInjection: false, errorStrategy: 'warn' as const },
-      } : {};
+      const chartOutput = policy.deliveryMode === 'inline-chart' ? chartSchemaOutput(requestContext) : {};
+      const submitChoice = chartToolChoice(requestContext);
       if (policy.deliveryMode === 'inline-chart' && state.repairing && !state.dataFinalized) {
-        return { structuredOutput: undefined, tools: { submit_chart_data: submitChartDataTool }, activeTools: ['submit_chart_data'], toolChoice: { type: 'tool' as const, toolName: 'submit_chart_data' } };
+        return { structuredOutput: undefined, tools: { submit_chart_data: submitChartDataTool }, activeTools: ['submit_chart_data'], toolChoice: submitChoice };
       }
       if (decision === 'finalize') return policy.deliveryMode === 'inline-chart'
-        ? { structuredOutput: undefined, tools: { submit_chart_data: submitChartDataTool }, activeTools: ['submit_chart_data'], toolChoice: { type: 'tool' as const, toolName: 'submit_chart_data' } }
+        ? { structuredOutput: undefined, tools: { submit_chart_data: submitChartDataTool }, activeTools: ['submit_chart_data'], toolChoice: submitChoice }
         : { tools: {}, activeTools: [], toolChoice: 'none' as const };
       if (policy.deliveryMode !== 'inline-chart') return {};
       // Positive allowlist also excludes executable/skill tools that could write HTML indirectly.

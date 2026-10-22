@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { createPrivateModel, deletePrivateModel, listPrivateModels, updatePrivateModel,
+import { createPrivateModel, deletePrivateModel, listPrivateModels, probePrivateModel, updatePrivateModel,
   type ApiMode, type PrivateModelInput, type SafeModel } from './model-catalog-client';
 
 interface Draft { displayName: string; providerId: string; modelId: string; baseUrl: string;
@@ -12,6 +12,14 @@ function draftOf(model: SafeModel): Draft {
   return { displayName: model.displayName, providerId: model.providerId, modelId: model.modelId,
     baseUrl: model.baseUrl, apiMode: model.apiMode, enabled: model.enabled,
     supportsVision: model.supportsVision === true, apiKey: '' };
+}
+
+function capabilityLabel(model: SafeModel): string {
+  const caps = model.capabilities;
+  if (!caps?.checkedAt) return '未验证';
+  if (caps.toolCalling === 'unsupported' || caps.forcedToolChoice === 'unsupported' || caps.jsonSchema === 'unsupported') return '不兼容';
+  if (caps.toolCalling === 'supported' && caps.jsonSchema === 'supported') return '已通过';
+  return '未验证';
 }
 
 function message(cause: unknown, fallback: string) {
@@ -81,6 +89,15 @@ export function PrivateModelMenu({ onBack, onChanged }: {
     finally { setBusyRef(null); }
   }
 
+  async function probe(model: SafeModel) {
+    setBusyRef(model.ref); setError(null);
+    try {
+      const capabilities = await probePrivateModel(model.ref);
+      setModels(list => (list ?? []).map(item => item.ref === model.ref ? { ...item, capabilities } : item));
+    } catch (cause) { setError(message(cause, '检测模型能力失败')); }
+    finally { setBusyRef(null); }
+  }
+
   const field = <K extends keyof Draft>(key: K, value: Draft[K]) =>
     setForm(current => current && { ...current, draft: { ...current.draft, [key]: value } });
 
@@ -89,7 +106,7 @@ export function PrivateModelMenu({ onBack, onChanged }: {
       <button type="button" className="private-back" aria-label="返回设置" onClick={onBack}>‹</button>
       <span>设置 → API Key 管理</span>
     </div>
-    <p className="settings-help">API Key 仅在提交时发送，保存后不再显示。</p>
+    <p className="settings-help">API Key 仅在提交时发送，保存后不再显示。检测模型能力会发起最多 3 次请求，不会在对话时自动执行。</p>
     {error && <p className="error" role="alert">{error}</p>}
     {models === null ? <p className="muted settings-help">加载中…</p> : models.length === 0 && !form ?
       <p className="muted settings-help">还没有自己的模型</p> :
@@ -99,6 +116,8 @@ export function PrivateModelMenu({ onBack, onChanged }: {
             <span className="private-name">{model.displayName}</span>
             {!model.enabled && <span className="private-badge">已停用</span>}
             {model.supportsVision && <span className="private-badge">支持图片</span>}
+            <span className="private-badge">{capabilityLabel(model)}</span>
+            {model.capabilities?.checkedAt && <span className="settings-help">检查于 {model.capabilities.checkedAt}</span>}
             <span className="settings-help">{model.providerId}/{model.modelId}</span>
             <span className="settings-help">Key ····{model.keyHint ?? ''}</span>
           </div>
@@ -107,6 +126,8 @@ export function PrivateModelMenu({ onBack, onChanged }: {
               onClick={() => void remove(model)}>确认删除</button>
             <button type="button" onClick={() => setConfirmRef(null)}>取消删除</button>
           </div> : <div className="private-actions">
+            <button type="button" aria-label={`检测 ${model.displayName} 能力`} disabled={busyRef === model.ref}
+              onClick={() => void probe(model)}>检测能力</button>
             <button type="button" aria-label={`编辑 ${model.displayName}`} disabled={busyRef === model.ref}
               onClick={() => { setForm({ ref: model.ref, draft: draftOf(model) }); setConfirmRef(null); setError(null); }}>编辑</button>
             <button type="button" aria-label={`${model.enabled ? '停用' : '启用'} ${model.displayName}`}

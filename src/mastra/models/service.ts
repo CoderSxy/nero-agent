@@ -1,4 +1,7 @@
 import type { AuthUser } from '../auth/service';
+import { isCapabilityProbeEnabled, type ProbeSlot } from './capabilities';
+import { createFetchProbeCaller, executeCapabilityProbe, type CapabilityProbeCaller } from './capability-probe';
+import { saveCapabilityReport } from './capability-repository';
 import { decryptApiKey, encryptApiKey, keyHint } from './crypto';
 import { GATEWAY_BASE_URL } from './gateway-sync';
 import { assertAllowedEndpoint, normalizeModelEndpoint } from './endpoint-policy';
@@ -297,6 +300,57 @@ export async function deleteModel(scope: ModelScope, id: string, user: AuthUser)
   const targetId = recordId(scope, id);
   const removed = await deleteRecord(scope, targetId, ownerFor(scope, user));
   if (!removed) throw new ModelCatalogError('not_found', 'Model was not found');
+}
+
+const capabilityProbeSlots = new Map<string, ProbeSlot>();
+
+export function resetCapabilityProbeSlots(): void {
+  capabilityProbeSlots.clear();
+}
+
+export async function probeModelCapabilities(
+  user: AuthUser,
+  ref: ModelRef,
+  options: { signal?: AbortSignal; call?: CapabilityProbeCaller } = {},
+): Promise<SafeModel['capabilities']> {
+  const parsed = parseModelRef(ref);
+  if (!parsed) throw new ModelCatalogError('invalid_input', 'Model reference is invalid');
+  if (parsed.scope === 'public' && !user.roles.includes('admin')) {
+    throw new ModelCatalogError('not_found', '模型不存在');
+  }
+  const record = await findAuthorizedModel(ref, user);
+  if (!isCapabilityProbeEnabled()) {
+    throw new ModelCatalogError('disabled', '模型能力检测已关闭，不会发起请求');
+  }
+  const report = await executeCapabilityProbe({
+    access: {
+      scope: record.scope,
+      id: record.id,
+      ownerId: record.userId,
+      baseUrl: record.baseUrl,
+      apiMode: record.apiMode,
+      providerId: record.providerId,
+      modelId: record.modelId,
+      credentialRevision: record.credentialRevision,
+    },
+    roles: user.roles,
+    enabled: true,
+    signal: options.signal,
+    call: options.call ?? createFetchProbeCaller({
+      baseUrl: record.baseUrl,
+      apiKey: decryptApiKey(record.apiKeyCiphertext),
+      modelId: record.modelId,
+      apiMode: record.apiMode,
+    }),
+    slots: capabilityProbeSlots,
+    save: stored => saveCapabilityReport(record.scope, record.id, stored),
+  });
+  return {
+    toolCalling: report.toolCalling,
+    forcedToolChoice: report.forcedToolChoice,
+    jsonSchema: report.jsonSchema,
+    checkedAt: report.checkedAt,
+  };
 }
 
 export async function findAuthorizedModel(ref: ModelRef, user: AuthUser): Promise<ModelRecord> {

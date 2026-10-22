@@ -7,11 +7,13 @@ const list = vi.fn();
 const create = vi.fn();
 const update = vi.fn();
 const remove = vi.fn();
+const probe = vi.fn();
 vi.mock('./model-catalog-client', () => ({
   listPrivateModels: () => list(),
   createPrivateModel: (input: unknown) => create(input),
   updatePrivateModel: (ref: string, patch: unknown) => update(ref, patch),
   deletePrivateModel: (ref: string) => remove(ref),
+  probePrivateModel: (ref: string) => probe(ref),
 }));
 
 const ref = 'private:22222222-2222-4222-8222-222222222222';
@@ -135,5 +137,30 @@ describe('private model management', () => {
     reject(new Error('Base URL 不在允许列表'));
     expect((await screen.findByRole('alert')).textContent).toContain('Base URL 不在允许列表');
     expect((screen.getByRole('button', { name: '保存' }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('shows an unverified model and probes only after a click', async () => {
+    probe.mockResolvedValue({
+      toolCalling: 'supported', forcedToolChoice: 'supported', jsonSchema: 'supported', checkedAt: '2026-10-22T06:00:00.000Z',
+    });
+    const { onChanged } = setup();
+    expect(await screen.findByText('未验证')).toBeTruthy();
+    expect(screen.getByText(/最多 3 次请求/)).toBeTruthy();
+    expect(probe).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '检测 Pro 能力' }));
+    expect(await screen.findByText('已通过')).toBeTruthy();
+    expect(screen.getByText(/2026-10-22T06:00:00.000Z/)).toBeTruthy();
+    expect(probe).toHaveBeenCalledWith(ref);
+    expect(onChanged).not.toHaveBeenCalled();
+  });
+
+  it('keeps the selected model when a capability probe fails', async () => {
+    probe.mockRejectedValue(new Error('网络错误'));
+    setup();
+    await screen.findByText('未验证');
+    fireEvent.click(screen.getByRole('button', { name: '检测 Pro 能力' }));
+    expect((await screen.findByRole('alert')).textContent).toContain('网络错误');
+    expect(screen.getByText('未验证')).toBeTruthy();
+    expect(screen.getByText('Pro')).toBeTruthy();
   });
 });

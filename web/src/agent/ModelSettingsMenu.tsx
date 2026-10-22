@@ -12,6 +12,7 @@ export function ModelSettingsMenu({ theme, onThemeChange, user, onLogout }: {
   return <div className="settings-footer">
     {open && <div className="settings-popover" role="dialog" aria-label="设置">
       <div className="settings-heading">外观</div>
+      <p className="settings-help">检测模型能力会发起最多 3 次请求，不会在对话时自动执行。</p>
       <div className="theme-options" role="group" aria-label="主题">
         <button type="button" aria-pressed={theme === 'light'} onClick={() => onThemeChange('light')}>浅色</button>
         <button type="button" aria-pressed={theme === 'dark'} onClick={() => onThemeChange('dark')}>深色</button>

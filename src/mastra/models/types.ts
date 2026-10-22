@@ -19,6 +19,13 @@ export type CatalogMetadata = {
   imageSupport?: boolean | null;
 };
 
+export type SafeModelCapabilities = {
+  toolCalling: 'supported' | 'unsupported' | 'unknown';
+  forcedToolChoice: 'supported' | 'unsupported' | 'unknown';
+  jsonSchema: 'supported' | 'unsupported' | 'unknown';
+  checkedAt: string | null;
+};
+
 export type SafeModel = {
   ref: ModelRef;
   scope: ModelScope;
@@ -33,6 +40,7 @@ export type SafeModel = {
   supportsVision: boolean;
   catalogMetadata?: CatalogMetadata | null;
   isDefault?: boolean;
+  capabilities?: SafeModelCapabilities;
 };
 
 export type ModelInput = {
@@ -54,7 +62,8 @@ export type ModelCatalogErrorCode =
   | 'disabled'
   | 'missing_key'
   | 'no_public_models'
-  | 'legacy_ambiguous';
+  | 'legacy_ambiguous'
+  | 'rate_limited';
 
 export class ModelCatalogError extends Error {
   readonly code: ModelCatalogErrorCode;

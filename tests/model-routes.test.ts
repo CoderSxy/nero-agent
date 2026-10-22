@@ -58,7 +58,9 @@ test('modelRoutes registers every method and path from the API contract', () => 
     'PATCH /model-catalog/private/:id',
     'PATCH /model-catalog/public/:id',
     'POST /model-catalog/private',
+    'POST /model-catalog/private/:id/capabilities/probe',
     'POST /model-catalog/public',
+    'POST /model-catalog/public/:id/capabilities/probe',
     'POST /model-catalog/public/sync/apply',
     'POST /model-catalog/public/sync/preview',
   ]);
@@ -199,6 +201,13 @@ test('model catalog HTTP API enforces auth, ownership, key handling and safe DTO
     assert.equal(replaced.status, 200);
     assert.equal(replaced.json.model.keyHint, '5678');
     assert.equal(decryptApiKey((await findAuthorizedModel(privateA.ref, userA)).apiKeyCiphertext), NEW_KEY);
+    assert.equal((await findAuthorizedModel(privateA.ref, userA)).credentialRevision, 2);
+
+    process.env.MODEL_CAPABILITY_PROBE_ENABLED = 'false';
+    const privateProbe = await call('POST', `/model-catalog/private/${privateA.ref.slice('private:'.length)}/capabilities/probe`, tokenA, {});
+    assert.equal(privateProbe.status, 400);
+    assert.match(privateProbe.json.error, /不会发起请求/);
+    assert.equal(JSON.stringify(privateProbe.json).includes(NEW_KEY), false);
 
     // ownership: foreign private records are indistinguishable from missing ones
     const privateId = privateA.ref.slice('private:'.length);
@@ -214,6 +223,8 @@ test('model catalog HTTP API enforces auth, ownership, key handling and safe DTO
 
     // public update and delete by admin
     const publicId = publicModel.ref.slice('public:'.length);
+    const publicProbe = await call('POST', `/model-catalog/public/${publicId}/capabilities/probe`, tokenA, {});
+    assert.equal(publicProbe.status, 404);
     const disabled = await call('PATCH', `/model-catalog/public/${publicId}`, adminToken, { enabled: false });
     assert.equal(disabled.status, 200);
     assert.equal(disabled.json.model.enabled, false);

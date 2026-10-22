@@ -5,6 +5,7 @@ import { Agent } from 'undici';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { createOpenAI } from '@ai-sdk/openai';
 import type { OpenAICompatibleConfig } from '@mastra/core/llm';
+import type { CapabilityState } from './capabilities';
 import { ModelCatalogError } from './types';
 
 /** Recheck every DNS answer during connection establishment, including after DNS changes. */
@@ -56,13 +57,23 @@ export function createGuardedModelFetch(baseUrl: URL, fetchImpl: typeof fetch = 
   };
 }
 
-export function createTransportModel(config: OpenAICompatibleConfig) {
+export type TransportModelOptions = {
+  jsonSchema?: CapabilityState;
+  fetchImpl?: typeof fetch;
+};
+
+/** Native schema is enabled only after this connection has passed the probe. */
+export function structuredOutputSupport(jsonSchema: CapabilityState | undefined): boolean {
+  return jsonSchema === 'supported';
+}
+
+export function createTransportModel(config: OpenAICompatibleConfig, options?: TransportModelOptions) {
   const [providerId, ...modelParts] = 'id' in config
     ? config.id.split('/')
     : [config.providerId, config.modelId];
   const modelId = modelParts.join('/');
   if (!config.url || !config.apiKey) throw new ModelCatalogError('invalid_input', 'Model connection is incomplete');
-  const fetch = createGuardedModelFetch(new URL(config.url));
+  const fetch = createGuardedModelFetch(new URL(config.url), options?.fetchImpl);
   if (config.api === 'responses') {
     return createOpenAI({ name: providerId, baseURL: config.url, apiKey: config.apiKey, fetch }).responses(modelId);
   }
@@ -71,6 +82,6 @@ export function createTransportModel(config: OpenAICompatibleConfig) {
     baseURL: config.url,
     apiKey: config.apiKey,
     fetch,
-    supportsStructuredOutputs: true,
+    supportsStructuredOutputs: structuredOutputSupport(options?.jsonSchema),
   }).chatModel(modelId);
 }

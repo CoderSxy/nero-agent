@@ -6,9 +6,10 @@ import {
   deleteModel,
   listManagedModels,
   listSelectableModels,
+  probeModelCapabilities,
   updateModel,
 } from './service';
-import { ModelCatalogError, type ModelInput, type ModelScope } from './types';
+import { ModelCatalogError, toModelRef, type ModelInput, type ModelScope } from './types';
 import { applyGatewaySync, previewGatewaySync } from './gateway-sync';
 
 const MAX_BODY_BYTES = 16 * 1024;
@@ -19,7 +20,7 @@ class RequestError extends Error {
   }
 }
 
-const STATUS_BY_CODE: Record<string, 400 | 403 | 404> = {
+const STATUS_BY_CODE: Record<string, 400 | 403 | 404 | 429> = {
   invalid_input: 400,
   forbidden: 403,
   not_found: 404,
@@ -27,6 +28,7 @@ const STATUS_BY_CODE: Record<string, 400 | 403 | 404> = {
   missing_key: 400,
   no_public_models: 400,
   legacy_ambiguous: 400,
+  rate_limited: 429,
 };
 
 function currentUser(c: Context): AuthUser {
@@ -118,6 +120,14 @@ function scopedRoutes(scope: ModelScope) {
         requireAdminForPublic(scope, user);
         const patch = await readJsonObject<Partial<ModelInput>>(c);
         return c.json({ model: await updateModel(scope, c.req.param('id') ?? '', user, patch) });
+      }),
+    }),
+    registerApiRoute(`${base}/:id/capabilities/probe`, {
+      method: 'POST',
+      handler: guarded(async (c, user) => {
+        const id = c.req.param('id') ?? '';
+        const capabilities = await probeModelCapabilities(user, toModelRef(scope, id), { signal: c.req.raw.signal });
+        return c.json({ capabilities });
       }),
     }),
     registerApiRoute(`${base}/:id`, {

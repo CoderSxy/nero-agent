@@ -242,7 +242,11 @@ const SCRIPT = `
       el('label', { class: 'check' }, [isDefault, '设为默认']),
       el('button', { type: 'submit', class: 'primary', 'data-action': 'create', text: '创建模型' }),
     ]));
-    return el('section', { class: 'card' }, [el('h2', { text: '新建公共模型' }), form]);
+    return el('section', { class: 'card' }, [
+      el('h2', { text: '新建公共模型' }),
+      el('p', { text: '能力检测最多发起 3 次请求，不会在对话时自动执行。' }),
+      form,
+    ]);
   }
 
   function editForm(model) {

@@ -19,6 +19,7 @@ export type ModelRecord = {
   supportsVision: boolean;
   catalogMetadata: CatalogMetadata | null;
   isDefault: boolean;
+  credentialRevision: number;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -49,6 +50,7 @@ type ModelRow = {
   supports_vision: boolean;
   catalog_metadata: CatalogMetadata | null;
   is_default: boolean;
+  credential_revision: number;
   created_at: Date;
   updated_at: Date;
 };
@@ -60,10 +62,10 @@ const TABLES: Record<ModelScope, string> = {
 
 const SELECT_COLUMNS: Record<ModelScope, string> = {
   public: `id, NULL::uuid AS user_id, display_name, provider_id, model_id, base_url, api_mode,
-    api_key_ciphertext, enabled, supports_vision, catalog_metadata, is_default, created_at, updated_at`,
+    api_key_ciphertext, enabled, supports_vision, catalog_metadata, is_default, credential_revision, created_at, updated_at`,
   private: `id, user_id, display_name, provider_id, model_id, base_url, api_mode,
     api_key_ciphertext, enabled, supports_vision, NULL::jsonb AS catalog_metadata,
-    false AS is_default, created_at, updated_at`,
+    false AS is_default, credential_revision, created_at, updated_at`,
 };
 
 const COLUMN_NAMES: Record<keyof Omit<ModelColumns, 'isDefault' | 'catalogMetadata'>, string> = {
@@ -92,6 +94,7 @@ function toRecord(scope: ModelScope, row: ModelRow): ModelRecord {
     supportsVision: row.supports_vision,
     catalogMetadata: row.catalog_metadata,
     isDefault: row.is_default,
+    credentialRevision: row.credential_revision,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -232,6 +235,7 @@ export async function updateRecord(
     values.push(changes.catalogMetadata ? JSON.stringify(changes.catalogMetadata) : null);
     assignments.push(`catalog_metadata = $${values.length}`);
   }
+  if (changes.apiKeyCiphertext !== undefined) assignments.push('credential_revision = credential_revision + 1');
   assignments.push('updated_at = now()');
 
   values.push(id);
