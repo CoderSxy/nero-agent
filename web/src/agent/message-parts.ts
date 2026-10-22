@@ -2,6 +2,7 @@ import type { MastraDBMessage } from '@mastra/core/agent/message-list';
 import type { OmMarkerData } from '@mastra/playground-ui/domains/chat/tools/badges/observation-marker-badge';
 import { stripAttachmentProtocol } from './attachment-protocol';
 import { isUserMessage } from './pending-user-message';
+import { outcomeText, type TaskOutcomePart } from './task-outcome';
 
 export type ToolPart = { id: string; name: string; args: unknown; result?: unknown; state: string };
 type ObservationState = 'running' | 'complete' | 'failed' | 'buffering' | 'buffering-complete' |
@@ -61,6 +62,10 @@ export function messageParts(message: MastraDBMessage) {
     .map(part => (part as typeof part & { data?: { cycleId?: string } }).data?.cycleId)
     .filter((id): id is string => typeof id === 'string'));
   const items: DisplayPart[] = parts.flatMap<DisplayPart>(part => {
+    if (part.type === 'data-nero-task-outcome') {
+      const data = (part as { data?: TaskOutcomePart }).data;
+      return data?.runId && typeof data.revision === 'number' ? [{ kind: 'text', text: outcomeText(data) }] : [];
+    }
     if (part.type === 'data-nero-chart') {
       const data = (part as any).data;
       return data?.status === 'ready' && typeof data.markdown === 'string' ? [{ kind: 'text', text: data.markdown }] : [];

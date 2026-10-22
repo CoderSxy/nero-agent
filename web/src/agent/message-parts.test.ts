@@ -119,10 +119,21 @@ describe('structured chart delivery',()=>{
     const failed=messageParts(message([{type:'data-nero-chart',data:{version:2,status:'pending'}},{type:'text',text:'ASCII chart'},{type:'data-nero-delivery',data:{version:2,status:'failed',reason:'missing-chart',message:'模型未返回结构化图表数据'}}]));
     expect(failed).toEqual([{kind:'delivery-error',reason:'missing-chart',message:'模型未返回结构化图表数据'}]);
   });
+  it('shows a partial outcome on the answer itself',()=>{
+    const parts=messageParts(message([{type:'text',text:'只有温度'},{type:'data-nero-task-outcome',data:{runId:'run-1',revision:1,status:'partial',verification:'verified',requirements:[{id:'weather.condition',status:'missing'}]}}]));
+    expect(parts.some(part=>part.kind==='text'&&part.text.includes('部分完成')&&part.text.includes('weather.condition'))).toBe(true);
+  });
   it('keeps the weather summary beside the chart markdown',()=>{
     const markdown='```echarts\n{"series":[]}\n```\n\n2026-10-22 大部晴朗 日均相对湿度 70%';
     const parts=messageParts(message([{type:'data-nero-chart',data:{version:2,schemaVersion:2,kind:'weather',status:'ready',markdown}}]));
     expect(parts).toEqual([{kind:'text',text:markdown}]);
     expect(parts[0].kind==='text' && parts[0].text).toContain('日均相对湿度');
+  });
+  it('shows the task outcome on the same answer', () => {
+    const parts = messageParts(message([
+      { type: 'text', text: '只有气温。' },
+      { type: 'data-nero-task-outcome', data: { runId: 'run-1', revision: 1, status: 'partial', verification: 'verified', requirements: [{ id: 'weather.condition', status: 'missing' }] } },
+    ]));
+    expect(parts.map(part => part.kind === 'text' ? part.text : '')).toContain('部分完成，缺少：weather.condition。');
   });
 });

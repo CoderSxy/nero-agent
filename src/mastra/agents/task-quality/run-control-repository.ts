@@ -88,6 +88,22 @@ export async function finalizeRunOperation(
   );
 }
 
+export async function recordRunOutcome(runId: string, outcome: { revision: number; status: string }, db: Queryable = getPool()): Promise<number | undefined> {
+  const status = outcome.status === 'failed' ? 'failed' : outcome.status === 'cancelled' ? 'cancelled' : 'completed';
+  const result = await db.query<{ revision: number }>(
+    `UPDATE app_agent_run_controls
+        SET outcome = $2::jsonb,
+            revision = revision + 1,
+            status = CASE WHEN status = 'active' THEN $4 ELSE status END,
+            updated_at = now()
+      WHERE run_id = $1
+        AND (outcome IS NULL OR COALESCE((outcome->>'revision')::bigint, 0) < $3)
+      RETURNING revision`,
+    [runId, JSON.stringify(outcome), outcome.revision, status],
+  );
+  return result.rows[0]?.revision;
+}
+
 export async function cleanupFinishedRuns(db: Queryable = getPool()): Promise<number> {
   const result = await db.query(
     `DELETE FROM app_agent_run_controls control

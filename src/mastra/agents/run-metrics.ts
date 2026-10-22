@@ -1,5 +1,6 @@
 import type {Processor} from '@mastra/core/processors';
 import {readBoundServerExecutionId} from '../skills/execution-context';
+import {TASK_OUTCOME_CONTEXT_KEY} from './task-quality/processor';
 import {validateInlineChart} from './turn-policy';
 type Timed={started:number;durationMs?:number};
 type MemoryTiming={cycleId:string;operation:string;status:string;durationMs:number};
@@ -18,7 +19,8 @@ export function recordTiming(s:Timing,event:Event,now:number){
   case 'memory':s.memory.set(event.cycleId,{cycleId:event.cycleId,operation:event.operation,status:event.status,durationMs:event.durationMs});break;
  }
 }
-export function summarizeTiming(s:Timing,now:number){return {runId:s.runId,elapsedMs:now-s.started,firstTokenMs:s.firstToken===undefined?undefined:s.firstToken-s.started,firstChartMs:s.firstChart===undefined?undefined:s.firstChart-s.started,answerMs:s.answer===undefined?undefined:s.answer-s.started,answerComplete:s.answer!==undefined,models:[...s.models.values()].map(m=>({step:m.step,attempt:m.attempt,model:m.model,durationMs:m.durationMs})),tools:[...s.tools.entries()].map(([id,t])=>({id,name:t.name,durationMs:t.durationMs,failed:t.failed})),toolFailures:[...s.tools.values()].filter(t=>t.failed).length,memory:[...s.memory.values()]};}
+export function summarizeTiming(s:Timing,now:number){const memory=[...s.memory.values()];return {runId:s.runId,elapsedMs:now-s.started,firstTokenMs:s.firstToken===undefined?undefined:s.firstToken-s.started,firstChartMs:s.firstChart===undefined?undefined:s.firstChart-s.started,answerMs:s.answer===undefined?undefined:s.answer-s.started,memoryMs:memory.reduce((sum,item)=>sum+item.durationMs,0),answerComplete:s.answer!==undefined,price:null as number|null,models:[...s.models.values()].map(m=>({step:m.step,attempt:m.attempt,model:m.model,durationMs:m.durationMs})),tools:[...s.tools.entries()].map(([id,t])=>({id,name:t.name,durationMs:t.durationMs,failed:t.failed})),toolFailures:[...s.tools.values()].filter(t=>t.failed).length,memory};}
+export function publicRunMetric(summary:ReturnType<typeof summarizeTiming>,outcome?:{status?:string;verification?:string;requirements?:Array<{id:string;status:string}>}){const requirements=outcome?.requirements??[];return {runId:summary.runId,elapsedMs:summary.elapsedMs,firstTokenMs:summary.firstTokenMs,firstChartMs:summary.firstChartMs,answerMs:summary.answerMs,memoryMs:summary.memoryMs,answerComplete:summary.answerComplete,price:null,models:summary.models,tools:summary.tools,toolFailures:summary.toolFailures,memory:summary.memory,coverage:{met:requirements.filter(item=>item.status==='met').length,missing:requirements.filter(item=>item.status==='missing').length,unverified:requirements.filter(item=>item.status==='unverified').length},taskStatus:outcome?.status,verification:outcome?.verification,succeeded:outcome?.status==='complete'&&outcome.verification==='verified'};}
 export function createRunMetricsProcessor({now=()=>performance.now()}={}){
  return {
   id:'run-metrics',
@@ -50,13 +52,14 @@ export function createRunMetricsProcessor({now=()=>performance.now()}={}){
    }
    return part;
   },
-  async processOutputStep({state,text,toolCalls,messageList,writer,tracingContext}){
+  async processOutputStep({state,text,toolCalls,messageList,writer,tracingContext,requestContext}){
    const s=state.timing as Timing|undefined;
    if(s&&!toolCalls?.length){
     const chartReady = messageList.get.response.db().some(m => m.content.parts.some(p => p.type === 'data-nero-chart' && (p as any).data?.status === 'ready'));
     if(chartReady || validateInlineChart(text??'').ok)recordTiming(s,{kind:'chart'},now());
     recordTiming(s,{kind:'answer'},now());
-    const summary=summarizeTiming(s,now());
+    const outcome=requestContext?.get?.(TASK_OUTCOME_CONTEXT_KEY) as {status?:string;verification?:string;requirements?:Array<{id:string;status:string}>}|undefined;
+    const summary=publicRunMetric(summarizeTiming(s,now()),outcome);
     tracingContext?.currentSpan?.update({metadata:{runTiming:summary}});
     await writer?.custom({type:'data-nero-answer-complete',data:summary});
    }

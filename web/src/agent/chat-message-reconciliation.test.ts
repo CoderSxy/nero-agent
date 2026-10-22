@@ -36,6 +36,19 @@ it('does not replace a live terminal error with a stored pending invocation of t
  const live=msg('m',[{type:'tool-invocation',toolInvocation:{toolCallId:'t',toolName:'edit',state:'output-error',args:{},errorText:'ambiguous'}}]);
  expect(historyCoversLive([old],[live])).toBe(false);expect(reconcileChatMessages({history:[old],live:[live],settled:true})).toEqual([live]);
 });
+it('keeps the newer task outcome when an older replay arrives',()=>{
+ const outcome=(revision:number)=>({type:'data-nero-task-outcome',data:{runId:'run-1',revision,status:revision===2?'partial':'complete',verification:'verified',requirements:[]}});
+ const history=[msg('f',[text('done'),outcome(2)])];
+ const live=[msg('f',[text('done'),outcome(1)])];
+ expect(reconcileChatMessages({history,live,settled:true})[0].content.parts.at(-1).data.revision).toBe(2);
+});
+it('keeps the newer task outcome when an older replay arrives for the same run',()=>{
+ const outcome=(revision:number)=>({type:'data-nero-task-outcome',data:{runId:'run-1',revision,status:revision===2?'partial':'complete',verification:'verified',requirements:[{id:'weather.condition',status:'missing'}]}});
+ const history=[msg('f',[text('done'),outcome(2)])];
+ const live=[msg('f',[text('done'),outcome(1)])];
+ const parts=reconcileChatMessages({history,live,settled:true})[0].content.parts;
+ expect(parts.find((part:any)=>part.type==='data-nero-task-outcome').data.revision).toBe(2);
+});
 it('does not overwrite a newer result with an older value under the same call identity',()=>{
  const a=tool('t'),b=tool('t');b.toolInvocation.result='new';
  expect(historyCoversLive([msg('m',[a])],[msg('m',[b])])).toBe(false);

@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {createRunMetricsProcessor,createRunTiming,recordTiming,summarizeTiming} from '../src/mastra/agents/run-metrics';
+import {createRunMetricsProcessor,createRunTiming,publicRunMetric,recordTiming,summarizeTiming} from '../src/mastra/agents/run-metrics';
 test('memory intervals never inflate answer duration and failed background work does not change answer completion',()=>{
  const s=createRunTiming('run-a',100);recordTiming(s,{kind:'token'},110);recordTiming(s,{kind:'chart'},125);recordTiming(s,{kind:'answer'},130);recordTiming(s,{kind:'memory',cycleId:'one',operation:'buffering',status:'failed',durationMs:520000},520130);
  const r=summarizeTiming(s,520140);assert.equal(r.firstTokenMs,10);assert.equal(r.firstChartMs,25);assert.equal(r.answerMs,30);assert.equal(r.elapsedMs,520040);assert.equal(r.memory[0].durationMs,520000);assert.equal(r.answerComplete,true);
@@ -12,6 +12,12 @@ test('a repair attempt keeps the original model timing instead of overwriting it
  const s=createRunTiming('r',0);recordTiming(s,{kind:'model-start',step:0,model:'fixture'},0);recordTiming(s,{kind:'model-end',step:0},10);
  recordTiming(s,{kind:'model-start',step:0,attempt:1,model:'fixture'} as any,10);recordTiming(s,{kind:'model-end',step:0,attempt:1} as any,30);
  assert.deepEqual(summarizeTiming(s,30).models.map(m=>m.durationMs),[10,20]);
+});
+test('task metrics keep timing and coverage without prompts or credentials',()=>{
+ const s=createRunTiming('r',0);recordTiming(s,{kind:'answer'},20);recordTiming(s,{kind:'memory',cycleId:'m',operation:'buffering',status:'complete',durationMs:40},20);
+ const metric=publicRunMetric(summarizeTiming(s,30),{status:'partial',verification:'verified',requirements:[{id:'weather.condition',status:'missing'}],prompt:'SECRET-PROMPT',apiKey:'sk-live'} as any);
+ assert.equal(metric.price,null);assert.equal(metric.answerMs,20);assert.equal(metric.memoryMs,40);assert.equal(metric.succeeded,false);assert.equal(metric.coverage.missing,1);
+ assert.equal(JSON.stringify(metric).includes('SECRET-PROMPT'),false);assert.equal(JSON.stringify(metric).includes('sk-live'),false);
 });
 
 test('locally completed budget steps are not counted as paid model calls',()=>{

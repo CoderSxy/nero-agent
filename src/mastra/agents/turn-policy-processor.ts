@@ -12,6 +12,7 @@ import { decideNextStep, progressFromMessages } from './run-progress';
 import { readSelectedSkillIds } from '../skills/execution-context';
 import { resolveTurnPolicy, validateInlineChart, type TurnPolicy } from './turn-policy';
 import { MODEL_CAPABILITIES_CONTEXT_KEY, selectStructuredDelivery, type ModelCapabilityReport } from '../models/capabilities';
+import { CHART_EVIDENCE_CONTEXT_KEY } from './task-quality/processor';
 
 // The provider may ignore toolChoice:none. Finish locally rather than making
 // another paid call or aborting the run (which would lose its saved progress).
@@ -137,7 +138,7 @@ export function createTurnPolicyProcessor() {
       state.sourceUrls = records.map(r => r.url);
       return messageList;
     },
-    async processOutputStep({ text, toolCalls, state, abort, writer, messageList }) {
+    async processOutputStep({ text, toolCalls, state, abort, writer, messageList, requestContext }) {
       if ((state.policy as TurnPolicy | undefined)?.deliveryMode !== 'inline-chart' || toolCalls?.length) return messageList;
       const submitted = readChartSubmission(text ?? '', { goal: String(state.userGoal), sourceUrls: state.sourceUrls as string[] ?? [], evidence: state.evidenceRecords as ChartEvidence[] ?? [], previousSnapshot: state.previousSnapshot as ChartSnapshot | undefined });
       let valid = false;
@@ -184,12 +185,16 @@ export function createTurnPolicyProcessor() {
         reason = state.budgetExhausted ? 'budget-exhausted' : submitted.reason;
 
       }
+      state.chartValid = valid;
+      state.chartFailure = valid ? undefined : reason;
+      requestContext?.set?.(CHART_EVIDENCE_CONTEXT_KEY, {
+        coverage: (state.chartSnapshot as ChartSnapshot | undefined)?.coverage,
+        budgetExhausted: Boolean(state.budgetExhausted),
+      });
       if (!valid && reason !== 'insufficient-data' && reason !== 'budget-exhausted' && !state.repairing && !state.chartSnapshot) {
         state.repairing = true;
         abort('请将已有证据转换为规定的图表数据 JSON；只调用 submit_chart_data 提交数据，不取数或操作文件，不生成 HTML 或字符图，不重新估算数值。数据不足时明确返回 insufficient-data。', { retry: true });
       }
-      state.chartValid = valid;
-      state.chartFailure = valid ? undefined : reason;
       if (!valid) state.finalAnswer = chartFailureMessages[reason ?? 'missing-chart'] + (!submitted.ok && submitted.detail ? ' 原因：' + submitted.detail : '');
       await writer?.custom({ type: 'data-nero-delivery', data: { version: 2, mode: 'inline-chart', status: valid ? 'complete' : 'failed', reason: valid ? undefined : reason, message: valid ? undefined : state.finalAnswer } });
       return messageList;

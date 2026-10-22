@@ -1,4 +1,5 @@
 import type { MastraDBMessage } from '@mastra/core/agent/message-list';
+import { preferTaskOutcome, type TaskOutcomePart } from './task-outcome';
 function parts(message: MastraDBMessage): any[] {
   return typeof message.content === 'string' ? [{type:'text',text:message.content}] : message.content.parts ?? [];
 }
@@ -38,8 +39,13 @@ export function reconcileChatMessages({history,live,settled}: {history:MastraDBM
     const stored = parts(message);
     const key = (p:any) => `${p.type}:${p.data?.cycleId ?? p.data?.runId ?? ''}`;
     const custom = new Map(stored.filter(p=>p.type.startsWith('data-')).map(p=>[key(p),p]));
-    for(const p of parts(current)) if(p.type.startsWith('data-')) custom.set(key(p),p);
+    for(const p of parts(current)) if(p.type.startsWith('data-')) custom.set(key(p), keepTaskOutcome(custom.get(key(p)), p));
     const next = [...stored.filter(p=>!p.type.startsWith('data-')), ...custom.values()];
     return {...message,content:{...message.content,parts:next}};
   });
+}
+function keepTaskOutcome(stored: any, live: any) {
+  if (stored?.type !== 'data-nero-task-outcome' || live?.type !== 'data-nero-task-outcome') return live;
+  const chosen = preferTaskOutcome(stored.data as TaskOutcomePart, live.data as TaskOutcomePart);
+  return chosen === live.data ? live : stored;
 }
