@@ -1,0 +1,39 @@
+web/src/main.tsx
+  s_8852aff0d9b3df::t_d20e0eb0e57bb6 8
+web/src/agent/skills/SkillSelectionChips.tsx
+  s_8852aff0d9b3df::t_ae3e64685a0ed7 1,4,10,15,21-27
+web/src/agent/mobile/mobile.css
+  s_8852aff0d9b3df::t_e5a2138d7310de 160-162
+  s_8852aff0d9b3df::t_56076e07ba4a79 158-159,164-174,176-182,185-186,188-192
+  s_8852aff0d9b3df::t_94e313b9484c99 183
+  s_8852aff0d9b3df::t_b049fd56481ba9 187
+  s_8852aff0d9b3df::t_e4e247616e6b27 163
+  s_8852aff0d9b3df::t_578fed06107cbe 175
+  s_8852aff0d9b3df::t_cf132f73a5e5a0 184
+web/src/agent/composer-context.css
+  s_8852aff0d9b3df::t_c641262e702f63 68
+  s_8852aff0d9b3df::t_99f59d96f0eceb 1-67,69-162
+web/src/agent/AgentComposer.tsx
+  s_8852aff0d9b3df::t_4861677dfebd44 73
+  s_8852aff0d9b3df::t_5b8ed61288f68b 58-62,64,66-71,74
+  s_8852aff0d9b3df::t_93734ac2454944 423-424
+  s_8852aff0d9b3df::t_7914b81210a91d 4
+  s_8852aff0d9b3df::t_0bff555509b4e2 387-392
+  s_8852aff0d9b3df::t_ead912c2200227 427-429
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2a91feb230ca230e52e4c327370d052dd0398aba",
+  "prompts": {},
+  "sessions": {
+    "s_8852aff0d9b3df": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "272a3523-4681-477e-ba6f-20816876f165",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
