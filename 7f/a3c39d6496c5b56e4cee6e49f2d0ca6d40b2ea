@@ -1,0 +1,32 @@
+src/mastra/agents/task-quality/contract.ts
+  s_b2b6e310d315d1::t_3359693c57c5c3 59-61
+  s_b2b6e310d315d1::t_1ae405f9ff1755 1-58,62-79
+src/mastra/agents/turn-policy.ts
+  s_b2b6e310d315d1::t_3b1122b4be3da9 3-7,11
+tests/task-contract.test.ts
+  s_b2b6e310d315d1::t_c2851e9869579f 1-99
+tests/task-completion.test.ts
+  s_b2b6e310d315d1::t_10517688f1a631 1-89
+src/mastra/agents/task-quality/types.ts
+  s_b2b6e310d315d1::t_55b4c8f895d884 1-50
+src/mastra/agents/task-quality/completion.ts
+  s_b2b6e310d315d1::t_4ceb58809a7cbe 1-39
+src/mastra/agents/task-quality/config.ts
+  s_b2b6e310d315d1::t_1e5bc7a1273989 1-34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7fa3c39d6496c5b56e4cee6e49f2d0ca6d40b2ea",
+  "prompts": {},
+  "sessions": {
+    "s_b2b6e310d315d1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f06b165b-6ef9-49b8-87f9-48e93c0bfd93",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
