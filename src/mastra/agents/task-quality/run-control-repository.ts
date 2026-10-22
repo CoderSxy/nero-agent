@@ -1,6 +1,6 @@
 import type { Pool, PoolClient } from 'pg';
 import { getPool } from '../../auth/db';
-import { resolveTaskBudget } from './config';
+import { resolveTaskBudget } from './limits';
 import type { BudgetKind, BudgetMode, BudgetReservation } from './budget';
 import type { TaskProfile } from './types';
 

@@ -7,6 +7,7 @@ import { selectStructuredDelivery } from '../../models/capabilities';
 import { inspectSkillStorage } from '../../skills/health';
 import { SkillStorageError } from '../../skills/errors';
 import { computeManifestHash } from '../../skills/release-store';
+import { preferTaskOutcome } from '../../../../web/src/agent/task-outcome';
 import { inheritsVerifiedChart } from '../turn-policy';
 import { createMemoryBudget } from './budget';
 import { createTaskQualityProcessor } from './processor';
@@ -120,22 +121,21 @@ async function runFixtureCase(item: QualityCase, now: Date): Promise<EvaluationC
   const state: Record<string, unknown> = { userGoal: item.userText };
   if (item.chart) state.chartSnapshot = { coverage: item.chart };
   if (item.fileVerified !== undefined) state.fileVerified = item.fileVerified;
-  const bag = state as { taskContract?: unknown };
   processor.processInputStep({
     messages: [{ role: 'user', id: `case-${item.id}`, content: item.userText }],
-    state: bag,
+    state,
     requestContext: { get: () => undefined },
     runId: `case-${item.id}`,
-  });
+  } as never);
   const prompt = processor.processLLMRequest?.({
     prompt: [{ role: 'system', content: 'platform' }],
-    state: bag,
+    state,
   } as never) as { prompt?: Array<{ content?: unknown }> } | undefined;
   const injected = prompt?.prompt?.some(message => String(message.content).includes('<task-contract-v1>')) ?? false;
   const parts: OutcomePart[] = [];
   let repairs = 0;
   await processor.processOutputStep?.({
-    state: bag,
+    state,
     text: item.answer,
     toolCalls: [],
     abort() { repairs += 1; },
@@ -214,7 +214,6 @@ async function runAdapter(item: QualityCase, outcome: OutcomePart | undefined, s
   }
   if (item.adapter === 'replay-outcome' && outcome) {
     sourceChecks.push('prefer-task-outcome');
-    const { preferTaskOutcome } = await import('../../../../web/src/agent/task-outcome.ts');
     const older = { ...outcome, revision: outcome.revision - 1, status: 'complete' as const };
     return preferTaskOutcome(outcome, older).revision === outcome.revision && preferTaskOutcome(outcome, older).status === outcome.status;
   }

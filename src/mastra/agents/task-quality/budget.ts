@@ -1,4 +1,4 @@
-import { resolveTaskBudget } from './config';
+import { resolveTaskBudget } from './limits';
 import type { RunBudget, TaskProfile } from './types';
 
 export type BudgetKind = 'main-model' | 'repair-model' | 'tool';

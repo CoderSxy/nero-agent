@@ -120,8 +120,31 @@ Schema：隔离库 `127.0.0.1|localhost:5433/nero_agent` 上，测试在事务�
 - 隔离库两个连接争最后一次主请求，只有一个成功。另一用户被拒绝。同一 run 恢复后工具还能记，主请求剩余是 0。
 - 预算门关闭时，模型 fetch 在出网前停止。没有门的旧钩子测试仍然通过。
 
+## Task 8–10
+
+- `3a307cd` 把完成结果写到同一条回答。只交温度是 partial，完整天气是 verified complete，普通问答是 model-assessed。文件失败、取消和无数据不会被标成完成，processor 不追加第二次修正。
+- `e729b74` 与 `npm run eval:task-quality`：fixture 20 通过，hardFailures 0，价格 null，模型调用 0。温度限定用例不包含天气状况。晴雨缺失保持 partial。报告在 `docs/superpowers/verification/2026-10-22-agent-phase-one-task-quality-eval.json`。
+- `npm test`：574 项，533 通过，41 跳过，0 失败。跳过项是测试文件里原有的条件测试，不是把失败改成通过。
+- `npm run test --prefix web` 第一次有 2 个 MessageList 超时，和全量 Node 测试、类型检查同时跑。单独重跑 `src/agent/MessageList.test.tsx`：43 通过。其余 web 测试在第一次运行里已经通过。
+- `npx tsc --noEmit` 通过。`npm run build` 通过，使用的是项目脚本 `mastra build --studio`，不是手跑构建命令。
+- 隔离库 `127.0.0.1:5433/nero_agent` 执行 `npm run db:migrate`。`app_users` 仍可读。`AGENT_TASK_QUALITY_MODE` 未设置时为 observe。`MODEL_CAPABILITY_PROBE_ENABLED` 未设置，探针关闭。新表列名没有 prompt、api key、password、secret 或正文。
+- `node --import tsx --test tests/skills-health.test.ts` 在临时目录通过：完整发布为 healthy；发布树缺失且 blob 还在为 repairable；blob 缺失为 unavailable / `BLOB_MISSING`，检查本身不重建目录。没有动开发用的真实 Skill 存储。
+
+## 设计 §12 对照
+
+| 验收项 | 证据 |
+| --- | --- |
+| Skill 缺失能定位，不能靠空目录修好 | `tests/skills-health.test.ts`，doctor 退出码 |
+| 模型检测不隐式换模型，探针默认关闭 | Task 3 与 `MODEL_CAPABILITY_PROBE_ENABLED` 未设置 |
+| 天气图含状况、温度、降水；只要温度会精简 | `tests/weather-chart.test.ts`，评测 `weather-complete` / `weather-temperature-only` |
+| 缺项是 partial | 评测 `weather-condition-missing` |
+| 预算不能被重试或并发绕过 | `tests/task-budget.test.ts`、`tests/task-budget-db.test.ts` |
+| 旧图、文件、权限和记忆仍在 | `npm test` 0 失败；图表交付测试通过 |
+| 确定性评测通过；live、Docker 单独记录 | fixture 20/20。live 与 public sandbox 见下 |
+
 ## 尚未验收
 
-- 全量测试、web 测试、`tsc`、`npm run build`。
-- Docker public sandbox、live 模型评测、浏览器天气验收。
-- 真实供应商能力探针。默认配置不会自动发起。
+- Task 9 Step 4 和 Task 10 Step 4 没有勾。没有 `EVAL_LIVE_API_KEY`，live 五项记为 blocked，没有改用别的账户或模型，也没有打开浏览器代为登录。
+- Docker 进程可用，但没有 `SANDBOX_IMAGE` 和 `SANDBOX_EGRESS_IMAGE`。`npm run test:sandbox:public` 未运行，不能用假网络代替。
+- 真实供应商能力探针没有发。默认配置不会自动发起。
+- 发布前仍需在 enforce 下用已授权模型看完整天气、只看温度、湿度、缺数据、文件任务，并确认历史刷新后图和完成结果都还在。

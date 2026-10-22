@@ -114,6 +114,10 @@ ECS 生产环境没有 Mastra EE 授权时，Studio 使用官方 `SimpleAuth` �
 
 PostgreSQL 保存用户、角色、权限、登录会话，以及 Mastra 的会话记忆等数据。`app_permissions` 与 `app_role_permissions` 目前只建表，细粒度权限数据留待后续迭代。开发环境的可观测性仍使用 DuckDB；正式部署时应按流量改为 PostgreSQL 或 ClickHouse。定时任务会持续消耗模型用量，直到暂停。
 
+## 任务完成检查
+
+天气图、文件和普通问答会在同一条回答上给出一个完成结果：已核对、部分完成、未完成或已取消。普通问答只说明平台没有逐项核验。默认 `AGENT_TASK_QUALITY_MODE=observe`，新预算只记录不拦截；测试环境确认后再设 `enforce`。模型兼容探针默认关闭，只有打开模型菜单并主动检测时才发请求。预算、Skill 存储恢复和回滚步骤见 [第一阶段运行说明](docs/agent-phase-one-operations.md)。
+
 ## 修改项目
 
 - [智能体配置](src/mastra/agents/agent.ts)：模型、指令、记忆、工作区及工具。

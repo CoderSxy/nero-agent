@@ -18,7 +18,7 @@ export function dailyHumidityMean(input: {
   date: string;
   timeZone: string;
   times: readonly string[];
-  values: readonly Array<number | null>;
+  values: ReadonlyArray<number | null>;
 }): number | null {
   if (input.times.length !== input.values.length) return null;
   const rows = input.times.map((time, index) => ({ time, value: input.values[index] }))

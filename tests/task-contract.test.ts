@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { resolveTurnPolicy } from '../src/mastra/agents/turn-policy';
-import { resolveTaskBudget, resolveTaskQualityMode } from '../src/mastra/agents/task-quality/config';
+import { resolveTaskBudget, resolveTaskQualityMode } from '../src/mastra/agents/task-quality/limits';
 import { resolveTaskContract } from '../src/mastra/agents/task-quality/contract';
 
 const now = new Date('2026-10-22T04:30:00.000Z');

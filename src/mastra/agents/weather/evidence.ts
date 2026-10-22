@@ -61,7 +61,7 @@ function samePlace(root: unknown, submission: WeatherSubmission): boolean {
     && Math.abs(Number(record.longitude) - weather.location.longitude) < 0.05;
 }
 
-function userSupplied(source: WeatherFieldSource, userText: string, dates: readonly string[], values: readonly Array<number | null>): boolean {
+function userSupplied(source: WeatherFieldSource, userText: string, dates: readonly string[], values: ReadonlyArray<number | null>): boolean {
   if (source.sourceUrl !== '') return false;
   if (!dates.every(date => userText.includes(date))) return false;
   const listed = values.filter((value): value is number => value !== null).join(',');
@@ -99,7 +99,7 @@ export function assessWeatherSubmission(submission: WeatherSubmission, evidence:
     const found = source.kind === 'url' ? evidence.find(item => item.url === source.sourceUrl) : undefined;
     if (source.kind === 'url' && !found) return fail('unverified-source', source.metric);
     if (source.kind === 'url' && found && !samePlace(found.value, submission)) return fail('unverified-source', 'weather.location');
-    const root = source.kind === 'user' ? { text: userText } : found?.value;
+    const root = found?.value;
     if (source.transform === 'humidity-hourly-daily-mean') {
       if (source.metric !== 'humidity-mean') return fail('invalid-data', 'weather.humidity');
       const record = atPath(root, source.recordPath);

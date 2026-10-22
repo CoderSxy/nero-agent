@@ -40,14 +40,14 @@ it('keeps the newer task outcome when an older replay arrives',()=>{
  const outcome=(revision:number)=>({type:'data-nero-task-outcome',data:{runId:'run-1',revision,status:revision===2?'partial':'complete',verification:'verified',requirements:[]}});
  const history=[msg('f',[text('done'),outcome(2)])];
  const live=[msg('f',[text('done'),outcome(1)])];
- expect(reconcileChatMessages({history,live,settled:true})[0].content.parts.at(-1).data.revision).toBe(2);
+ expect((reconcileChatMessages({history,live,settled:true})[0].content.parts.at(-1) as {data?:{revision?:number}}).data?.revision).toBe(2);
 });
 it('keeps the newer task outcome when an older replay arrives for the same run',()=>{
  const outcome=(revision:number)=>({type:'data-nero-task-outcome',data:{runId:'run-1',revision,status:revision===2?'partial':'complete',verification:'verified',requirements:[{id:'weather.condition',status:'missing'}]}});
  const history=[msg('f',[text('done'),outcome(2)])];
  const live=[msg('f',[text('done'),outcome(1)])];
  const parts=reconcileChatMessages({history,live,settled:true})[0].content.parts;
- expect(parts.find((part:any)=>part.type==='data-nero-task-outcome').data.revision).toBe(2);
+ expect((parts.find(part => part.type==='data-nero-task-outcome') as {data?:{revision?:number}} | undefined)?.data?.revision).toBe(2);
 });
 it('does not overwrite a newer result with an older value under the same call identity',()=>{
  const a=tool('t'),b=tool('t');b.toolInvocation.result='new';

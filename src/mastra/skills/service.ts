@@ -1,3 +1,4 @@
+import { Uint8ArrayReader, Uint8ArrayWriter, ZipWriter } from '@zip.js/zip.js';
 import { getSandboxRuntimeConfig } from '../sandbox/runtime-config';
 import type { Pool, PoolClient } from 'pg';
 import { Readable } from 'node:stream';

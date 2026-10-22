@@ -32,47 +32,43 @@ export function createTaskQualityProcessor(options: {
 } = {}) {
   return {
     id: 'task-quality',
-    processInputStep({ messages, state, requestContext, runId }: { messages: Array<{ role?: string; content?: unknown; id?: string }>; state: QualityState; requestContext?: ContextStore; runId?: string }) {
+    processInputStep({ messages, state, requestContext, runId }) {
+      const quality = state as QualityState;
       const latest = [...messages].reverse().find(message => message.role === 'user');
-      const text = messageText(latest) || state.userGoal || '';
-      state.userGoal = text.slice(0, 4000);
-      state.taskContract = resolveTaskContract({
+      const text = messageText(latest) || quality.userGoal || '';
+      quality.userGoal = text.slice(0, 4000);
+      const attached = /附件|attachmentId|上传文件/i.test(text);
+      const skills = readSelectedSkillIds(requestContext);
+      quality.taskContract = resolveTaskContract({
         runId: runId || String(latest?.id ?? 'run'),
         userText: text,
         now: options.now?.() ?? new Date('2026-10-22T04:30:00.000Z'),
         targetTimezone: 'Asia/Shanghai',
-        hasAttachments: /附件|attachmentId|上传文件/i.test(text),
-        selectedSkillIds: readSelectedSkillIds(requestContext as never),
-        turnPolicy: resolveTurnPolicy({ userText: text, hasAttachments: /附件|attachmentId|上传文件/i.test(text), selectedSkillIds: readSelectedSkillIds(requestContext as never) }),
+        hasAttachments: attached,
+        selectedSkillIds: skills,
+        turnPolicy: resolveTurnPolicy({ userText: text, hasAttachments: attached, selectedSkillIds: skills }),
       });
     },
-    processLLMRequest({ prompt, state }: { prompt: Array<{ role?: string; content?: unknown }>; state: QualityState }) {
-      const contract = state.taskContract;
+    processLLMRequest({ prompt, state }) {
+      const quality = state as QualityState;
+      const contract = quality.taskContract;
       if (!contract) return;
       const lines = contract.requirements.filter(item => item.importance === 'required').map(item => `- ${item.id}: ${item.description}`).join('\n');
       const content = `${TAG}\n必须覆盖：\n${lines}\n缺项要说明，不能把部分结果说成全部完成。\n</task-contract-v1>`;
-      return { prompt: [...prompt.filter(message => !(message.role === 'system' && String(message.content).startsWith(TAG))), { role: 'system' as const, content }] };
+      return { prompt: [...prompt.filter(message => !(message.role === 'system' && typeof message.content === 'string' && message.content.startsWith(TAG))), { role: 'system' as const, content }] };
     },
-    async processOutputStep({ state, text, writer, requestContext, toolCalls, messages, abortSignal }: {
-      state: QualityState;
-      text?: string;
-      writer?: { custom(part: unknown): Promise<void> | void };
-      requestContext?: ContextStore;
-      toolCalls?: unknown[];
-      messages?: unknown[];
-      abortSignal?: { aborted?: boolean };
-    }) {
-      if (toolCalls?.length) return;
-      const contract = state.taskContract;
-      if (!contract) return;
-      const chart = chartEvidence(state, requestContext, text ?? '');
-      const files = filesFrom(messages) ?? (state.fileVerified === undefined ? undefined : [{ id: 'file', ok: state.fileVerified }]);
+    async processOutputStep({ state, text, writer, requestContext, toolCalls, messages, abortSignal, messageList }) {
+      const quality = state as QualityState;
+      if (toolCalls?.length || !quality.taskContract) return messageList;
+      const chart = chartEvidence(quality, requestContext as ContextStore | undefined, text ?? '');
+      const files = filesFrom(messages) ?? (quality.fileVerified === undefined ? undefined : [{ id: 'file', ok: quality.fileVerified }]);
       const stopped = Boolean(chart?.budgetExhausted) || /不再请求模型|已达到执行预算/.test(text ?? '');
-      const outcome = state.deliveryUnavailable && !chart?.coverage
-        ? evaluateTaskCompletion(contract, { weatherCoverage: {}, chartVerified: false, answerText: '', budgetStopped: stopped })
-        : evaluateTaskCompletion(contract, evidenceFor(contract, chart, files, Boolean(state.cancelled) || Boolean(abortSignal?.aborted), stopped, text ?? ''));
-      const published = await publish(state, outcome, writer, options.persist);
-      requestContext?.set?.(TASK_OUTCOME_CONTEXT_KEY, published);
+      const outcome = quality.deliveryUnavailable && !chart?.coverage
+        ? evaluateTaskCompletion(quality.taskContract, { weatherCoverage: {}, chartVerified: false, answerText: '', budgetStopped: stopped })
+        : evaluateTaskCompletion(quality.taskContract, evidenceFor(quality.taskContract, chart, files, Boolean(quality.cancelled) || Boolean(abortSignal?.aborted), stopped, text ?? ''));
+      const published = await publish(quality, outcome, writer, options.persist);
+      requestContext?.set(TASK_OUTCOME_CONTEXT_KEY, published);
+      return messageList;
     },
   } satisfies Processor;
 }
