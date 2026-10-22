@@ -1,0 +1,34 @@
+tests/task-quality-schema.test.ts
+  s_b2b6e310d315d1::t_335773bc591d4e 26-39
+  s_b2b6e310d315d1::t_9b9d6d65079c3f 90-93
+  s_b2b6e310d315d1::t_be7f0cb60c7fea 1-25,40-89,94-100,112-124,132-148
+  s_b2b6e310d315d1::t_d3b04416f70866 101-111
+  s_b2b6e310d315d1::t_f72537b06e4f7d 125-131
+tests/task-quality-hooks.integration.test.ts
+  s_b2b6e310d315d1::t_b3db969a809ad1 148-149
+  s_b2b6e310d315d1::t_eb4864055aca2a 1-147,150-232
+src/mastra/agents/task-quality/execution-context.ts
+  s_b2b6e310d315d1::t_e06b3797067c98 1-110
+migrations/014_agent_phase_one_quality.sql
+  s_b2b6e310d315d1::t_c9c98ba1bba028 1-137
+docs/superpowers/verification/2026-10-22-agent-phase-one-task-quality.md
+  s_b2b6e310d315d1::t_c8b039a24ef342 1-46
+src/mastra/agents/task-quality/tool-guard.ts
+  s_b2b6e310d315d1::t_75ac47d86b5e75 1-34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4f4feb6f080f91ae285cf0351c20e0371376b87b",
+  "prompts": {},
+  "sessions": {
+    "s_b2b6e310d315d1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f06b165b-6ef9-49b8-87f9-48e93c0bfd93",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
