@@ -1,9 +1,16 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentComposer } from './AgentComposer';
 import type { ComposerAttachment } from './attachment-types';
 import type { SkillSummary } from './skills/types';
+
+const animationsDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'getAnimations');
+beforeAll(() => Object.defineProperty(Element.prototype, 'getAnimations', { configurable: true, writable: true, value: () => [] }));
+afterAll(() => {
+  if (animationsDescriptor) Object.defineProperty(Element.prototype, 'getAnimations', animationsDescriptor);
+  else Reflect.deleteProperty(Element.prototype, 'getAnimations');
+});
 
 const listAvailableSkills = vi.hoisted(() => vi.fn());
 const listAvailableShortcuts = vi.hoisted(() => vi.fn());
@@ -51,13 +58,14 @@ function typeAt(value: string, caret: number) {
 }
 
 beforeEach(() => {
+  vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
   listAvailableShortcuts.mockResolvedValue({ items: [] });
   listAvailableSkills.mockImplementation(async (query: { q?: string }) => {
     if (query.q && !'天气'.includes(query.q)) return { items: [], total: 0, page: 1, pageSize: 50 };
     return { items: [weather], total: 1, page: 1, pageSize: 50 };
   });
 });
-afterEach(() => { cleanup(); vi.clearAllMocks(); });
+afterEach(() => { cleanup(); vi.clearAllMocks(); vi.unstubAllGlobals(); });
 
 describe('AgentComposer slash skills', () => {
   it('replaces only the slash token and keeps surrounding text, attachments, and unique ids', async () => {

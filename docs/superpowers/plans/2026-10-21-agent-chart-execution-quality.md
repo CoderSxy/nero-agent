@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- 本文仅交付方案；实施按用户最新确认在当前工作区直接开展，不创建 worktree，不修改当前未提交的 MessageList.tsx / tool-row.css。
+- 实施按用户最新确认在当前工作区直接开展，不创建 worktree，不修改当前未提交的 MessageList.tsx / tool-row.css。
 - Mastra 工作前读取项目 mastra 技能，以本地已安装文档和类型为准；通过 package.json 的 dev/build 脚本运行。
 - agents/tools/workflows/scorers 在 src/mastra/index.ts 注册；新增 processor 在 Agent 的处理链显式装配。
 - 鉴权、用户/线程隔离、文件版本检查、技能 pin、取消/恢复能力保持有效。
@@ -53,13 +53,13 @@
 - createTurnPolicyProcessor() 返回 Processor；使用 run 内 state，在 processInputStep 返回工具集合/activeTools 和 systemMessages，在 processLLMRequest 校验本轮规则进入最终 provider prompt。
 - validateInlineChart(text) 返回 {ok:boolean, reason?:'missing-chart'|'invalid-json'|'invalid-option'}；只解析数据，不执行模型生成的 JavaScript。
 
-- [ ] 补失败测试：纯趋势图默认 inline；显式 HTML、PDF/XLSX、混合任务和技能例外；否定句“不要 dashboard”；附件取数和跟进请求；用户更改意图。
-- [ ] 用模拟模型主动请求 write_file，证明高置信纯图表模式下不会实际落盘；必要的取数工具保留。general/mixed 不作文件写入限制。
-- [ ] 装配本轮约束；在最终 provider 请求测试中断言规则存在，记录规则版本摘要与解析出的模型标识，不记录明文提示词。
-- [ ] 增加完成校验：输出缺失/无效图表时只允许一次无工具定向修正，复用已有数据，不重搜、不重跑整轮。修正仍失败则明确失败，不能宣称已生成。
-- [ ] 流式修正作为新的更正答案块追加，保留已流出的内容与错误记录，不假装可以撤回已发送文本；若所用 Mastra 完成钩子不能安全追加，先通过最小适配测试确定统一调用入口，再实现修正，不能私自触发第二次完整 Agent 执行。
+- [x] 补失败测试：纯趋势图默认 inline；显式 HTML、PDF/XLSX、混合任务和技能例外；否定句“不要 dashboard”；附件取数和跟进请求；用户更改意图。
+- [x] 用模拟模型主动请求 write_file，证明高置信纯图表模式下不会实际落盘；必要的取数工具保留。general/mixed 不作文件写入限制。
+- [x] 装配本轮约束；在最终 provider 请求测试中断言规则存在，记录规则版本摘要与解析出的模型标识，不记录明文提示词。
+- [x] 增加完成校验：输出缺失/无效图表时只允许一次无工具定向修正，复用已有数据，不重搜、不重跑整轮。修正仍失败则明确失败，不能宣称已生成。
+- [x] 流式修正作为新的更正答案块追加，保留已流出的内容与错误记录，不假装可以撤回已发送文本；若所用 Mastra 完成钩子不能安全追加，先通过最小适配测试确定统一调用入口，再实现修正，不能私自触发第二次完整 Agent 执行。
 - [ ] 后端模拟回归通过后，用真实模型各验证一次趋势图、HTML 看板、导出文件、附件取数图表。
-- [ ] 独立提交本批修改。
+- [x] 独立提交本批修改。
 
 **验收:** 提供七天测试数据时，无文件操作，直接可渲染图表；天气在线验收先拿足七天数据，再输出图表。网络不可用时明确失败，不能编造。暂不承诺真实模型固定秒数。
 
@@ -75,13 +75,13 @@
 - reconcileChatMessages({history,live,runState}) 返回 MastraDBMessage[]；runState 含 runId、终结状态和快照版本。消息以 messageId、工具以 toolCallId、文本以已有 textId 为身份。
 - reasoning 无稳定 partId 时，只协调同 run 的完整消息快照，不能用文本相同跨消息删除。
 
-- [ ] 为本次天气会话构造脱敏 fixture：早期步骤已落库、最后 live 消息含累计步骤、历史最终消息只有最终步骤，重现重复显示。
-- [ ] 分别补历史刷新、重复事件、断流重连、最终消息更新、取消、同内容不同 ID 的合法两次调用测试；保留错误状态。
-- [ ] 检查 @mastra/react 当前累积器、signals 订阅及初始历史协调，确定重复起点后在应用适配层修复。不预设一定是后端重复推送，不改依赖安装目录。
-- [ ] active run 保留更新的实时增量；终结后的同版本/更新版本持久化快照作为对应消息权威数据；未落库增量不提前删除。
-- [ ] 实现终结后的有限历史同步，在确认存储完成后收敛。避免持续轮询或每个 token 请求历史；对旧请求响应按 thread/run/版本丢弃。
+- [x] 为本次天气会话构造脱敏 fixture：早期步骤已落库、最后 live 消息含累计步骤、历史最终消息只有最终步骤，重现重复显示。
+- [x] 分别补历史刷新、重复事件、断流重连、最终消息更新、取消、同内容不同 ID 的合法两次调用测试；保留错误状态。
+- [x] 检查 @mastra/react 当前累积器、signals 订阅及初始历史协调，确定重复起点后在应用适配层修复。不预设一定是后端重复推送，不改依赖安装目录。
+- [x] active run 保留更新的实时增量；终结后的同版本/更新版本持久化快照作为对应消息权威数据；未落库增量不提前删除。
+- [x] 实现终结后的有限历史同步，在确认存储完成后收敛。避免持续轮询或每个 token 请求历史；对旧请求响应按 thread/run/版本丢弃。
 - [ ] Chrome 验收同一次请求在执行中、结束后、重新打开、重连后均只出现一次工具过程和最终答案。
-- [ ] 独立提交本批修改。
+- [x] 独立提交本批修改。
 
 **验收:** 本例 21 个真实工具调用只展示 21 个；相同内容但不同 ID 的新调用仍展示；历史同步不重新执行工具。
 
@@ -98,11 +98,11 @@
 - decideNextStep(state,turnPolicy) 返回 'continue'|'recover'|'finalize'。
 - 计数针对真实工具结果；重复流事件不得重复计数。恢复同一 run 保留计数，新 run 清零。
 
-- [ ] 补失败测试：相同文件/ETag/oldText/错误连续重复；文件版本变化后的正常重试；成功后重置；不同用户/run 隔离；恢复不清零。
-- [ ] 初始阈值：同状态同错误第 2 次进入 recover，要求补充匹配上下文或重新读文件；第 3 次仍失败进入 finalize，不再调用该失败操作。不能只靠提示词阻止第四次重试。
-- [ ] 高置信简单图表任务最多 8 个主模型步骤，预留一次无工具修正；达到预算时 toolChoice:none，基于已有结果交付或说明不足。general/技能任务保留原 maxSteps:100，本批不下调其总预算。
-- [ ] 禁止把任意两次相同搜索或合法轮询视为死循环；无效进度条件必须关联错误和未变化的目标状态。
-- [ ] 只通过可控状态进入收尾，不使用会阻止历史保存的通用 abort 清空整轮；已有成功取数和部分结果保留。
+- [x] 补失败测试：相同文件/ETag/oldText/错误连续重复；文件版本变化后的正常重试；成功后重置；不同用户/run 隔离；恢复不清零。
+- [x] 初始阈值：同状态同错误第 2 次进入 recover，要求补充匹配上下文或重新读文件；第 3 次仍失败进入 finalize，不再调用该失败操作。不能只靠提示词阻止第四次重试。
+- [x] 高置信简单图表任务最多 8 个主模型步骤，预留一次无工具修正；达到预算时 toolChoice:none，基于已有结果交付或说明不足。general/技能任务保留原 maxSteps:100，本批不下调其总预算。
+- [x] 禁止把任意两次相同搜索或合法轮询视为死循环；无效进度条件必须关联错误和未变化的目标状态。
+- [x] 只通过可控状态进入收尾，不使用会阻止历史保存的通用 abort 清空整轮；已有成功取数和部分结果保留。
 - [ ] 运行图表快速任务、正常文件编辑、多步骤 skill、取消与恢复回归后独立提交。
 
 **验收:** 本例 AMBIGUOUS_MATCH 模式不能连续盲试；复杂 skill 不因简单图表预算被截断；到限后不伪报完成。
@@ -120,22 +120,28 @@
 - MemoryTiming: 独立 cycleId、buffer/observation/reflection 类型、起止/失败/取消状态，以及与 run 的关联（若有）。
 - 所有延迟使用明确的单调时钟或已有 duration 字段；后台区间可重叠，不能相加冒充总等待。
 
-- [ ] 补测试：后台记忆延迟不等于主回复延迟；记忆失败不覆盖成功答案；跨线程隔离不变。
+- [x] 补测试：后台记忆延迟不等于主回复延迟；记忆失败不覆盖成功答案；跨线程隔离不变。
 - [ ] 加入有限指标，核对这次约 520 秒的缓冲是异步工作、收尾等待还是主路径阻塞。读取本地已安装 memory 文档/源码，验证取消、超时和恢复语义。
 - [ ] 先记录默认行为，再对固定样例比较当前 memory 模型与管理员配置的更快 memory 模型；不自动改用户的模型选择，不自动关闭记忆。
 - [ ] 只有证明存在阻塞且框架支持安全处理后，再增加可回滚超时/异步收尾配置；不能 Promise.race 后放任底层任务继续写旧状态。
 - [ ] 若拟减少简单任务的观察频率，单独验证跨轮历史可用、旧缓存键含策略版本、线程隔离和失败重试；未通过则保留默认策略。
-- [ ] 界面明确主回答已完成与后台记忆仍在处理，不把后台处理展示成天气仍未查完；独立提交本批修改。
+- [x] 界面明确主回答已完成与后台记忆仍在处理，不把后台处理展示成天气仍未查完；独立提交本批修改。
 
 **验收:** 能分别给出取数、主模型、文件工具、首图表和记忆耗时；背景记忆不会造成重复答案或错误“仍在生成”状态。
 
 ## 最终验证与交付
 
-- [ ] 后端：node --import tsx --test tests/turn-policy.test.ts tests/chart-delivery.integration.test.ts tests/run-progress.test.ts tests/run-progress.integration.test.ts tests/run-metrics.test.ts tests/chart-instructions.test.ts tests/agent-memory-model.test.ts
-- [ ] 前端：npm run test --prefix web -- src/agent/chat-message-reconciliation.test.ts src/agent/AgentChat.test.tsx src/agent/markdown/EChartsBlock.test.tsx src/agent/markdown/echarts-option.test.ts
-- [ ] 类型/构建：node node_modules/typescript/bin/tsc --noEmit；npm run build:mastra；npm run build:web。
-- [ ] 现有技能、文件、队列与记忆隔离回归；固定天气 fixture 的新流程无 write/edit/read_file（取数已提供时）。
+- [x] 后端：node --import tsx --test tests/turn-policy.test.ts tests/chart-delivery.integration.test.ts tests/run-progress.test.ts tests/run-progress.integration.test.ts tests/run-metrics.test.ts tests/chart-instructions.test.ts tests/agent-memory-model.test.ts
+- [x] 前端：npm run test --prefix web -- src/agent/chat-message-reconciliation.test.ts src/agent/AgentChat.test.tsx src/agent/markdown/EChartsBlock.test.tsx src/agent/markdown/echarts-option.test.ts
+- [x] 类型/构建：node node_modules/typescript/bin/tsc --noEmit；npm run build:mastra；npm run build:web。
+- [x] 现有技能、文件、队列与记忆隔离回归；固定天气 fixture 的新流程无 write/edit/read_file（取数已提供时）。
 - [ ] 在线天气验收记录真实可用性与耗时，和模拟测试分开。外部取数失败不以 fixture 冒充成功。
 - [ ] 交付四批提交、Chrome 验收证据、脱敏耗时对照与独立复审结果；保留 worktree，不自动合并或部署。
 
 实施顺序：Task 1 → Task 2 → Task 3 → Task 4。Task 1 即可改善图表交付；Task 2 修正显示放大；Task 3 限制真实无效执行；Task 4 基于证据优化剩余耗时。
+
+## 2026-10-22 实施与验收状态
+
+四批代码均已实现；最终验收记录见 [实施验收记录](../verification/2026-10-22-agent-chart-execution-quality.md)。未勾选的真实模型场景和速度对照不代表已经通过。当前 Auto 在固定测试数据下仍违反 ECharts 输出协议，一次定向修正后明确失败；因此在线天气端到端验收尚未完成，不能宣称本方案已让该模型稳定成图。
+
+框架中的 memory 等待/取消路径已检查；本批保留模型、阈值和调度策略。缺少同条件的更快 memory 模型对照，不进行模型替换或超时改造。回答完成指标不等同于全运行终结耗时；后续 terminal summary 仍为已记录的次要待办。

@@ -14,11 +14,18 @@ export function hasRepeatedToolIds(messages: MastraDBMessage[]): boolean {
 /** Only accept a settled snapshot once it covers every live identity and final text. */
 export function historyCoversLive(history: MastraDBMessage[], live: MastraDBMessage[]): boolean {
   const byId = new Map(history.map(m => [m.id,m]));
-  const storedCalls = new Set(calls(history));
+  const storedCalls = new Map(history.flatMap(m => parts(m).filter(p=>p.type==='tool-invocation').map(p=>[p.toolInvocation.toolCallId,p.toolInvocation] as const)));
+  const liveCalls = live.flatMap(m=>parts(m).filter(p=>p.type==='tool-invocation').map(p=>p.toolInvocation));
   return live.every(m => {
     const stored = byId.get(m.id);
     return stored && stored.role === m.role && tailText(stored) === tailText(m);
-  }) && calls(live).every(id => storedCalls.has(id));
+  }) && liveCalls.every(call => {
+    const stored=storedCalls.get(call.toolCallId);
+    if(!stored || stored.toolName!==call.toolName)return false;
+    const terminal=['result','output-error','output-denied'];
+    if(terminal.includes(call.state))return stored.state===call.state && JSON.stringify(stored.result)===JSON.stringify(call.result) && stored.errorText===call.errorText;
+    return stored.state===call.state || terminal.includes(stored.state);
+  });
 }
 export function reconcileChatMessages({history,live,settled}: {history:MastraDBMessage[];live:MastraDBMessage[];settled:boolean}): MastraDBMessage[] {
   if (!settled || !historyCoversLive(history,live)) return live;

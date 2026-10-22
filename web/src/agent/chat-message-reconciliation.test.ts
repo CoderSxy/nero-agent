@@ -31,3 +31,12 @@ describe('terminal history reconciliation',()=>{
   expect(historyCoversLive(h,[...h,msg('user2',[text('again')],'user')])).toBe(false);
  });
 });
+it('does not replace a live terminal error with a stored pending invocation of the same id',()=>{
+ const old=msg('m',[{type:'tool-invocation',toolInvocation:{toolCallId:'t',toolName:'edit',state:'call',args:{}}}]);
+ const live=msg('m',[{type:'tool-invocation',toolInvocation:{toolCallId:'t',toolName:'edit',state:'output-error',args:{},errorText:'ambiguous'}}]);
+ expect(historyCoversLive([old],[live])).toBe(false);expect(reconcileChatMessages({history:[old],live:[live],settled:true})).toEqual([live]);
+});
+it('does not overwrite a newer result with an older value under the same call identity',()=>{
+ const a=tool('t'),b=tool('t');b.toolInvocation.result='new';
+ expect(historyCoversLive([msg('m',[a])],[msg('m',[b])])).toBe(false);
+});

@@ -6,6 +6,7 @@ import { temporalProcessor } from '../temporal/processor';
 import { temporalInstructions } from '../temporal/instructions';
 import { chartInstructions } from './chart-instructions';
 import { createTurnPolicyProcessor } from './turn-policy-processor';
+import { createRunMetricsProcessor } from './run-metrics';
 import { memoryForRequest } from './memory-model';
 import { startScheduleTool, stopScheduleTool } from '../tools/schedule-tools';
 import type { RequestContext } from '@mastra/core/request-context';
@@ -57,6 +58,7 @@ function isAdmin(requestContext: RequestContext): boolean {
 }
 
 const turnPolicyProcessor = createTurnPolicyProcessor();
+const runMetricsProcessor = createRunMetricsProcessor();
 
 export const agent = new Agent({
   id: 'agent',
@@ -103,8 +105,8 @@ ${chartInstructions}
   },
   tools: ({ requestContext }) => resolveAgentTools(requestContext),
   // App skill/skill_read/skill_search only — do NOT configure native Agent.skills auto-tools.
-  inputProcessors: [temporalProcessor, attachmentPersistenceProcessor, resolveSkillAgentProcessor(), turnPolicyProcessor],
-  outputProcessors: [attachmentPersistenceProcessor, resolveSkillAgentProcessor(), turnPolicyProcessor],
+  inputProcessors: [temporalProcessor, attachmentPersistenceProcessor, resolveSkillAgentProcessor(), turnPolicyProcessor, runMetricsProcessor],
+  outputProcessors: [attachmentPersistenceProcessor, resolveSkillAgentProcessor(), turnPolicyProcessor, runMetricsProcessor],
   signals: [new TaskSignalProvider()],
 });
 

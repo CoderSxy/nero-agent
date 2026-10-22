@@ -15,3 +15,24 @@ test('simple chart stops tool loop while a general task can continue past the sa
  let calls=0;const general=createTool({id:'web_fetch',inputSchema:z.object({}),execute:async()=>{calls++;return calls}});
  const longer=fixture('web_fetch',general,(_body,n)=>n<=10?call('web_fetch',n):{content:'完成'});await longer.generate('依次核对十个网页');assert.equal(calls,10);
 });
+test('compaction cannot erase a reached failure limit within the same run',()=>{
+ const p=createTurnPolicyProcessor(),state={};const tools={edit:{}};
+ const failures=['a','b','c'].map(id=>({type:'tool-invocation',toolInvocation:{toolCallId:id,toolName:'edit',state:'output-error',errorText:'ambiguous',args:{path:'x',oldText:'duplicate'}}}));
+ p.processInputStep({state,tools,messages:[{id:'u',role:'user',content:'编辑文件'},{role:'assistant',content:{parts:failures}}],stepNumber:3} as any);
+ const next=p.processInputStep({state,tools,messages:[{role:'assistant',content:'操作摘要'}],stepNumber:4} as any) as any;
+ assert.equal(next.toolChoice,'none');
+});
+
+test('provider ignoring tool restrictions cannot exceed eight chart model calls',async()=>{
+ let requests=0,executions=0;const tool=createTool({id:'web_fetch',inputSchema:z.object({}),execute:async()=>++executions});
+ const agent=fixture('web_fetch',tool,(_body,n)=>{requests++;return call('web_fetch',n)});
+ const result=await agent.generate('请给我饼图');
+ assert.equal(requests,8);assert.equal(executions,7);assert.match(result.text,/执行预算|未完成/);
+});
+
+test('a provider ignoring tool-free correction gets only one repair call',async()=>{
+ let requests=0;const tool=createTool({id:'web_fetch',inputSchema:z.object({}),execute:async()=>({value:1})});
+ const agent=fixture('web_fetch',tool,(_body,n)=>{requests++;return n===1?{content:'无效图表'}:call('web_fetch',n)});
+ const result=await agent.generate('请给我饼图');
+ assert.equal(requests,2);assert.match(result.text,/图表未完成/);
+});

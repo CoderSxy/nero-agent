@@ -15,8 +15,8 @@ export function decideNextStep(state:ReturnType<typeof createProgressState>,simp
  return count>=3||(simpleChart&&stepNumber>=7)?'finalize':count>=2?'recover':'continue';
 }
 /** Rebuild from durable invocations: works after resume and never trusts client counters. */
-export function progressFromMessages(messages:readonly any[]){
- const state=createProgressState();let start=0;for(let i=0;i<messages.length;i++)if(isTurnUserMessage(messages[i]))start=i+1;
+export function progressFromMessages(messages:readonly any[],state=createProgressState()){
+ let start=0;for(let i=0;i<messages.length;i++)if(isTurnUserMessage(messages[i]))start=i+1;
  for(const m of messages.slice(start))for(const p of m.content?.parts??[]){
   const t=p.type==='tool-invocation'?p.toolInvocation:undefined;
   if(!t||!['result','output-error'].includes(t.state))continue;

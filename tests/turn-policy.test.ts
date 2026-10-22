@@ -32,3 +32,17 @@ test('style-only followups inherit a confirmed inline chart but concept question
  assert.equal(policy('解释什么是趋势图').deliveryMode,'general');
  assert.equal(policy('不要保存文件，只给我趋势图').deliveryMode,'inline-chart');
 });
+test('a chart plus scheduling, notification or other actions retains operational tools',()=>{
+ for(const text of ['给我天气趋势图，并每天早上八点提醒我查看','生成趋势图并设置定时任务','折线图并发邮件给同事','画图并修改数据库'])assert.equal(policy(text).allowArtifactWrites,true,text);
+});
+test('completion rejects missing cartesian axes and unsupported series types',()=>{
+ for(const option of [{series:[{type:'line',data:[1,2]}]},{series:[{type:'nonexistent',data:[1,2]}]}])assert.equal(validateInlineChart('```echarts\n'+JSON.stringify(option)+'\n```').ok,false);
+});
+test('accepted cartesian and pie fixtures render using the actual frontend ECharts runtime',async()=>{
+ const {createRequire}=await import('node:module');const {init}=createRequire(new URL('../web/package.json',import.meta.url))('echarts');
+ for(const option of [{xAxis:{type:'category',data:['a','b']},yAxis:{},series:[{type:'line',data:[1,2]}]},{series:[{type:'pie',data:[{name:'a',value:1}]}]}]){
+  assert.equal(validateInlineChart('```echarts\n'+JSON.stringify(option)+'\n```').ok,true);
+  const chart=init(null,undefined,{renderer:'svg',ssr:true,width:640,height:360});
+  try{chart.setOption(option);assert.match(chart.renderToSVGString(),/<svg/);assert.equal(chart.getOption().series.length,1);}finally{chart.dispose();}
+ }
+});

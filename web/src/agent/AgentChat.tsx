@@ -13,6 +13,7 @@ import { AgentComposer, type WorkspaceDragItem } from './AgentComposer';
 import { buildAgentAttachmentMessage, DEFAULT_ATTACHMENT_PROMPT } from './attachment-protocol';
 import { MessageList } from './MessageList';
 import { useReconciledChatMessages } from './use-reconciled-chat-messages';
+import { runDisplayState } from './run-display-state';
 import { createModelRequestContext, type ModelSettings } from './model-settings';
 import type { ModelRef, SafeModel } from './model-catalog-client';
 import { nextPendingUserMessage, withPendingUserMessages, type PendingUserMessage } from './pending-user-message';
@@ -191,6 +192,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
 
   const reconciledMessages = useReconciledChatMessages({ messages: chat.messages, isRunning: chat.isRunning, threadId, resourceId });
   const visibleMessages = withPendingUserMessages(reconciledMessages, pendingUserMessages);
+  const displayState = runDisplayState(visibleMessages, chat.isRunning);
   const reportedActivations = useRef('');
   useEffect(() => {
     const next = visibleMessages.flatMap(message => message.role === 'assistant' ? skillActivations(message) : []);
@@ -511,10 +513,12 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
       const viewport = event.currentTarget;
       followRef.current = viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop <= 48;
     }}><ChatShell.Content><ChatShell.Column>
-      <MessageList messages={visibleMessages} isRunning={chat.isRunning || scheduledRunning} error={error}
+      <MessageList messages={visibleMessages} isRunning={(chat.isRunning && !displayState.answerComplete) || scheduledRunning} error={error}
         approvals={visibleApprovals} pendingApprovalIds={pendingApprovalIds}
         threadAttachments={threadAttachments}
         onApprove={approve} onDecline={decline} onAnswer={answer} />
+      {displayState.chartFailed && <p className="notice" role="alert">图表未能生成：配置缺失或无效，已停止自动修正。</p>}
+      {chat.isRunning && displayState.answerComplete && <p className="notice" role="status">{displayState.memoryPending ? '回答已完成，正在整理会话记忆。' : '回答已完成，正在收尾。'}</p>}
     </ChatShell.Column></ChatShell.Content></ChatShell.Viewport></ChatShell.Stage>
     <ChatShell.Dock><ChatShell.Column>
       <div className="chat-welcome" aria-hidden={!isEmpty}>
