@@ -318,6 +318,8 @@ export type SkillAvailability =
   | 'missing-tools'
   | 'network-unavailable';
 
+export type SkillStorageHealth = 'unknown' | 'healthy' | 'repairable' | 'unavailable' | 'checking';
+
 export type SkillSummary = {
   id: string;
   name: string;
@@ -325,6 +327,7 @@ export type SkillSummary = {
   version: number;
   userInvocable: boolean;
   availability: SkillAvailability;
+  storageHealth?: SkillStorageHealth;
 };
 
 export type SkillResult<T> =
@@ -457,6 +460,8 @@ export type SkillManageListItem = SkillRecord & {
   canEdit: boolean;
   canPublish: boolean;
   canManage: boolean;
+  storageHealth?: SkillStorageHealth;
+  availability?: SkillAvailability;
 };
 
 export type SkillGroupRecord = {
@@ -496,6 +501,7 @@ export type SkillVersionSummary = {
   publishedRemark: string | null;
   createdAt: string;
   updatedAt: string;
+  storageHealth?: SkillStorageHealth;
 };
 
 export type SetEnabledServiceInput = {

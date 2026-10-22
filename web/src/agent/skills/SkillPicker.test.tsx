@@ -350,4 +350,14 @@ describe('SkillPicker', () => {
     expect(screen.queryByRole('listbox')).toBeNull();
   });
 
+  it('keeps a missing-resource skill visible but not selectable', async () => {
+    listAvailableSkills.mockResolvedValue(page([{
+      ...alpha, name: 'broken-skill', storageHealth: 'unavailable',
+    }]));
+    render(<Panel />);
+    const option = await screen.findByRole('option', { name: 'broken-skill' });
+    expect(option.hasAttribute('disabled')).toBe(true);
+    expect(screen.getByText('资源缺失，暂不可执行')).toBeTruthy();
+  });
+
 });

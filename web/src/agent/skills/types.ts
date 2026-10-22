@@ -40,6 +40,8 @@ export type SkillManageListItem = SkillRecord & {
   canEdit: boolean;
   canPublish: boolean;
   canManage: boolean;
+  storageHealth?: SkillStorageHealth;
+  availability?: SkillAvailability;
 };
 
 export type SkillManageDetail = {
@@ -72,6 +74,7 @@ export type SkillVersionSummary = {
   publishedRemark: string | null;
   createdAt: string;
   updatedAt: string;
+  storageHealth?: SkillStorageHealth;
 };
 
 export type SkillGroupRecord = {
@@ -162,6 +165,8 @@ export type SkillAvailability =
   | 'missing-tools'
   | 'network-unavailable';
 
+export type SkillStorageHealth = 'unknown' | 'healthy' | 'repairable' | 'unavailable' | 'checking';
+
 export type ShortcutFieldType = 'text' | 'textarea' | 'select' | 'number' | 'boolean';
 
 export type ShortcutField = {
@@ -202,4 +207,5 @@ export type SkillSummary = {
   version: number;
   userInvocable: boolean;
   availability: SkillAvailability;
+  storageHealth?: SkillStorageHealth;
 };

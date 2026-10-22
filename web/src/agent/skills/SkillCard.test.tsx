@@ -61,4 +61,21 @@ describe('SkillCard', () => {
     expect(onToggle).not.toHaveBeenCalled();
     expect(screen.getByText(/停用 · 已发布 v2/)).toBeTruthy();
   });
+
+  it('shows storage and runtime separately and keeps management when resources are missing', () => {
+    render(<SkillCard
+      item={{ ...item, description: '天气说明', publishedVersion: 1, enabled: true, storageHealth: 'unavailable', availability: 'ready' }}
+      groupLabel="工具"
+      expanded={false}
+      preview={null}
+      previewLoading={false}
+      previewError={null}
+      busy={false}
+      onToggle={() => undefined}
+      onEdit={() => undefined}
+    />);
+    expect(screen.getByText(/资源缺失，暂不可执行/)).toBeTruthy();
+    expect(screen.getByText(/运行状态 ready/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: '编辑 alpha-skill' })).toBeTruthy();
+  });
 });

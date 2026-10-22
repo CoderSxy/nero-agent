@@ -91,6 +91,8 @@ function mockService(overrides: Partial<SkillService> = {}): SkillService {
     listAvailableShortcuts: async () => ({ items: [] }),
     getShortcut: forbidden as never,
     putShortcut: forbidden as never,
+    getSkillHealth: forbidden as never,
+    recheckSkillHealth: forbidden as never,
     ...overrides,
   };
   return base;
@@ -335,6 +337,60 @@ test('If-Match and expectedRevision must agree', async () => {
     });
     assert.equal(ok.status, 200);
     assert.equal(captured, '3');
+  } finally {
+    if (prev === undefined) delete process.env.AGENT_SKILLS_ENABLED;
+    else process.env.AGENT_SKILLS_ENABLED = prev;
+  }
+});
+
+test('skill health routes hide missing skills, reject repair without manage, and surface checking', async () => {
+  const prev = process.env.AGENT_SKILLS_ENABLED;
+  process.env.AGENT_SKILLS_ENABLED = 'true';
+  try {
+    const calls: Array<Record<string, unknown>> = [];
+    const service = mockService({
+      getSkillHealth: async (actor) => {
+        if (actor.userId !== USER_A) throw new SkillPolicyError('FORBIDDEN', 'Skill not found', 404);
+        return {
+          skillId: SKILL_A, version: 1, manifestHash: 'abc', status: 'healthy' as const,
+          checkedAt: null, safeCode: null, resourceCount: 0, missingCount: 0, corruptCount: 0,
+        };
+      },
+      recheckSkillHealth: async (actor, input) => {
+        calls.push({ ...input, userId: actor.userId });
+        if (!actor.roles.includes('admin') && input.repair) {
+          throw new SkillPolicyError('FORBIDDEN', 'Skill repair requires manage permission', 403);
+        }
+        if (input.repair) return { status: 'done' as const, report: { skillId: SKILL_A, version: 1, manifestHash: 'abc', status: 'repairable' as const, checkedAt: null, safeCode: 'RELEASE_INCOMPLETE', resourceCount: 0, missingCount: 0, corruptCount: 0 } };
+        return { status: 'checking' as const };
+      },
+    });
+    const anonymous = await buildApp(createSkillRoutes(() => service), () => null)
+      .request(`/agent-skills/${SKILL_A}/health`);
+    assert.equal(anonymous.status, 401);
+    const hidden = await buildApp(createSkillRoutes(() => service), token => token === 'b' ? user(USER_B) : null)
+      .request(`/agent-skills/${SKILL_A}/health`, { headers: { authorization: 'Bearer b' } });
+    assert.equal(hidden.status, 404);
+    assert.equal(JSON.stringify(await hidden.json()).includes(SKILL_A), false);
+    const userApp = buildApp(createSkillRoutes(() => service), () => user(USER_A));
+    const repair = await userApp.request(`/agent-skills/${SKILL_A}/health/recheck`, {
+      method: 'POST', headers: { authorization: 'Bearer a', 'content-type': 'application/json' },
+      body: JSON.stringify({ repair: true, skillMd: 'nope' }),
+    });
+    assert.equal(repair.status, 403);
+    const checking = await userApp.request(`/agent-skills/${SKILL_A}/health/recheck`, {
+      method: 'POST', headers: { authorization: 'Bearer a', 'content-type': 'application/json' },
+      body: JSON.stringify({ repair: false }),
+    });
+    assert.equal(checking.status, 202);
+    const adminApp = buildApp(createSkillRoutes(() => service), () => user(ADMIN, 'admin'));
+    const managed = await adminApp.request(`/agent-skills/${SKILL_A}/health/recheck`, {
+      method: 'POST', headers: { authorization: 'Bearer admin', 'content-type': 'application/json' },
+      body: JSON.stringify({ repair: true, version: 1 }),
+    });
+    assert.equal(managed.status, 200);
+    assert.equal(calls.some(call => 'skillMd' in call), false);
+    assert.equal(calls.filter(call => call.repair === true).length, 2);
   } finally {
     if (prev === undefined) delete process.env.AGENT_SKILLS_ENABLED;
     else process.env.AGENT_SKILLS_ENABLED = prev;

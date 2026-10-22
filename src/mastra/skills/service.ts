@@ -82,7 +82,16 @@ import {
   rollbackSkill,
   type SkillVersionService,
 } from './versions';
-import { Uint8ArrayReader, Uint8ArrayWriter, ZipWriter } from '@zip.js/zip.js';
+import { createSkillHealthRepository } from './health-repository';
+import { reconcileSkills } from './reconcile';
+import {
+  inspectSkillStorage,
+  recheckSkillStorage,
+  SkillHealthInfrastructureError,
+  toSafeSkillHealth,
+  type SafeSkillHealth,
+  type SkillStorageHealth,
+} from './health';
 
 export type SkillServiceDeps = {
   registeredToolIds?: (actor:SkillActor)=>Iterable<string>;
@@ -200,6 +209,11 @@ export type SkillService = {
     actor: SkillActor,
     input: { skillId: string; expectedRevision: string; config: unknown },
   ) => Promise<{ shortcut: SkillShortcutRecord }>;
+  getSkillHealth: (actor: SkillActor, skillId: string, version?: number) => Promise<SafeSkillHealth>;
+  recheckSkillHealth: (
+    actor: SkillActor,
+    input: { skillId: string; version?: number; repair: boolean },
+  ) => Promise<{ status: 'done' | 'checking'; report?: SafeSkillHealth }>;
 };
 
 type CachedBlob = { bytes: Uint8Array; isText: boolean };
@@ -391,6 +405,44 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
     }
   }
 
+  async function requireHealthView(actor: SkillActor, skillId: string) {
+    const loaded = await requireCaps(actor, skillId);
+    if (!loaded.caps.canUse && !loaded.caps.canManage) {
+      throw new SkillPolicyError('FORBIDDEN', 'Skill not found', 404);
+    }
+    return loaded;
+  }
+
+  async function loadHealthTarget(skillId: string, version: number | null) {
+    if (version == null) return null;
+    const versionRow = await repository.getVersion(skillId, version);
+    if (!versionRow?.manifestHash) return null;
+    const files = await repository.listFiles(skillId, version);
+    return {
+      skillId,
+      version,
+      manifestHash: versionRow.manifestHash,
+      skillMd: versionRow.skillMd,
+      entries: files.filter(file => file.path !== 'SKILL.md').map(file => ({
+        path: file.path,
+        blobHash: file.blobHash,
+        size: file.size,
+        isText: file.isText,
+        mimeType: file.mimeType,
+      })),
+    };
+  }
+
+  async function storedStorageHealth(skillId: string, version: number, manifestHash: string | null) {
+    if (!deps.pool || !manifestHash) return {};
+    try {
+      const row = await createSkillHealthRepository(deps.pool).get(skillId, version, manifestHash);
+      return row ? { storageHealth: row.status } : {};
+    } catch {
+      return {};
+    }
+  }
+
   async function readBlobCached(hash: string): Promise<CachedBlob> {
     const hit = blobCache.get(hash);
     if (hit) return hit;
@@ -560,6 +612,7 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
           version: version.version,
           userInvocable: true,
           availability: availabilityFromRuntime(version.runtimeManifest, deps.registeredToolIds?.(actor)??[]),
+          ...(await storedStorageHealth(skill.id, version.version, version.manifestHash)),
         });
       }
       return { items, total: page.total, page: page.page, pageSize: page.pageSize };
@@ -575,12 +628,19 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
       for (const skill of page.items) {
         const loaded = await loadCaps(actor, skill.id);
         if (!loaded) continue;
+        const published = skill.publishedVersion == null
+          ? null
+          : await repository.getVersion(skill.id, skill.publishedVersion);
         items.push({
           ...skill,
           description: await manageListDescription(skill, loaded.caps),
           canEdit: loaded.caps.canEdit,
           canPublish: loaded.caps.canPublish,
           canManage: loaded.caps.canManage,
+          availability: published
+            ? availabilityFromRuntime(published.runtimeManifest, deps.registeredToolIds?.(actor) ?? [])
+            : undefined,
+          ...(published ? await storedStorageHealth(skill.id, published.version, published.manifestHash) : {}),
         });
       }
       return { items, total: page.total, page: page.page, pageSize: page.pageSize };
@@ -970,7 +1030,11 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
     async listVersions(actor, skillId) {
       const loaded = await requireCaps(actor, skillId);
       assertCanViewDraft(loaded.caps);
-      return repository.listVersions(skillId);
+      const versions = await repository.listVersions(skillId);
+      return Promise.all(versions.map(async version => ({
+        ...version,
+        ...(await storedStorageHealth(skillId, version.version, version.manifestHash)),
+      })));
     },
 
     async deleteVersion(actor, input) {
@@ -1106,6 +1170,58 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
       const config: ShortcutConfig = validateShortcut(input.config);
       const shortcut = await shortcutStore().save(input.skillId, input.expectedRevision, config);
       return { shortcut };
+    },
+    async getSkillHealth(actor, skillId, version) {
+      const loaded = await requireHealthView(actor, skillId);
+      const target = await loadHealthTarget(skillId, version ?? loaded.access.skill.publishedVersion);
+      if (!target) throw new SkillPolicyError('FORBIDDEN', 'Skill not found', 404);
+      const stored = deps.pool
+        ? await createSkillHealthRepository(deps.pool).get(target.skillId, target.version, target.manifestHash).catch(() => null)
+        : null;
+      if (!stored) {
+        return {
+          skillId: target.skillId,
+          version: target.version,
+          manifestHash: target.manifestHash,
+          status: 'unknown' as const,
+          checkedAt: null,
+          safeCode: null,
+          resourceCount: target.entries.length,
+          missingCount: 0,
+          corruptCount: 0,
+        };
+      }
+      return toSafeSkillHealth(stored, loaded.caps.canManage);
+    },
+    async recheckSkillHealth(actor, input) {
+      const loaded = await requireHealthView(actor, input.skillId);
+      if (input.repair && !loaded.caps.canManage) {
+        throw new SkillPolicyError('FORBIDDEN', 'Skill repair requires manage permission', 403);
+      }
+      const target = await loadHealthTarget(input.skillId, input.version ?? loaded.access.skill.publishedVersion);
+      if (!target) throw new SkillPolicyError('FORBIDDEN', 'Skill not found', 404);
+      const repository = createSkillHealthRepository(deps.pool ?? getPool());
+      try {
+        return await recheckSkillStorage({
+          target,
+          repair: input.repair,
+          includeResources: loaded.caps.canManage,
+          repository,
+          inspect: item => inspectSkillStorage(item, { releaseStore: deps.releaseStore, blobStore }),
+          repairTarget: async item => {
+            await reconcileSkills({ dryRun: false, only: [{ skillId: item.skillId, version: item.version }] }, {
+              listCurrentPublished: async () => [item],
+              releaseStore: deps.releaseStore,
+              markUnavailable: async () => undefined,
+            });
+          },
+        });
+      } catch (error) {
+        if (error instanceof SkillHealthInfrastructureError) {
+          throw new SkillPolicyError('SKILL_UNAVAILABLE', 'Skill storage health check failed', 503);
+        }
+        throw error;
+      }
     },
   };
 

@@ -7,6 +7,8 @@ import { skillScriptOrphanMaxAgeMs } from '../sandbox/cleaner';
 import { SKILL_SCRIPT_RUN_LABEL } from './script-container';
 import { SkillStorageError } from './errors';
 import { createBlobStore } from './blob-store';
+import { inspectSkillStorage } from './health';
+import { createSkillHealthRepository } from './health-repository';
 import { getSkillsStorageRoot, isAgentSkillsEnabled } from './config';
 import { createReleaseStore, type ReleaseStore } from './release-store';
 import type { SkillManifestEntry } from './types';
@@ -37,11 +39,18 @@ export type ReconcileReport = {
   unchanged: number;
 };
 
+export type ReconcileOptions = {
+  dryRun: boolean;
+  /** Trusted service filter. Only skill id and version are read; client manifests are ignored. */
+  only?: ReadonlyArray<{ skillId: string; version: number }>;
+};
+
 export type ReconcileDeps = {
   listCurrentPublished: () => Promise<ReconcileTarget[]>;
   releaseStore: ReleaseStore;
   markUnavailable: (target: ReconcileTarget, error: SkillStorageError) => Promise<void>;
   withLock?: <T>(skillId: string, fn: () => Promise<T>) => Promise<T>;
+  recordHealth?: (target: ReconcileTarget) => Promise<string | void>;
 };
 
 const releaseLocks = new Map<string, Promise<unknown>>();
@@ -77,12 +86,19 @@ function asUnavailable(error: SkillStorageError): SkillStorageError {
  * Verify current published releases. Missing trees are rebuilt from trusted blobs.
  * A bad blob marks the release unavailable (503) and does not move the publish pointer.
  */
+function selectReconcileTargets(targets: ReconcileTarget[], only: ReconcileOptions['only']): ReconcileTarget[] {
+  if (!only) return targets;
+  const allow = new Set(only.map(item => `${item.skillId}:${item.version}`));
+  return targets.filter(target => allow.has(`${target.skillId}:${target.version}`));
+}
+
 async function reconcileSkillsUnlocked(
-  options: { dryRun: boolean },
+  options: ReconcileOptions,
   deps?: ReconcileDeps,
 ): Promise<ReconcileReport> {
   const resolved = deps ?? await defaultReconcileDeps();
   const lock = resolved.withLock ?? withSkillReleaseLock;
+  const healthCounts = new Map<string, number>();
   const report: ReconcileReport = {
     dryRun: options.dryRun,
     rebuilt: [],
@@ -91,8 +107,9 @@ async function reconcileSkillsUnlocked(
     unchanged: 0,
   };
 
-  for (const target of await resolved.listCurrentPublished()) {
+  for (const target of selectReconcileTargets(await resolved.listCurrentPublished(), options.only)) {
     await lock(target.skillId, async () => {
+      try {
       try {
         await resolved.releaseStore.verifyRelease(target.skillId, target.version, target.manifestHash);
         report.unchanged += 1;
@@ -144,14 +161,30 @@ async function reconcileSkillsUnlocked(
           status: surfaced.status,
         });
       }
+      } finally {
+        if (resolved.recordHealth) {
+          try {
+            const code = await resolved.recordHealth(target);
+            const key = code || 'checked';
+            healthCounts.set(key, (healthCounts.get(key) ?? 0) + 1);
+          } catch {
+            healthCounts.set('infra', (healthCounts.get('infra') ?? 0) + 1);
+          }
+        }
+      }
     });
+  }
+
+  if (healthCounts.size > 0) {
+    const summary = [...healthCounts.entries()].map(([code, count]) => `${code}=${count}`).join(' ');
+    console.error(`skill storage health ${summary}`);
   }
 
   return report;
 }
 
 export async function reconcileSkills(
-  options: { dryRun: boolean },
+  options: ReconcileOptions,
   deps?: ReconcileDeps,
 ): Promise<ReconcileReport> {
   if (deps) return reconcileSkillsUnlocked(options, deps);
@@ -171,7 +204,20 @@ async function defaultReconcileDeps(): Promise<ReconcileDeps> {
         `skill release unavailable ${target.skillId}@${target.version} ${error.code}`,
       );
     },
+    recordHealth: async (target) => {
+      try {
+        const report = await inspectSkillStorage(target, { releaseStore, blobStore });
+        await createSkillHealthRepository(getPool()).upsert({ ...report, checkingStartedAt: null });
+        return report.safeCode ?? report.status;
+      } catch {
+        return 'infra';
+      }
+    },
   };
+}
+
+export async function listPublishedSkillTargets(): Promise<ReconcileTarget[]> {
+  return listCurrentPublishedReleases();
 }
 
 async function listCurrentPublishedReleases(): Promise<ReconcileTarget[]> {

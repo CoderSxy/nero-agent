@@ -504,6 +504,36 @@ export function createSkillRoutes(resolveService: (c: Context) => SkillService) 
         return downloadResponse(file.bytes, name, file.mimeType);
       }),
     }),
+    registerApiRoute(`${base}/:id/health`, {
+      method: 'GET',
+      handler: g(async (c, service) => {
+        const actor = trustedAuth(c.get('requestContext'));
+        const skillId = parseUuidParam(c.req.param('id'), 'id');
+        const raw = c.req.query('version');
+        const version = raw == null || raw === '' ? undefined : Number(raw);
+        if (version !== undefined && (!Number.isInteger(version) || version < 1)) {
+          throw new SkillRouteError(400, 'INVALID_INPUT', 'version invalid');
+        }
+        return c.json(await service.getSkillHealth(actor, skillId, version));
+      }),
+    }),
+    registerApiRoute(`${base}/:id/health/recheck`, {
+      method: 'POST',
+      handler: g(async (c, service) => {
+        const actor = trustedAuth(c.get('requestContext'));
+        const skillId = parseUuidParam(c.req.param('id'), 'id');
+        const body = await readJsonObject(c);
+        if (typeof body.repair !== 'boolean') {
+          throw new SkillRouteError(400, 'INVALID_INPUT', 'repair required');
+        }
+        const version = body.version == null ? undefined : Number(body.version);
+        if (version !== undefined && (!Number.isInteger(version) || version < 1)) {
+          throw new SkillRouteError(400, 'INVALID_INPUT', 'version invalid');
+        }
+        const result = await service.recheckSkillHealth(actor, { skillId, version, repair: body.repair });
+        return c.json(result, result.status === 'checking' ? 202 : 200);
+      }),
+    }),
     registerApiRoute(`${base}/:id/versions`, {
       method: 'GET',
       handler: g(async (c, service) => {

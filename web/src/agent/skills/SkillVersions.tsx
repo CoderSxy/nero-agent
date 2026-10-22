@@ -70,6 +70,7 @@ export function SkillVersions({
                 {isDraft ? ' · 工作版' : ''}
               </span>
               <p>{item.description || '—'}</p>
+              {item.storageHealth ? <p>存储 {item.storageHealth}</p> : null}
             </div>
             <div className="skill-version-actions">
               {canPublish && isDraft ? (

@@ -13,6 +13,14 @@ function statusLabel(item: SkillManageListItem): string {
   return item.enabled ? `已发布 v${item.publishedVersion}` : `停用 · 已发布 v${item.publishedVersion}`;
 }
 
+function storageLabel(value: SkillManageListItem['storageHealth']): string {
+  if (value === 'healthy') return '存储完整';
+  if (value === 'repairable') return '存储可恢复';
+  if (value === 'unavailable') return '资源缺失，暂不可执行';
+  if (value === 'checking') return '存储检查中';
+  return '存储未检查';
+}
+
 export function SkillCard({
   item,
   groupLabel,
@@ -53,6 +61,8 @@ export function SkillCard({
       <strong>{item.canonicalName}</strong>
       <span>{(item.description ?? '').trim() || '暂无描述'}</span>
       <small>{statusLabel(item)} · {visibilityLabel(item.visibility)} · {groupLabel}</small>
+      {item.storageHealth ? <small>存储状态 {storageLabel(item.storageHealth)}</small> : null}
+      {item.availability ? <small>运行状态 {item.availability}</small> : null}
     </button>
     <div className="skill-card-actions">
       {onEdit ? <button type="button" aria-label={`编辑 ${item.canonicalName}`} disabled={busy}

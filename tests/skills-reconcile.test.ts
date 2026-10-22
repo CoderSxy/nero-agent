@@ -404,3 +404,33 @@ test('orphan skill containers are removed on apply and ordinary sandboxes are un
   assert.ok(applied.skipped.includes('skill-young'));
   assert.deepEqual(removed, ['skill-old']);
 });
+
+test('targeted reconcile uses the trusted release list and ignores a client manifest', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'skills-reconcile-filter-'));
+  try {
+    const blobs = createBlobStore({ root });
+    const release = createReleaseStore({ root, blobStore: blobs });
+    const skillMd = '---\nname: demo\ndescription: d\n---\n\n# Demo\n';
+    const otherMd = '---\nname: other\ndescription: d\n---\n\n# Other\n';
+    const first = await release.materialize('skill-a', 1, { skillId: 'skill-a', version: 1, skillMd, entries: [] });
+    const second = await release.materialize('skill-b', 1, { skillId: 'skill-b', version: 1, skillMd: otherMd, entries: [] });
+    await rm(first.releaseRoot, { recursive: true, force: true });
+    await rm(second.releaseRoot, { recursive: true, force: true });
+    const report = await reconcileSkills({
+      dryRun: false,
+      only: [{ skillId: 'skill-a', version: 1, skillMd: 'CLIENT' } as { skillId: string; version: number }],
+    }, {
+      listCurrentPublished: async () => [
+        { skillId: 'skill-a', version: 1, manifestHash: first.manifestHash, skillMd, entries: [] },
+        { skillId: 'skill-b', version: 1, manifestHash: second.manifestHash, skillMd: otherMd, entries: [] },
+      ],
+      releaseStore: release,
+      markUnavailable: async () => undefined,
+    });
+    assert.deepEqual(report.rebuilt.map(item => item.skillId), ['skill-a']);
+    assert.equal(await readFile(join(first.releaseRoot, 'SKILL.md'), 'utf8'), skillMd);
+    await assert.rejects(() => stat(second.releaseRoot));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

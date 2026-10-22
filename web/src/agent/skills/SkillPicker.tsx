@@ -64,6 +64,7 @@ export const SkillPicker = forwardRef<SkillPickerHandle, SkillPickerProps>(funct
   const visibleItems = searching ? (currentSearch?.status === 'ready' ? currentSearch.items : []) : items;
   const rowDisabled = (item: SkillSummary) => disabled
     || !ready
+    || item.storageHealth === 'unavailable'
     || value.includes(item.id)
     || value.length >= SELECTED_SKILL_IDS_MAX;
   const enabledIndexes = visibleItems.flatMap((item, index) => rowDisabled(item) ? [] : [index]);
@@ -222,6 +223,7 @@ export const SkillPicker = forwardRef<SkillPickerHandle, SkillPickerProps>(funct
             <span className="skill-picker-option-mark" aria-hidden="true">/</span>
             <span className="skill-picker-option-copy">
               <span>{item.name}</span>
+              {item.storageHealth === 'unavailable' ? <small>资源缺失，暂不可执行</small> : null}
               {item.description && <small>{item.description}</small>}
             </span>
             {picked && <Check className="skill-picker-option-check" size={15} aria-hidden="true" />}

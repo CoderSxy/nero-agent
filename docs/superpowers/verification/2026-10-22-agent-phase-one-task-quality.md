@@ -39,6 +39,24 @@ Schema：隔离库 `127.0.0.1|localhost:5433/nero_agent` 上，测试在事务�
 
 生产 `createTransportModel` 仍直接使用 guarded fetch，本任务还没有把预算接到真实对话。强制计数在 Task 7。
 
+## Task 2：Skill 存储健康
+
+`node --import tsx --test tests/skills-health.test.ts tests/skills-routes.test.ts tests/skills-reconcile.test.ts`：20 通过，0 失败。
+
+`npm run test --prefix web -- src/agent/skills/SkillCard.test.tsx src/agent/skills/SkillPicker.test.tsx src/agent/skills/SkillVersions.test.tsx`：23 通过。
+
+- 发布树和资源 blob 都完整为 healthy。没有 scripts 的纯指令版本仍为 healthy。
+- 只缺发布树、资源 blob 可读、数据库 SKILL.md 与 manifest 一致时为 repairable。改过的 SKILL.md 不能当成可重建。
+- 资源 blob 缺失为 unavailable。`reconcileSkills({ dryRun: true })` 仍可能给出 wouldRebuild，健康检查不会据此判 repairable，也不会把发布树写回去。
+- inspect 不新增目录、不改 marker 的 mtime。读取失败的错误码是 `BLOB_UNREADABLE`，报告里没有宿主路径。
+- 健康记录按 `(skillId, version, manifestHash)` 隔离。检查过程抛基础设施错误时，已有记录不会被写成 unavailable。
+- 同一目标的重检合并为一次 inspect。等待超过调用方时限时返回 checking。
+- HTTP：未登录 401；无权用户 404 且响应体不包含技能 id；普通用户 `repair: true` 为 403；管理员定向 repair 为 200；只读重检超时形状为 202。请求体里的 skillMd 不会进入服务参数。
+- `npm run skills:doctor` 使用 `--env-file-if-exists=.env`。退出码 0/2/1 分别对应健康或可恢复、不可用、基础设施失败。
+- 列表可带可选 `storageHealth`。选择器在资源缺失时禁用快捷执行；管理卡片仍保留编辑入口，并分开显示存储和运行状态。
+
+定向恢复仍走原来的 reconcile、锁和 staging。测试在临时目录重建 `skill-a`，没有改仓库外的真实技能目录。
+
 ## 尚未验收
 
 - 全量测试、web 测试、`tsc`、`npm run build`。
