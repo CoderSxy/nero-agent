@@ -1,0 +1,34 @@
+tests/task-quality-eval.test.ts
+  s_b2b6e310d315d1::t_942512b1c66fa5 1-48
+docs/superpowers/verification/2026-10-22-agent-phase-one-task-quality-eval.json
+  s_b2b6e310d315d1::t_1b5a4c55d7c502 1-643
+tests/fixtures/task-quality/model-responses.json
+  s_b2b6e310d315d1::t_7a331ce188e88d 1-9
+package.json
+  s_b2b6e310d315d1::t_8b7a2ddfb85082 21-22
+tests/fixtures/task-quality/cases.json
+  s_b2b6e310d315d1::t_4b6059a5816407 3
+  s_b2b6e310d315d1::t_6d637e0eaafcbd 1-2,4-22
+docs/superpowers/verification/2026-10-22-agent-phase-one-task-quality-eval.md
+  s_b2b6e310d315d1::t_1b5a4c55d7c502 1-29
+src/mastra/agents/task-quality/evaluation.ts
+  s_b2b6e310d315d1::t_1b61fc7f906c07 1-282
+scripts/eval-task-quality.ts
+  s_b2b6e310d315d1::t_5c6adca3495df5 1-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e729b74bdd7b379dd840eec28a053f42b1dc52b2",
+  "prompts": {},
+  "sessions": {
+    "s_b2b6e310d315d1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f06b165b-6ef9-49b8-87f9-48e93c0bfd93",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
