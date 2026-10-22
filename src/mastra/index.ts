@@ -9,6 +9,7 @@ import {
   SensitiveDataFilter,
 } from '@mastra/observability';
 import { agent } from './agents/agent';
+import { submitChartDataTool } from './agents/chart-data-tool';
 import { authRoutes } from './auth/routes';
 import { startSandboxReconcile } from './sandbox/factory';
 import { executeBashTool, executeCommandTool } from './sandbox/tool';
@@ -69,7 +70,7 @@ export const mastra = new Mastra({
     externals: ['@duckdb/node-bindings'],
   },
   agents: { agent },
-  tools: { startScheduleTool, stopScheduleTool, tavilySearchTool, executeCommandTool, executeBashTool, ...userFileTools,
+  tools: { submitChartDataTool, startScheduleTool, stopScheduleTool, tavilySearchTool, executeCommandTool, executeBashTool, ...userFileTools,
     financeSearchTool, financeInterfaceInfoTool, financeFetchTool,
     // App skill tools only when AGENT_SKILLS_ENABLED=true; never native Agent.skills auto-tools.
     ...resolveSkillAgentTools() },

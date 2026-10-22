@@ -57,6 +57,7 @@ const TOOL_LABELS: Record<string, string> = {
   read_file: '读取文件', write_file: '写入文件', edit_file: '编辑文件', edit: '编辑文件',
   glob: '查找文件', grep: '搜索内容', read_attached_file: '读取附件', list_files: '列出文件',
   task_write: '更新任务', ask_user: '询问用户', schedule_task: '创建定时任务',
+  submit_chart_data: '生成图表',
 };
 
 function toolPresentation(name: string) {
@@ -311,6 +312,7 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
               <MarkdownRenderer streaming={part.streaming}>{part.redacted ? '提供方已隐去推理内容。' : part.text}</MarkdownRenderer>
             </div>
           </details>;
+          if (part.kind === 'delivery-error') return <p key={index} role="alert" className="chart-fallback" data-chart-delivery-error={part.reason}>{part.message}</p>;
           if (part.kind === 'text') {
             const errorText = message.role === 'assistant' ? streamError(part.text) : null;
             return errorText ? <p key={index} role="alert" className="error">回复未完成：{errorText}</p> :

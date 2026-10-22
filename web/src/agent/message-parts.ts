@@ -7,6 +7,7 @@ export type ToolPart = { id: string; name: string; args: unknown; result?: unkno
 type ObservationState = 'running' | 'complete' | 'failed' | 'buffering' | 'buffering-complete' |
   'buffering-failed' | 'activated';
 export type DisplayPart = { kind: 'text'; text: string } |
+  { kind: 'delivery-error'; reason: string; message: string } |
   { kind: 'reasoning'; text: string; streaming: boolean; redacted: boolean } |
   { kind: 'observation'; state: ObservationState; cycleId?: string; data: OmMarkerData } |
   { kind: 'tool'; tool: ToolPart };
@@ -53,13 +54,23 @@ export function messageParts(message: MastraDBMessage) {
   const content = message.content;
   if (typeof content === 'string') return [{ kind: 'text', text: content }] satisfies DisplayPart[];
   const parts = Array.isArray(content.parts) ? content.parts : [];
+  const chartProtocol = parts.some(part => part.type === 'data-nero-chart' && (part as any).data?.version === 2);
   const settledCycles = new Set(parts.filter(part => part.type === 'data-om-observation-end' ||
     part.type === 'data-om-observation-failed' || part.type === 'data-om-buffering-end' ||
     part.type === 'data-om-buffering-failed')
     .map(part => (part as typeof part & { data?: { cycleId?: string } }).data?.cycleId)
     .filter((id): id is string => typeof id === 'string'));
   const items: DisplayPart[] = parts.flatMap<DisplayPart>(part => {
+    if (part.type === 'data-nero-chart') {
+      const data = (part as any).data;
+      return data?.status === 'ready' && typeof data.markdown === 'string' ? [{ kind: 'text', text: data.markdown }] : [];
+    }
+    if (part.type === 'data-nero-delivery') {
+      const data = (part as any).data;
+      return data?.version === 2 && data.status === 'failed' ? [{ kind: 'delivery-error', reason: data.reason, message: data.message ?? '图表未生成：模型未返回符合协议的数据。' }] : [];
+    }
     if (part.type === 'text' && 'text' in part) {
+      if (chartProtocol && message.role === 'assistant') return [];
       const text = isUserMessage(message) ? stripAttachmentProtocol(part.text) : part.text;
       return text ? [{ kind: 'text', text }] : [];
     }
@@ -86,7 +97,7 @@ export function messageParts(message: MastraDBMessage) {
     }
     return [];
   });
-  if (!items.length && typeof content.content === 'string') items.push({ kind: 'text', text: content.content });
+  if (!items.length && !chartProtocol && typeof content.content === 'string') items.push({ kind: 'text', text: content.content });
   // A generated turn can persist its final text before the process markers are
   // appended. Keep earlier text/tool steps in place, but show the trailing
   // process before the final answer.

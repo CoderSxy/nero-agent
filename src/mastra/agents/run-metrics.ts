@@ -53,7 +53,8 @@ export function createRunMetricsProcessor({now=()=>performance.now()}={}){
   async processOutputStep({state,text,toolCalls,messageList,writer,tracingContext}){
    const s=state.timing as Timing|undefined;
    if(s&&!toolCalls?.length){
-    if(validateInlineChart(text??'').ok)recordTiming(s,{kind:'chart'},now());
+    const chartReady = messageList.get.response.db().some(m => m.content.parts.some(p => p.type === 'data-nero-chart' && (p as any).data?.status === 'ready'));
+    if(chartReady || validateInlineChart(text??'').ok)recordTiming(s,{kind:'chart'},now());
     recordTiming(s,{kind:'answer'},now());
     const summary=summarizeTiming(s,now());
     tracingContext?.currentSpan?.update({metadata:{runTiming:summary}});

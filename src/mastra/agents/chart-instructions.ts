@@ -1,5 +1,6 @@
 /** The frontend renders completed fences; files are an explicit delivery choice. */
 export const chartInstructions = `图表交付规则：
+- 如果本轮提供原生图表数据 JSON Schema，以该结构化协议为准：只提交数据、来源和缺失原因，由平台组装 ECharts，不输出字符图或 HTML。没有该 Schema 的一般会话仍使用以下围栏协议。
 - 用户要求趋势图、折线图、柱状图、饼图等数据图表时，默认在当前会话内绘制：在回答正文直接输出完整的 echarts 代码围栏。时间趋势默认使用 line 系列，用户指定其他图形时按其要求。不要因为配置较长、需要美化或可以写文件，就自行改为 HTML 网页。
 - 只有用户明确要求网页、HTML、独立报告、下载或导出文件时，才改用对应文件交付；如果同时要求会话图表和文件，两者都提供。用户只说“给我一个趋势图”时，不创建 HTML 文件代替会话图表。
 - 图表围栏内输出严格 JSON 格式的 ECharts option 本体：属性名和字符串使用双引号，不含函数、变量、赋值、注释、尾逗号、script 标签、初始化代码或外层表达式。前端的格式兼容不改变本输出标准。formatter 优先使用字符串模板；单位可放在轴名称、系列名称中。

@@ -107,3 +107,16 @@ describe('stream error display', () => {
     expect(activations.some(item => item.name.includes('/Users/'))).toBe(false);
   });
 });
+
+describe('structured chart delivery',()=>{
+  const message=(parts:any[])=>({role:'assistant',content:{format:2,parts}} as any);
+  it('does not expose raw protocol JSON while the chart is pending',()=>{
+    expect(messageParts(message([{type:'data-nero-chart',data:{version:2,status:'pending'}},{type:'text',text:'{"status":"ready","dataset":'}]))).toEqual([]);
+  });
+  it('renders only the canonical chart and attaches failure to its own answer',()=>{
+    const ready=messageParts(message([{type:'text',text:'{"raw":"data"}'},{type:'data-nero-chart',data:{version:2,status:'pending'}},{type:'data-nero-chart',data:{version:2,status:'ready',markdown:'```echarts\n{}\n```'}}]));
+    expect(ready).toEqual([{kind:'text',text:'```echarts\n{}\n```'}]);
+    const failed=messageParts(message([{type:'data-nero-chart',data:{version:2,status:'pending'}},{type:'text',text:'ASCII chart'},{type:'data-nero-delivery',data:{version:2,status:'failed',reason:'missing-chart',message:'模型未返回结构化图表数据'}}]));
+    expect(failed).toEqual([{kind:'delivery-error',reason:'missing-chart',message:'模型未返回结构化图表数据'}]);
+  });
+});

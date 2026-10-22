@@ -517,7 +517,6 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
         approvals={visibleApprovals} pendingApprovalIds={pendingApprovalIds}
         threadAttachments={threadAttachments}
         onApprove={approve} onDecline={decline} onAnswer={answer} />
-      {displayState.chartFailed && <p className="notice" role="alert">图表未能生成：配置缺失或无效，已停止自动修正。</p>}
       {chat.isRunning && displayState.answerComplete && <p className="notice" role="status">{displayState.memoryPending ? '回答已完成，正在整理会话记忆。' : '回答已完成，正在收尾。'}</p>}
     </ChatShell.Column></ChatShell.Content></ChatShell.Viewport></ChatShell.Stage>
     <ChatShell.Dock><ChatShell.Column>
