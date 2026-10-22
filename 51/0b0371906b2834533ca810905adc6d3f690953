@@ -1,0 +1,109 @@
+src/mastra/agents/task-quality/run-control-repository.ts
+  s_b64514dd091221::t_57e76db1f26ffb 13,27,29,40,51,60-61
+  s_b64514dd091221::t_336da25674fe24 65
+src/mastra/agents/task-quality/tool-guard.ts
+  s_b64514dd091221::t_57e76db1f26ffb 1,33-35,37-39,41-47
+  s_b64514dd091221::t_0300598266bf77 5,20-22,24,36,40,58
+src/mastra/agents/turn-policy.ts
+  s_b64514dd091221::t_ee45d6ceb7ea3d 13
+src/mastra/agents/weather/aggregate.ts
+  s_b64514dd091221::t_788abfd938ff16 27-41
+tests/phase-one-review-regressions.test.ts
+  s_b64514dd091221::t_e3d7c70907b38e 43-61
+  s_b64514dd091221::t_788abfd938ff16 62-66
+  s_b64514dd091221::t_6ac93532bddf5b 1-42
+src/mastra/agents/task-quality/completion.ts
+  s_b64514dd091221::t_e3d7c70907b38e 25
+src/mastra/agents/agent.ts
+  s_b64514dd091221::t_57e76db1f26ffb 1,108-111
+tests/task-quality-production-budget.test.ts
+  s_b64514dd091221::t_e3d7c70907b38e 31-35
+  s_b64514dd091221::t_32da8258c76c24 1-30,36
+src/mastra/agents/weather/evidence.ts
+  s_b64514dd091221::t_d219dfc6cdf2a0 92-106,149,158-159
+  s_b64514dd091221::t_788abfd938ff16 85,123
+  s_b64514dd091221::t_0e047977196040 117-121
+src/mastra/agents/turn-policy-processor.ts
+  s_b64514dd091221::t_9a66a683c5767e 1
+  s_b64514dd091221::t_57e76db1f26ffb 2-3,7,10,35,106,116-117,125
+  s_b64514dd091221::t_ca5599c8d8f9ee 38,86,88,149,184,198-199
+src/mastra/agents/task-quality/contract-store.ts
+  s_b64514dd091221::t_9a66a683c5767e 1-4
+tests/fixtures/task-quality/cases.json
+  s_b64514dd091221::t_f32db7adccdb26 10
+docs/superpowers/verification/2026-10-22-agent-phase-one-task-quality.md
+  s_b64514dd091221::t_ea0d4027b9235d 3-5
+src/mastra/files/tools.ts
+  s_b64514dd091221::t_d219dfc6cdf2a0 1,332-333
+src/mastra/agents/task-quality/evaluation-agent.ts
+  s_b64514dd091221::t_9a66a683c5767e 1-39,41-44,48
+  s_b64514dd091221::t_60a6979535c9bb 45-46
+  s_b64514dd091221::t_022e6a81848795 40,47
+src/mastra/agents/task-quality/runtime.ts
+  s_b64514dd091221::t_f32db7adccdb26 13-14,44,51,66,76-79
+  s_b64514dd091221::t_57e76db1f26ffb 1-12,15-27,29-43,45-46,52-62,64-65,67-75,80-95
+  s_b64514dd091221::t_871e64df0a9e19 28,47-50,63
+src/mastra/agents/task-quality/file-evidence.ts
+  s_b64514dd091221::t_d219dfc6cdf2a0 1-21
+src/mastra/models/transport.ts
+  s_b64514dd091221::t_57e76db1f26ffb 62,77-78
+tests/weather-evidence.test.ts
+  s_b64514dd091221::t_9a66a683c5767e 56-57
+docs/superpowers/verification/2026-10-22-agent-phase-one-review-fixes.md
+  s_b64514dd091221::t_ea0d4027b9235d 1-37
+src/mastra/agents/task-quality/processor.ts
+  s_b64514dd091221::t_57e76db1f26ffb 2-3,41,45,49,60-61,63,67,71
+  s_b64514dd091221::t_9a66a683c5767e 1,59
+  s_b64514dd091221::t_d219dfc6cdf2a0 4-6,51,54,82
+  s_b64514dd091221::t_23c51f1ed38ffb 7,20,53,62,65,68-70,116,123,140-149
+src/mastra/agents/chart-fetch-tool.ts
+  s_b64514dd091221::t_9a66a683c5767e 3
+src/mastra/agents/task-quality/evaluation.ts
+  s_b64514dd091221::t_f32db7adccdb26 1-2,42,73,92,104-110,113,115-125,142-146
+  s_b64514dd091221::t_7574cfcd865fd8 111-112,114,164-166
+src/mastra/agents/chart-data.ts
+  s_b64514dd091221::t_d219dfc6cdf2a0 19,23,58,65
+  s_b64514dd091221::t_b9256c85ec0e28 82,93-110,136,143
+docs/agent-phase-one-operations.md
+  s_b64514dd091221::t_dd338027a8f491 60-76
+docs/superpowers/verification/2026-10-22-agent-phase-one-task-quality-eval.json
+  s_b64514dd091221::t_7220d9f38363d0 8,25-27,31-37,39-41,43,67-73,75-77,79,106-112,114-116,118,140-141,146-152,154-156,158,180-181,186-192,194-196,198,220-221,226-232,234-236,238,266-272,274-276,278,300-301,306-312,314-316,318,328-329,338,341,346-352,355-357,359,381-383,387-393,396-398,400,422-424,428-434,437-439,441,462-468,471-472,475,496-502,505-506,509,530-536,539-540,543,564-570,572-573,576,597-603,605-606,609,636-642,645-646,649,671-672,677-683,686-688,690,711-717,720-721,724,745-751,754-755,758
+docs/superpowers/verification/2026-10-22-agent-phase-one-task-quality-eval.md
+  s_b64514dd091221::t_4801fd1c821170 8,10-29
+scripts/eval-task-quality.ts
+  s_b64514dd091221::t_43a32ce666a72e 9
+src/mastra/agents/chart-data-tool.ts
+  s_b64514dd091221::t_4c8449b5af1d53 2,6,9,11-13
+src/mastra/agents/task-quality/budget.ts
+  s_b64514dd091221::t_75a98d6794aba7 8
+src/mastra/agents/task-quality/contract.ts
+  s_b64514dd091221::t_9bf984a00e7587 78
+src/mastra/agents/task-quality/evaluation-live.ts
+  s_b64514dd091221::t_482c608811337d 1-41
+src/mastra/agents/task-quality/types.ts
+  s_b64514dd091221::t_2708bea37f7de0 24
+src/mastra/agents/weather/types.ts
+  s_b64514dd091221::t_1ac7d973ac1419 38
+src/mastra/models/resolver.ts
+  s_b64514dd091221::t_93788f65a1ccac 65
+tests/task-quality-eval.test.ts
+  s_b64514dd091221::t_b99f8a49e5e6e2 23-25
+tests/weather-aggregate.test.ts
+  s_b64514dd091221::t_eb7f7935f1c868 6-8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "510b0371906b2834533ca810905adc6d3f690953",
+  "prompts": {},
+  "sessions": {
+    "s_b64514dd091221": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15936-a458-79d1-b9aa-5807fd10438c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
