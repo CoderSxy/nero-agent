@@ -1,9 +1,14 @@
 export type TurnDeliveryMode = 'inline-chart' | 'html-artifact' | 'file-artifact' | 'mixed' | 'general';
 export type TurnPolicy = { deliveryMode: TurnDeliveryMode; confidence: 'high' | 'uncertain'; allowArtifactWrites: boolean };
+
+export function inheritsVerifiedChart(userText: string, previousDeliveryMode?: TurnDeliveryMode): boolean {
+  return previousDeliveryMode === 'inline-chart' && /换成|改成|颜色|标题|图例|横轴|纵轴|红色|蓝色/.test(userText);
+}
+
 export function resolveTurnPolicy(input: { userText: string; previousDeliveryMode?: TurnDeliveryMode; hasAttachments?: boolean; selectedSkillIds?: string[] }): TurnPolicy {
   // Remove explicit negations before matching positive delivery requests.
   const text = input.userText.replace(/(?:不要|无需|不需要|别|不用)\s*(?:生成|创建|制作|写入)?\s*(?:HTML|网页|dashboard|看板|保存文件|导出文件|文件|报表)/gi, '');
-  const styleFollowup = input.previousDeliveryMode === 'inline-chart' && /换成|改成|颜色|标题|图例|横轴|纵轴|红色|蓝色/.test(text);
+  const styleFollowup = inheritsVerifiedChart(text, input.previousDeliveryMode);
   const conceptOnly = /解释|什么是|如何|怎么|为什么/.test(text) && !/给我|生成|绘制|展示|画一/.test(text);
   const chart = !conceptOnly && (styleFollowup || /趋势图|折线图|柱状图|饼图|散点图|画图|图表/.test(text));
   const html = /html|dashboard|网页|看板/i.test(text);
