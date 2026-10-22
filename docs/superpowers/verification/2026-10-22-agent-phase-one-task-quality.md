@@ -97,6 +97,17 @@ Schema：隔离库 `127.0.0.1|localhost:5433/nero_agent` 上，测试在事务�
 - fixture `tests/fixtures/task-quality/weather/open-meteo-sample.json` 标记 `live: false`，不是当前预报。
 - 提交工具仍使用现有 V1 schema，避免 oneOf 改变当前图表协议。`schemaVersion: 2` 由 `readChartSubmission` 单独验收；不完整但结构合法时返回 coverage，不记成 schema 非法。
 
+## Task 6：天气图
+
+先运行 `node --import tsx --test tests/weather-chart.test.ts`，因 `weather/render` 不存在失败。实现后与 `tests/chart-data.test.ts`、`tests/turn-policy.test.ts` 一起再跑：14 通过。
+
+`npm run test --prefix web -- src/agent/markdown/EChartsBlock.test.tsx src/agent/message-parts.test.ts`：21 通过。
+
+- 每日天气写在图外文字里。温度、降水、湿度分网格，单位写在轴名和文字里。未知代码显示“未知天气（代码 N）”。缺项写在摘要开头。option 里没有函数、远程图片或 HTML formatter。
+- 长城市名截断，图例在底部。360px 使用 media query。
+- V1 哈希仍是数据集 JSON 的 SHA-256。改标题不改天气数据哈希。HTML 和附件请求不会变成天气图。
+- 预览页 `docs/superpowers/verification/weather-chart-preview.html` 在浏览器里打开过。桌面和 360px 区块都能看到温度、降水、湿度和未知天气，长站名没有盖住图例。
+
 ## 尚未验收
 
 - 全量测试、web 测试、`tsc`、`npm run build`。

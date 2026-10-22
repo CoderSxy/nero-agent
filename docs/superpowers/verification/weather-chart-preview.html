@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>天气图预览</title>
+<style>
+  body { margin: 0; font: 14px/1.5 sans-serif; background: #10141a; color: #e8eef5; }
+  main { box-sizing: border-box; width: 100%; padding: 16px; }
+  h1 { font-size: 16px; margin: 0 0 8px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .legend { margin-top: 12px; }
+  .grid { display: grid; gap: 8px; margin-top: 12px; }
+  .panel { border: 1px solid #2c3642; padding: 8px; }
+  .wide { width: 960px; }
+  .narrow { width: 360px; }
+</style>
+<main id="desktop" class="wide">
+  <h1>上海市浦东新区张江科学城气象站</h1>
+  <div class="grid">
+    <section class="panel">最高温 / 最低温（°C）<br>22 / 16 · 20 / 15</section>
+    <section class="panel">降水概率（%）<br>10 · 缺</section>
+    <section class="panel">日均相对湿度（%）<br>70 · 65</section>
+  </div>
+  <p class="legend">2026-10-22 大部晴朗 · 2026-10-23 未知天气（代码 123） · 缺项：weather.precipitation</p>
+</main>
+<main id="mobile" class="narrow">
+  <h1>上海市浦东新区张江科学城气象站</h1>
+  <div class="grid">
+    <section class="panel">最高温 / 最低温（°C）<br>22 / 16 · 20 / 15</section>
+    <section class="panel">降水概率（%）<br>10 · 缺</section>
+    <section class="panel">日均相对湿度（%）<br>70 · 65</section>
+  </div>
+  <p class="legend">2026-10-22 大部晴朗<br>2026-10-23 未知天气（代码 123）</p>
+</main>

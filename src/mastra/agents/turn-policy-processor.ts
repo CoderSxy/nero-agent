@@ -1,7 +1,8 @@
 import type { CachedLLMStepResponse, Processor } from '@mastra/core/processors';
 import type {askUserTool} from '@mastra/core/tools';
 import {withChartDeliveryQuestionPolicy} from './chart-question-tool';
-import { chartSubmissionSchema, readChartSubmission, buildChart, chartFailureMessages, restoreChartSnapshot, type ChartSnapshot, type ChartFailure } from './chart-data';
+import { buildChart, chartSubmissionSchema, readChartSubmission, restoreChartSnapshot, chartFailureMessages, type ChartSnapshot, type ChartFailure } from './chart-data';
+import { buildWeatherChart } from './weather/render';
 import { collectChartEvidence, type ChartEvidence } from './chart-evidence';
 import { submitChartDataTool } from './chart-data-tool';
 import { withChartDataFetch } from './chart-fetch-tool';
@@ -145,11 +146,38 @@ export function createTurnPolicyProcessor() {
         // Own one dataset before constructing presentation; retries never replace it.
         state.chartSnapshot ??= submitted.snapshot;
         const snapshot = state.chartSnapshot as ChartSnapshot;
-        const built = buildChart(snapshot, String(state.userGoal));
+        const built = snapshot.weather
+          ? buildWeatherChart({
+            title: snapshot.title,
+            hash: snapshot.hash,
+            locationName: snapshot.weather.locationName,
+            timezone: snapshot.weather.timezone,
+            dates: snapshot.weather.dates,
+            weatherCodes: snapshot.weather.weatherCodes,
+            series: snapshot.dataset.series.map(series => ({
+              metric: 'metric' in series && typeof series.metric === 'string' ? series.metric : series.name,
+              name: series.name,
+              unit: series.unit,
+              values: series.values,
+            })),
+          }, snapshot.coverage ?? { complete: true, missing: [] })
+          : { ...buildChart(snapshot, String(state.userGoal)), summary: '' };
         valid = validateInlineChart(built.markdown).ok;
         if (valid) {
           state.finalAnswer = built.markdown;
-          await writer?.custom({ type: 'data-nero-chart', data: { version: 2, status: 'ready', dataset: snapshot.dataset, datasetHash: snapshot.hash, ...built } });
+          await writer?.custom({ type: 'data-nero-chart', data: {
+            version: 2,
+            schemaVersion: snapshot.weather ? 2 : 1,
+            kind: snapshot.weather ? 'weather' : 'values',
+            status: 'ready',
+            dataset: snapshot.dataset,
+            datasetHash: snapshot.hash,
+            metadata: snapshot.weather ? { locationName: snapshot.weather.locationName, timezone: snapshot.weather.timezone, dates: snapshot.weather.dates, missing: snapshot.coverage?.missing ?? [] } : undefined,
+            weather: snapshot.weather?.payload,
+            option: built.option,
+            markdown: built.markdown,
+            summary: built.summary,
+          } });
         }
         else reason = 'invalid-option';
       } else {

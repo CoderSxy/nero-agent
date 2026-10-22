@@ -21,7 +21,19 @@ export const chartSubmissionSchema = z.object({
   title: z.string().max(200), dataset: chartDatasetSchema.nullable(),
 }).strict();
 export type ChartDataset = z.infer<typeof chartDatasetSchema>;
-export type ChartSnapshot = { title: string; dataset: ChartDataset; hash: string };
+export type ChartSnapshot = {
+  title: string;
+  dataset: ChartDataset;
+  hash: string;
+  weather?: {
+    locationName: string;
+    timezone: string;
+    dates: string[];
+    weatherCodes: Array<number | null>;
+    payload: WeatherSubmission['weather'];
+  };
+  coverage?: { complete: boolean; missing: string[] };
+};
 export type ChartFailure = 'insufficient-data' | 'missing-chart' | 'invalid-json' | 'invalid-data' | 'unverified-source' | 'invalid-option' | 'budget-exhausted';
 
 export const chartFailureMessages: Record<ChartFailure, string> = {
@@ -82,7 +94,19 @@ function readWeatherSubmission(raw: unknown, context: { goal: string; evidence?:
   })).digest('hex');
   return {
     ok: true,
-    snapshot: freeze({ title: body.title || '天气趋势', dataset: body.dataset as ChartDataset, hash }),
+    snapshot: freeze({
+      title: body.title || '天气趋势',
+      dataset: body.dataset as ChartDataset,
+      hash,
+      weather: body.weather ? {
+        locationName: body.weather.location.name,
+        timezone: body.weather.timezone,
+        dates: [...body.weather.dates],
+        weatherCodes: [...body.weather.weatherCodes],
+        payload: body.weather,
+      } : undefined,
+      coverage: { complete: assessment.complete, missing: assessment.missing },
+    }),
     coverage: { complete: assessment.complete, missing: assessment.missing },
   };
 }
@@ -96,7 +120,18 @@ export function restoreChartSnapshot(part: any): ChartSnapshot | undefined {
       schemaVersion: 2, kind: 'weather', dataset: parsed.data.dataset, weather: parsed.data.weather,
     })).digest('hex');
     if (hash !== value.datasetHash) return;
-    return freeze({ title: value.option?.title?.text ?? parsed.data.title ?? '天气趋势', dataset: parsed.data.dataset as ChartDataset, hash });
+    return freeze({
+      title: value.option?.title?.text ?? parsed.data.title ?? '天气趋势',
+      dataset: parsed.data.dataset as ChartDataset,
+      hash,
+      weather: parsed.data.weather ? {
+        locationName: parsed.data.weather.location.name,
+        timezone: parsed.data.weather.timezone,
+        dates: [...parsed.data.weather.dates],
+        weatherCodes: [...parsed.data.weather.weatherCodes],
+        payload: parsed.data.weather,
+      } : undefined,
+    });
   }
   const parsed = chartDatasetSchema.safeParse(value?.dataset);
   if (!parsed.success) return;
