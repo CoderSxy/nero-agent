@@ -1,0 +1,90 @@
+src/mastra/models/routes.ts
+  s_b2b6e310d315d1::t_568b810c321322 23,31
+  s_b2b6e310d315d1::t_c953ab53211ea5 125-132
+  s_b2b6e310d315d1::t_6803b9917066a0 9,12
+src/mastra/models/admin-page.ts
+  s_b2b6e310d315d1::t_e6cba6ce5ebc89 245-249
+web/src/agent/PrivateModelMenu.tsx
+  s_b2b6e310d315d1::t_48caf9cc27b5d5 17-23
+  s_b2b6e310d315d1::t_f2915a98a07909 2
+  s_b2b6e310d315d1::t_b038362f5a5022 24
+  s_b2b6e310d315d1::t_1cd55bda45f0d5 92-100
+  s_b2b6e310d315d1::t_5983e13ee9d7a3 109
+  s_b2b6e310d315d1::t_db622f6c66ed2a 119-120
+  s_b2b6e310d315d1::t_7eb0c6e030a988 129-130
+src/mastra/models/transport.ts
+  s_b2b6e310d315d1::t_31d5e62babb3f1 8
+  s_b2b6e310d315d1::t_af01e551afea90 60-70,76,85
+tests/model-capabilities.test.ts
+  s_b2b6e310d315d1::t_9127583323de8e 134-136
+  s_b2b6e310d315d1::t_fe86320234e241 1-6,8-133,137-156
+  s_b2b6e310d315d1::t_97323a989a1d3f 7
+src/mastra/models/capability-repository.ts
+  s_b2b6e310d315d1::t_42ee516b1e7438 1-76
+web/src/agent/PrivateModelMenu.test.tsx
+  s_b2b6e310d315d1::t_6be6636da1b37a 141-165
+  s_b2b6e310d315d1::t_0d1749180f7461 10,16
+src/mastra/models/capability-probe.ts
+  s_b2b6e310d315d1::t_b75a208b98bc18 210-230
+  s_b2b6e310d315d1::t_dd193bef17da76 15
+  s_b2b6e310d315d1::t_85b361f31c3990 1-6,11-12,14,17-33,35-36,129-130,132-152,154-162,167-168,170-182,209
+  s_b2b6e310d315d1::t_a2230b1e62b3cd 7-10,13,16,34,37-128,131,153,163-166,169,183-208
+src/mastra/models/repository.ts
+  s_b2b6e310d315d1::t_bc7b41e253ad7a 97
+  s_b2b6e310d315d1::t_1f933bf9c7b6f6 22
+  s_b2b6e310d315d1::t_cc25897438907a 65,68
+  s_b2b6e310d315d1::t_0b4e7ffbab9063 238
+  s_b2b6e310d315d1::t_160d9c5343fe47 53
+web/src/agent/ModelSettingsMenu.tsx
+  s_b2b6e310d315d1::t_00577aa5d7880f 15
+docs/superpowers/verification/2026-10-22-agent-phase-one-task-quality.md
+  s_b2b6e310d315d1::t_08f813bf3b058f 60-78,83
+src/mastra/agents/agent.ts
+  s_b2b6e310d315d1::t_e647d8a40bc039 14
+  s_b2b6e310d315d1::t_17e36bffa06607 96-100
+tests/model-routes.test.ts
+  s_b2b6e310d315d1::t_7e0f0c0e696d6e 61,63
+  s_b2b6e310d315d1::t_8c552c7c3763bb 226-227
+  s_b2b6e310d315d1::t_54ab9a480cd2ca 204-210
+src/mastra/models/service.ts
+  s_b2b6e310d315d1::t_fac489b58d99c7 2-4
+  s_b2b6e310d315d1::t_fdf7d27aedb741 305-321,325-336,338-355
+  s_b2b6e310d315d1::t_40752bed0a9e88 337
+  s_b2b6e310d315d1::t_0ae399e9c37455 322-324
+src/mastra/models/resolver.ts
+  s_b2b6e310d315d1::t_252e49cb55bfb3 5
+  s_b2b6e310d315d1::t_9a3fd65d5fae73 64-85
+  s_b2b6e310d315d1::t_dfef2ff16b459c 15
+  s_b2b6e310d315d1::t_bde2f887844400 6
+src/mastra/agents/turn-policy-processor.ts
+  s_b2b6e310d315d1::t_a29f551c360711 26,28-41
+  s_b2b6e310d315d1::t_0d06194b30ac5c 13
+  s_b2b6e310d315d1::t_635b2c6215ff9b 81-82,84,87
+  s_b2b6e310d315d1::t_86e10b8d15c505 27
+web/src/agent/model-catalog-client.ts
+  s_b2b6e310d315d1::t_6624b868952a26 93-102
+  s_b2b6e310d315d1::t_83ffa0f70fd0eb 36-41
+src/mastra/models/capabilities.ts
+  s_b2b6e310d315d1::t_b55e7ab13de3d0 9
+  s_b2b6e310d315d1::t_ecff3b421a382c 8
+  s_b2b6e310d315d1::t_7ff887df065375 1-7,10-103
+src/mastra/models/types.ts
+  s_b2b6e310d315d1::t_e5af088f90d6d8 22-28,43
+  s_b2b6e310d315d1::t_4d40bb0e19e41c 65-66
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8b6a83decd2f95ff595cfdbbb9993e9e7967955b",
+  "prompts": {},
+  "sessions": {
+    "s_b2b6e310d315d1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f06b165b-6ef9-49b8-87f9-48e93c0bfd93",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
