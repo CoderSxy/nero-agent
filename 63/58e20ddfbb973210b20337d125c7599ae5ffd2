@@ -1,0 +1,38 @@
+src/mastra/agents/task-quality/execution-context.ts
+  s_b2b6e310d315d1::t_545e734dba0fb9 30-32
+  s_b2b6e310d315d1::t_69870c58086396 111-117
+  s_b2b6e310d315d1::t_25a1e489c2d98b 4
+src/mastra/agents/task-quality/run-control-repository.ts
+  s_b2b6e310d315d1::t_65bf20e3997168 21-22
+  s_b2b6e310d315d1::t_1afad9994b02bb 1-20,23-102
+src/mastra/agents/task-quality/budget.ts
+  s_b2b6e310d315d1::t_9d8a97f5518436 1-160
+tests/task-budget.integration.test.ts
+  s_b2b6e310d315d1::t_9173d365531fc6 1-25
+tests/task-budget.test.ts
+  s_b2b6e310d315d1::t_a2e45a4ba9faad 1-86
+docs/superpowers/verification/2026-10-22-agent-phase-one-task-quality.md
+  s_b2b6e310d315d1::t_121ee7133919bb 111-122
+src/mastra/agents/task-quality/tool-guard.ts
+  s_b2b6e310d315d1::t_6f330c8189f24e 2
+  s_b2b6e310d315d1::t_9bec424bd634c3 29-34
+tests/task-budget-db.test.ts
+  s_b2b6e310d315d1::t_76927e2ff04aa5 1-36,40-50
+  s_b2b6e310d315d1::t_a970371aafe2ef 37-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6358e20ddfbb973210b20337d125c7599ae5ffd2",
+  "prompts": {},
+  "sessions": {
+    "s_b2b6e310d315d1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f06b165b-6ef9-49b8-87f9-48e93c0bfd93",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
