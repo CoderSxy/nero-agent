@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
 import { createGuardedModelFetch } from '../../models/transport';
+import { localStopMessage, type BudgetKind, type BudgetReservation } from './budget';
 
 /** Billing purpose carried on the single budget seam. Processors never charge. */
 export type TaskCallPurpose = 'chat' | 'memory' | 'title' | 'probe';
@@ -26,6 +27,9 @@ export type TaskSeamContext = {
   runId: string | null;
   purpose: TaskCallPurpose;
   ledger: TaskSeamLedger;
+  budgetGate?: {
+    reserve(kind: BudgetKind, operationId: string): Promise<BudgetReservation>;
+  };
 };
 
 const storage = new AsyncLocalStorage<TaskSeamContext>();
@@ -104,7 +108,13 @@ export function reserveToolStart(callId: string): TaskReservation {
  */
 export function createTaskBudgetFetch(baseUrl: URL, network: typeof fetch = globalThis.fetch): typeof fetch {
   return createGuardedModelFetch(baseUrl, async (input, init) => {
-    if (storage.getStore()) reserveModelHttpAttempt(randomUUID());
+    const context = storage.getStore();
+    const attemptId = randomUUID();
+    if (context?.budgetGate && context.purpose === 'chat' && context.runId) {
+      const decision = await context.budgetGate.reserve('main-model', attemptId);
+      if (!decision.allowed) throw new Error(localStopMessage(decision.reason ?? '预算用尽'));
+    }
+    if (context) reserveModelHttpAttempt(attemptId);
     return network(input, init);
   });
 }

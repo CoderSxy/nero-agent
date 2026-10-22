@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { reserveToolStart } from './execution-context';
+import { readTaskExecutionContext, reserveToolStart } from './execution-context';
 
 type ToolContext = { toolCallId?: string };
 
@@ -26,6 +26,12 @@ export function guardTaskTool<T extends GuardableTool>(tool: T): T {
   guarded.id = tool.id;
   guarded.execute = (async (input: never, context?: ToolContext) => {
     const callId = context?.toolCallId?.trim() || randomUUID();
+    const gate = readTaskExecutionContext()?.budgetGate;
+    if (gate) {
+      const decision = await gate.reserve('tool', callId);
+      if (decision.duplicate) return { duplicate: true, operationId: callId };
+      if (!decision.allowed) return { stopped: true, operationId: callId, reason: decision.reason ?? 'budget' };
+    }
     const reservation = reserveToolStart(callId);
     if (reservation.duplicate) return { duplicate: true, operationId: reservation.operationId };
     return original.call(tool, input, context);

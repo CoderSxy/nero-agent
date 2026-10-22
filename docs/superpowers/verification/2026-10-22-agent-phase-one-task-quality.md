@@ -108,6 +108,18 @@ Schema：隔离库 `127.0.0.1|localhost:5433/nero_agent` 上，测试在事务�
 - V1 哈希仍是数据集 JSON 的 SHA-256。改标题不改天气数据哈希。HTML 和附件请求不会变成天气图。
 - 预览页 `docs/superpowers/verification/weather-chart-preview.html` 在浏览器里打开过。桌面和 360px 区块都能看到温度、降水、湿度和未知天气，长站名没有盖住图例。
 
+## Task 7：按轮预算
+
+先运行 `node --import tsx --test tests/task-budget.test.ts`，因预算模块不存在失败。
+
+之后 `node --env-file-if-exists=.env --import tsx --test tests/task-budget.test.ts tests/task-budget-db.test.ts tests/task-budget.integration.test.ts tests/task-quality-hooks.integration.test.ts tests/run-progress.test.ts tests/run-progress.integration.test.ts tests/run-metrics.test.ts`：内存预算、隔离库争用、fetch 停止、原有钩子、进度和指标都通过。数据库测试没有 skip。
+
+- simple-chart 第 9 个主请求、第 2 次修正、第 13 个工具在 enforce 下拒绝。general 第 21 个、complex 第 41 个主请求拒绝。
+- 新的重试 id 单独计数。相同 operation id 不重复扣减。缓存只记 noteCachedResponse，不占主请求。
+- 两个并发只拿到最后一个名额。observe 超限仍放行并标记 wouldStop。存储失败时 enforce 返回 unavailable，不继续调用。
+- 隔离库两个连接争最后一次主请求，只有一个成功。另一用户被拒绝。同一 run 恢复后工具还能记，主请求剩余是 0。
+- 预算门关闭时，模型 fetch 在出网前停止。没有门的旧钩子测试仍然通过。
+
 ## 尚未验收
 
 - 全量测试、web 测试、`tsc`、`npm run build`。
