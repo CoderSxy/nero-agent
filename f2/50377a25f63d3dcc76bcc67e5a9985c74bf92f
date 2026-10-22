@@ -1,0 +1,81 @@
+src/mastra/agents/weather/aggregate.ts
+  s_b2b6e310d315d1::t_55ca4205d63c1f 21
+README.md
+  s_b2b6e310d315d1::t_bce84073aab5fb 117-120
+src/mastra/agents/weather/evidence.ts
+  s_b2b6e310d315d1::t_28fd824df22e07 64
+  s_b2b6e310d315d1::t_813323c24887d8 102
+tests/task-contract.test.ts
+  s_b2b6e310d315d1::t_dbabf6bec223ad 4
+web/src/agent/chat-message-reconciliation.test.ts
+  s_b2b6e310d315d1::t_53c970b44167a9 50
+  s_b2b6e310d315d1::t_d00771e8c1e12f 43
+.env.example
+  s_b2b6e310d315d1::t_9eec8cd807e37a 43-48
+src/mastra/agents/task-quality/evaluation.ts
+  s_b2b6e310d315d1::t_e3021eaafe8839 138
+  s_b2b6e310d315d1::t_499062a52f7937 10
+  s_b2b6e310d315d1::t_6ac59bed3e047a 126,129
+  s_b2b6e310d315d1::t_41076d35c2bb01 132
+src/mastra/agents/task-quality/processor.ts
+  s_b2b6e310d315d1::t_7424b5012d90ab 35-36,38-42,47-49,52-54,58,60-64,66-71
+src/mastra/agents/task-quality/budget.ts
+  s_b2b6e310d315d1::t_5db15fe5f74740 1
+src/mastra/agents/task-quality/run-control-repository.ts
+  s_b2b6e310d315d1::t_be2830f595a689 3
+docs/superpowers/verification/2026-10-22-agent-phase-one-task-quality.md
+  s_b2b6e310d315d1::t_0a4d2ffcdb01d0 123-144,147-150
+docs/superpowers/specs/2026-10-22-agent-phase-one-task-quality-design.md
+  s_b64514dd091221::t_1ab6373c488e36 206
+  s_b64514dd091221::t_30e3581d28fbda 87-88,176-177,198-205,207-224
+  s_b64514dd091221::t_552eeb766765a8 1-86,89-175,178-197,225-300
+src/mastra/skills/service.ts
+  s_b2b6e310d315d1::t_e3046dacbf4992 1
+docs/superpowers/plans/2026-10-22-agent-phase-one-task-quality.md
+  s_b2b6e310d315d1::t_8574c64bc0cda2 180
+  s_b2b6e310d315d1::t_f1d68b46a715e8 58-62
+  s_b2b6e310d315d1::t_d99fa836f7780f 175
+  s_b2b6e310d315d1::t_090f8af03ea414 194-199
+  s_b2b6e310d315d1::t_9dfa26ffa19c5b 177
+  s_b2b6e310d315d1::t_c2421c3f934c04 179
+  s_b2b6e310d315d1::t_45fa55af5fcd69 156-159
+  s_b2b6e310d315d1::t_1c2c08f4484460 178
+  s_b2b6e310d315d1::t_ac4fe0269dba54 217
+  s_b2b6e310d315d1::t_2da74abc89ef51 176
+  s_b2b6e310d315d1::t_10eb15bb35494c 230-231
+  s_b64514dd091221::t_30e3581d28fbda 76
+  s_b2b6e310d315d1::t_19ac0adf533184 226-228
+  s_b2b6e310d315d1::t_af3f36927487d8 78-83
+  s_b64514dd091221::t_552eeb766765a8 1-57,63-75,77,84-98,105-117,122-136,144-155,160-173,181-193,200-212,216,218-225,229,232-250
+  s_b2b6e310d315d1::t_1e8af0dd44798f 118-121
+  s_b2b6e310d315d1::t_7e51d43a8b2139 137-143
+  s_b2b6e310d315d1::t_e6552d53b1dbcf 213-215
+  s_b2b6e310d315d1::t_0aa9188a9c190f 99-104
+  s_b2b6e310d315d1::t_84959bf8d14d8a 174
+docs/agent-phase-one-operations.md
+  s_b2b6e310d315d1::t_e2283732e92ad8 1-59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f250377a25f63d3dcc76bcc67e5a9985c74bf92f",
+  "prompts": {},
+  "sessions": {
+    "s_b2b6e310d315d1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f06b165b-6ef9-49b8-87f9-48e93c0bfd93",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_b64514dd091221": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15936-a458-79d1-b9aa-5807fd10438c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
