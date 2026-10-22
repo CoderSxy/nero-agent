@@ -1,0 +1,62 @@
+src/mastra/agents/run-metrics.ts
+  s_b64514dd091221::t_0e01ffa561a36b 6,8,14-15,21,26,30,32-40
+  s_b64514dd091221::t_dafee281bdf698 1-5,7,9-13,16-20,22-25,27-29,31,41-65
+tests/chart-question-tool.test.ts
+  s_b64514dd091221::t_472a4060ba3720 1-13
+docs/superpowers/verification/2026-10-22-agent-chart-execution-quality.md
+  s_b64514dd091221::t_a86446e3154aad 1-23,28-46
+  s_b64514dd091221::t_0f11061db6005d 24-27
+tests/run-metrics.test.ts
+  s_b64514dd091221::t_bd996894edb074 1,3-10
+  s_b64514dd091221::t_2094f7e5b3419b 2,15-24
+  s_b64514dd091221::t_e213f6e3526e3c 11-14
+tests/run-progress.integration.test.ts
+  s_b64514dd091221::t_1339296a1c4e21 25-31
+  s_b64514dd091221::t_dfc66b570ac8dd 24,32-38
+  s_b64514dd091221::t_bb432f945f06fd 18-23
+docs/superpowers/plans/2026-10-21-agent-chart-execution-quality.md
+  s_b64514dd091221::t_a86446e3154aad 15,56-60,62,78-82,84,101-105,123,128,134-137,142-147
+tests/chart-delivery.integration.test.ts
+  s_b64514dd091221::t_3499f63b898dee 7,10-18,47-56
+  s_b64514dd091221::t_88f61b41df5bf7 4,57-70
+src/mastra/agents/turn-policy-processor.ts
+  s_b64514dd091221::t_c626362369ffde 1-3,9-19,34,39,41-43,45,48-49,55-57,68-76,83
+src/mastra/agents/agent.ts
+  s_b64514dd091221::t_614d502e5b02aa 9,61,108-109
+src/mastra/agents/chart-question-tool.ts
+  s_b64514dd091221::t_c978fd91d63096 1-16
+src/mastra/agents/run-progress.ts
+  s_b64514dd091221::t_382cb9560842e2 18-19
+src/mastra/agents/turn-policy.ts
+  s_b64514dd091221::t_da64c9ddb2df1f 5-8,14,37-38,45-52
+tests/turn-policy.test.ts
+  s_b64514dd091221::t_17ac34576d2fcb 35-48
+web/src/agent/AgentChat.tsx
+  s_b64514dd091221::t_0a9043657b2df2 16,195,516,520-521
+web/src/agent/AgentComposer.test.tsx
+  s_b64514dd091221::t_4584b5c8e0043b 3,8-14,61,68
+web/src/agent/chat-message-reconciliation.test.ts
+  s_b64514dd091221::t_4873f663fc984c 34-42
+web/src/agent/chat-message-reconciliation.ts
+  s_b64514dd091221::t_956147b1932ddd 17-18,22-28
+web/src/agent/run-display-state.test.ts
+  s_b64514dd091221::t_2e9e07c1cd6ed0 1-15
+web/src/agent/run-display-state.ts
+  s_b64514dd091221::t_0d6467f3651520 1-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "be14efdef23ce8d56446b2ab0a564adb19eabc5a",
+  "prompts": {},
+  "sessions": {
+    "s_b64514dd091221": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15936-a458-79d1-b9aa-5807fd10438c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
