@@ -76,6 +76,27 @@ Schema：隔离库 `127.0.0.1|localhost:5433/nero_agent` 上，测试在事务�
 
 隔离库 `127.0.0.1:5433/nero_agent` 已执行 `npm run db:migrate`，应用了 `014_agent_phase_one_quality.sql`。迁移只增加列和表。
 
+## Task 4：任务约定与完成评估
+
+先运行 `node --import tsx --test tests/task-contract.test.ts tests/task-completion.test.ts`，因模块不存在失败。实现后与 `tests/turn-policy.test.ts` 一起再跑：14 通过。
+
+- 默认天气趋势要求地点、七日范围、状况、气温、降水，湿度为可选。上海时区下 `2026-10-22T04:30:00Z` 的范围是 2026-10-22 到 2026-10-28。“只要气温，不要降雨”去掉状况和降水。“从明天开始”改为 2026-10-23 到 2026-10-29。明确湿度后该项为 required。
+- HTML 不带天气图。附件和已选 Skill 保持 mixed，档位不是 simple-chart。样式跟进复制上一份需求，不改日期。普通问答只有 `generic.explicit.1`，check 为 declared-only。
+- 预算为 8+1/12/180 秒、20+1/30/300 秒、40+1/60/900 秒。0、负数、NaN、小数、超上限和非法 mode 会拒绝。
+- 可核验必需项全部 met 为 complete/verified。温度有而天气缺为 partial。没有成果为 failed。取消为 cancelled，已 met 的项还在。预算停止不把已有成果改成 failed。普通长回答是 complete/model-assessed，需求状态保持 unverified。observe 与 enforce 传入评估函数得到同一结果。
+
+## Task 5：天气证据
+
+`node --import tsx --test tests/weather-evidence.test.ts tests/weather-aggregate.test.ts tests/chart-data.test.ts`：8 通过。V1 图表测试仍通过，旧 hash 仍是数据集 JSON 的 SHA-256。
+
+官方说明来自 2026-10-22 读取的 [Open-Meteo forecast API](https://open-meteo.com/en/docs)。映射版本 `open-meteo-docs-2026-10-22`。
+
+- 日变量包含 `weather_code`、`temperature_2m_max`、`temperature_2m_min`、`precipitation_sum`、`precipitation_probability_max`。单位分别是 WMO code、°C、°C、mm、%。
+- 日变量列表里没有相对湿度。`relative_humidity_2m` 只在 hourly，单位 %。日均湿度用 `humidity-hourly-daily-mean`：按当地日历日对小时值做算术平均，预期小时数用时区计算。Europe/Berlin 的 2026-03-29 是 23 小时，2026-10-25 是 25 小时。小时不齐则为 null。
+- 同一对象上的日期数组和数值数组才算绑定。兄弟对象里的数组不能拼成一天。年份必须完整相等。未知天气代码可以留下数字，但该日状况不算完成。用户来源的 `sourceUrl` 必须为空。
+- fixture `tests/fixtures/task-quality/weather/open-meteo-sample.json` 标记 `live: false`，不是当前预报。
+- 提交工具仍使用现有 V1 schema，避免 oneOf 改变当前图表协议。`schemaVersion: 2` 由 `readChartSubmission` 单独验收；不完整但结构合法时返回 coverage，不记成 schema 非法。
+
 ## 尚未验收
 
 - 全量测试、web 测试、`tsc`、`npm run build`。

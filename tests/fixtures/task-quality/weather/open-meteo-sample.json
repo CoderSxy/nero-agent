@@ -1,0 +1,20 @@
+{
+  "live": false,
+  "note": "Synthetic Open-Meteo-shaped sample. Not a current forecast and not a live result.",
+  "response": {
+    "latitude": 31.23,
+    "longitude": 121.47,
+    "timezone": "Asia/Shanghai",
+    "daily": {
+      "time": ["2026-10-22", "2026-10-23"],
+      "weather_code": [1, 61],
+      "temperature_2m_max": [22.1, 20.4],
+      "temperature_2m_min": [16.2, 15.1]
+    },
+    "daily_units": {
+      "weather_code": "wmo code",
+      "temperature_2m_max": "°C",
+      "temperature_2m_min": "°C"
+    }
+  }
+}

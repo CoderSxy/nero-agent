@@ -13,4 +13,5 @@ export const chartInstructions = `图表交付规则：
 flowchart LR
   A[开始] --> B[完成]
 \`\`\`
-- 图表数据只使用用户提供或已核实的数据；没有足够数据时先取数或说明缺失，不编造数值。图表配简短文字说明，不能只给创建文件的方法或承诺稍后绘图。`;
+- 图表数据只使用用户提供或已核实的数据；没有足够数据时先取数或说明缺失，不编造数值。图表配简短文字说明，不能只给创建文件的方法或承诺稍后绘图。
+- 天气趋势默认一次取齐目标地点未来七个当地日历日，含今天。优先读取 weather_code、temperature_2m_max、temperature_2m_min，以及 precipitation_probability_max 或 precipitation_sum。用户明确要求湿度时再取 hourly relative_humidity_2m，不要假设日预报里有湿度。已有完整字段就直接提交，不为同一事实重复搜索。`;

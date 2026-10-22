@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { matchesUserData, matchesStructuredData, type ChartEvidence } from './chart-evidence';
+import { assessWeatherSubmission } from './weather/evidence';
+import { weatherSubmissionSchema, type WeatherSubmission } from './weather/types';
 
 export const chartDatasetSchema = z.object({
   categories: z.array(z.string().min(1).max(100)).min(1).max(366),
@@ -41,11 +43,12 @@ function freeze<T>(value: T): T {
 }
 
 export function readChartSubmission(text: string, context: { goal: string; sourceUrls: readonly string[]; evidence?: readonly ChartEvidence[]; previousSnapshot?: ChartSnapshot }):
-  { ok: true; snapshot: ChartSnapshot } | { ok: false; reason: ChartFailure; detail?: string } {
+  { ok: true; snapshot: ChartSnapshot; coverage?: { complete: boolean; missing: string[] } } | { ok: false; reason: ChartFailure; detail?: string } {
   let raw: unknown;
   try { raw = JSON.parse(text.trim()); } catch {
     return { ok: false, reason: text.trimStart().startsWith('{') ? 'invalid-json' : 'missing-chart' };
   }
+  if (raw && typeof raw === 'object' && (raw as { schemaVersion?: unknown }).schemaVersion === 2) return readWeatherSubmission(raw, context);
   const parsed = chartSubmissionSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, reason: 'invalid-data' };
   const value = parsed.data;
@@ -63,8 +66,38 @@ export function readChartSubmission(text: string, context: { goal: string; sourc
   return { ok: true, snapshot: freeze({ title: value.title || '数据趋势', dataset: owned, hash }) };
 }
 
+function readWeatherSubmission(raw: unknown, context: { goal: string; evidence?: readonly ChartEvidence[] }):
+  { ok: true; snapshot: ChartSnapshot; coverage: { complete: boolean; missing: string[] } } | { ok: false; reason: ChartFailure; detail?: string } {
+  const parsed = weatherSubmissionSchema.safeParse(raw);
+  if (!parsed.success || !parsed.data.dataset || !parsed.data.weather) {
+    return parsed.success && parsed.data.status === 'insufficient-data'
+      ? { ok: false, reason: 'insufficient-data', detail: parsed.data.reason }
+      : { ok: false, reason: 'invalid-data' };
+  }
+  const assessment = assessWeatherSubmission(parsed.data, context.evidence ?? [], context.goal);
+  if (!assessment.valid) return { ok: false, reason: assessment.reason ?? 'invalid-data' };
+  const body: WeatherSubmission = parsed.data;
+  const hash = createHash('sha256').update(JSON.stringify({
+    schemaVersion: 2, kind: 'weather', dataset: body.dataset, weather: body.weather,
+  })).digest('hex');
+  return {
+    ok: true,
+    snapshot: freeze({ title: body.title || '天气趋势', dataset: body.dataset as ChartDataset, hash }),
+    coverage: { complete: assessment.complete, missing: assessment.missing },
+  };
+}
+
 export function restoreChartSnapshot(part: any): ChartSnapshot | undefined {
   const value = part?.type === 'data-nero-chart' && part.data?.status === 'ready' ? part.data : undefined;
+  if (value?.schemaVersion === 2) {
+    const parsed = weatherSubmissionSchema.safeParse(value.submission);
+    if (!parsed.success || !parsed.data.dataset || !parsed.data.weather) return;
+    const hash = createHash('sha256').update(JSON.stringify({
+      schemaVersion: 2, kind: 'weather', dataset: parsed.data.dataset, weather: parsed.data.weather,
+    })).digest('hex');
+    if (hash !== value.datasetHash) return;
+    return freeze({ title: value.option?.title?.text ?? parsed.data.title ?? '天气趋势', dataset: parsed.data.dataset as ChartDataset, hash });
+  }
   const parsed = chartDatasetSchema.safeParse(value?.dataset);
   if (!parsed.success) return;
   const hash = createHash('sha256').update(JSON.stringify(parsed.data)).digest('hex');
