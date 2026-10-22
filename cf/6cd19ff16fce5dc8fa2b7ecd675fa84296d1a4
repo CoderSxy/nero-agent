@@ -1,0 +1,89 @@
+src/mastra/agents/chart-evidence.ts
+  s_b64514dd091221::t_628d388d4dc317 1-15,18,20,33,35-45,53-76
+  s_b64514dd091221::t_2073a10b3d108a 16-17,19,21-32,34
+  s_b64514dd091221::t_998beac79c5908 46-52
+src/mastra/index.ts
+  s_b64514dd091221::t_1819063c03bdee 12,73
+src/mastra/agents/turn-policy-processor.ts
+  s_b64514dd091221::t_b31693599ade81 51
+  s_b64514dd091221::t_a19e28adad6d44 4-6,16,20,48-50,67-69,93,98,107-113,116,118-120,125,145
+  s_b64514dd091221::t_2eb35596f1c833 102
+  s_b64514dd091221::t_6679b06049e041 46-47,52-53,64-66,81,92,103,114,117,122,126-133,138-140,142-143,147-148
+  s_b64514dd091221::t_2546134af35ebf 7-8,77
+  s_b64514dd091221::t_abcb9e28c37111 106,115,121,134-137,149-150,154-160
+  s_b64514dd091221::t_0abfbf90adb423 141
+  s_b64514dd091221::t_98102930f6637e 84
+  s_b64514dd091221::t_9356825a4d8041 70-72,78-79
+src/mastra/agents/chart-fetch-tool.ts
+  s_b64514dd091221::t_ddbe567b1ed76d 1,9-11
+  s_b64514dd091221::t_2546134af35ebf 2-8,12-13,16-26
+  s_b64514dd091221::t_daf09d200ab174 14-15
+src/mastra/agents/chart-data-tool.ts
+  s_b64514dd091221::t_1819063c03bdee 1-10
+src/mastra/agents/chart-question-tool.ts
+  s_b64514dd091221::t_ddbe567b1ed76d 1,6
+  s_b64514dd091221::t_9356825a4d8041 12
+docs/superpowers/verification/2026-10-22-agent-chart-execution-quality.md
+  s_b64514dd091221::t_fa04655058af46 47-50
+tests/chart-fetch-tool.test.ts
+  s_b64514dd091221::t_76a376963e4fb9 1-16
+tests/chart-data.test.ts
+  s_b64514dd091221::t_438f226b8630b8 27-29,36
+  s_b64514dd091221::t_98102930f6637e 1-17,19-26
+  s_b64514dd091221::t_b31693599ade81 18,30-35
+src/mastra/agents/run-metrics.ts
+  s_b64514dd091221::t_cf62b686190dda 56-57
+docs/superpowers/verification/2026-10-22-structured-chart-delivery.md
+  s_b64514dd091221::t_fa04655058af46 8,24-54
+  s_b64514dd091221::t_affb4f3cd7cc51 1-7,9-23
+src/mastra/agents/chart-data.ts
+  s_b64514dd091221::t_1819063c03bdee 43,58-59,64-72
+  s_b64514dd091221::t_4e7720a1171bbd 1-2,4-42,44-57,61-63,73-95
+  s_b64514dd091221::t_628d388d4dc317 3,60
+web/src/agent/message-parts.ts
+  s_b64514dd091221::t_3d4422267d5c8b 10,57,64-71,73,100
+tests/chart-delivery.integration.test.ts
+  s_b64514dd091221::t_f606db5b73f052 4,89,102,105,110,129-132,134-136
+  s_b64514dd091221::t_98102930f6637e 10
+  s_b64514dd091221::t_958be87bd0d12e 120-128
+  s_b64514dd091221::t_911b34ca841113 107,111-119
+  s_b64514dd091221::t_0abfbf90adb423 9,25,51,71,73,88
+  s_b64514dd091221::t_abcb9e28c37111 58
+  s_b64514dd091221::t_85c0369cfd443b 28-30,33-37,39-46
+  s_b64514dd091221::t_b31693599ade81 52,94-99
+  s_b64514dd091221::t_237141f563b591 31-32,38
+  s_b64514dd091221::t_34188b133af117 19,133,137
+  s_b64514dd091221::t_3777092480e0d4 90-93,100-101,103-104,106,108-109
+tests/chart-evidence.test.ts
+  s_b64514dd091221::t_b31693599ade81 1-13
+  s_b64514dd091221::t_d9d21c014557f5 14-17
+  s_b64514dd091221::t_f8b018506eeca9 18-21
+tests/run-progress.integration.test.ts
+  s_b64514dd091221::t_237141f563b591 37
+  s_b64514dd091221::t_34188b133af117 5
+  s_b64514dd091221::t_2eb35596f1c833 14
+  s_b64514dd091221::t_0abfbf90adb423 13
+src/mastra/agents/chart-instructions.ts
+  s_b64514dd091221::t_3d4422267d5c8b 3
+web/src/agent/MessageList.tsx
+  s_b64514dd091221::t_3d4422267d5c8b 315
+  s_b64514dd091221::t_9356825a4d8041 60
+web/src/agent/message-parts.test.ts
+  s_b64514dd091221::t_000b671a89c050 110-122
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cf6cd19ff16fce5dc8fa2b7ecd675fa84296d1a4",
+  "prompts": {},
+  "sessions": {
+    "s_b64514dd091221": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15936-a458-79d1-b9aa-5807fd10438c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
