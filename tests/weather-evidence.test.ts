@@ -53,7 +53,8 @@ test('weather evidence binds each field to the same dated record', async () => {
   assert.match(fixture.note, /not a live/i);
   const response = fixture.response;
   const evidence = [{ url, value: response }];
-  assert.equal(assessWeatherSubmission(submission(response), evidence).complete, true);
+  assert.equal(assessWeatherSubmission(submission(response), evidence).complete, false);
+  assert.ok(assessWeatherSubmission(submission(response), evidence).missing.includes('weather.precipitation'));
 
   const otherCode = submission(response, value => { value.weather!.weatherCodes = [3, 61]; });
   assert.equal(assessWeatherSubmission(otherCode, evidence).valid, false);

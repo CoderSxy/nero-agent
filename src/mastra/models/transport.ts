@@ -59,6 +59,7 @@ export function createGuardedModelFetch(baseUrl: URL, fetchImpl: typeof fetch = 
 
 export type TransportModelOptions = {
   jsonSchema?: CapabilityState;
+  wrapFetch?: (network: typeof fetch) => typeof fetch;
   fetchImpl?: typeof fetch;
 };
 
@@ -73,7 +74,8 @@ export function createTransportModel(config: OpenAICompatibleConfig, options?: T
     : [config.providerId, config.modelId];
   const modelId = modelParts.join('/');
   if (!config.url || !config.apiKey) throw new ModelCatalogError('invalid_input', 'Model connection is incomplete');
-  const fetch = createGuardedModelFetch(new URL(config.url), options?.fetchImpl);
+  const guarded = createGuardedModelFetch(new URL(config.url), options?.fetchImpl);
+  const fetch = options?.wrapFetch ? options.wrapFetch(guarded) : guarded;
   if (config.api === 'responses') {
     return createOpenAI({ name: providerId, baseURL: config.url, apiKey: config.apiKey, fetch }).responses(modelId);
   }

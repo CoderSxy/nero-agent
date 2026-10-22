@@ -1,4 +1,10 @@
-import type { Processor } from '@mastra/core/processors';
+import { setTaskContract } from './contract-store';
+import { getTaskRuntime } from './runtime';
+import { guardTaskTool } from './tool-guard';
+import { resolveTemporalTimezone } from '../../temporal/context';
+import { readBoundServerExecutionId } from '../../skills/execution-context';
+import { verifyWrittenFiles } from './file-evidence';
+import type { CachedLLMStepResponse, Processor } from '@mastra/core/processors';
 import { readChartSubmission } from '../chart-data';
 import { readSelectedSkillIds } from '../../skills/execution-context';
 import { resolveTurnPolicy } from '../turn-policy';
@@ -11,7 +17,7 @@ export const TASK_OUTCOME_CONTEXT_KEY = 'nero-agent.task-outcome';
 
 const TAG = '<task-contract-v1>';
 
-type ChartEvidence = { coverage?: { complete: boolean; missing: string[] }; budgetExhausted?: boolean };
+type ChartEvidence = { coverage?: { complete: boolean; missing: string[] }; budgetExhausted?: boolean; chartVerified?: boolean };
 type ContextStore = { get(key: string): unknown; set?(key: string, value: unknown): void };
 type QualityState = {
   taskContract?: TaskContract;
@@ -32,25 +38,37 @@ export function createTaskQualityProcessor(options: {
 } = {}) {
   return {
     id: 'task-quality',
-    processInputStep({ messages, state, requestContext, runId }) {
+    processInputStep({ messages, state, requestContext, runId, tools }) {
       const quality = state as QualityState;
       const latest = [...messages].reverse().find(message => message.role === 'user');
       const text = messageText(latest) || quality.userGoal || '';
+      const sameGoal = quality.userGoal === text.slice(0, 4000);
       quality.userGoal = text.slice(0, 4000);
       const attached = /附件|attachmentId|上传文件/i.test(text);
       const skills = readSelectedSkillIds(requestContext);
+      const runtime = getTaskRuntime(requestContext);
       quality.taskContract = resolveTaskContract({
-        runId: runId || String(latest?.id ?? 'run'),
+        runId: readBoundServerExecutionId(requestContext) || runId || String(latest?.id ?? 'run'),
         userText: text,
-        now: options.now?.() ?? new Date('2026-10-22T04:30:00.000Z'),
-        targetTimezone: 'Asia/Shanghai',
+        now: sameGoal && quality.taskContract?.referenceInstant ? new Date(quality.taskContract.referenceInstant) : options.now?.() ?? new Date(),
+        targetTimezone: resolveTemporalTimezone(requestContext),
         hasAttachments: attached,
         selectedSkillIds: skills,
         turnPolicy: resolveTurnPolicy({ userText: text, hasAttachments: attached, selectedSkillIds: skills }),
       });
+      if (requestContext) setTaskContract(requestContext, quality.taskContract);
+      if (runtime) {
+        runtime.contract = quality.taskContract;
+        return { tools: Object.fromEntries(Object.entries(tools ?? {}).map(([name, tool]) => [name, guardTaskTool(tool as never, runtime, name)])) };
+      }
     },
-    processLLMRequest({ prompt, state }) {
+    processLLMRequest({ prompt, state, requestContext }) {
       const quality = state as QualityState;
+      const runtime = getTaskRuntime(requestContext);
+      if (runtime?.enforce && runtime.remaining &&
+          ((runtime.repairing ? runtime.remaining.repairs : runtime.remaining.mainRequests) <= 0 || runtime.remainingMs() <= 0)) {
+        return { response: stoppedResponse() };
+      }
       const contract = quality.taskContract;
       if (!contract) return;
       const lines = contract.requirements.filter(item => item.importance === 'required').map(item => `- ${item.id}: ${item.description}`).join('\n');
@@ -61,7 +79,7 @@ export function createTaskQualityProcessor(options: {
       const quality = state as QualityState;
       if (toolCalls?.length || !quality.taskContract) return messageList;
       const chart = chartEvidence(quality, requestContext as ContextStore | undefined, text ?? '');
-      const files = filesFrom(messages) ?? (quality.fileVerified === undefined ? undefined : [{ id: 'file', ok: quality.fileVerified }]);
+      const files = await verifyWrittenFiles(requestContext);
       const stopped = Boolean(chart?.budgetExhausted) || /不再请求模型|已达到执行预算/.test(text ?? '');
       const outcome = quality.deliveryUnavailable && !chart?.coverage
         ? evaluateTaskCompletion(quality.taskContract, { weatherCoverage: {}, chartVerified: false, answerText: '', budgetStopped: stopped })
@@ -88,21 +106,6 @@ function chartEvidence(state: QualityState, requestContext: ContextStore | undef
   return { coverage: parsed.coverage ?? parsed.snapshot.coverage ?? { complete: true, missing: [] }, budgetExhausted: shared?.budgetExhausted };
 }
 
-function filesFrom(messages: unknown): Array<{ id: string; ok: boolean }> | undefined {
-  if (!Array.isArray(messages)) return undefined;
-  const files: Array<{ id: string; ok: boolean }> = [];
-  for (const message of messages) {
-    const parts = (message as { content?: { parts?: Array<{ type?: string; toolInvocation?: { toolName?: string; toolCallId?: string; state?: string; result?: { path?: unknown } } }> } }).content?.parts ?? [];
-    for (const part of parts) {
-      const call = part.toolInvocation;
-      if (part.type !== 'tool-invocation' || call?.toolName !== 'write_file') continue;
-      const path = call.result?.path;
-      files.push({ id: String(call.toolCallId ?? 'file'), ok: call.state === 'result' && typeof path === 'string' && path.startsWith('/user-files/') });
-    }
-  }
-  return files.length ? files : undefined;
-}
-
 function evidenceFor(contract: TaskContract, chart: ChartEvidence | undefined, files: Array<{ id: string; ok: boolean }> | undefined, cancelled: boolean, budgetStopped: boolean, answerText: string) {
   const coverage = chart?.coverage;
   const weatherCoverage: Record<string, EvidenceStatus> = {};
@@ -110,14 +113,14 @@ function evidenceFor(contract: TaskContract, chart: ChartEvidence | undefined, f
     if (requirement.check !== 'weather-data') continue;
     weatherCoverage[requirement.id] = !coverage || coverage.missing.includes(requirement.id) ? 'missing' : 'met';
   }
-  if (coverage?.complete) {
+  if (coverage?.complete && coverage.missing.length === 0) {
     for (const requirement of contract.requirements) {
       if (requirement.importance === 'required' && requirement.check === 'weather-data') weatherCoverage[requirement.id] = 'met';
     }
   }
   return {
     weatherCoverage,
-    chartVerified: Boolean(coverage) && !coverage?.missing.includes('delivery.chart'),
+    chartVerified: chart?.chartVerified ?? (Boolean(coverage) && !coverage?.missing.includes('delivery.chart')),
     files,
     cancelled,
     budgetStopped,
@@ -133,4 +136,14 @@ async function publish(state: QualityState, outcome: TaskOutcome, writer: { cust
   await writer?.custom({ type: 'data-nero-task-outcome', data: published });
   await persist?.(outcome.runId, published);
   return published;
+}
+
+function stoppedResponse(): CachedLLMStepResponse {
+  const id = 'task-budget-stop';
+  return {chunks: [
+    {type:'text-start',payload:{id}},
+    {type:'text-delta',payload:{id,text:'已达到执行预算，已有结果保留，不再请求模型总结。'}},
+    {type:'text-end',payload:{id}},
+    {type:'finish',payload:{stepResult:{reason:'stop'},output:{usage:{inputTokens:0,outputTokens:0,totalTokens:0}},metadata:{},messages:{all:[],user:[],nonUser:[]}}},
+  ]};
 }

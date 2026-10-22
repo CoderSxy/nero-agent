@@ -1,3 +1,4 @@
+import { recordWrittenFile } from '../agents/task-quality/file-evidence';
 import { createTool } from '@mastra/core/tools';
 import { LocalFilesystem } from '@mastra/core/workspace';
 import { z } from 'zod';
@@ -328,6 +329,8 @@ export const userFileTools = {
       const service = await serviceFrom(context);
       const threadId = agentThreadId(context);
       await service.write(auth, threadId, input.path, Buffer.from(input.content));
+      const current = await service.read(auth, threadId, input.path);
+      recordWrittenFile(context.requestContext, input.path, current.etag, () => service.read(auth, threadId, input.path));
       return { path: `/user-files/${threadId}/${input.path}` };
     },
   }),

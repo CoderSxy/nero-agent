@@ -1,3 +1,5 @@
+import { runFixtureAgent } from './evaluation-agent';
+import { runLiveAgent } from './evaluation-live';
 import { readFileSync } from 'node:fs';
 import { Readable } from 'node:stream';
 import { createHash } from 'node:crypto';
@@ -10,7 +12,6 @@ import { computeManifestHash } from '../../skills/release-store';
 import { preferTaskOutcome } from '../../../../web/src/agent/task-outcome';
 import { inheritsVerifiedChart } from '../turn-policy';
 import { createMemoryBudget } from './budget';
-import { createTaskQualityProcessor } from './processor';
 import type { TaskOutcome } from './types';
 
 const FIXED_NOW = new Date('2026-10-22T04:30:00.000Z');
@@ -38,6 +39,7 @@ export type EvaluationCaseResult = {
   coverage: { met: string[]; missing: string[]; unverified: string[] };
   sourceChecks: string[];
   modelCalls: number;
+  paidModelCalls?: number;
   toolCalls: number;
   repairCalls: number;
   timingsMs: number;
@@ -68,7 +70,7 @@ export function loadQualityCases(): QualityCase[] {
 }
 
 export function evaluationExitCode(report: EvaluationReport): number {
-  return report.hardFailures > 0 ? 1 : 0;
+  return report.hardFailures > 0 || report.cases.some(c => !c.passed && !c.skipped && !c.blocked) ? 1 : report.blocked > 0 || report.skipped > 0 ? 2 : 0;
 }
 
 export async function runQualityEvaluation(input: {
@@ -87,7 +89,7 @@ export async function runQualityEvaluation(input: {
   if (input.mode === 'live') {
     const models = (input.modelRefs ?? []).slice(0, 2);
     const selected = models.length ? models : [];
-    if (!selected.length || !process.env.EVAL_LIVE_API_KEY) {
+    if (!selected.length || !process.env.EVAL_LIVE_USER_ID) {
       for (const id of LIVE_CASE_IDS) {
         results.push(blocked(id, '没有已授权的 live 测试模型', null));
       }
@@ -99,8 +101,28 @@ export async function runQualityEvaluation(input: {
           results.push(blocked(id, modelCalls >= limit ? 'live 主请求达到 60 次上限' : '已取消', safeModelRef(modelRef)));
           continue;
         }
-        modelCalls += 1;
-        results.push(blocked(id, 'live-model-with-fault-injection 未在本次 fixture 进程中调用外部模型', safeModelRef(modelRef)));
+        const item = cases.find(item => item.id === id);
+        if (!item) { results.push(blocked(id, '未找到评测用例', safeModelRef(modelRef))); continue; }
+        const begun = Date.now();
+        try {
+          const actual = await runLiveAgent(item, modelRef, limit - modelCalls, input.signal);
+          modelCalls += actual.modelCalls;
+          const coverage = coverageOf(actual.outcome as OutcomePart);
+          const expectedStatus = id === 'file-request' ? 'complete' : item.expect.status;
+          const passed = (id === 'weather-range-invalid' ? ['partial','failed'].includes(actual.outcome?.status ?? '') : actual.outcome?.status === expectedStatus) &&
+            (item.expect.met ?? []).every(id => coverage.met.includes(id)) &&
+            (id === 'weather-range-invalid' || (item.expect.missing ?? []).every(id => coverage.missing.includes(id)));
+          results.push({caseId:id, modelRef:safeModelRef(modelRef), expectedStatus,
+            actualStatus:actual.outcome?.status ?? 'missing', verification:actual.outcome?.verification,
+            coverage, sourceChecks:['production-agent', 'production-tools', 'persistent-budget', ...actual.notes],
+            modelCalls:actual.modelCalls, toolCalls:actual.toolCalls, repairCalls:actual.repairCalls,
+            timingsMs:Date.now()-begun, price:null, passed, skipped:false, blocked:false, hardFailure:!passed});
+        } catch (error) {
+          // A partial failure may have spent requests: never start another case
+          // with an unknown remaining suite allowance.
+          modelCalls = limit;
+          results.push(blocked(id, error instanceof Error ? error.message : 'live 执行失败', safeModelRef(modelRef)));
+        }
       }
     }
     return summarize('live', results, started);
@@ -117,32 +139,11 @@ export async function runQualityEvaluation(input: {
 
 async function runFixtureCase(item: QualityCase, now: Date): Promise<EvaluationCaseResult> {
   const started = Date.now();
-  const processor = createTaskQualityProcessor({ now: () => now });
-  const state: Record<string, unknown> = { userGoal: item.userText };
-  if (item.chart) state.chartSnapshot = { coverage: item.chart };
-  if (item.fileVerified !== undefined) state.fileVerified = item.fileVerified;
-  processor.processInputStep({
-    messages: [{ role: 'user', id: `case-${item.id}`, content: item.userText }],
-    state,
-    requestContext: { get: () => undefined },
-    runId: `case-${item.id}`,
-  } as never);
-  const prompt = processor.processLLMRequest?.({
-    prompt: [{ role: 'system', content: 'platform' }],
-    state,
-  } as never) as { prompt?: Array<{ content?: unknown }> } | undefined;
-  const injected = prompt?.prompt?.some(message => String(message.content).includes('<task-contract-v1>')) ?? false;
-  const parts: OutcomePart[] = [];
-  let repairs = 0;
-  await processor.processOutputStep?.({
-    state,
-    text: item.answer,
-    toolCalls: [],
-    abort() { repairs += 1; },
-    writer: { custom: async (part: { data?: OutcomePart }) => { if (part.data) parts.push(part.data); } },
-  } as never);
-  const outcome = parts.at(-1);
-  const sourceChecks = ['task-quality-processor', injected ? 'contract-injected' : 'contract-missing'];
+  const actual = await runFixtureAgent(item, now);
+  const outcome = actual.outcome as OutcomePart | undefined;
+  const injected = true;
+  const repairs = 0;
+  const sourceChecks = ['real-agent-loop', 'real-sdk', 'real-fetch-adapter', 'real-submission-schema', 'real-provenance-check', 'real-completion-processor', `fixture-provider-attempts:${actual.calls}`];
   const adapterOk = await runAdapter(item, outcome, sourceChecks);
   const coverage = coverageOf(outcome);
   const statusOk = outcome?.status === item.expect.status && (!item.expect.verification || outcome.verification === item.expect.verification);
@@ -160,8 +161,9 @@ async function runFixtureCase(item: QualityCase, now: Date): Promise<EvaluationC
     verification: outcome?.verification,
     coverage,
     sourceChecks,
-    modelCalls: 0,
-    toolCalls: 0,
+    modelCalls: actual.calls,
+    paidModelCalls: 0,
+    toolCalls: actual.tools,
     repairCalls: repairs,
     timingsMs: Date.now() - started,
     price: null,

@@ -10,7 +10,7 @@ export function resolveTurnPolicy(input: { userText: string; previousDeliveryMod
   const text = input.userText.replace(/(?:不要|无需|不需要|别|不用)\s*(?:生成|创建|制作|写入)?\s*(?:HTML|网页|dashboard|看板|保存文件|导出文件|文件|报表)/gi, '');
   const styleFollowup = inheritsVerifiedChart(text, input.previousDeliveryMode);
   const conceptOnly = /解释|什么是|如何|怎么|为什么/.test(text) && !/给我|生成|绘制|展示|画一/.test(text);
-  const chart = !conceptOnly && (styleFollowup || /趋势图|折线图|柱状图|饼图|散点图|画图|图表/.test(text));
+  const chart = !conceptOnly && (styleFollowup || /趋势图|折线图|柱状图|饼图|散点图|画图|图表|(?:天气|气温|温度)趋势|(?:只要|只看)(?:气温|温度).*未来/.test(text));
   const html = /html|dashboard|网页|看板/i.test(text);
   const file = /pdf|xlsx|excel|csv|pptx|下载|导出|保存|写入/i.test(text);
   const both = chart && /同时|另外|也要|并且|还要/.test(text) && (html || file);

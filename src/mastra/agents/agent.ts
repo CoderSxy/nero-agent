@@ -1,3 +1,4 @@
+import { getTaskRuntime, budgetModelFetch } from './task-quality/runtime';
 import { Agent, type ToolsInput } from '@mastra/core/agent';
 import { TaskSignalProvider } from '@mastra/core/signals';
 import { askUserTool, webFetchTool } from '@mastra/core/tools';
@@ -104,7 +105,10 @@ ${chartInstructions}
   model: async ({ requestContext }) => {
     const selected = await resolveSelectedModel(requestContext, 'chat');
     const capabilities = requestContext.get(MODEL_CAPABILITIES_CONTEXT_KEY) as ModelCapabilityReport | undefined;
-    return createTransportModel(selected.config, { jsonSchema: capabilities?.jsonSchema });
+    return createTransportModel(selected.config, { jsonSchema: capabilities?.jsonSchema, wrapFetch: network => {
+      const runtime = getTaskRuntime(requestContext);
+      return runtime ? budgetModelFetch(runtime, network) : network;
+    } });
   },
   maxProcessorRetries: 1,
   defaultOptions: {

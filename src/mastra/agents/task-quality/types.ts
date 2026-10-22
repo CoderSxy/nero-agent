@@ -21,6 +21,7 @@ export type TaskContract = {
   domain: TaskDomain;
   requirements: TaskRequirement[];
   policyVersion: string;
+  referenceInstant?: string;
 };
 
 export type TaskOutcome = {

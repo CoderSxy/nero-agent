@@ -6,7 +6,7 @@ if (process.env.npm_lifecycle_event === 'eval:task-quality:live' && !live) {
   console.error('eval:task-quality:live 必须显式传入 --live');
   process.exit(1);
 }
-const report = await runQualityEvaluation({ mode: live ? 'live' : 'fixture', maxMainModelCalls: 60 });
+const report = await runQualityEvaluation({ mode: live ? 'live' : 'fixture', maxMainModelCalls: 60, modelRefs: (process.env.EVAL_LIVE_MODEL_REFS ?? '').split(',').map(s => s.trim()).filter(Boolean) });
 const directory = 'docs/superpowers/verification';
 mkdirSync(directory, { recursive: true });
 const jsonPath = `${directory}/2026-10-22-agent-phase-one-task-quality-eval.json`;

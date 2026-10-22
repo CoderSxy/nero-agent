@@ -20,7 +20,9 @@ test('fixture evaluation stays offline and passes the fixed suite twice', async 
     const missingCondition = first.cases.find(item => item.caseId === 'weather-condition-missing');
     assert.equal(missingCondition?.actualStatus, 'partial');
     assert.equal(missingCondition?.passed, true);
-    assert.equal(first.cases.every(item => item.modelCalls === 0), true);
+    assert.equal(first.cases.every(item => item.paidModelCalls === 0), true);
+    assert.ok(first.cases.find(item => item.caseId === 'weather-complete')!.modelCalls >= 2);
+    assert.ok(first.cases.find(item => item.caseId === 'weather-complete')!.toolCalls >= 2);
   } finally {
     globalThis.fetch = original;
   }

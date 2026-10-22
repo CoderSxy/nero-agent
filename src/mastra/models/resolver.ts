@@ -62,7 +62,7 @@ export async function resolveSelectedModel(
   const memoryRef = purpose === 'memory' ? readRef(requestContext, memoryModelRefContextKey) : undefined;
   const ref = memoryRef ?? chatRef ?? (await defaultPublicRef());
   const selected = { ref, config: await resolveModel(ref, user) };
-  requestContext.set(modelCapabilitiesContextKey, await readFreshCapabilities(ref, user));
+  if (purpose === 'chat') requestContext.set(modelCapabilitiesContextKey, await readFreshCapabilities(ref, user));
   return selected;
 }
 

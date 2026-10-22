@@ -82,12 +82,28 @@ export function assessWeatherSubmission(submission: WeatherSubmission, evidence:
     return fail('invalid-data', 'weather.range');
   }
   if (data.series.some(series => series.values.length !== data.categories.length)) return fail('invalid-data', 'weather.range');
+  if (data.series.some(series => series.unit !== canonicalUnit(series.metric))) return fail('invalid-data', 'weather.units');
   const high = data.series.find(series => series.metric === 'temperature-max');
   const low = data.series.find(series => series.metric === 'temperature-min');
   if (high && low && high.values.some((value, index) => value !== null && low.values[index] !== null && (low.values[index] as number) > value)) {
     return fail('invalid-data', 'weather.temperature');
   }
   const missing: string[] = [];
+  // A source map is a proof obligation for EVERY submitted value, not a list of
+  // whichever fields the model elects to have checked.
+  const metrics = data.series.map(series => series.metric);
+  if (new Set(metrics).size !== metrics.length) return fail('invalid-data', 'weather.metrics');
+  for (const metric of [...metrics, ...(weather.weatherCodes.some(code => code !== null) ? ['weather-code'] : [])]) {
+    if (weather.fieldSources.filter(source => source.metric === metric).length !== 1) return fail('unverified-source', metric);
+  }
+  if (!high || !low || high.values.some(v => v === null) || low.values.some(v => v === null)) missing.push('weather.temperature');
+  if (weather.weatherCodes.some(code => code === null)) missing.push('weather.condition');
+  const rain = data.series.filter(s => s.metric === 'precipitation-amount' || s.metric === 'precipitation-probability');
+  if (!rain.some(s => s.values.every(v => v !== null))) missing.push('weather.precipitation');
+  const humidity = data.series.find(s => s.metric === 'humidity-mean');
+  if (!humidity || humidity.values.some(v => v === null)) missing.push('weather.humidity');
+  if (new Set(weather.dates).size !== weather.dates.length || weather.dates.some((d, i) =>
+      !Number.isFinite(Date.parse(d)) || (i > 0 && Date.parse(d) - Date.parse(weather.dates[i - 1]) !== 86400000))) return fail('invalid-data', 'weather.range');
   for (const source of weather.fieldSources) {
     if (source.kind === 'user') {
       const submitted = source.metric === 'weather-code'
@@ -98,9 +114,13 @@ export function assessWeatherSubmission(submission: WeatherSubmission, evidence:
     }
     const found = source.kind === 'url' ? evidence.find(item => item.url === source.sourceUrl) : undefined;
     if (source.kind === 'url' && !found) return fail('unverified-source', source.metric);
-    if (source.kind === 'url' && found && !samePlace(found.value, submission)) return fail('unverified-source', 'weather.location');
-    const root = found?.value;
+    let root = found?.value;
+    if (root && typeof root === 'object' && typeof (root as any).content === 'string') {
+      try { root = JSON.parse((root as any).content); } catch { return fail('unverified-source', source.metric); }
+    }
+    if (source.kind === 'url' && found && !samePlace(root, submission)) return fail('unverified-source', 'weather.location');
     if (source.transform === 'humidity-hourly-daily-mean') {
+      if (unitOf(root, source) !== '%') return fail('invalid-data', 'weather.humidity');
       if (source.metric !== 'humidity-mean') return fail('invalid-data', 'weather.humidity');
       const record = atPath(root, source.recordPath);
       const times = record && typeof record === 'object' ? (record as Record<string, unknown>)[source.dateField] : undefined;
@@ -126,7 +146,7 @@ export function assessWeatherSubmission(submission: WeatherSubmission, evidence:
     if (unit !== canonicalUnit(source.metric as WeatherMetric)) return fail('invalid-data', source.metric);
     const submitted = data.series.find(series => series.metric === source.metric)?.values;
     if (!submitted || JSON.stringify(submitted) !== JSON.stringify(aligned.values)) return fail('invalid-data', source.metric);
-    if (aligned.values.some(value => value === null)) missing.push(source.metric);
+    if (aligned.values.some(value => value === null)) missing.push(source.metric.startsWith('temperature-') ? 'weather.temperature' : source.metric.startsWith('precipitation-') ? 'weather.precipitation' : source.metric === 'humidity-mean' ? 'weather.humidity' : source.metric);
     if (source.metric === 'precipitation-probability' && aligned.values.some(value => value !== null && (value < 0 || value > 100))) {
       return fail('invalid-data', 'weather.precipitation');
     }
@@ -135,5 +155,6 @@ export function assessWeatherSubmission(submission: WeatherSubmission, evidence:
     }
   }
   if (weather.weatherCodes.some(code => code !== null && weatherCodeLabel(code) === null)) missing.push('weather.condition');
-  return { valid: true, complete: missing.length === 0, missing: [...new Set(missing)] };
+  const requiredMissing = missing.filter(id => id !== 'weather.humidity' || /湿度/.test(userText));
+  return { valid: true, complete: requiredMissing.length === 0, missing: [...new Set(missing)] };
 }

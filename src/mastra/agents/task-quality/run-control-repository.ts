@@ -10,7 +10,7 @@ const countColumn = { 'main-model': 'main_calls', 'repair-model': 'repair_calls'
 
 export async function reserveRunOperation(
   auth: { userId: string; threadId: string },
-  input: { runId: string; operationId: string; kind: BudgetKind; profile: TaskProfile; mode: BudgetMode },
+  input: { runId: string; operationId: string; kind: BudgetKind; profile: TaskProfile; mode: BudgetMode; activeDeltaMs?: number; contract?: unknown },
   db: Queryable = getPool(),
 ): Promise<BudgetReservation> {
   const client = 'connect' in db ? await (db as Pool).connect() : db as PoolClient;
@@ -24,9 +24,9 @@ export async function reserveRunOperation(
       [input.runId, auth.userId, auth.threadId, input.profile, input.mode],
     );
     const locked = await client.query<{
-      user_id: string; profile: TaskProfile; status: string; main_calls: number; repair_calls: number; tool_calls: number;
+      user_id: string; thread_id: string; active_ms: number; profile: TaskProfile; status: string; main_calls: number; repair_calls: number; tool_calls: number;
     }>(
-      `SELECT user_id, profile, status, main_calls, repair_calls, tool_calls
+      `SELECT user_id, thread_id, active_ms, profile, status, main_calls, repair_calls, tool_calls
        FROM app_agent_run_controls WHERE run_id = $1 FOR UPDATE`,
       [input.runId],
     );
@@ -37,7 +37,7 @@ export async function reserveRunOperation(
       repairs: Math.max(0, limits.repairs - (row?.repair_calls ?? 0)),
       tools: Math.max(0, limits.tools - (row?.tool_calls ?? 0)),
     };
-    if (!row || row.user_id !== auth.userId) {
+    if (!row || (row.user_id !== auth.userId || row.thread_id !== auth.threadId)) {
       await client.query('ROLLBACK');
       return { allowed: false, duplicate: false, wouldStop: false, reason: 'owner', remaining };
     }
@@ -48,7 +48,7 @@ export async function reserveRunOperation(
     }
     const used = input.kind === 'main-model' ? row.main_calls : input.kind === 'repair-model' ? row.repair_calls : row.tool_calls;
     const limit = input.kind === 'main-model' ? limits.mainRequests : input.kind === 'repair-model' ? limits.repairs : limits.tools;
-    if (row.status !== 'active' || (used >= limit && input.mode === 'enforce')) {
+    if (row.status !== 'active' || ((used >= limit || Number(row.active_ms) + (input.activeDeltaMs ?? 0) >= limits.activeMs) && input.mode === 'enforce')) {
       await client.query('ROLLBACK');
       return { allowed: false, duplicate: false, wouldStop: used >= limit, reason: row.status !== 'active' ? 'inactive' : 'budget', remaining };
     }
@@ -57,11 +57,12 @@ export async function reserveRunOperation(
       [input.runId, input.operationId, input.kind],
     );
     await client.query(
-      `UPDATE app_agent_run_controls SET ${countColumn[input.kind]} = ${countColumn[input.kind]} + 1, revision = revision + 1, updated_at = now() WHERE run_id = $1`,
-      [input.runId],
+      `UPDATE app_agent_run_controls SET ${countColumn[input.kind]} = ${countColumn[input.kind]} + 1, active_ms = active_ms + $2, contract = COALESCE($3::jsonb, contract), revision = revision + 1, updated_at = now() WHERE run_id = $1`,
+      [input.runId, Math.floor(input.activeDeltaMs ?? 0), input.contract ? JSON.stringify(input.contract) : null],
     );
     await client.query('COMMIT');
     return {
+      activeMs: Number(row.active_ms) + Math.floor(input.activeDeltaMs ?? 0),
       allowed: true,
       duplicate: false,
       wouldStop: used + 1 > limit,

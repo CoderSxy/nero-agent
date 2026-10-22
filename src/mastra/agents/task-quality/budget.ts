@@ -5,6 +5,7 @@ export type BudgetKind = 'main-model' | 'repair-model' | 'tool';
 export type BudgetMode = 'observe' | 'enforce';
 
 export type BudgetReservation = {
+  activeMs?: number;
   allowed: boolean;
   duplicate: boolean;
   wouldStop: boolean;

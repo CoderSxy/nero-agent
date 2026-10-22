@@ -75,5 +75,6 @@ export function resolveTaskContract(input: TaskContractInput): TaskContract {
     domain: weather && deliveryMode !== 'html-artifact' ? 'weather' : 'generic',
     requirements,
     policyVersion: POLICY_VERSION,
+    referenceInstant: input.now.toISOString(),
   };
 }

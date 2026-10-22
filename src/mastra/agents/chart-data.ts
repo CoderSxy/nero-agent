@@ -16,10 +16,11 @@ export const chartDatasetSchema = z.object({
 }).strict();
 
 /** A data contract, never model-authored ECharts code or HTML. All keys are required. */
-export const chartSubmissionSchema = z.object({
+export const numericChartSubmissionSchema = z.object({
   status: z.enum(['ready', 'insufficient-data']), reason: z.string().max(1000),
   title: z.string().max(200), dataset: chartDatasetSchema.nullable(),
 }).strict();
+export const chartSubmissionSchema = z.union([numericChartSubmissionSchema, weatherSubmissionSchema]);
 export type ChartDataset = z.infer<typeof chartDatasetSchema>;
 export type ChartSnapshot = {
   title: string;
@@ -54,14 +55,14 @@ function freeze<T>(value: T): T {
   return value;
 }
 
-export function readChartSubmission(text: string, context: { goal: string; sourceUrls: readonly string[]; evidence?: readonly ChartEvidence[]; previousSnapshot?: ChartSnapshot }):
+export function readChartSubmission(text: string, context: { goal: string; sourceUrls: readonly string[]; evidence?: readonly ChartEvidence[]; previousSnapshot?: ChartSnapshot; expectedRange?: string; referenceInstant?: string }):
   { ok: true; snapshot: ChartSnapshot; coverage?: { complete: boolean; missing: string[] } } | { ok: false; reason: ChartFailure; detail?: string } {
   let raw: unknown;
   try { raw = JSON.parse(text.trim()); } catch {
     return { ok: false, reason: text.trimStart().startsWith('{') ? 'invalid-json' : 'missing-chart' };
   }
   if (raw && typeof raw === 'object' && (raw as { schemaVersion?: unknown }).schemaVersion === 2) return readWeatherSubmission(raw, context);
-  const parsed = chartSubmissionSchema.safeParse(raw);
+  const parsed = numericChartSubmissionSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, reason: 'invalid-data' };
   const value = parsed.data;
   if (value.status === 'insufficient-data') return { ok: false, reason: 'insufficient-data', detail: value.reason };
@@ -78,7 +79,7 @@ export function readChartSubmission(text: string, context: { goal: string; sourc
   return { ok: true, snapshot: freeze({ title: value.title || '数据趋势', dataset: owned, hash }) };
 }
 
-function readWeatherSubmission(raw: unknown, context: { goal: string; evidence?: readonly ChartEvidence[] }):
+function readWeatherSubmission(raw: unknown, context: { goal: string; evidence?: readonly ChartEvidence[]; expectedRange?: string; referenceInstant?: string }):
   { ok: true; snapshot: ChartSnapshot; coverage: { complete: boolean; missing: string[] } } | { ok: false; reason: ChartFailure; detail?: string } {
   const parsed = weatherSubmissionSchema.safeParse(raw);
   if (!parsed.success || !parsed.data.dataset || !parsed.data.weather) {
@@ -89,6 +90,24 @@ function readWeatherSubmission(raw: unknown, context: { goal: string; evidence?:
   const assessment = assessWeatherSubmission(parsed.data, context.evidence ?? [], context.goal);
   if (!assessment.valid) return { ok: false, reason: assessment.reason ?? 'invalid-data' };
   const body: WeatherSubmission = parsed.data;
+  const dates = body.weather!.dates;
+  let expectedRange = context.expectedRange;
+  if (context.referenceInstant) {
+    const date = new Intl.DateTimeFormat('en-CA', {timeZone:body.weather!.timezone,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(context.referenceInstant));
+    const start = new Date(`${date}T00:00:00Z`);
+    if (/从明天|明天起|明天开始/.test(context.goal)) start.setUTCDate(start.getUTCDate()+1);
+    const end = new Date(start); end.setUTCDate(end.getUTCDate()+6);
+    expectedRange = `${start.toISOString().slice(0,10)}/${end.toISOString().slice(0,10)}`;
+  }
+  const expected = expectedRange?.match(/(\d{4}-\d{2}-\d{2})\/(\d{4}-\d{2}-\d{2})/);
+  if ((/七天|7\s*天|一周/.test(context.goal) && dates.length !== 7) ||
+      (expected && (dates[0] !== expected[1] || dates.at(-1) !== expected[2]))) {
+    assessment.missing.push('weather.range'); assessment.complete = false;
+  }
+  const city = context.goal.match(/(?:给我|查询|展示|一个|一下)?\s*([\u4e00-\u9fff]{2,6}?)(?:往后|未来|接下来|七天|7天)/)?.[1];
+  if (city && !body.weather!.location.name.includes(city.replace(/^(给我|给出|查询|展示|生成|一个|看)/, ''))) {
+    assessment.missing.push('weather.location'); assessment.complete = false;
+  }
   const hash = createHash('sha256').update(JSON.stringify({
     schemaVersion: 2, kind: 'weather', dataset: body.dataset, weather: body.weather,
   })).digest('hex');
@@ -114,13 +133,14 @@ function readWeatherSubmission(raw: unknown, context: { goal: string; evidence?:
 export function restoreChartSnapshot(part: any): ChartSnapshot | undefined {
   const value = part?.type === 'data-nero-chart' && part.data?.status === 'ready' ? part.data : undefined;
   if (value?.schemaVersion === 2) {
-    const parsed = weatherSubmissionSchema.safeParse(value.submission);
+    const parsed = weatherSubmissionSchema.safeParse(value.submission ?? {schemaVersion:2,kind:'weather',status:'ready',reason:'',title:value.option?.title?.text ?? '天气趋势',dataset:value.dataset,weather:value.weather});
     if (!parsed.success || !parsed.data.dataset || !parsed.data.weather) return;
     const hash = createHash('sha256').update(JSON.stringify({
       schemaVersion: 2, kind: 'weather', dataset: parsed.data.dataset, weather: parsed.data.weather,
     })).digest('hex');
     if (hash !== value.datasetHash) return;
     return freeze({
+      coverage: value.coverage,
       title: value.option?.title?.text ?? parsed.data.title ?? '天气趋势',
       dataset: parsed.data.dataset as ChartDataset,
       hash,

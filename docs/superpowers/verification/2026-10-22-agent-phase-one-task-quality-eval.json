@@ -5,7 +5,7 @@
   "blocked": 0,
   "hardFailures": 0,
   "price": null,
-  "elapsedMs": 23,
+  "elapsedMs": 440,
   "cases": [
     {
       "caseId": "weather-complete",
@@ -20,20 +20,27 @@
           "weather.condition",
           "weather.temperature",
           "weather.precipitation",
-          "weather.humidity",
           "delivery.chart"
         ],
-        "missing": [],
+        "missing": [
+          "weather.humidity"
+        ],
         "unverified": []
       },
       "sourceChecks": [
-        "task-quality-processor",
-        "contract-injected"
+        "real-agent-loop",
+        "real-sdk",
+        "real-fetch-adapter",
+        "real-submission-schema",
+        "real-provenance-check",
+        "real-completion-processor",
+        "fixture-provider-attempts:2"
       ],
-      "modelCalls": 0,
-      "toolCalls": 0,
+      "modelCalls": 2,
+      "paidModelCalls": 0,
+      "toolCalls": 2,
       "repairCalls": 0,
-      "timingsMs": 14,
+      "timingsMs": 235,
       "price": null,
       "passed": true,
       "skipped": false,
@@ -57,13 +64,19 @@
         "unverified": []
       },
       "sourceChecks": [
-        "task-quality-processor",
-        "contract-injected"
+        "real-agent-loop",
+        "real-sdk",
+        "real-fetch-adapter",
+        "real-submission-schema",
+        "real-provenance-check",
+        "real-completion-processor",
+        "fixture-provider-attempts:2"
       ],
-      "modelCalls": 0,
-      "toolCalls": 0,
+      "modelCalls": 2,
+      "paidModelCalls": 0,
+      "toolCalls": 2,
       "repairCalls": 0,
-      "timingsMs": 1,
+      "timingsMs": 19,
       "price": null,
       "passed": true,
       "skipped": false,
@@ -90,13 +103,19 @@
         "unverified": []
       },
       "sourceChecks": [
-        "task-quality-processor",
-        "contract-injected"
+        "real-agent-loop",
+        "real-sdk",
+        "real-fetch-adapter",
+        "real-submission-schema",
+        "real-provenance-check",
+        "real-completion-processor",
+        "fixture-provider-attempts:2"
       ],
-      "modelCalls": 0,
-      "toolCalls": 0,
+      "modelCalls": 2,
+      "paidModelCalls": 0,
+      "toolCalls": 2,
       "repairCalls": 0,
-      "timingsMs": 0,
+      "timingsMs": 21,
       "price": null,
       "passed": true,
       "skipped": false,
@@ -115,22 +134,28 @@
           "weather.range",
           "weather.temperature",
           "weather.precipitation",
-          "weather.humidity",
           "delivery.chart"
         ],
         "missing": [
-          "weather.condition"
+          "weather.condition",
+          "weather.humidity"
         ],
         "unverified": []
       },
       "sourceChecks": [
-        "task-quality-processor",
-        "contract-injected"
+        "real-agent-loop",
+        "real-sdk",
+        "real-fetch-adapter",
+        "real-submission-schema",
+        "real-provenance-check",
+        "real-completion-processor",
+        "fixture-provider-attempts:2"
       ],
-      "modelCalls": 0,
-      "toolCalls": 0,
+      "modelCalls": 2,
+      "paidModelCalls": 0,
+      "toolCalls": 2,
       "repairCalls": 0,
-      "timingsMs": 0,
+      "timingsMs": 14,
       "price": null,
       "passed": true,
       "skipped": false,
@@ -149,22 +174,28 @@
           "weather.range",
           "weather.condition",
           "weather.temperature",
-          "weather.humidity",
           "delivery.chart"
         ],
         "missing": [
-          "weather.precipitation"
+          "weather.precipitation",
+          "weather.humidity"
         ],
         "unverified": []
       },
       "sourceChecks": [
-        "task-quality-processor",
-        "contract-injected"
+        "real-agent-loop",
+        "real-sdk",
+        "real-fetch-adapter",
+        "real-submission-schema",
+        "real-provenance-check",
+        "real-completion-processor",
+        "fixture-provider-attempts:2"
       ],
-      "modelCalls": 0,
-      "toolCalls": 0,
+      "modelCalls": 2,
+      "paidModelCalls": 0,
+      "toolCalls": 2,
       "repairCalls": 0,
-      "timingsMs": 0,
+      "timingsMs": 17,
       "price": null,
       "passed": true,
       "skipped": false,
@@ -183,22 +214,28 @@
           "weather.condition",
           "weather.temperature",
           "weather.precipitation",
-          "weather.humidity",
           "delivery.chart"
         ],
         "missing": [
-          "weather.range"
+          "weather.range",
+          "weather.humidity"
         ],
         "unverified": []
       },
       "sourceChecks": [
-        "task-quality-processor",
-        "contract-injected"
+        "real-agent-loop",
+        "real-sdk",
+        "real-fetch-adapter",
+        "real-submission-schema",
+        "real-provenance-check",
+        "real-completion-processor",
+        "fixture-provider-attempts:2"
       ],
-      "modelCalls": 0,
-      "toolCalls": 0,
+      "modelCalls": 2,
+      "paidModelCalls": 0,
+      "toolCalls": 2,
       "repairCalls": 0,
-      "timingsMs": 0,
+      "timingsMs": 21,
       "price": null,
       "passed": true,
       "skipped": false,
@@ -226,13 +263,19 @@
         "unverified": []
       },
       "sourceChecks": [
-        "task-quality-processor",
-        "contract-injected"
+        "real-agent-loop",
+        "real-sdk",
+        "real-fetch-adapter",
+        "real-submission-schema",
+        "real-provenance-check",
+        "real-completion-processor",
+        "fixture-provider-attempts:2"
       ],
-      "modelCalls": 0,
-      "toolCalls": 0,
+      "modelCalls": 2,
+      "paidModelCalls": 0,
+      "toolCalls": 2,
       "repairCalls": 0,
-      "timingsMs": 0,
+      "timingsMs": 23,
       "price": null,
       "passed": true,
       "skipped": false,
@@ -251,22 +294,28 @@
           "weather.range",
           "weather.temperature",
           "weather.precipitation",
-          "weather.humidity",
           "delivery.chart"
         ],
         "missing": [
-          "weather.condition"
+          "weather.condition",
+          "weather.humidity"
         ],
         "unverified": []
       },
       "sourceChecks": [
-        "task-quality-processor",
-        "contract-injected"
+        "real-agent-loop",
+        "real-sdk",
+        "real-fetch-adapter",
+        "real-submission-schema",
+        "real-provenance-check",
+        "real-completion-processor",
+        "fixture-provider-attempts:2"
       ],
-      "modelCalls": 0,
-      "toolCalls": 0,
+      "modelCalls": 2,
+      "paidModelCalls": 0,
+      "toolCalls": 2,
       "repairCalls": 0,
-      "timingsMs": 0,
+      "timingsMs": 12,
       "price": null,
       "passed": true,
       "skipped": false,
@@ -276,8 +325,8 @@
     {
       "caseId": "gateway-ignores-schema",
       "modelRef": "fixture",
-      "expectedStatus": "partial",
-      "actualStatus": "partial",
+      "expectedStatus": "complete",
+      "actualStatus": "complete",
       "verification": "verified",
       "coverage": {
         "met": [
@@ -286,22 +335,28 @@
           "weather.condition",
           "weather.temperature",
           "weather.precipitation",
-          "weather.humidity"
+          "delivery.chart"
         ],
         "missing": [
-          "delivery.chart"
+          "weather.humidity"
         ],
         "unverified": []
       },
       "sourceChecks": [
-        "task-quality-processor",
-        "contract-injected",
+        "real-agent-loop",
+        "real-sdk",
+        "real-fetch-adapter",
+        "real-submission-schema",
+        "real-provenance-check",
+        "real-completion-processor",
+        "fixture-provider-attempts:2",
         "selectStructuredDelivery"
       ],
-      "modelCalls": 0,
-      "toolCalls": 0,
+      "modelCalls": 2,
+      "paidModelCalls": 0,
+      "toolCalls": 2,
       "repairCalls": 0,
-      "timingsMs": 1,
+      "timingsMs": 13,
       "price": null,
       "passed": true,
       "skipped": false,
@@ -321,21 +376,28 @@
           "weather.condition",
           "weather.temperature",
           "weather.precipitation",
-          "weather.humidity",
           "delivery.chart"
         ],
-        "missing": [],
+        "missing": [
+          "weather.humidity"
+        ],
         "unverified": []
       },
       "sourceChecks": [
-        "task-quality-processor",
-        "contract-injected",
+        "real-agent-loop",
+        "real-sdk",
+        "real-fetch-adapter",
+        "real-submission-schema",
+        "real-provenance-check",
+        "real-completion-processor",
+        "fixture-provider-attempts:2",
         "selectStructuredDelivery"
       ],
-      "modelCalls": 0,
-      "toolCalls": 0,
+      "modelCalls": 2,
+      "paidModelCalls": 0,
+      "toolCalls": 2,
       "repairCalls": 0,
-      "timingsMs": 0,
+      "timingsMs": 12,
       "price": null,
       "passed": true,
       "skipped": false,
@@ -355,21 +417,28 @@
           "weather.condition",
           "weather.temperature",
           "weather.precipitation",
-          "weather.humidity",
           "delivery.chart"
         ],
-        "missing": [],
+        "missing": [
+          "weather.humidity"
+        ],
         "unverified": []
       },
       "sourceChecks": [
-        "task-quality-processor",
-        "contract-injected",
+        "real-agent-loop",
+        "real-sdk",
+        "real-fetch-adapter",
+        "real-submission-schema",
+        "real-provenance-check",
+        "real-completion-processor",
+        "fixture-provider-attempts:2",
         "withChartDataFetch"
       ],
-      "modelCalls": 0,
-      "toolCalls": 0,
+      "modelCalls": 2,
+      "paidModelCalls": 0,
+      "toolCalls": 2,
       "repairCalls": 0,
-      "timingsMs": 1,
+      "timingsMs": 13,
       "price": null,
       "passed": true,
       "skipped": false,
@@ -390,14 +459,20 @@
         ]
       },
       "sourceChecks": [
-        "task-quality-processor",
-        "contract-injected",
+        "real-agent-loop",
+        "real-sdk",
+        "real-fetch-adapter",
+        "real-submission-schema",
+        "real-provenance-check",
+        "real-completion-processor",
+        "fixture-provider-attempts:1",
         "inspectSkillStorage"
       ],
-      "modelCalls": 0,
+      "modelCalls": 1,
+      "paidModelCalls": 0,
       "toolCalls": 0,
       "repairCalls": 0,
-      "timingsMs": 0,
+      "timingsMs": 3,
       "price": null,
       "passed": true,
       "skipped": false,
@@ -418,14 +493,20 @@
         ]
       },
       "sourceChecks": [
-        "task-quality-processor",
-        "contract-injected",
+        "real-agent-loop",
+        "real-sdk",
+        "real-fetch-adapter",
+        "real-submission-schema",
+        "real-provenance-check",
+        "real-completion-processor",
+        "fixture-provider-attempts:1",
         "inspectSkillStorage"
       ],
-      "modelCalls": 0,
+      "modelCalls": 1,
+      "paidModelCalls": 0,
       "toolCalls": 0,
       "repairCalls": 0,
-      "timingsMs": 2,
+      "timingsMs": 4,
       "price": null,
       "passed": true,
       "skipped": false,
@@ -446,14 +527,20 @@
         ]
       },
       "sourceChecks": [
-        "task-quality-processor",
-        "contract-injected",
+        "real-agent-loop",
+        "real-sdk",
+        "real-fetch-adapter",
+        "real-submission-schema",
+        "real-provenance-check",
+        "real-completion-processor",
+        "fixture-provider-attempts:1",
         "memory-budget-owner"
       ],
-      "modelCalls": 0,
+      "modelCalls": 1,
+      "paidModelCalls": 0,
       "toolCalls": 0,
       "repairCalls": 0,
-      "timingsMs": 0,
+      "timingsMs": 4,
       "price": null,
       "passed": true,
       "skipped": false,
@@ -474,13 +561,19 @@
         "unverified": []
       },
       "sourceChecks": [
-        "task-quality-processor",
-        "contract-injected"
+        "real-agent-loop",
+        "real-sdk",
+        "real-fetch-adapter",
+        "real-submission-schema",
+        "real-provenance-check",
+        "real-completion-processor",
+        "fixture-provider-attempts:1"
       ],
-      "modelCalls": 0,
+      "modelCalls": 1,
+      "paidModelCalls": 0,
       "toolCalls": 0,
       "repairCalls": 0,
-      "timingsMs": 0,
+      "timingsMs": 4,
       "price": null,
       "passed": true,
       "skipped": false,
@@ -501,13 +594,19 @@
         ]
       },
       "sourceChecks": [
-        "task-quality-processor",
-        "contract-injected"
+        "real-agent-loop",
+        "real-sdk",
+        "real-fetch-adapter",
+        "real-submission-schema",
+        "real-provenance-check",
+        "real-completion-processor",
+        "fixture-provider-attempts:1"
       ],
-      "modelCalls": 0,
+      "modelCalls": 1,
+      "paidModelCalls": 0,
       "toolCalls": 0,
       "repairCalls": 0,
-      "timingsMs": 0,
+      "timingsMs": 2,
       "price": null,
       "passed": true,
       "skipped": false,
@@ -534,14 +633,20 @@
         "unverified": []
       },
       "sourceChecks": [
-        "task-quality-processor",
-        "contract-injected",
+        "real-agent-loop",
+        "real-sdk",
+        "real-fetch-adapter",
+        "real-submission-schema",
+        "real-provenance-check",
+        "real-completion-processor",
+        "fixture-provider-attempts:1",
         "memory-budget-limit"
       ],
-      "modelCalls": 0,
+      "modelCalls": 1,
+      "paidModelCalls": 0,
       "toolCalls": 0,
       "repairCalls": 0,
-      "timingsMs": 0,
+      "timingsMs": 5,
       "price": null,
       "passed": true,
       "skipped": false,
@@ -560,23 +665,29 @@
           "weather.range",
           "weather.temperature",
           "weather.precipitation",
-          "weather.humidity",
           "delivery.chart"
         ],
         "missing": [
-          "weather.condition"
+          "weather.condition",
+          "weather.humidity"
         ],
         "unverified": []
       },
       "sourceChecks": [
-        "task-quality-processor",
-        "contract-injected",
+        "real-agent-loop",
+        "real-sdk",
+        "real-fetch-adapter",
+        "real-submission-schema",
+        "real-provenance-check",
+        "real-completion-processor",
+        "fixture-provider-attempts:2",
         "prefer-task-outcome"
       ],
-      "modelCalls": 0,
-      "toolCalls": 0,
+      "modelCalls": 2,
+      "paidModelCalls": 0,
+      "toolCalls": 2,
       "repairCalls": 0,
-      "timingsMs": 4,
+      "timingsMs": 12,
       "price": null,
       "passed": true,
       "skipped": false,
@@ -597,14 +708,20 @@
         ]
       },
       "sourceChecks": [
-        "task-quality-processor",
-        "contract-injected",
+        "real-agent-loop",
+        "real-sdk",
+        "real-fetch-adapter",
+        "real-submission-schema",
+        "real-provenance-check",
+        "real-completion-processor",
+        "fixture-provider-attempts:1",
         "inheritsVerifiedChart"
       ],
-      "modelCalls": 0,
+      "modelCalls": 1,
+      "paidModelCalls": 0,
       "toolCalls": 0,
       "repairCalls": 0,
-      "timingsMs": 0,
+      "timingsMs": 3,
       "price": null,
       "passed": true,
       "skipped": false,
@@ -625,14 +742,20 @@
         ]
       },
       "sourceChecks": [
-        "task-quality-processor",
-        "contract-injected",
+        "real-agent-loop",
+        "real-sdk",
+        "real-fetch-adapter",
+        "real-submission-schema",
+        "real-provenance-check",
+        "real-completion-processor",
+        "fixture-provider-attempts:1",
         "html-not-verified-weather"
       ],
-      "modelCalls": 0,
+      "modelCalls": 1,
+      "paidModelCalls": 0,
       "toolCalls": 0,
       "repairCalls": 0,
-      "timingsMs": 0,
+      "timingsMs": 3,
       "price": null,
       "passed": true,
       "skipped": false,

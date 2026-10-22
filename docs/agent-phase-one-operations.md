@@ -57,3 +57,20 @@ npm run skills:doctor
 - 不删除 V2 天气图解析，旧图和新图都要能读。
 - 不关闭文件权限、ETag、Skill pin、配额、出口校验或取消。
 - 关闭探针只停止新的主动检测，不删除已有诊断。
+
+
+## 2026-10-22 审查修复后的评测入口
+
+固定评测现在经过实际 Mastra Agent、SDK、取数适配器、提交 Schema、来源校验、绘图与完成判断。fixture 只替换外部模型/API 响应，不直接注入 coverage 或 fileVerified；fixture 报告中的 modelCalls / fixture-provider-attempts 是本地模拟请求次数，paidModelCalls=0；toolCalls 记录实际经过 Agent 的模拟工具执行次数。
+
+真实评测使用已有模型目录和明确指定的测试用户，不使用任意 EVAL_LIVE_API_KEY，也不会自动选择其他账号或模型：
+
+```sh
+EVAL_LIVE_USER_ID=<测试用户UUID> EVAL_LIVE_MODEL_REFS=public:<模型UUID> npm run eval:task-quality:live -- --live
+```
+
+需要已配置数据库、模型密钥及运行环境。最多两个模型，套件最多 60 次主回答请求（含修正）；运行时强制 enforce。缺凭证或无法完成的情况返回 blocked，CLI 退出 2，不能当成验收通过。失败退出 1，全部通过退出 0。
+
+五项包含完整天气、温度限定、湿度、过期/不足用户数据和实际 CSV 写入。负向项明确使用过期用户测试数据、不授权联网补齐；验证 Agent 不把缺失数据报告为完成。测试线程及文件保留供审计，报告包含本次创建的线程标识；清理时只处理这些明确标识，不删除其他会话。
+
+预算在主回答模型 transport 和最终工具集合上执行，记忆/标题模型不接主回答预算。生产配置仍默认 observe；要启用强制限制，显式设置 AGENT_TASK_QUALITY_MODE=enforce。Skill 健康检查和既有安全边界不依赖该开关。

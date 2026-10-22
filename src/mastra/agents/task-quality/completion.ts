@@ -22,7 +22,7 @@ export function evaluateTaskCompletion(contract: TaskContract, evidence: Complet
   const met = requirements.some(item => item.status === 'met');
   let status: TaskOutcome['status'];
   if (evidence.cancelled) status = 'cancelled';
-  else if (checkable.length === 0) status = evidence.answerText?.trim() ? 'complete' : 'failed';
+  else if (checkable.length === 0) status = !evidence.budgetStopped && evidence.answerText?.trim() ? 'complete' : 'failed';
   else if (missing.length === 0 && unverified.length === 0) status = 'complete';
   else if (met) status = 'partial';
   else status = 'failed';

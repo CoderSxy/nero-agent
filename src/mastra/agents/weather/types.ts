@@ -35,7 +35,7 @@ export const weatherPayloadSchema = z.object({
     latitude: z.number().finite().min(-90).max(90),
     longitude: z.number().finite().min(-180).max(180),
   }).strict(),
-  timezone: z.string().min(1).max(80),
+  timezone: z.string().min(1).max(80).refine(value => {try { new Intl.DateTimeFormat('en-US',{timeZone:value}); return true; } catch {return false;}}, 'Invalid timezone'),
   dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).min(1).max(366),
   weatherCodes: z.array(z.number().int().nullable()).max(366),
   fieldSources: z.array(weatherFieldSourceSchema).min(1).max(12),
