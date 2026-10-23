@@ -1,0 +1,108 @@
+web/src/agent/WorkspaceFileTree.test.tsx
+  s_d4b74373b57738::t_be43974cd7b026 8,10,244-263
+  s_d4b74373b57738::t_087d5c674c3876 7,11,227-243
+web/src/agent/attachment-client.ts
+  s_d4b74373b57738::t_61daeb62726668 25,28
+scripts/skills-import.ts
+  s_d4b74373b57738::t_7ad1d6977bdb2f 9
+  s_d4b74373b57738::t_5b71c50d62aa61 33,37,44,49,151-160,169
+scripts/ppt-deploy/install.sh
+  s_d4b74373b57738::t_fccdce347aaecb 1-38
+scripts/ppt-deploy/configure-runtime.mjs
+  s_d4b74373b57738::t_83f6f32b540061 20-22
+  s_d4b74373b57738::t_2582b6c32ba745 1-19,23-56
+src/mastra/files/service.ts
+  s_d4b74373b57738::t_5fe2cfceaf9eb8 14
+scripts/ppt-deploy/build-runtime.sh
+  s_d4b74373b57738::t_2582b6c32ba745 10-11
+  s_d4b74373b57738::t_fccdce347aaecb 1-9,12-15
+tests/workspace-file-routes.test.ts
+  s_d4b74373b57738::t_025fd15170308f 351-370
+scripts/ppt-deploy/Dockerfile.ppt
+  s_d4b74373b57738::t_309299bd5c4772 1,4,7
+  s_d4b74373b57738::t_4f7805fa368e4f 8
+  s_d4b74373b57738::t_fccdce347aaecb 2-3,5-6,9-12
+web/src/agent/WorkspaceUploadDialog.tsx
+  s_d4b74373b57738::t_61daeb62726668 1-93
+scripts/ppt-deploy/check.ts
+  s_d4b74373b57738::t_fccdce347aaecb 1-50
+web/src/agent/AgentPage.tsx
+  s_d4b74373b57738::t_61daeb62726668 69,307-308
+src/mastra/sandbox/registry.ts
+  s_d4b74373b57738::t_20c8a424eb3e34 52-53,55
+web/src/agent/workspace-upload.css
+  s_d4b74373b57738::t_61daeb62726668 1-20
+docs/deployment/ecs-release-from-local-build.md
+  s_55312055f7cdf4::t_7def8cf8fcc4b2 154
+  s_55312055f7cdf4::t_7492def54c974f 3,5,7,9-13,15,17,19,21,24,27,29-31,33,35-53,55,57,59-65,67,69,71-80,82,84,86,88-90,92,94,96,98-100,102,104-111,113,115,117,119-126,128,130,132-141,143,145
+  s_55312055f7cdf4::t_91bd071de6710f 147,149-153
+scripts/probe-sandbox-execution.ts
+  s_d4b74373b57738::t_1c310bcd370e99 1-43
+src/mastra/files/routes.ts
+  s_d4b74373b57738::t_db8345676e53b0 253-255
+tests/ppt-deploy-config.test.ts
+  s_d4b74373b57738::t_99e9cdf3cff373 1-56
+docs/deployment/ppt-skill-2026-10-23.md
+  s_d4b74373b57738::t_7c6737c09510cb 1-31
+  s_d4b74373b57738::t_de05460a527c13 32-43
+tests/sandbox-registry-db.test.ts
+  s_d4b74373b57738::t_e6ffb64895887c 1-43
+web/src/agent/WorkspaceFileTree.tsx
+  s_d4b74373b57738::t_61daeb62726668 4,6,68,70-83,191-207,236-237,251,253,295,307-311
+  s_d4b74373b57738::t_423a820c67c070 1-2,69,210-217
+scripts/patch-sandbox-scope-release.mjs
+  s_d4b74373b57738::t_c5a55a16bdbfdd 1-51
+src/mastra/files/workspace-service.ts
+  s_d4b74373b57738::t_db8345676e53b0 1,38,44-47,73-85
+tests/workspace-service.test.ts
+  s_d4b74373b57738::t_087d5c674c3876 208-215,222,236-237
+  s_d4b74373b57738::t_025fd15170308f 3,216-221,223-235
+scripts/build-ppt-deploy.mjs
+  s_d4b74373b57738::t_2582b6c32ba745 1-5,7-27
+  s_d4b74373b57738::t_7ad1d6977bdb2f 6,28-34
+scripts/ppt-deploy/enable-runtime.sh
+  s_d4b74373b57738::t_2582b6c32ba745 1-27
+web/src/agent/AgentChat.tsx
+  s_d4b74373b57738::t_61daeb62726668 29,61,98,280-281,294,320,334,341
+scripts/ppt-deploy/verify.sql
+  s_d4b74373b57738::t_2582b6c32ba745 1-15
+web/src/agent/AgentChat.test.tsx
+  s_d4b74373b57738::t_be43974cd7b026 529-531,551-552
+  s_d4b74373b57738::t_d751a488629b8e 1,61
+scripts/ppt-deploy/smoke.sh
+  s_d4b74373b57738::t_fccdce347aaecb 1-10
+web/src/agent/client.ts
+  s_d4b74373b57738::t_db8345676e53b0 80,83
+web/src/agent/AgentComposer.tsx
+  s_d4b74373b57738::t_61daeb62726668 5,114,125,181,583-589
+scripts/ppt-deploy/smoke.py
+  s_d4b74373b57738::t_fccdce347aaecb 1-23
+scripts/ppt-deploy/README.md
+  s_d4b74373b57738::t_83f6f32b540061 1-97
+web/src/agent/WorkspaceUploadDialog.test.tsx
+  s_d4b74373b57738::t_c7e854a3fbcdc4 1-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d39c827adbaf7c3c973c59cf0870f2e3f34891a2",
+  "prompts": {},
+  "sessions": {
+    "s_55312055f7cdf4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16341-a990-7d92-90d3-f791e5d0159d",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_d4b74373b57738": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16378-eb20-7c40-bf30-9de42a6b529c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
