@@ -121,4 +121,17 @@ describe('workspace file overlay', () => {
     expect(screen.queryByRole('button', { name: '保存文件' })).toBeNull();
     expect(screen.getAllByText('report.pdf').length).toBeGreaterThan(0);
   });
+
+  it('uses request.source over the panel source prop', async () => {
+    render(<WorkspaceFileOverlay request={{ path: 'note.txt', id: 1, source: 'personal', threadId: 't1' }}
+      source="agent" onClosed={vi.fn()} onSaved={vi.fn()} />);
+    await waitFor(() => expect(openWorkspaceFile).toHaveBeenCalledWith('note.txt', 'personal'));
+  });
+
+  it('shows 文件已不存在 for missing files', async () => {
+    openWorkspaceFile.mockRejectedValueOnce(new Error('ENOENT: no such file'));
+    render(<WorkspaceFileOverlay request={{ path: 'gone.txt', id: 1, source: 'personal' }}
+      source="personal" onClosed={vi.fn()} onSaved={vi.fn()} />);
+    expect(await screen.findByRole('alert')).toHaveProperty('textContent', '文件已不存在');
+  });
 });

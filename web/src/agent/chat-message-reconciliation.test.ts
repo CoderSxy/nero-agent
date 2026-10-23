@@ -49,6 +49,28 @@ it('keeps the newer task outcome when an older replay arrives for the same run',
  const parts=reconcileChatMessages({history,live,settled:true})[0].content.parts;
  expect((parts.find(part => part.type==='data-nero-task-outcome') as {data?:{revision?:number}} | undefined)?.data?.revision).toBe(2);
 });
+it('keeps the newer turn-artifacts revision when an older replay arrives',()=>{
+ const etag='"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"';
+ const artifacts=(revision:number)=>({type:'data-nero-artifacts',data:{
+   version:1,runId:'run-a',threadId:'t1',revision,state:'completed',collectionStatus:'complete',
+   anchorMessageId:'f',artifacts:[{path:'out/a.txt',source:'personal',name:'a.txt',change:'created',size:1,etag}],
+ }});
+ const history=[msg('f',[text('done'),artifacts(3)])];
+ const live=[msg('f',[text('done'),artifacts(2)])];
+ const parts=reconcileChatMessages({history,live,settled:true})[0].content.parts;
+ expect((parts.find(part => part.type==='data-nero-artifacts') as {data?:{revision?:number}} | undefined)?.data?.revision).toBe(3);
+});
+it('does not let different artifact runs overwrite each other',()=>{
+ const etag='"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"';
+ const part=(runId:string)=>({type:'data-nero-artifacts',data:{
+   version:1,runId,threadId:'t1',revision:1,state:'completed',collectionStatus:'complete',
+   anchorMessageId:'f',artifacts:[{path:`out/${runId}.txt`,source:'personal',name:`${runId}.txt`,change:'created',size:1,etag}],
+ }});
+ const history=[msg('f',[text('done'),part('run-a')])];
+ const live=[msg('f',[text('done'),part('run-a'),part('run-b')])];
+ const parts=reconcileChatMessages({history,live,settled:true})[0].content.parts;
+ expect(parts.filter(part => part.type==='data-nero-artifacts')).toHaveLength(2);
+});
 it('does not overwrite a newer result with an older value under the same call identity',()=>{
  const a=tool('t'),b=tool('t');b.toolInvocation.result='new';
  expect(historyCoversLive([msg('m',[a])],[msg('m',[b])])).toBe(false);

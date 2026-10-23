@@ -5,6 +5,7 @@ import { fetchWorkspaceFile, deleteWorkspaceFiles, listWorkspaceFiles, type User
 import type { WorkspaceSource } from './workspace-files';
 import { WorkspaceUploadDialog } from './WorkspaceUploadDialog';
 import { workspaceDisplayEntries } from './workspace-display';
+import './workspace-file-tree.css';
 
 const PROTECTED_TOP_ROOTS = new Set(['shared', 'uploads', 'projects', 'threads']);
 const PROTECTED_THREAD_LEAVES = new Set(['input', 'output', 'tmp']);
@@ -47,16 +48,26 @@ function selectionSummary(selected: Set<string>, entries: UserFileEntry[]) {
   return { collapsed, itemCount: collapsed.length, fileCount, bytes };
 }
 
-export function WorkspaceFileTree({ source, workspaceId, refreshVersion, onOpenFile, onAttachFile, onFilesChanged }: {
+export function WorkspaceFileTree({ source, workspaceId, refreshVersion, onOpenFile, onAttachFile, onFilesChanged,
+  revealRequest }: {
   source: WorkspaceSource; workspaceId?: string; refreshVersion: number; onOpenFile(path: string): void;
   onAttachFile?: (path: string, source: WorkspaceSource) => void;
   onFilesChanged?: () => void;
+  revealRequest?: { id: number; path: string; source: WorkspaceSource; threadId: string };
 }) {
   const [entries, setEntries] = useState<UserFileEntry[]>([]);
   const [usage, setUsage] = useState<WorkspaceUsage | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [emphasizePath, setEmphasizePath] = useState<string | null>(null);
+  const [revealError, setRevealError] = useState<string | null>(null);
+  const emphasizeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const lastRevealId = useRef<number | null>(null);
+  const currentRevealId = useRef(revealRequest?.id);
+  currentRevealId.current = revealRequest?.id;
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const [manualRefresh, setManualRefresh] = useState(0);
   const [menuPath, setMenuPath] = useState<string | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
@@ -82,12 +93,16 @@ export function WorkspaceFileTree({ source, workspaceId, refreshVersion, onOpenF
     } catch (cause) { setDownloadError(cause instanceof Error ? cause.message : '下载失败'); }
   }
 
+  const loadKey = JSON.stringify([source, workspaceId, refreshVersion, manualRefresh,
+    revealRequest?.source === source ? revealRequest.id : null]);
   useEffect(() => {
     let active = true;
     setLoading(true);
+    setRevealError(null);
     void listWorkspaceFiles(source, workspaceId).then(({ files, usage: nextUsage }) => {
       if (!active) return;
       setEntries(files);
+      setLoadedKey(loadKey);
       setUsage(nextUsage ?? null);
       setExpanded(previous => new Set([...previous].filter(path => files.some(file => file.path === path && file.type === 'directory'))));
       setError(null);
@@ -95,7 +110,7 @@ export function WorkspaceFileTree({ source, workspaceId, refreshVersion, onOpenF
       if (active) setError(cause instanceof Error ? cause.message : '加载文件失败');
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [source, workspaceId, refreshVersion, manualRefresh]);
+  }, [loadKey]);
 
   useEffect(() => {
     if (!menuPath) return;
@@ -119,6 +134,53 @@ export function WorkspaceFileTree({ source, workspaceId, refreshVersion, onOpenF
     return a.path.localeCompare(b.path, 'zh');
   }), [entries]);
   const displayEntries = useMemo(() => workspaceDisplayEntries(ordered, source), [ordered, source]);
+
+  useEffect(() => {
+    if (!revealRequest || revealRequest.id === lastRevealId.current) return;
+    if (revealRequest.source !== source) return;
+    if (loading || loadedKey !== loadKey || error) return;
+    lastRevealId.current = revealRequest.id;
+    const target = revealRequest.path;
+    const visibleEntry = displayEntries.find(({ entry }) => entry.path === target);
+    if (!visibleEntry) {
+      setRevealError('文件已不存在');
+      return;
+    }
+    setRevealError(null);
+    // Expand using path prefixes that appear as directories in displayEntries.
+    const nextExpanded = new Set(expanded);
+    for (const { entry } of displayEntries) {
+      if (entry.type === 'directory' && (target === entry.path || target.startsWith(`${entry.path}/`))) {
+        nextExpanded.add(entry.path);
+      }
+    }
+    // Also expand logical parents even if intermediate UUID dirs are hidden.
+    const parts = target.split('/');
+    for (let i = 1; i < parts.length; i += 1) {
+      const prefix = parts.slice(0, i).join('/');
+      if (displayEntries.some(({ entry }) => entry.path === prefix && entry.type === 'directory')) {
+        nextExpanded.add(prefix);
+      }
+    }
+    setExpanded(nextExpanded);
+    setSelectedPath(target);
+    if (emphasizeTimer.current) clearTimeout(emphasizeTimer.current);
+    setEmphasizePath(target);
+    emphasizeTimer.current = setTimeout(() => {
+      setEmphasizePath((current) => (current === target ? null : current));
+      emphasizeTimer.current = null;
+    }, 1500);
+    requestAnimationFrame(() => {
+      if (currentRevealId.current !== revealRequest.id) return;
+      const node = [...document.querySelectorAll('[data-workspace-path]')]
+        .find((element) => element.getAttribute('data-workspace-path') === target);
+      node?.scrollIntoView({ block: 'center' });
+    });
+  }, [revealRequest, source, loading, loadedKey, loadKey, error, displayEntries, expanded]);
+
+  useEffect(() => () => {
+    if (emphasizeTimer.current) clearTimeout(emphasizeTimer.current);
+  }, []);
 
   const summary = useMemo(() => selectionSummary(selectedPaths, entries), [selectedPaths, entries]);
   const confirmSummary = useMemo(
@@ -235,6 +297,7 @@ export function WorkspaceFileTree({ source, workspaceId, refreshVersion, onOpenF
     </p>}
     {canManage && <p className="workspace-upload-hint">拖入文件，选择目录后上传</p>}
     {downloadError && <p role="alert" className="error">{downloadError}</p>}
+    {revealError && <p role="alert" className="error">{revealError}</p>}
     {selectionMode && <p className="workspace-file-selection-summary" aria-label="已选摘要">
       已选 {summary.itemCount} 项 · {summary.fileCount} 个文件 · 预计释放 {formatBytes(summary.bytes)}
     </p>}
@@ -250,7 +313,9 @@ export function WorkspaceFileTree({ source, workspaceId, refreshVersion, onOpenF
       const protectedPath = isProtectedWorkspacePath(entry.path);
       const showMenu = !selectionMode && !isDirectory;
       return <li key={entry.path} style={{ paddingLeft: `${depth * 14}px` }}
-        className="workspace-file-row" data-upload-directory={isDirectory ? entry.path : undefined}>
+        className={`workspace-file-row${selectedPath === entry.path ? ' workspace-file-row--selected' : ''}${emphasizePath === entry.path ? ' workspace-file-row--emphasize' : ''}`}
+        data-workspace-path={entry.path}
+        data-upload-directory={isDirectory ? entry.path : undefined}>
         {selectionMode && <input type="checkbox" aria-label={`选择 ${entry.path}`}
           checked={selectedPaths.has(entry.path)} disabled={protectedPath}
           onChange={() => toggleSelected(entry.path)} />}

@@ -38,6 +38,8 @@ export function createExecuteCommandTool(managerFactory?: (lookup: ThreadLookup)
         command: input.command,
         args: input.args ?? [],
         abortSignal: context.abortSignal,
+        requestContext: context.requestContext as RequestContext | undefined,
+        operationId: context.agent?.toolCallId,
       });
       return result;
     },
@@ -53,7 +55,13 @@ export function createExecuteBashTool(managerFactory?: (lookup: ThreadLookup) =>
       const auth = trustedAuth(context.requestContext);
       const lookup = await memoryLookup(context);
       const manager = managerFactory?.(lookup) ?? new SandboxManager(await sandboxProvider(), lookup);
-      return manager.executeBash({ auth, ...input, abortSignal: context.abortSignal });
+      return manager.executeBash({
+        auth,
+        ...input,
+        abortSignal: context.abortSignal,
+        requestContext: context.requestContext as RequestContext | undefined,
+        operationId: context.agent?.toolCallId,
+      });
     },
   });
 }

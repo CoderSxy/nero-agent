@@ -1,7 +1,37 @@
 import type { Agent } from '@mastra/core/agent';
+import type { RequestContext } from '@mastra/core/request-context';
+import { resolveArtifactRunContext } from '../files/artifacts/collector';
+import { settleArtifactRun, startArtifactRun } from '../files/artifacts/lifecycle';
 import { prepareSkillRunOptions } from './execution-context';
 
 type AnyFn = (...args: never[]) => unknown;
+
+async function noteSuspendedIfNeeded(
+  requestContext: RequestContext | undefined,
+  result: { finishReason?: string } | undefined,
+): Promise<void> {
+  if (!requestContext || result?.finishReason !== 'suspended') return;
+  try {
+    const ctx = resolveArtifactRunContext(requestContext);
+    await settleArtifactRun(ctx, { state: 'suspended' });
+  } catch (error) {
+    console.error('artifact suspend settle failed', {
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+async function noteResumeStart(requestContext: RequestContext | undefined): Promise<void> {
+  if (!requestContext) return;
+  try {
+    const ctx = resolveArtifactRunContext(requestContext);
+    await startArtifactRun(ctx);
+  } catch (error) {
+    console.error('artifact resume start failed', {
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
 
 /**
  * Wrap production Agent entrypoints so chat / stream / resume always bind a
@@ -14,8 +44,18 @@ export function installSkillExecutionBindings(agent: Agent): void {
     const original = mutable[method];
     if (typeof original !== 'function') return;
     mutable[method] = ((messages: never, options?: never) => {
-      const prepared = prepareSkillRunOptions(options as never, 'start');
-      return original.call(agent, messages, prepared);
+      const prepared = prepareSkillRunOptions(options as never, 'start') as {
+        requestContext: RequestContext;
+        runId: string;
+      };
+      const result = original.call(agent, messages, prepared as never);
+      if (result && typeof (result as Promise<unknown>).then === 'function') {
+        return (result as Promise<{ finishReason?: string }>).then(async (value) => {
+          await noteSuspendedIfNeeded(prepared.requestContext, value);
+          return value;
+        });
+      }
+      return result;
     }) as AnyFn;
   };
 
@@ -23,8 +63,22 @@ export function installSkillExecutionBindings(agent: Agent): void {
     const original = mutable[method];
     if (typeof original !== 'function') return;
     mutable[method] = ((resumeData: never, options?: never) => {
-      const prepared = prepareSkillRunOptions(options as never, 'resume');
-      return original.call(agent, resumeData, prepared);
+      const prepared = prepareSkillRunOptions(options as never, 'resume') as {
+        requestContext: RequestContext;
+        runId: string;
+      };
+      const kicked = noteResumeStart(prepared.requestContext);
+      const result = original.call(agent, resumeData, prepared as never);
+      if (result && typeof (result as Promise<unknown>).then === 'function') {
+        return Promise.resolve(kicked).then(() => result as Promise<unknown>).then(async (value) => {
+          await noteSuspendedIfNeeded(
+            prepared.requestContext,
+            value as { finishReason?: string },
+          );
+          return value;
+        });
+      }
+      return result;
     }) as AnyFn;
   };
 

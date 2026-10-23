@@ -12,6 +12,8 @@ import {
 import { AgentComposer, type WorkspaceDragItem } from './AgentComposer';
 import { buildAgentAttachmentMessage, DEFAULT_ATTACHMENT_PROMPT } from './attachment-protocol';
 import { MessageList } from './MessageList';
+import { useTurnArtifacts } from './use-turn-artifacts';
+import type { WorkspaceArtifact } from './turn-artifacts';
 import { useReconciledChatMessages } from './use-reconciled-chat-messages';
 import { runDisplayState } from './run-display-state';
 import { createModelRequestContext, type ModelSettings } from './model-settings';
@@ -55,7 +57,8 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   financeCategory = null, financeEnabled = false, financeSaving = false, onFinanceCategoryChange,
   pendingUserMessages = [], onMessageSubmitted, onMessageFailed, onResponseSettled, onFilesChanged, attachRequest,
   attachmentRefreshVersion = 0, targetMessageId,   initialDraft = '', focusComposer = false, sendOnMount = false,
-  initialFiles = [], initialSelectedSkillIds = [], openPickerOnMount = false, scheduledRun, onTurnActivations }: {
+  initialFiles = [], initialSelectedSkillIds = [], openPickerOnMount = false, scheduledRun, onTurnActivations,
+  onOpenArtifact }: {
   title?: string; threadId: string; resourceId: string; initialMessages: MastraDBMessage[];
   initialDraft?: string; initialSelectedSkillIds?: string[]; focusComposer?: boolean; sendOnMount?: boolean;
   initialFiles?: { files: File[]; kind: 'file' | 'image'; directory?: string }[]; openPickerOnMount?: boolean;
@@ -75,6 +78,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   targetMessageId?: string;
   scheduledRun?: ScheduledRunRef | null;
   onTurnActivations?: (activations: SkillActivationView[]) => void;
+  onOpenArtifact?: (file: WorkspaceArtifact) => void;
 }) {
   const mobile = useMobileLayout();
   const [draft, setDraft] = useState(initialDraft);
@@ -122,10 +126,12 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
       onResponseSettled?.();
       onFilesChanged?.();
       refreshThreadAttachments();
+      setSettledVersion((value) => value + 1);
     } });
   const blockedReason = scheduledRunning ? '定时任务正在执行…'
     : financeSaving ? '正在保存财经分类…' : sendBlockedReason ?? (models ? null : '请先配置可用模型');
   const wasRunning = useRef(chat.isRunning);
+  const [settledVersion, setSettledVersion] = useState(0);
 
   function invalidateAttachmentList() {
     attachmentListAbort.current?.abort();
@@ -156,6 +162,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
       onResponseSettled?.();
       onFilesChanged?.();
       refreshThreadAttachments();
+      setSettledVersion((value) => value + 1);
     }
     wasRunning.current = chat.isRunning;
   }, [chat.isRunning, onFilesChanged, onResponseSettled, threadId]);
@@ -192,6 +199,11 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
 
   const reconciledMessages = useReconciledChatMessages({ messages: chat.messages, isRunning: chat.isRunning, threadId, resourceId });
   const visibleMessages = withPendingUserMessages(reconciledMessages, pendingUserMessages);
+  const { byRun: artifactsByRun, error: artifactError, refresh: refreshArtifacts } = useTurnArtifacts({
+    threadId,
+    messages: reconciledMessages,
+    settledVersion,
+  });
   const displayState = runDisplayState(visibleMessages, chat.isRunning);
   const reportedActivations = useRef('');
   useEffect(() => {
@@ -516,7 +528,13 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
       <MessageList messages={visibleMessages} isRunning={(chat.isRunning && !displayState.answerComplete) || scheduledRunning} error={error}
         approvals={visibleApprovals} pendingApprovalIds={pendingApprovalIds}
         threadAttachments={threadAttachments}
+        artifactsByRun={artifactsByRun}
+        onOpenArtifact={onOpenArtifact}
         onApprove={approve} onDecline={decline} onAnswer={answer} />
+      {artifactError && <p className="notice" role="status">
+        产物清单暂不可用，已生成的文件仍保留在工作区。
+        <button type="button" onClick={refreshArtifacts}>重新加载产物</button>
+      </p>}
       {chat.isRunning && displayState.answerComplete && <p className="notice" role="status">{displayState.memoryPending ? '回答已完成，正在整理会话记忆。' : '回答已完成，正在收尾。'}</p>}
     </ChatShell.Column></ChatShell.Content></ChatShell.Viewport></ChatShell.Stage>
     <ChatShell.Dock><ChatShell.Column>

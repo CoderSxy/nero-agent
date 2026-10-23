@@ -45,6 +45,8 @@ vi.mock('./client', () => ({
   AGENT_ID: 'agent', listWorkspaceFiles, fetchWorkspaceFile, fetchUserFile: vi.fn(),
   uploadWorkspaceFile: (...args: unknown[]) => uploadWorkspaceFile(...args),
 }));
+const listTurnArtifacts = vi.hoisted(() => vi.fn());
+vi.mock('./turn-artifacts-client', () => ({ listTurnArtifacts }));
 const listAvailableSkills = vi.hoisted(() => vi.fn());
 vi.mock('./skills/skills-api', () => ({
   listAvailableSkills: (...args: unknown[]) => listAvailableSkills(...args),
@@ -58,6 +60,7 @@ vi.mock('./attachment-client', () => ({
 beforeEach(() => {
   vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
   listThreadAttachments.mockResolvedValue([]);
+  listTurnArtifacts.mockResolvedValue({ items: [], nextCursor: null });
   listWorkspaceFiles.mockResolvedValue({ files: [{ path: 'uploads', type: 'directory', size: 0 }] });
   fetchWorkspaceFile.mockResolvedValue(new Blob(['x'], { type: 'application/octet-stream' }));
   listAvailableSkills.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 50 });
@@ -1000,4 +1003,17 @@ describe('skill selection on send', () => {
     expect(sendMessage).toHaveBeenCalledTimes(1);
   });
 
+});
+
+
+it('shows an unavailable artifact summary and lets the user retry without sending a message', async () => {
+  listTurnArtifacts.mockRejectedValueOnce(new Error('database unavailable'))
+    .mockResolvedValue({ items: [], nextCursor: null });
+  render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]}
+    onMessageSent={vi.fn()} models={models} />);
+  const retry = await screen.findByRole('button', { name: '重新加载产物' });
+  expect(screen.getByText('产物清单暂不可用，已生成的文件仍保留在工作区。')).toBeTruthy();
+  fireEvent.click(retry);
+  await waitFor(() => expect(screen.queryByRole('button', { name: '重新加载产物' })).toBeNull());
+  expect(sendMessage).not.toHaveBeenCalled();
 });

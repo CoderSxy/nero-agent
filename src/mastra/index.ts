@@ -19,6 +19,7 @@ import { studioChineseMiddleware } from './studio-zh';
 import { agentModelLockMiddleware } from './agent-model-lock';
 import { authorizeThreadRoute } from './auth/authorization';
 import { currentWorkspaceFileRoutes, fileRoutes } from './files/routes';
+import { turnArtifactRoutes } from './files/artifacts/routes';
 import { userFileTools } from './files/tools';
 import { modelRoutes } from './models/routes';
 import { modelAdminRoutes } from './models/admin-page';
@@ -60,7 +61,7 @@ export const mastra = new Mastra({
       studioChineseMiddleware,
     ],
     apiRoutes: [...authRoutes, ...modelRoutes, ...modelAdminRoutes, ...fileRoutes,
-      ...currentWorkspaceFileRoutes, ...financeRoutes, ...scheduledTaskRoutes, ...skillRoutes],
+      ...currentWorkspaceFileRoutes, ...turnArtifactRoutes, ...financeRoutes, ...scheduledTaskRoutes, ...skillRoutes],
     auth: {
       authenticateToken: async token => getUserByToken(token),
       mapUserToResourceId: user => resourceIdFor(authContextFromUser(user)),

@@ -23,6 +23,8 @@ import { useMobileLayout } from './mobile/useMobileLayout';
 import { MobileComposerDock } from './mobile/MobileComposerDock';
 import { listAvailableSkills } from './skills/skills-api';
 import type { SkillActivationView } from './message-parts';
+import type { WorkspaceArtifact, WorkspaceRevealRequest } from './turn-artifacts';
+import type { WorkspaceSource } from './workspace-files';
 
 function completeModels(models: Partial<ModelSettings>): ModelSettings | null {
   return models.chatModel && models.memoryModel
@@ -75,7 +77,25 @@ export function AgentPage() {
   routeThreadIdRef.current = routeThreadId;
   const [pendingByThread, setPendingByThread] = useState<Record<string, PendingUserMessage[]>>({});
   const [filesRefreshVersion, setFilesRefreshVersion] = useState(0);
-  const [fileRequest, setFileRequest] = useState<{ path: string; id: number } | null>(null);
+  const [fileRequest, setFileRequest] = useState<{
+    path: string;
+    id: number;
+    source: WorkspaceSource;
+    threadId: string;
+  } | null>(null);
+  const [dockOpenRequest, setDockOpenRequest] = useState<{ id: number; panel: 'files' } | null>(null);
+  const [revealRequest, setRevealRequest] = useState<WorkspaceRevealRequest | null>(null);
+  const nextOpenId = useRef(0);
+
+  const openWorkspaceArtifact = useCallback((file: WorkspaceArtifact) => {
+    if (!threadId) return;
+    nextOpenId.current += 1;
+    const id = nextOpenId.current;
+    const source: WorkspaceSource = file.source;
+    setDockOpenRequest({ id, panel: 'files' });
+    setRevealRequest({ id, path: file.path, source, threadId });
+    setFileRequest({ id, path: file.path, source, threadId });
+  }, [threadId]);
   const [attachRequest, setAttachRequest] = useState<{
     id: number; threadId: string; path: string; source: 'personal' | 'agent';
   } | null>(null);
@@ -213,6 +233,11 @@ export function AgentPage() {
   }, [handoffThreadId, threadId]);
   useEffect(() => {
     setAttachRequest(current => current?.threadId === threadId ? current : null);
+    setFileRequest(current => current?.threadId === threadId ? current : null);
+    setRevealRequest(current => current?.threadId === threadId ? current : null);
+    if (!threadId) {
+      setDockOpenRequest(null);
+    }
   }, [threadId]);
   useEffect(() => {
     if (!threadId && landingFocused && canCreate && !landingCreationStartedRef.current) {
@@ -324,6 +349,7 @@ export function AgentPage() {
         loading={list.loading} error={list.error} modelCount={catalog?.length}
         composer={<MobileComposerDock>{modelStatusNotice}{landingComposer}</MobileComposerDock>} /> : loadingThread ? <div className="empty-chat">加载会话中…</div> : threadId && !notice ?
         <AgentChat key={threadId} title={list.threads.find(thread => thread.id === threadId)?.title || '未命名会话'}
+          onOpenArtifact={openWorkspaceArtifact}
           threadId={threadId} resourceId={user.id} initialMessages={messages} models={selected}
           scheduledRun={scheduledRun}
           initialDraft={handoffThreadId === threadId ? landingDraft : ''}
@@ -370,20 +396,40 @@ export function AgentPage() {
             {landingComposer}
           </ChatShell.Column></ChatShell.Dock>
         </ChatShell>}
-      {fileRequest && <WorkspaceFileOverlay request={fileRequest} source={workspaceSource}
-        onClosed={() => setFileRequest(null)} onSaved={() => setFilesRefreshVersion(value => value + 1)} />}
+      {fileRequest && fileRequest.threadId === (threadId ?? '') && (
+        <WorkspaceFileOverlay
+          request={fileRequest}
+          source={fileRequest.source}
+          onClosed={() => setFileRequest(null)}
+          onSaved={() => setFilesRefreshVersion(value => value + 1)}
+        />
+      )}
     </section>
-    {!mobile && <RightPanelDock width={rightWidth} maxWidth={rightMax} onResize={setRightPreferredWidth}
-      config={<ConfigPanel agent={agent} memory={memory} loading={configLoading} error={configError}
-      models={configModels} availableCatalog={availableCatalog} turnActivations={turnActivations} />}
-      files={<WorkspaceFileTree source={workspaceSource}
-        workspaceId={workspaceSource === 'agent' ? agent?.workspaceId : undefined}
-        refreshVersion={filesRefreshVersion}
-        onOpenFile={path => setFileRequest(current => ({ path, id: (current?.id ?? 0) + 1 }))}
-        onAttachFile={threadId ? (path, source) => {
-          nextAttachId.current += 1;
-          setAttachRequest({ id: nextAttachId.current, threadId, path, source });
-        } : undefined}
-        onFilesChanged={() => setFilesRefreshVersion(value => value + 1)} />} />}
+    {!mobile && (() => {
+      const filesSource = revealRequest?.source ?? workspaceSource;
+      return <RightPanelDock width={rightWidth} maxWidth={rightMax} onResize={setRightPreferredWidth}
+        openRequest={dockOpenRequest ?? undefined}
+        config={<ConfigPanel agent={agent} memory={memory} loading={configLoading} error={configError}
+        models={configModels} availableCatalog={availableCatalog} turnActivations={turnActivations} />}
+        files={<WorkspaceFileTree source={filesSource}
+          workspaceId={filesSource === 'agent' ? agent?.workspaceId : undefined}
+          refreshVersion={filesRefreshVersion}
+          revealRequest={revealRequest && revealRequest.threadId === threadId ? revealRequest : undefined}
+          onOpenFile={path => {
+            if (!threadId) return;
+            nextOpenId.current += 1;
+            setFileRequest({
+              path,
+              id: nextOpenId.current,
+              source: filesSource,
+              threadId,
+            });
+          }}
+          onAttachFile={threadId ? (path, source) => {
+            nextAttachId.current += 1;
+            setAttachRequest({ id: nextAttachId.current, threadId, path, source });
+          } : undefined}
+          onFilesChanged={() => setFilesRefreshVersion(value => value + 1)} />} />;
+    })()}
   </>;
 }

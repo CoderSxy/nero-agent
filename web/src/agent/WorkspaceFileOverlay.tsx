@@ -9,7 +9,10 @@ type FileState = OpenWorkspaceFile & { path: string; source: WorkspaceSource };
 type Pending = { type: 'close' } | { type: 'switch'; path: string; source: WorkspaceSource };
 
 export function WorkspaceFileOverlay({ request, source, onClosed, onSaved }: {
-  request: { path: string; id: number }; source: WorkspaceSource; onClosed(): void; onSaved(): void;
+  request: { path: string; id: number; source?: WorkspaceSource; threadId?: string };
+  source: WorkspaceSource;
+  onClosed(): void;
+  onSaved(): void;
 }) {
   const [file, setFile] = useState<FileState | null>(null);
   const [draft, setDraft] = useState('');
@@ -36,19 +39,23 @@ export function WorkspaceFileOverlay({ request, source, onClosed, onSaved }: {
       updateFile({ ...result, path, source: selectedSource });
       updateDraft(result.text ?? '');
     } catch (cause) {
-      if (id === sequence.current) setError(cause instanceof Error ? cause.message : '读取文件失败');
+      if (id !== sequence.current) return;
+      const message = cause instanceof Error ? cause.message : '读取文件失败';
+      setError(/404|不存在|ENOENT/i.test(message) ? '文件已不存在' : message);
     } finally { if (id === sequence.current) setLoading(false); }
   }
 
   useEffect(() => {
+    const selectedSource = request.source ?? source;
     const current = currentFile.current;
-    if (current?.path === request.path && current.source === source) return;
+    if (current?.path === request.path && current.source === selectedSource) return;
     if (current && current.text !== undefined && current.text !== currentDraft.current) {
-      updatePending({ type: 'switch', path: request.path, source });
+      updatePending({ type: 'switch', path: request.path, source: selectedSource });
       return;
     }
-    void load(request.path, source);
-  }, [request.id, source]);
+    void load(request.path, selectedSource);
+  }, [request.id, request.path, request.source, source]);
+
   useEffect(() => () => { sequence.current++; }, []);
 
   async function save(): Promise<boolean> {

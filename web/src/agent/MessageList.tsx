@@ -15,6 +15,13 @@ import { SkillExecutionBadge } from './skills/SkillExecutionBadge';
 import { ChineseAskUser, ChineseToolApproval } from './ChineseToolInteractions';
 import { ChineseObservationComplete } from './ChineseObservationComplete';
 import { isUserMessage } from './pending-user-message';
+import { TurnArtifacts } from './TurnArtifacts';
+import {
+  isTerminalArtifactState,
+  readArtifactRunId,
+  type TurnArtifacts as TurnArtifactsValue,
+  type WorkspaceArtifact,
+} from './turn-artifacts';
 import './tool-row.css';
 
 type AskUserPayload = { question: string; options?: { label: string; description?: string }[];
@@ -194,13 +201,15 @@ function HistoryAttachmentCard({ attachment }: { attachment: PreparedAttachment 
 }
 
 export function MessageList({ messages, isRunning, error, onApprove, onDecline, onAnswer, approvals = {},
-  pendingApprovalIds, threadAttachments = [] }: {
+  pendingApprovalIds, threadAttachments = [], artifactsByRun, onOpenArtifact }: {
   messages: MastraDBMessage[]; isRunning: boolean; error: string | null;
   onApprove: (id: string) => Promise<void>; onDecline: (id: string) => Promise<void>;
   onAnswer: (id: string, answer: string | string[]) => Promise<void>;
   approvals?: Record<string, { status: 'approved' | 'declined' }>;
   pendingApprovalIds?: ReadonlySet<string>;
   threadAttachments?: PreparedAttachment[];
+  artifactsByRun?: ReadonlyMap<string, TurnArtifactsValue>;
+  onOpenArtifact?: (file: WorkspaceArtifact) => void;
 }) {
   const [pending, setPending] = useState<ReadonlySet<string>>(() => new Set());
   const busy = useRef(new Set<string>());
@@ -229,6 +238,9 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
     sourceIndex,
     parts: messageParts(message),
     attachments: attachmentsForMessage(message, threadAttachments),
+    artifactRunId: readArtifactRunId(message) ?? (message.role === 'assistant'
+      ? [...(artifactsByRun?.values() ?? [])].find(value => value.anchorMessageId === message.id)?.runId ?? null
+      : null),
   }));
   let activeTurnStart = 0;
   for (let index = messages.length - 1; index >= 0; index -= 1) {
@@ -259,7 +271,7 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
     }
   }
   return <div className="message-list" aria-live="polite">
-    {orderedRows.map(({ message, sourceIndex, parts: rawParts, attachments }, rowIndex) => {
+    {orderedRows.map(({ message, sourceIndex, parts: rawParts, attachments, artifactRunId }, rowIndex) => {
       const parts = rawParts.filter(part => {
         if (part.kind !== 'observation') return true;
         if (part.state === 'running' || part.state === 'buffering') {
@@ -272,7 +284,11 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
         }
         return true;
       });
-      if (!parts.length && !attachments.length) return null;
+      const artifactValue = artifactRunId ? artifactsByRun?.get(artifactRunId) : undefined;
+      const showArtifacts = artifactValue && isTerminalArtifactState(artifactValue.state)
+        && !orderedRows.slice(rowIndex + 1).some(row => row.artifactRunId === artifactRunId)
+        && !(isRunning && message === messages.at(-1));
+      if (!parts.length && !attachments.length && !showArtifacts) return null;
       const runningProcess = isRunning && message === messages.at(-1) &&
         parts.some(part => part.kind === 'reasoning' || part.kind === 'tool' || part.kind === 'observation');
       const answerText = parts.filter(part => part.kind === 'text' && !streamError(part.text))
@@ -357,6 +373,8 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
         {runningProcess && !parts.some(part => part.kind === 'observation' &&
           (part.state === 'running' || part.state === 'buffering')) &&
           <p className="process-status" role="status"><LoaderCircle size={14} aria-hidden="true" />正在处理…</p>}
+        {showArtifacts && artifactValue && onOpenArtifact &&
+          <TurnArtifacts value={artifactValue} onOpenArtifact={onOpenArtifact} />}
         {message.role === 'assistant' && answerText && !(isRunning && message === messages.at(-1)) &&
           <MessageActions message={message} text={answerText} model={modelForAnswer(orderedRows, rowIndex)} />}
       </Message>;

@@ -56,4 +56,32 @@ describe('right panel dock', () => {
     expect(screen.queryByText('文件内容')).toBeNull();
     await waitFor(() => expect(screen.getByText('文件内容')).toBeTruthy());
   });
+
+  it('honors openRequest without toggling files closed', async () => {
+    const onResize = vi.fn();
+    const view = render(<RightPanelDock config={<div>配置内容</div>} files={<div>文件内容</div>}
+      width={320} maxWidth={620} onResize={onResize}
+      openRequest={{ id: 1, panel: 'files' }} />);
+    await waitFor(() => expect(screen.getByText('文件内容')).toBeTruthy());
+    view.rerender(<RightPanelDock config={<div>配置内容</div>} files={<div>文件内容</div>}
+      width={320} maxWidth={620} onResize={onResize}
+      openRequest={{ id: 2, panel: 'files' }} />);
+    expect(screen.getByText('文件内容')).toBeTruthy();
+    view.rerender(<RightPanelDock config={<div>配置内容</div>} files={<div>文件内容</div>}
+      width={400} maxWidth={620} onResize={onResize}
+      openRequest={{ id: 3, panel: 'files' }} />);
+    expect(screen.getByText('文件内容')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '收起文件管理面板' }));
+    await waitFor(() => expect(screen.queryByText('文件内容')).toBeNull());
+  });
+
+  it('switches from config to files for the latest openRequest', async () => {
+    const view = render(<RightPanelDock config={<div>配置内容</div>} files={<div>文件内容</div>}
+      openRequest={{ id: 1, panel: 'config' }} />);
+    await waitFor(() => expect(screen.getByText('配置内容')).toBeTruthy());
+    view.rerender(<RightPanelDock config={<div>配置内容</div>} files={<div>文件内容</div>}
+      openRequest={{ id: 2, panel: 'files' }} />);
+    await waitFor(() => expect(screen.getByText('文件内容')).toBeTruthy());
+    expect(screen.queryByText('配置内容')).toBeNull();
+  });
 });

@@ -261,3 +261,73 @@ it('asks for a folder before uploading a workspace drop and never attaches it to
   await waitFor(() => expect(changed).toHaveBeenCalled());
   expect(attach).not.toHaveBeenCalled();
 });
+
+describe('workspace file reveal', () => {
+  it('expands ancestors, selects, and scrolls the target path', async () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    listWorkspaceFiles.mockResolvedValue({ files: [
+      ...personalFiles,
+      { path: 'threads/t1/output/中文 演示.pptx', type: 'file', size: 20 },
+    ], usage });
+    const path = 'threads/t1/output/中文 演示.pptx';
+    const view = render(<WorkspaceFileTree source="personal" refreshVersion={0} onOpenFile={vi.fn()}
+      revealRequest={{ id: 1, path, source: 'personal', threadId: 't1' }} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: `打开 ${path}` })).toBeTruthy());
+    expect(screen.getByRole('button', { name: '收起 threads' }).getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByRole('button', { name: '收起 threads/t1' }).getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByRole('button', { name: '收起 threads/t1/output' }).getAttribute('aria-expanded')).toBe('true');
+    const row = [...document.querySelectorAll('[data-workspace-path]')]
+      .find((element) => element.getAttribute('data-workspace-path') === path);
+    expect(row?.className).toContain('workspace-file-row--selected');
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+    view.rerender(<WorkspaceFileTree source="personal" refreshVersion={0} onOpenFile={vi.fn()}
+      revealRequest={{ id: 2, path, source: 'personal', threadId: 't1' }} />);
+    await waitFor(() => expect(scrollIntoView.mock.calls.length).toBeGreaterThanOrEqual(2));
+  });
+
+  it('reveals uploads files via the visible ancestor without showing UUID dirs', async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    const path = 'uploads/132a8d7c-c0bf-4f4f-93e2-6e1f17a49abc/report.html';
+    listWorkspaceFiles.mockResolvedValue({ files: [
+      { path: 'uploads', type: 'directory', size: 18 },
+      { path: 'uploads/132a8d7c-c0bf-4f4f-93e2-6e1f17a49abc', type: 'directory', size: 18 },
+      { path, type: 'file', size: 18 },
+    ], usage: { usedBytes: 18, quotaBytes: 500 * 1024 * 1024, fileCount: 1 } });
+    render(<WorkspaceFileTree source="personal" refreshVersion={0} onOpenFile={vi.fn()}
+      revealRequest={{ id: 1, path, source: 'personal', threadId: 't1' }} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: `打开 ${path}` })).toBeTruthy());
+    expect(screen.queryByRole('button', { name: /展开 uploads\/132a8d7c/ })).toBeNull();
+    expect(screen.getByRole('button', { name: '收起 uploads' }).getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('ignores reveal requests for a mismatched source', async () => {
+    listWorkspaceFiles.mockResolvedValue({ files: personalFiles, usage });
+    render(<WorkspaceFileTree source="agent" workspaceId="ws" refreshVersion={0} onOpenFile={vi.fn()}
+      revealRequest={{ id: 1, path: 'docs/note.txt', source: 'personal', threadId: 't1' }} />);
+    await screen.findByRole('button', { name: '展开 docs' });
+    expect(screen.queryByRole('button', { name: '打开 docs/note.txt' })).toBeNull();
+  });
+
+  it('shows an error when the revealed path is missing', async () => {
+    listWorkspaceFiles.mockResolvedValue({ files: personalFiles, usage });
+    render(<WorkspaceFileTree source="personal" refreshVersion={0} onOpenFile={vi.fn()}
+      revealRequest={{ id: 1, path: 'missing/file.txt', source: 'personal', threadId: 't1' }} />);
+    expect(await screen.findByRole('alert')).toHaveProperty('textContent', '文件已不存在');
+  });
+});
+
+it('waits for the newly selected source before consuming a reveal request', async () => {
+  Element.prototype.scrollIntoView = vi.fn();
+  let finish!: (result: unknown) => void;
+  listWorkspaceFiles.mockResolvedValueOnce({ files: [{ path: 'old.txt', type: 'file', size: 1 }] })
+    .mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+  const view = render(<WorkspaceFileTree source="agent" workspaceId="old" refreshVersion={0} onOpenFile={vi.fn()} />);
+  await screen.findByRole('button', { name: '打开 old.txt' });
+  view.rerender(<WorkspaceFileTree source="personal" refreshVersion={0} onOpenFile={vi.fn()}
+    revealRequest={{ id: 9, path: 'docs/note.txt', source: 'personal', threadId: 't1' }} />);
+  expect(screen.queryByText('文件已不存在')).toBeNull();
+  finish({ files: personalFiles, usage });
+  const target = await screen.findByRole('button', { name: '打开 docs/note.txt' });
+  expect(target.closest('li')?.className).toContain('workspace-file-row--selected');
+});

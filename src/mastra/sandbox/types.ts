@@ -11,6 +11,9 @@ export type ExecutionRequest = {
   command: string;
   args: string[];
   abortSignal?: AbortSignal;
+  /** When present and bound to a server run, command mutations are attributed. */
+  requestContext?: import('@mastra/core/request-context').RequestContext;
+  operationId?: string;
 };
 
 export type SandboxInspect = {

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { getSandboxRuntimeConfig } from '../sandbox/runtime-config';
 import { sandboxNetworkManager } from '../sandbox/network/manager';
 import { sandboxIdFor } from '../sandbox/types';
@@ -11,6 +12,8 @@ import type { DockerEngine } from '../sandbox/docker/client';
 import { ExecutionQueue, commandQueue } from '../sandbox/execution-queue';
 import { assertHostQuotaReady } from '../workspace/disk-protection';
 import { ensureThreadDirectory, ensureUserWorkspace } from '../workspace/manager';
+import { withTrackedMutation } from '../files/artifacts/collector';
+import { bindSkillServerExecutionId, bindSkillThreadId } from './execution-context';
 import { isSkillScriptExecutionEnabled } from './config';
 import {
   createSkillScriptContainerOptions,
@@ -303,6 +306,7 @@ export function createSkillScriptRunner(deps: SkillScriptRunnerDeps): SkillScrip
               return fail('ABORTED', 'Skill script execution was cancelled');
             }
 
+            const runBody = async () => {
             const runtimeConfig=getSandboxRuntimeConfig();
             const network=runtimeManifest?.network==='public'
               ? await (await sandboxNetworkManager()).ensure({userId:ctx.auth.userId,sandboxId:sandboxIdFor(ctx.auth.userId)}) : undefined;
@@ -392,6 +396,37 @@ export function createSkillScriptRunner(deps: SkillScriptRunnerDeps): SkillScrip
                 }
               }
             }
+            };
+
+            // Hold mutation lock inside the commandQueue slot. Skill ctx already carries
+            // the trusted serverExecutionId / thread / auth (no client requestContext needed).
+            const { RequestContext } = await import('@mastra/core/request-context');
+            const requestContext = new RequestContext();
+            requestContext.set('mastra__user', {
+              id: ctx.auth.userId,
+              roles: ctx.auth.roles,
+              email: '',
+              displayName: '',
+            });
+            bindSkillThreadId(requestContext, ctx.threadId);
+            bindSkillServerExecutionId(requestContext, ctx.serverExecutionId);
+            return withTrackedMutation(
+              {
+                auth: ctx.auth,
+                requestContext,
+                identity: {
+                  userId: ctx.auth.userId,
+                  threadId: ctx.threadId,
+                  runId: ctx.serverExecutionId,
+                },
+              },
+              `skill-script:${pin.skillId}:${randomUUID()}`,
+              async () => runBody(),
+              {
+                signal,
+                afterBudget: { maxFiles: 5_000, maxBytes: 512 * 1024 * 1024, maxMs: 5_000 },
+              },
+            );
           },
           signal,
         );

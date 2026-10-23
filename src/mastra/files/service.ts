@@ -5,6 +5,8 @@ import type { AuthContext } from '../auth/auth-context';
 import type { ThreadLookup } from '../auth/thread-guard';
 import { ensureThreadDirectory } from '../workspace/manager';
 import { assertContained } from '../workspace/path';
+import { withManualWorkspaceMutation } from './artifacts/collector';
+import type { WorkspaceMutationToken } from './artifacts/mutation-coordinator';
 import { FilePathError, maxFileSizeBytes, relativeFilePath } from './policy';
 import { readWorkspaceVersion } from './workspace-editor';
 import { workspaceQuota } from '../workspace/quota';
@@ -44,53 +46,55 @@ export class FileService {
     threadId: string,
     relativePath: string,
     data: Buffer,
-    options: { signal?: AbortSignal } = {},
+    options: { signal?: AbortSignal; mutationToken?: WorkspaceMutationToken } = {},
   ) {
-    if (data.byteLength > maxFileSizeBytes()) throw new FileServiceError(413, '文件过大', 'FILE_TOO_LARGE');
-    const { hostPath } = await this.resolveOwnedPath(auth, threadId, relativePath, { create: true });
-    await assertHostWritable(data.byteLength);
-    let existed = false;
-    let previousSize = 0;
-    try {
-      previousSize = (await stat(hostPath)).size;
-      existed = true;
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
-    }
-    const growth = Math.max(0, data.byteLength - previousSize);
-    const newFiles = existed ? 0 : 1;
-    if (growth > 0 || newFiles > 0) await workspaceQuota.reserve(auth.userId, growth, newFiles);
-    if (options.signal?.aborted) {
-      if (growth > 0 || newFiles > 0) await workspaceQuota.releaseReserve(auth.userId, growth, newFiles);
-      throw new FileServiceError(400, '上传已中断');
-    }
-    // XFS project quotas reject renames between different project IDs with EXDEV.
-    // Stage within the destination directory so the temporary file inherits its quota.
-    const tempPath = join(dirname(hostPath), `.${randomUUID()}.tmp`);
-    let persisted = false;
-    try {
-      await mkdir(dirname(hostPath), { recursive: true });
-      const handle = await open(tempPath, 'wx');
+    return withManualWorkspaceMutation(auth, async () => {
+      if (data.byteLength > maxFileSizeBytes()) throw new FileServiceError(413, '文件过大', 'FILE_TOO_LARGE');
+      const { hostPath } = await this.resolveOwnedPath(auth, threadId, relativePath, { create: true });
+      await assertHostWritable(data.byteLength);
+      let existed = false;
+      let previousSize = 0;
       try {
+        previousSize = (await stat(hostPath)).size;
+        existed = true;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+      }
+      const growth = Math.max(0, data.byteLength - previousSize);
+      const newFiles = existed ? 0 : 1;
+      if (growth > 0 || newFiles > 0) await workspaceQuota.reserve(auth.userId, growth, newFiles);
+      if (options.signal?.aborted) {
+        if (growth > 0 || newFiles > 0) await workspaceQuota.releaseReserve(auth.userId, growth, newFiles);
+        throw new FileServiceError(400, '上传已中断');
+      }
+      // XFS project quotas reject renames between different project IDs with EXDEV.
+      // Stage within the destination directory so the temporary file inherits its quota.
+      const tempPath = join(dirname(hostPath), `.${randomUUID()}.tmp`);
+      let persisted = false;
+      try {
+        await mkdir(dirname(hostPath), { recursive: true });
+        const handle = await open(tempPath, 'wx');
+        try {
+          if (options.signal?.aborted) throw new FileServiceError(400, '上传已中断');
+          await handle.writeFile(data);
+        } finally {
+          await handle.close();
+        }
         if (options.signal?.aborted) throw new FileServiceError(400, '上传已中断');
-        await handle.writeFile(data);
-      } finally {
-        await handle.close();
+        await rename(tempPath, hostPath);
+        persisted = true;
+        if (existed && data.byteLength < previousSize) {
+          await workspaceQuota.release(auth.userId, previousSize - data.byteLength, 0);
+        }
+        if (growth > 0 || newFiles > 0) await workspaceQuota.commit(auth.userId, growth, newFiles);
+      } catch (error) {
+        await unlink(tempPath).catch(() => undefined);
+        if (!persisted && (growth > 0 || newFiles > 0)) {
+          await workspaceQuota.releaseReserve(auth.userId, growth, newFiles).catch(() => undefined);
+        }
+        throw error;
       }
-      if (options.signal?.aborted) throw new FileServiceError(400, '上传已中断');
-      await rename(tempPath, hostPath);
-      persisted = true;
-      if (existed && data.byteLength < previousSize) {
-        await workspaceQuota.release(auth.userId, previousSize - data.byteLength, 0);
-      }
-      if (growth > 0 || newFiles > 0) await workspaceQuota.commit(auth.userId, growth, newFiles);
-    } catch (error) {
-      await unlink(tempPath).catch(() => undefined);
-      if (!persisted && (growth > 0 || newFiles > 0)) {
-        await workspaceQuota.releaseReserve(auth.userId, growth, newFiles).catch(() => undefined);
-      }
-      throw error;
-    }
+    }, { signal: options.signal, token: options.mutationToken });
   }
 
   async list(auth: AuthContext, threadId: string): Promise<FileListEntry[]> {
@@ -100,20 +104,27 @@ export class FileService {
     return entries;
   }
 
-  async delete(auth: AuthContext, threadId: string, relativePath: string) {
-    const { hostPath } = await this.resolveOwnedPath(auth, threadId, relativePath);
-    try {
-      const entries: FileListEntry[] = [];
-      const target = await stat(hostPath);
-      if (target.isDirectory()) await this.walk(hostPath, hostPath, entries);
-      else if (target.isFile()) entries.push({ path: relativePath, type: 'file', size: target.size });
-      await rm(hostPath, { recursive: true, force: false });
-      const files = entries.filter(entry => entry.type === 'file');
-      await workspaceQuota.release(auth.userId, files.reduce((sum, entry) => sum + entry.size, 0), files.length);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new FileServiceError(404, '文件不存在');
-      throw error;
-    }
+  async delete(
+    auth: AuthContext,
+    threadId: string,
+    relativePath: string,
+    options: { mutationToken?: WorkspaceMutationToken } = {},
+  ) {
+    return withManualWorkspaceMutation(auth, async () => {
+      const { hostPath } = await this.resolveOwnedPath(auth, threadId, relativePath);
+      try {
+        const entries: FileListEntry[] = [];
+        const target = await stat(hostPath);
+        if (target.isDirectory()) await this.walk(hostPath, hostPath, entries);
+        else if (target.isFile()) entries.push({ path: relativePath, type: 'file', size: target.size });
+        await rm(hostPath, { recursive: true, force: false });
+        const files = entries.filter(entry => entry.type === 'file');
+        await workspaceQuota.release(auth.userId, files.reduce((sum, entry) => sum + entry.size, 0), files.length);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new FileServiceError(404, '文件不存在');
+        throw error;
+      }
+    }, { token: options.mutationToken });
   }
 
   private async ensureThreadRoot(auth: AuthContext, threadId: string) {

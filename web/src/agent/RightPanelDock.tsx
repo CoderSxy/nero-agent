@@ -5,15 +5,28 @@ import { PanelResizeHandle } from './PanelResizeHandle';
 
 type Panel = 'config' | 'files';
 
-export function RightPanelDock({ config, files, width = 320, maxWidth = 620, onResize }: {
+export function RightPanelDock({ config, files, width = 320, maxWidth = 620, onResize, openRequest }: {
   config: ReactNode; files: ReactNode; width?: number; maxWidth?: number; onResize?: (width: number) => void;
+  openRequest?: { id: number; panel: Panel };
 }) {
   const [active, setActive] = useState<Panel | null>(null);
   const [desired, setDesired] = useState<Panel | null>(null);
   const desiredRef = useRef<Panel | null>(null);
+  const lastOpenId = useRef<number | null>(null);
   const previousWidth = useRef(width);
   const widthChanged = previousWidth.current !== width;
   useLayoutEffect(() => { previousWidth.current = width; }, [width]);
+  useLayoutEffect(() => {
+    if (!openRequest || openRequest.id === lastOpenId.current) return;
+    lastOpenId.current = openRequest.id;
+    // Ensure open — never toggle closed when already on the requested panel.
+    desiredRef.current = openRequest.panel;
+    setDesired(openRequest.panel);
+    if (active !== openRequest.panel) {
+      if (active) setActive(null);
+      else setActive(openRequest.panel);
+    }
+  }, [openRequest, active]);
   const reducedMotion = useReducedMotion();
   const duration = reducedMotion ? 0 : 0.28;
 

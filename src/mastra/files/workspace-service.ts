@@ -6,6 +6,8 @@ import { ensureUserWorkspace } from '../workspace/manager';
 import { assertContained } from '../workspace/path';
 import { workspaceQuota, type QuotaState } from '../workspace/quota';
 import { assertHostWritable } from '../workspace/disk-protection';
+import { withManualWorkspaceMutation } from './artifacts/collector';
+import type { WorkspaceMutationToken } from './artifacts/mutation-coordinator';
 import { FilePathError, maxFileSizeBytes, relativeFilePath } from './policy';
 import { FileServiceError, type FileListEntry } from './service';
 import { readWorkspaceVersion } from './workspace-editor';
@@ -35,7 +37,25 @@ const PROTECTED_TOP_ROOTS = new Set(['shared', 'uploads', 'projects', 'threads']
 const PROTECTED_THREAD_LEAVES = new Set(['input', 'output', 'tmp']);
 
 export class WorkspaceFileService {
-  async upload(auth: AuthContext, file: File, signal?: AbortSignal, directory?: string): Promise<WorkspaceFileEntry> {
+  async upload(
+    auth: AuthContext,
+    file: File,
+    signal?: AbortSignal,
+    directory?: string,
+    options: { mutationToken?: WorkspaceMutationToken } = {},
+  ): Promise<WorkspaceFileEntry> {
+    return withManualWorkspaceMutation(auth, async () => this.uploadLocked(auth, file, signal, directory), {
+      signal,
+      token: options.mutationToken,
+    });
+  }
+
+  private async uploadLocked(
+    auth: AuthContext,
+    file: File,
+    signal?: AbortSignal,
+    directory?: string,
+  ): Promise<WorkspaceFileEntry> {
     const name = safeUploadName(file.name);
     const data = Buffer.from(await file.arrayBuffer());
     if (data.byteLength > maxFileSizeBytes()) throw new FileServiceError(413, '文件过大', 'FILE_TOO_LARGE');
@@ -127,7 +147,17 @@ export class WorkspaceFileService {
     };
   }
 
-  async batchDelete(auth: AuthContext, paths: string[]): Promise<BatchDeleteResult> {
+  async batchDelete(
+    auth: AuthContext,
+    paths: string[],
+    options: { mutationToken?: WorkspaceMutationToken } = {},
+  ): Promise<BatchDeleteResult> {
+    return withManualWorkspaceMutation(auth, async () => this.batchDeleteLocked(auth, paths), {
+      token: options.mutationToken,
+    });
+  }
+
+  private async batchDeleteLocked(auth: AuthContext, paths: string[]): Promise<BatchDeleteResult> {
     if (!Array.isArray(paths) || paths.length === 0) {
       throw new FileServiceError(400, '删除路径不能为空');
     }

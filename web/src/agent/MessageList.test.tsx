@@ -669,3 +669,100 @@ describe('message tools and stream state', () => {
     expect(screen.queryByText('/Users/')).toBeNull();
   });
 });
+
+describe('turn artifacts in message list', () => {
+  const etag = '"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"';
+  const artifacts: import('./turn-artifacts').TurnArtifacts = {
+    version: 1,
+    runId: 'run-1',
+    threadId: 't1',
+    revision: 1,
+    state: 'completed',
+    collectionStatus: 'complete',
+    anchorMessageId: 'a1',
+    artifacts: [
+      { path: 'out/a.txt', source: 'personal', name: 'a.txt', change: 'created', size: 1, etag },
+    ],
+  };
+
+  it('renders the list before reply actions and opens on click', () => {
+    const onOpen = vi.fn();
+    const message = {
+      id: 'a1',
+      role: 'assistant',
+      content: {
+        format: 2,
+        metadata: { neroArtifactRun: { version: 1, runId: 'run-1', threadId: 't1' } },
+        parts: [{ type: 'text', text: '完成' }],
+      },
+    };
+    render(<MessageList messages={[message] as never} isRunning={false} error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()}
+      artifactsByRun={new Map([['run-1', artifacts]])} onOpenArtifact={onOpen} />);
+    const open = screen.getByRole('button', { name: '打开 out/a.txt' });
+    const actions = screen.getByRole('group', { name: '回复操作' });
+    expect(open.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(open);
+    expect(onOpen).toHaveBeenCalledWith(expect.objectContaining({ path: 'out/a.txt' }));
+  });
+
+  it('keeps prior turn artifacts visible while a later turn is streaming', () => {
+    const first = {
+      id: 'a1',
+      role: 'assistant',
+      content: {
+        format: 2,
+        metadata: { neroArtifactRun: { version: 1, runId: 'run-1', threadId: 't1' } },
+        parts: [{ type: 'text', text: '第一轮' }],
+      },
+    };
+    const second = {
+      id: 'a2',
+      role: 'assistant',
+      content: {
+        format: 2,
+        metadata: { neroArtifactRun: { version: 1, runId: 'run-2', threadId: 't1' } },
+        parts: [{ type: 'text', text: '第二轮进行中' }],
+      },
+    };
+    const running: import('./turn-artifacts').TurnArtifacts = {
+      ...artifacts,
+      runId: 'run-2',
+      state: 'running',
+      anchorMessageId: 'a2',
+      artifacts: [],
+    };
+    render(<MessageList messages={[first, second] as never} isRunning={true} error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()}
+      artifactsByRun={new Map<string, import('./turn-artifacts').TurnArtifacts>([
+        ['run-1', artifacts],
+        ['run-2', running],
+      ])}
+      onOpenArtifact={vi.fn()} />);
+    expect(screen.getByText('本轮产物 · 1 个文件')).toBeTruthy();
+    expect(screen.queryByText(/本轮产物 · 0/)).toBeNull();
+  });
+});
+
+it('shows streamed retained artifacts without persisted metadata or canonical message IDs', () => {
+  const value: import('./turn-artifacts').TurnArtifacts = {
+    version: 1, runId: 'live-run', threadId: 't1', revision: 3, state: 'failed',
+    collectionStatus: 'complete', anchorMessageId: 'server-final',
+    artifacts: [{ path: 'output/deck.pptx', name: 'deck.pptx', source: 'personal',
+      change: 'created', size: 6, etag: `"${'a'.repeat(64)}"` }],
+  };
+  const messages = [
+    { id: 'client-set-final', role: 'assistant', content: { format: 2,
+      metadata: { mode: 'stream', runId: 'live-run' }, parts: [
+        { type: 'text', text: '已写入文件' }, { type: 'data-nero-artifacts', data: value },
+      ] } },
+    { id: 'error-live-run-123', role: 'assistant', content: { format: 2,
+      metadata: { mode: 'stream', runId: 'live-run' }, parts: [{ type: 'text', text: '模型连接中断' }] } },
+  ];
+  render(<MessageList messages={messages as never} isRunning={false} error={null}
+    onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()}
+    artifactsByRun={new Map([['live-run', value]])} onOpenArtifact={vi.fn()} />);
+  expect(screen.getAllByRole('button', { name: '打开 output/deck.pptx' })).toHaveLength(1);
+  const card = screen.getByRole('button', { name: '打开 output/deck.pptx' });
+  expect(screen.getByText('模型连接中断').compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});

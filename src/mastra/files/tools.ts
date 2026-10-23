@@ -11,9 +11,17 @@ import { resolveSelectedModel, trustedUserFrom } from '../models/resolver';
 import { AttachmentService, type AttachmentStatus } from './attachments';
 import { type FileToolScope, resolveFileToolRoot, resolveScopedPath } from './file-scope';
 import { globFiles, grepFiles } from './file-search';
+import {
+  resolveArtifactRunContext,
+  withTrackedMutation,
+  type WorkspaceMutationToken,
+} from './artifacts/collector';
+import { normalizeArtifactPath } from './artifacts/paths';
 import { maxFileSizeBytes, relativeFilePath } from './policy';
 import { FileService } from './service';
 import { replaceWorkspaceText } from './workspace-editor';
+import { bindSkillThreadId, readBoundServerExecutionId } from '../skills/execution-context';
+import { randomUUID } from 'node:crypto';
 
 const pathInput = z.object({ path: z.string().min(1) });
 const scopeInput = z.enum(['thread', 'workspace']).optional();
@@ -328,7 +336,28 @@ export const userFileTools = {
       const auth = trustedAuth(context.requestContext);
       const service = await serviceFrom(context);
       const threadId = agentThreadId(context);
-      await service.write(auth, threadId, input.path, Buffer.from(input.content));
+      const requestContext = context.requestContext!;
+      bindSkillThreadId(requestContext, threadId);
+      const writeOnce = async (mutationToken?: import('./artifacts/mutation-coordinator').WorkspaceMutationToken) => {
+        await service.write(auth, threadId, input.path, Buffer.from(input.content), {
+          signal: context?.abortSignal,
+          mutationToken,
+        });
+      };
+      if (readBoundServerExecutionId(requestContext)) {
+        const artifactPath = normalizeArtifactPath({ scope: 'thread', threadId, path: input.path });
+        const operationId = context?.agent?.toolCallId || randomUUID();
+        const runContext = resolveArtifactRunContext(requestContext);
+        if (runContext.identity.threadId !== threadId) {
+          throw new Error('Tool threadId does not match bound artifact thread');
+        }
+        await withTrackedMutation(runContext, operationId, async (token) => writeOnce(token), {
+          signal: context?.abortSignal,
+          paths: [artifactPath],
+        });
+      } else {
+        await writeOnce();
+      }
       const current = await service.read(auth, threadId, input.path);
       recordWrittenFile(context.requestContext, input.path, current.etag, () => service.read(auth, threadId, input.path));
       return { path: `/user-files/${threadId}/${input.path}` };
@@ -429,14 +458,28 @@ export const userFileTools = {
       const relativePath = relativeFilePath(input.path);
       await resolveScopedPath(root, relativePath, scope, threadId);
       const filesystem = new LocalFilesystem({ basePath: root, contained: true });
-      const { etag, size } = await replaceWorkspaceText(
+      const requestContext = context.requestContext!;
+      bindSkillThreadId(requestContext, threadId);
+      const editOnce = (mutationToken?: WorkspaceMutationToken) => replaceWorkspaceText(
         filesystem,
         relativePath,
         input.oldText,
         input.newText,
         input.expectedEtag,
         auth.userId,
+        { mutationToken, signal: context?.abortSignal },
       );
+      const { etag, size } = readBoundServerExecutionId(requestContext)
+        ? await withTrackedMutation(
+          resolveArtifactRunContext(requestContext),
+          context?.agent?.toolCallId || randomUUID(),
+          async (token) => editOnce(token),
+          {
+            signal: context?.abortSignal,
+            paths: [normalizeArtifactPath({ scope, threadId, path: relativePath })],
+          },
+        )
+        : await editOnce();
       return {
         path: relativePath,
         etag,

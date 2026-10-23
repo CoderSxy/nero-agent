@@ -427,3 +427,35 @@ test('injected write failure leaves no temp file or pending reservation', async 
     else process.env.WORKSPACE_DEFAULT_QUOTA_BYTES = previousQuota;
   }
 });
+
+test('manual saves wait for the user mutation lock and cannot become command output', async () => {
+  const { withManualWorkspaceMutation } = await import('../src/mastra/files/artifacts/collector');
+  const { filesystem, path } = await fixture('before');
+  const previousRoot = process.env.WORKSPACE_ROOT;
+  process.env.WORKSPACE_ROOT = filesystem.basePath!;
+  const userId = '91919191-9191-4191-8191-919191919191';
+  let release!: () => void;
+  let entered!: () => void;
+  const started = new Promise<void>(resolve => { entered = resolve; });
+  const held = withManualWorkspaceMutation({ userId, roles: ['user'] }, async () => {
+    entered();
+    await new Promise<void>(resolve => { release = resolve; });
+  });
+  await started;
+  let saved = false;
+  const save = saveWorkspaceText(filesystem, 'note.md', 'after!', readWorkspaceVersion(Buffer.from('before')), userId)
+    .then(() => { saved = true; });
+  let during: string;
+  try {
+    await new Promise(resolve => setTimeout(resolve, 60));
+    during = await readFile(path, 'utf8');
+    assert.equal(saved, false, 'save must wait until the tracked operation has captured its after snapshot');
+    assert.equal(during, 'before');
+  } finally {
+    release();
+    await held;
+    await save;
+    if (previousRoot === undefined) delete process.env.WORKSPACE_ROOT; else process.env.WORKSPACE_ROOT = previousRoot;
+  }
+  assert.equal(await readFile(path, 'utf8'), 'after!');
+});

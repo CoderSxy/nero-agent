@@ -21,6 +21,7 @@ import { isWorkspaceResolverEnabled } from '../workspace/config';
 import { resolveUserFilesystem } from '../workspace/resolver';
 import { isUserFilesEnabled } from '../files/policy';
 import { attachmentPersistenceProcessor } from '../files/attachment-persistence-processor';
+import { createTurnArtifactsProcessor } from '../files/artifacts/processor';
 import { userFileTools } from '../files/tools';
 import { disabledNativeWorkspaceTools } from '../sandbox/native-tools';
 import { sandboxTools } from '../sandbox/tool';
@@ -62,6 +63,7 @@ function isAdmin(requestContext: RequestContext): boolean {
 }
 
 const turnPolicyProcessor = createTurnPolicyProcessor();
+const turnArtifactsProcessor = createTurnArtifactsProcessor();
 const taskQualityProcessor = createTaskQualityProcessor({
   persist: async (runId, outcome) => {
     if (!process.env.DATABASE_URL) return;
@@ -122,8 +124,8 @@ ${chartInstructions}
   },
   tools: ({ requestContext }) => resolveAgentTools(requestContext),
   // App skill/skill_read/skill_search only — do NOT configure native Agent.skills auto-tools.
-  inputProcessors: [temporalProcessor, attachmentPersistenceProcessor, resolveSkillAgentProcessor(), turnPolicyProcessor, taskQualityProcessor, runMetricsProcessor],
-  outputProcessors: [attachmentPersistenceProcessor, resolveSkillAgentProcessor(), turnPolicyProcessor, taskQualityProcessor, runMetricsProcessor],
+  inputProcessors: [temporalProcessor, attachmentPersistenceProcessor, resolveSkillAgentProcessor(), turnPolicyProcessor, taskQualityProcessor, turnArtifactsProcessor, runMetricsProcessor],
+  outputProcessors: [attachmentPersistenceProcessor, resolveSkillAgentProcessor(), turnPolicyProcessor, taskQualityProcessor, turnArtifactsProcessor, runMetricsProcessor],
   signals: [new TaskSignalProvider()],
 });
 

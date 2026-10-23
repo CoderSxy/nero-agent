@@ -5,6 +5,7 @@ import { studioAuth } from './studio';
 import type { Context, Next } from 'hono';
 import { RequestContext } from '@mastra/core/request-context';
 import { readFinanceCategory, setVerifiedFinanceCategory } from '../finance/scope';
+import { deleteThreadArtifactRuns } from '../files/artifacts/repository';
 
 type GuardRequest = {
   method: string;
@@ -124,6 +125,23 @@ export const authorizeThreadRoute = {
       const owned = await assertThreadOwned(auth, threadId, threadLookup);
       setVerifiedFinanceCategory(requestContext, readFinanceCategory(owned.metadata));
       await next();
+      // After an authorized successful thread DELETE, drop this owner's artifact runs.
+      if (
+        method === 'DELETE'
+        && /\/api\/memory\/(?:network\/)?threads\/[^/?]+$/.test(path)
+        && context.res
+        && context.res.status >= 200
+        && context.res.status < 300
+      ) {
+        try {
+          await deleteThreadArtifactRuns(auth, threadId);
+        } catch (cleanupError) {
+          console.error('artifact thread cleanup failed', {
+            threadId,
+            message: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+          });
+        }
+      }
     } catch (error) {
       if (error instanceof ThreadGuardError) {
         return respond(context, { error: error.message }, error.status);

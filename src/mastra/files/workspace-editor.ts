@@ -4,8 +4,13 @@ import { chmod, lstat, open, realpath, rename, unlink, writeFile } from 'node:fs
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import type { WorkspaceFilesystem } from '@mastra/core/workspace';
 import { getPool } from '../auth/db';
+import { withManualWorkspaceMutation } from './artifacts/collector';
+import type { WorkspaceMutationToken } from './artifacts/mutation-coordinator';
+
 import { workspaceQuota, QuotaExceededError } from '../workspace/quota';
 import { assertHostWritable, DiskProtectionError } from '../workspace/disk-protection';
+
+type MutationOptions = { mutationToken?: WorkspaceMutationToken; signal?: AbortSignal };
 
 const MAX_EDIT_BYTES = 10 * 1024 * 1024;
 const MAX_REPLACE_TEXT_BYTES = 64 * 1024;
@@ -171,11 +176,12 @@ async function mutateWorkspaceText(
   expectedEtag: string,
   userId: string | undefined,
   transform: (currentText: string) => Buffer,
+  options: MutationOptions = {},
 ): Promise<{ etag: string; size: number }> {
   assertValidEtag(expectedEtag);
   const key = await pathLockKey(filesystem, path, userId);
 
-  return withPathLock(key, async () => {
+  const mutate = () => withPathLock(key, async () => {
     await assertExistingRegularFile(filesystem, path);
     let current: Uint8Array;
     try {
@@ -236,17 +242,21 @@ async function mutateWorkspaceText(
     }
     return { etag: readWorkspaceVersion(next), size: next.length };
   });
+  return userId
+    ? withManualWorkspaceMutation({ userId, roles: [] }, mutate, { token: options.mutationToken, signal: options.signal })
+    : mutate();
 }
 
 export async function saveWorkspaceText(
   filesystem: WorkspaceFilesystem, path: string, text: string, expectedEtag: string, userId?: string,
+  options: MutationOptions = {},
 ): Promise<string> {
   if (text.includes('\0')) throw new WorkspaceEditError(400, '文件包含无效文本');
   const next = Buffer.from(text, 'utf8');
   if (next.length > MAX_EDIT_BYTES) throw new WorkspaceEditError(413, '文件超过在线编辑上限', 'FILE_TOO_LARGE');
   if (next.toString('utf8') !== text) throw new WorkspaceEditError(400, '文件包含无效 UTF-8 文本');
 
-  const result = await mutateWorkspaceText(filesystem, path, expectedEtag, userId, () => next);
+  const result = await mutateWorkspaceText(filesystem, path, expectedEtag, userId, () => next, options);
   return result.etag;
 }
 
@@ -257,6 +267,7 @@ export async function replaceWorkspaceText(
   newText: string,
   expectedEtag: string,
   userId: string,
+  options: MutationOptions = {},
 ): Promise<{ etag: string; size: number }> {
   if (!oldText) throw new WorkspaceEditError(400, '替换原文不能为空', 'NO_MATCH');
   if (oldText.includes('\0') || newText.includes('\0')) {
@@ -283,5 +294,5 @@ export async function replaceWorkspaceText(
     const index = currentText.indexOf(oldText);
     const nextText = currentText.slice(0, index) + newText + currentText.slice(index + oldText.length);
     return Buffer.from(nextText, 'utf8');
-  });
+  }, options);
 }

@@ -1,0 +1,24 @@
+.workspace-file-row--selected > button:first-child {
+  background: var(--card);
+}
+
+.workspace-file-row--emphasize > button:first-child {
+  animation: workspace-file-emphasize 1.5s ease;
+}
+
+@keyframes workspace-file-emphasize {
+  0% {
+    background: color-mix(in srgb, var(--foreground) 18%, transparent);
+  }
+  100% {
+    background: var(--card);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-file-row--emphasize > button:first-child {
+    animation: none;
+    outline: 2px solid color-mix(in srgb, var(--foreground) 35%, transparent);
+    outline-offset: -2px;
+  }
+}
