@@ -1,0 +1,228 @@
+src/mastra/files/artifacts/types.ts
+  s_3be59527f39d41::t_1bd320d0c6af35 1-56
+src/mastra/files/artifacts/mutation-coordinator.ts
+  s_d4b74373b57738::t_318adbd07760a2 198
+  s_d4b74373b57738::t_6c52fef546f67f 2,121-156,160,162-166,168,170,172-173,175-185,191-197,199-202
+  s_3be59527f39d41::t_c9ca251831c0b5 1,3-120,157-159,161,167,169,171,174,186-190,203-244
+src/mastra/skills/script-runner.ts
+  s_3be59527f39d41::t_cb55fbd44cade8 399-400,421
+  s_3be59527f39d41::t_cc734d789165d3 309
+  s_3be59527f39d41::t_e18f1d97e4eab8 15-16
+  s_3be59527f39d41::t_becb3314098cac 401-420,422-429
+  s_3be59527f39d41::t_cc3022d4ead63f 1
+src/mastra/files/service.ts
+  s_3be59527f39d41::t_3ec58c35e5a2ec 107-127
+  s_3be59527f39d41::t_c8984bb84d1d52 49,51-56,58-61,63-68,70-95,97
+  s_3be59527f39d41::t_0075c17bb1931d 8-9
+web/src/agent/WorkspaceFileOverlay.test.tsx
+  s_3be59527f39d41::t_39c91fc6c7af1f 124-136
+src/mastra/files/artifacts/processor.ts
+  s_3be59527f39d41::t_8cbb61ac9aae77 1-96,98-101,103-139
+  s_3be59527f39d41::t_f8bfb6ed19735f 97,102
+docs/superpowers/specs/2026-10-23-agent-turn-artifacts-design.md
+  s_d4b74373b57738::t_02a1df304f6dda 130-131,233
+  s_d4b74373b57738::t_6d52ddebadcb48 1-129,132-223,234-306
+  s_3be59527f39d41::t_2941009cad9a68 224-228,230-232
+  s_3be59527f39d41::t_d4341d2570df38 229
+src/mastra/files/workspace-editor.ts
+  s_d4b74373b57738::t_6c52fef546f67f 7-9,184,245-247,252,259,270
+  s_d4b74373b57738::t_39989b63bd8a28 179,297
+  s_d4b74373b57738::t_602c359377cdef 13-14
+web/src/agent/TurnArtifacts.tsx
+  s_3be59527f39d41::t_ebdd66abd20414 1-86
+web/src/agent/use-turn-artifacts.test.tsx
+  s_3be59527f39d41::t_3229224cd09bb8 35
+  s_3be59527f39d41::t_940c78148b0694 6,13,17,41-46,55,79-84,103
+  s_3be59527f39d41::t_772998c3fdff78 61,72
+  s_3be59527f39d41::t_4ef9200cfc88e7 1-5,7-12,14-16,18-34,36-40,47-54,56-60,62-71,73-78,85-102,104-105
+web/src/agent/TurnArtifacts.test.tsx
+  s_3be59527f39d41::t_3b3eda2d5dd119 1-80
+web/src/agent/turn-artifacts.css
+  s_3be59527f39d41::t_077471dad37f25 1-83
+tests/workspace-editor.test.ts
+  s_d4b74373b57738::t_6931489160549f 434-435,458
+  s_d4b74373b57738::t_2e6018e74e309b 430-433,436-457,459-461
+tests/turn-artifacts-recovery.test.ts
+  s_d4b74373b57738::t_acc8f0ff950022 53-75
+  s_d4b74373b57738::t_2e6018e74e309b 1-52
+src/mastra/files/artifacts/collector.ts
+  s_3be59527f39d41::t_9adf179107ac47 1-8,10-19,21-31,33-78,80-110,112-142,144-154,156-167,169-172
+  s_3be59527f39d41::t_4059438612fcb5 20
+  s_3be59527f39d41::t_f5ff3782b59c3a 79
+  s_d4b74373b57738::t_6c52fef546f67f 9,32,111,143,155,168
+  s_d4b74373b57738::t_df7a9aab192cf8 173-174
+src/mastra/sandbox/tool.ts
+  s_3be59527f39d41::t_22513e4f8996a7 58-64
+  s_3be59527f39d41::t_d4d1c7ab4a29cf 41-42
+src/mastra/agents/agent.ts
+  s_3be59527f39d41::t_5c63159292be83 127-128
+  s_3be59527f39d41::t_97e389871db81e 24
+  s_3be59527f39d41::t_d49fc8307b231b 66
+tests/turn-artifacts-lifecycle.test.ts
+  s_3be59527f39d41::t_db51fa8005faec 1-98
+web/src/agent/turn-artifacts-client.ts
+  s_3be59527f39d41::t_3f52dcedf0665d 1-30
+web/src/agent/chat-message-reconciliation.test.ts
+  s_3be59527f39d41::t_4007ceffdd852c 52-73
+src/mastra/index.ts
+  s_3be59527f39d41::t_1d1b480402da7d 22
+  s_3be59527f39d41::t_b679b957a56bd2 64
+src/mastra/files/artifacts/lifecycle.ts
+  s_d4b74373b57738::t_39989b63bd8a28 1,33
+  s_3be59527f39d41::t_d055586059ee43 2-32,34-45
+web/src/agent/chat-message-reconciliation.ts
+  s_3be59527f39d41::t_53e659011d7eb4 3,43-45,50-58,64-71
+docs/superpowers/plans/2026-10-23-agent-turn-artifacts.md
+  s_3be59527f39d41::t_0cf008bd93b608 3,90-94,114-119,136-140,159-165,182-187,201-205,224-229,245-250,263-268,283-288,298-305,309-314
+  s_d4b74373b57738::t_cf041153ce8086 1-2,4-89,95-108,110-113,120-135,141-158,166-176,178-181,188-200,206-223,230-244,251-262,269-282,289-297,306-308
+  s_d4b74373b57738::t_02a1df304f6dda 109,177
+src/mastra/files/artifacts/paths.ts
+  s_3be59527f39d41::t_25f3c381a31569 1-40
+migrations/015_agent_turn_artifacts.sql
+  s_3be59527f39d41::t_0276062f321db3 1-35
+web/src/agent/turn-artifacts.ts
+  s_3be59527f39d41::t_51f7a2647c59f5 1,8-149,162
+  s_3be59527f39d41::t_38d9f72568166d 2-7
+  s_d4b74373b57738::t_538b008129cb56 150-161
+src/mastra/files/artifacts/routes.ts
+  s_3be59527f39d41::t_8a2dda748e11d4 1-76
+docs/deployment/turn-artifacts-verification-2026-10-23.md
+  s_3be59527f39d41::t_4dd27af4b20903 1-44
+  s_d4b74373b57738::t_6bc09becd9669b 45-74
+src/mastra/sandbox/manager.ts
+  s_3be59527f39d41::t_15855fd7b39362 32-36,38-40
+  s_3be59527f39d41::t_ae003e317c5de4 1,10-15,20
+  s_3be59527f39d41::t_d0d14e455342c5 60-113
+tests/turn-artifacts-mutation.test.ts
+  s_3be59527f39d41::t_8c3c5fc871d4a9 1-139,148,152-155
+  s_3be59527f39d41::t_6f24a8965bb617 140-147,149-151
+  s_d4b74373b57738::t_0d6d2e8079e6e2 158-160,165,169,173-174,178-179,181-225
+  s_d4b74373b57738::t_a2f49ff1fbf838 156-157,161-164,166-168,170-172,175-177,180
+src/mastra/auth/authorization.ts
+  s_3be59527f39d41::t_7af2eb3644d24e 8
+  s_3be59527f39d41::t_5081d7e6a4485e 128-144
+src/mastra/files/artifacts/snapshot.ts
+  s_3be59527f39d41::t_d2e4e4e8e87b66 1-63,72-73,86-87,89-90,92-93,100-110,146-152,154-160,162-329
+  s_3be59527f39d41::t_f804c9bef8de7b 68,70-71,74-84,88,94-99
+  s_3be59527f39d41::t_12eb91c54346bd 111-145
+  s_3be59527f39d41::t_6952ccddf84eea 64-67,69,85,91
+  s_3be59527f39d41::t_af590f1a8990f5 153,161
+web/src/agent/WorkspaceFileOverlay.tsx
+  s_3be59527f39d41::t_6ea9248f440735 42-44
+  s_3be59527f39d41::t_c0a08f70db986a 49,51,53,56-58
+  s_3be59527f39d41::t_949d6101ec1dd7 12-15
+web/src/agent/WorkspaceFileTree.tsx
+  s_3be59527f39d41::t_01fdd4056dae08 167-172,180-183
+  s_3be59527f39d41::t_ac019ad40dd567 62,64
+  s_3be59527f39d41::t_a8b17604ef29e0 317-318
+  s_3be59527f39d41::t_1d8a156d61aaec 101,138-140,142-166,173,177-178,184
+  s_3be59527f39d41::t_2ce9fa1a403c75 8
+  s_3be59527f39d41::t_6f2f48a11d188f 300
+  s_3be59527f39d41::t_1ca224cb255061 316
+  s_3be59527f39d41::t_bbda0317bf12bc 175-176
+  s_3be59527f39d41::t_b58b09fe2bcc9f 51-52,56,61,63,67
+  s_d4b74373b57738::t_166967b09a2d12 68-70,96-97,105,113,141,174,179
+web/src/agent/turn-artifacts.test.ts
+  s_3be59527f39d41::t_233654dc1fcfa3 1-93
+web/src/agent/RightPanelDock.test.tsx
+  s_3be59527f39d41::t_f0037901205027 59-86
+tests/turn-artifacts-collector.test.ts
+  s_3be59527f39d41::t_829a5134238adf 1-106
+src/mastra/files/workspace-service.ts
+  s_3be59527f39d41::t_69bca32a4d5eeb 9-10
+  s_3be59527f39d41::t_709c73d10f1016 150-160
+  s_3be59527f39d41::t_cd6e555b651e52 40-58
+src/mastra/files/tools.ts
+  s_3be59527f39d41::t_2e57102d02b3dd 461-462,472-475,477-480,482
+  s_3be59527f39d41::t_639122f147e031 481
+  s_3be59527f39d41::t_c045ddf91edf5d 342-343,345
+  s_d4b74373b57738::t_39989b63bd8a28 463,470,476
+  s_3be59527f39d41::t_be1a958267e0b0 14-19,23-24
+  s_3be59527f39d41::t_73c1723fb197ef 339-341,344,346-360
+web/src/agent/MessageList.tsx
+  s_3be59527f39d41::t_508c6372766319 18-20,22-24
+  s_3be59527f39d41::t_bc5816756ee324 204,211-212
+  s_d4b74373b57738::t_ddc3ed1c092cea 21,241-243,274,287-291,376-377
+web/src/agent/AgentChat.tsx
+  s_3be59527f39d41::t_a8be4381dbc859 60-61,81
+  s_3be59527f39d41::t_e813a81eb27a54 129
+  s_3be59527f39d41::t_fd3e319ce312f8 203-206
+  s_3be59527f39d41::t_aa85eaebeb0075 531-532
+  s_3be59527f39d41::t_a57886e10d9de2 165
+  s_3be59527f39d41::t_9e0dd3c4cf2c62 134
+  s_3be59527f39d41::t_b991eff655f944 15-16
+  s_d4b74373b57738::t_a49536c4d3ed17 202,534-537
+src/mastra/skills/agent-bindings.ts
+  s_3be59527f39d41::t_2bbe3bfd066b88 2-4,9-35,52-58,70,72-81
+  s_3be59527f39d41::t_726a51667b8c52 47-51,66-69,71
+web/src/agent/WorkspaceFileTree.test.tsx
+  s_3be59527f39d41::t_821be119766c63 280-281
+  s_3be59527f39d41::t_8c992c525cf137 264-279,282-318,333
+  s_d4b74373b57738::t_1a550237019e1c 319-332
+tests/turn-artifacts-lifecycle-contract.test.ts
+  s_3be59527f39d41::t_d340e713cb2720 291
+  s_3be59527f39d41::t_355fb26c07a605 1-257,259,261-268,278-284,292-293,295,297,303,306,323-326,328-329,331,337,361-376,383-396,398-413,417-418,420-536,539-544
+  s_3be59527f39d41::t_47749a75178aef 294,296,314-322,332-334,336
+  s_3be59527f39d41::t_527fa0a06ff0fa 537
+  s_3be59527f39d41::t_ae361766945ff3 538
+  s_3be59527f39d41::t_bbc4497a8fd8ac 258,260,269-277,285-290,298-302,304-305,307-313,327,330,335,338-360,377-382,397,414-416,419
+web/src/agent/MessageList.test.tsx
+  s_3be59527f39d41::t_1c92a136dd230c 672-674,677-679,682-683,685-727,729-730,732-736,741-745,753,768
+  s_3be59527f39d41::t_fb357ad56fcc00 675-676,680-681,684,728,731,737-740
+  s_d4b74373b57738::t_9a400fab7479a3 746-752,754-767
+web/src/agent/workspace-file-tree.css
+  s_3be59527f39d41::t_f9150105ecfbb6 1-24
+web/src/agent/RightPanelDock.tsx
+  s_3be59527f39d41::t_d146d390c65ec9 8,10,15,19-29
+web/src/agent/use-turn-artifacts.ts
+  s_3be59527f39d41::t_e478ee2263db82 46-51,53,55,79-85,89-97
+  s_3be59527f39d41::t_35613dc8c9c1ec 1-26,29-31,33-35,41-45,52,54,56-78,86-88,98-123
+  s_3be59527f39d41::t_b814801ebd64a3 27-28,32,36-40
+src/mastra/files/artifacts/repository.ts
+  s_3be59527f39d41::t_62c4135174c7a2 1-415
+web/src/agent/AgentPage.tsx
+  s_3be59527f39d41::t_dc787b78bbf681 352
+  s_3be59527f39d41::t_d3ee97a5905a0e 26-27
+  s_3be59527f39d41::t_54af0cf946bd06 236-240
+  s_3be59527f39d41::t_c8461f8e00a884 80-98
+  s_3be59527f39d41::t_f31ed8cf85302a 399-406
+  s_3be59527f39d41::t_9903aeca641fd2 408-433
+tests/turn-artifacts-repository.test.ts
+  s_3be59527f39d41::t_a997fad6ea01fc 110-111,117-118
+  s_3be59527f39d41::t_804026d321bf9d 1-109,112-116,119-202
+tests/turn-artifacts-snapshot.test.ts
+  s_3be59527f39d41::t_564dab1bacb76a 1-100,102-103,106,109-194
+  s_3be59527f39d41::t_5669d0f603a939 101,104-105,107-108
+src/mastra/sandbox/types.ts
+  s_3be59527f39d41::t_b870f00c0e18ec 14-16
+tests/turn-artifacts-routes.test.ts
+  s_3be59527f39d41::t_8e5370f7bfa9bb 1-140
+src/mastra/files/artifacts/collection-failures.ts
+  s_d4b74373b57738::t_39989b63bd8a28 1-23
+web/src/agent/AgentChat.test.tsx
+  s_d4b74373b57738::t_1c06b2b3e8bc82 48-49,63,1007-1019
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5aea4f82bfd9b8abdb5b14df8af7d7e19e758244",
+  "prompts": {},
+  "sessions": {
+    "s_3be59527f39d41": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0438bc11-74d8-474e-a50a-c7772b7eef3e",
+        "model": "default"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    },
+    "s_d4b74373b57738": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16378-eb20-7c40-bf30-9de42a6b529c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
