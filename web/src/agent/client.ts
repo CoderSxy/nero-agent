@@ -77,9 +77,10 @@ export async function listWorkspaceFiles(source: 'personal' | 'agent' = 'persona
   return { files: body.files, usage: body.usage };
 }
 
-export async function uploadWorkspaceFile(file: File): Promise<WorkspaceFileEntry> {
+export async function uploadWorkspaceFile(file: File, directory?: string): Promise<WorkspaceFileEntry> {
   const body = new FormData();
   body.set('file', file);
+  if (directory !== undefined) body.set('directory', directory);
   const response = await apiFetch('/current-workspace/upload', { method: 'POST', body });
   if (!response.ok) {
     const payload = await response.json().catch(() => ({})) as { error?: string; code?: string };

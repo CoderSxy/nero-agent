@@ -22,9 +22,10 @@ export type PreparedAttachment = {
 export async function uploadWorkspaceFile(
   file: File,
   onProgress?: (ratio: number) => void,
+  directory?: string,
 ): Promise<WorkspaceFileEntry> {
   onProgress?.(0);
-  const result = await postWorkspaceFile(file);
+  const result = await (directory === undefined ? postWorkspaceFile(file) : postWorkspaceFile(file, directory));
   onProgress?.(1);
   return result;
 }

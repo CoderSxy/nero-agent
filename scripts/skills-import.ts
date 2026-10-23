@@ -6,7 +6,7 @@
  *
  * Usage:
  *   node --env-file-if-exists=.env --import tsx scripts/skills-import.ts \
- *     --actor-user-id <uuid> --file <zip> [--publish] [--enable] [--name <canonical>] [--alias <alias>]
+ *     --actor-user-id <uuid> --file <zip> [--publish] [--enable] [--global] [--name <canonical>] [--alias <alias>]
  */
 import { readFile } from 'node:fs/promises';
 import { Readable } from 'node:stream';
@@ -30,21 +30,23 @@ type Args = {
   enable: boolean;
   name?: string;
   alias?: string;
+  global: boolean;
 };
 
 function parseArgs(argv: string[]): Args {
-  const out: Partial<Args> = { publish: false, enable: false };
+  const out: Partial<Args> = { publish: false, enable: false, global: false };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]!;
     if (arg === '--actor-user-id') out.actorUserId = argv[++i];
     else if (arg === '--file') out.file = argv[++i];
     else if (arg === '--publish') out.publish = true;
     else if (arg === '--enable') out.enable = true;
+    else if (arg === '--global') out.global = true;
     else if (arg === '--name') out.name = argv[++i];
     else if (arg === '--alias') out.alias = argv[++i];
     else if (arg === '--help' || arg === '-h') {
       console.log(
-        'Usage: skills-import --actor-user-id <uuid> --file <zip> [--publish] [--enable] [--name] [--alias]',
+        'Usage: skills-import --actor-user-id <uuid> --file <zip> [--publish] [--enable] [--global] [--name] [--alias]',
       );
       process.exit(0);
     } else {
@@ -146,6 +148,16 @@ async function main(): Promise<void> {
       publishedVersion: created.skill.publishedVersion,
     }));
 
+    let currentSkill = created.skill;
+    if (args.global) {
+      currentSkill = await service.setMetadata(actor, {
+        skillId: currentSkill.id,
+        expectedRevision: currentSkill.revision,
+        visibility: 'global',
+      });
+      console.log(JSON.stringify({ phase: 'visibility', skillId: currentSkill.id, visibility: currentSkill.visibility }));
+    }
+
     if (!args.publish) {
       console.log('Draft only (pass --publish [--enable] to release).');
       return;
@@ -154,7 +166,7 @@ async function main(): Promise<void> {
     const published = await publishSkill(versionService, actor, {
       skillId: created.skill.id,
       version: created.version.version,
-      expectedRevision: created.skill.revision,
+      expectedRevision: currentSkill.revision,
       remark: 'skills-import CLI',
     });
     console.log(JSON.stringify({

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { lstat, mkdir, mkdtemp, readdir, symlink, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, mkdtemp, readFile, readdir, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { authContextFromUser } from '../src/mastra/auth/auth-context';
@@ -203,5 +203,35 @@ test('personal usage ignores other users and does not follow symlinks', async ()
     assert.ok(!listedA.files.some(entry => entry.path === 'trap.bin'));
     assert.ok(listedA.usage.usedBytes < 50);
     assert.equal((await lstat(join(rootA, 'trap.bin'))).isSymbolicLink(), true);
+  });
+});
+
+
+test('selected upload directory preserves the filename and refuses overwrite and traversal', async () => {
+  await withWorkspace(async () => {
+    const service = new WorkspaceFileService();
+    const auth = authContextFromUser(user(USER_A));
+    const entry = await service.upload(auth, new File(['first'], '报告.pptx'), undefined, 'projects');
+    assert.equal(entry.path, 'projects/报告.pptx');
+    await assert.rejects(service.upload(auth, new File(['second'], '报告.pptx'), undefined, 'projects'),
+      (error: unknown) => error instanceof FileServiceError && error.status === 409);
+    assert.equal(await readFile(join(workspaceRoot(USER_A), entry.path), 'utf8'), 'first');
+    const listed = await service.list(auth);
+    assert.equal(listed.usage.usedBytes, 5);
+    assert.equal(listed.usage.fileCount, 1);
+    await assert.rejects(service.upload(auth, new File(['bad'], 'a.txt'), undefined, '../escape'));
+  });
+});
+
+
+test('selected upload directory rejects a symlink outside the user workspace', async () => {
+  await withWorkspace(async () => {
+    const service = new WorkspaceFileService();
+    const auth = authContextFromUser(user(USER_A));
+    await service.list(auth);
+    const outside = await mkdtemp(join(tmpdir(), 'upload-outside-'));
+    await symlink(outside, join(workspaceRoot(USER_A), 'projects', 'escape'));
+    await assert.rejects(service.upload(auth, new File(['bad'], 'a.txt'), undefined, 'projects/escape'));
+    assert.deepEqual(await readdir(outside), []);
   });
 });

@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, ChevronRight, File, FileCode2, FileImage, FileText, Folder, MoreHorizontal, RefreshCw } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronDown, ChevronRight, File, FileCode2, FileImage, FileText, Folder, MoreHorizontal, RefreshCw, Upload } from 'lucide-react';
 import { formatBytes, WORKSPACE_FILE_MIME } from './attachment-types';
-import { deleteWorkspaceFiles, listWorkspaceFiles, type UserFileEntry, type WorkspaceUsage } from './client';
+import { fetchWorkspaceFile, deleteWorkspaceFiles, listWorkspaceFiles, type UserFileEntry, type WorkspaceUsage } from './client';
 import type { WorkspaceSource } from './workspace-files';
+import { WorkspaceUploadDialog } from './WorkspaceUploadDialog';
 import { workspaceDisplayEntries } from './workspace-display';
 
 const PROTECTED_TOP_ROOTS = new Set(['shared', 'uploads', 'projects', 'threads']);
@@ -64,6 +65,22 @@ export function WorkspaceFileTree({ source, workspaceId, refreshVersion, onOpenF
   const [deleting, setDeleting] = useState(false);
   const [deleteFeedback, setDeleteFeedback] = useState<string | null>(null);
   const canManage = source === 'personal';
+  const [upload, setUpload] = useState<{ files: File[]; directory: string } | null>(null);
+  const uploadInput = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  async function download(path: string) {
+    setMenuPath(null);
+    setDownloadError(null);
+    try {
+      const blob = await fetchWorkspaceFile(path, source);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url; anchor.download = path.split('/').at(-1) || 'download';
+      document.body.append(anchor); anchor.click(); anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (cause) { setDownloadError(cause instanceof Error ? cause.message : '下载失败'); }
+  }
 
   useEffect(() => {
     let active = true;
@@ -171,9 +188,33 @@ export function WorkspaceFileTree({ source, workspaceId, refreshVersion, onOpenF
     }
   }
 
-  return <aside className="workspace-file-panel" aria-label="文件管理">
+  return <aside className={`workspace-file-panel${dragOver ? ' is-file-drag-over' : ''}`} aria-label="文件管理"
+    onDragOver={event => {
+      if (!canManage || !Array.from(event.dataTransfer.types).includes('Files')) return;
+      event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; setDragOver(true);
+    }}
+    onDragLeave={event => {
+      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragOver(false);
+    }}
+    onDrop={event => {
+      setDragOver(false);
+      if (!canManage || !Array.from(event.dataTransfer.types).includes('Files')) return;
+      event.preventDefault(); event.stopPropagation();
+      const files = Array.from(event.dataTransfer.files);
+      if (!files.length || upload) return;
+      const target = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-upload-directory]') : null;
+      setUpload({ files, directory: target?.dataset.uploadDirectory || 'uploads' });
+    }}>
     <div className="workspace-file-heading"><h2>文件管理</h2>
       <div className="workspace-file-heading-actions">
+        {canManage && <>
+          <input ref={uploadInput} type="file" multiple hidden aria-label="选择上传文件" onChange={event => {
+            const files = Array.from(event.target.files ?? []);
+            if (files.length) setUpload({ files, directory: 'uploads' });
+            event.target.value = '';
+          }} />
+          <button type="button" title="上传文件" aria-label="上传文件" onClick={() => uploadInput.current?.click()}><Upload size={16} /></button>
+        </>}
         {canManage && !selectionMode && <button type="button" onClick={() => {
           setSelectionMode(true);
           setDeleteFeedback(null);
@@ -192,6 +233,8 @@ export function WorkspaceFileTree({ source, workspaceId, refreshVersion, onOpenF
       已用 {formatBytes(usage.usedBytes)} / {formatBytes(usage.quotaBytes)}
       <span className="muted"> · 剩余 {formatBytes(Math.max(0, usage.quotaBytes - usage.usedBytes))}</span>
     </p>}
+    {canManage && <p className="workspace-upload-hint">拖入文件，选择目录后上传</p>}
+    {downloadError && <p role="alert" className="error">{downloadError}</p>}
     {selectionMode && <p className="workspace-file-selection-summary" aria-label="已选摘要">
       已选 {summary.itemCount} 项 · {summary.fileCount} 个文件 · 预计释放 {formatBytes(summary.bytes)}
     </p>}
@@ -205,9 +248,9 @@ export function WorkspaceFileTree({ source, workspaceId, refreshVersion, onOpenF
       const isDirectory = entry.type === 'directory';
       const isExpanded = expanded.has(entry.path);
       const protectedPath = isProtectedWorkspacePath(entry.path);
-      const showMenu = !selectionMode && !isDirectory && Boolean(onAttachFile || canManage);
+      const showMenu = !selectionMode && !isDirectory;
       return <li key={entry.path} style={{ paddingLeft: `${depth * 14}px` }}
-        className="workspace-file-row">
+        className="workspace-file-row" data-upload-directory={isDirectory ? entry.path : undefined}>
         {selectionMode && <input type="checkbox" aria-label={`选择 ${entry.path}`}
           checked={selectedPaths.has(entry.path)} disabled={protectedPath}
           onChange={() => toggleSelected(entry.path)} />}
@@ -249,6 +292,7 @@ export function WorkspaceFileTree({ source, workspaceId, refreshVersion, onOpenF
         </button>}
         {showMenu && menuPath === entry.path && <div className="workspace-file-menu" role="menu"
           onPointerDown={event => event.stopPropagation()}>
+          <button type="button" role="menuitem" onClick={() => void download(entry.path)}>下载</button>
           {onAttachFile && <button type="button" role="menuitem" onClick={() => {
             onAttachFile(entry.path, source);
             setMenuPath(null);
@@ -260,6 +304,11 @@ export function WorkspaceFileTree({ source, workspaceId, refreshVersion, onOpenF
         </div>}
       </li>;
     })}</ul>}
+    {upload && <WorkspaceUploadDialog files={upload.files} initialDirectory={upload.directory}
+      onClose={() => setUpload(null)} onFileUploaded={() => {
+        onFilesChanged?.();
+        if (!onFilesChanged) setManualRefresh(value => value + 1);
+      }} />}
     {pendingDelete && confirmSummary && <div className="workspace-confirm-backdrop">
       <div role="dialog" aria-modal="true" aria-label="确认删除" className="workspace-delete-dialog">
         <p>将删除 {confirmSummary.itemCount} 项（约 {confirmSummary.fileCount} 个文件，预计释放 {formatBytes(confirmSummary.bytes)}）。删除后无法恢复。</p>

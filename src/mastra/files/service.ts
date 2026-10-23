@@ -11,7 +11,7 @@ import { workspaceQuota } from '../workspace/quota';
 import { assertHostWritable } from '../workspace/disk-protection';
 
 export class FileServiceError extends Error {
-  constructor(readonly status: 400 | 401 | 403 | 404 | 413, message: string, readonly code?: string) {
+  constructor(readonly status: 400 | 401 | 403 | 404 | 409 | 413, message: string, readonly code?: string) {
     super(message);
     this.name = 'FileServiceError';
   }

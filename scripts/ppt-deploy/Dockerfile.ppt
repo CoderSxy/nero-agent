@@ -1,0 +1,12 @@
+ARG SANDBOX_BASE=nero-ppt-base:local
+FROM ${SANDBOX_BASE}
+USER root
+RUN apt-get -o Acquire::http::Timeout=30 -o Acquire::Retries=1 update && apt-get -o Acquire::http::Timeout=30 -o Acquire::Retries=1 install -y --no-install-recommends libcairo2 fonts-noto-cjk \
+    && rm -rf /var/lib/apt/lists/*
+# Only the offline PPT/SVG export path; optional AI/media providers are not configured.
+RUN python3 -m pip install --no-cache-dir --timeout 30 --retries 2 'python-pptx>=0.6.21' Pillow CairoSVG \
+    && python3 -c "import pptx, PIL, cairosvg; print('PPT export dependencies imported')" \
+    && python3 -m pip freeze > /opt/ppt-python-dependencies.txt
+USER 10001:10001
+WORKDIR /workspace
+CMD ["sleep", "infinity"]

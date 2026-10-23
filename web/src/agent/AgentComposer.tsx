@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type ClipboardEvent, typ
 import { createPortal } from 'react-dom';
 import { Composer, ComposerActions, ComposerBox, ComposerInput, ComposerRing } from '@mastra/playground-ui/components/Composer';
 import { ArrowUp, Check, ChevronDown, FileText, Image as ImageIcon, Plus, Search, Square, X } from 'lucide-react';
+import { WorkspaceUploadDialog } from './WorkspaceUploadDialog';
 import { fetchWorkspaceFile } from './client';
 import {
   formatBytes, IMAGE_ACCEPT, IMAGE_MIME, isImageAttachment, WORKSPACE_FILE_MIME, type ComposerAttachment,
@@ -110,7 +111,7 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
   catalog?: SafeModel[]; modelRef?: ModelRef; onModelChange?: (ref: ModelRef) => void; modelDisabled?: boolean;
   attachments?: ComposerAttachment[];
   onChooseWorkspaceFiles?: () => void;
-  onUploadFiles?: (files: File[], kind: 'file' | 'image') => void;
+  onUploadFiles?: (files: File[], kind: 'file' | 'image', directory?: string) => void;
   onRemoveAttachment?: (key: string) => void;
   onRetryAttachment?: (key: string) => void;
   onWorkspaceDrop?: (items: WorkspaceDragItem[]) => void;
@@ -121,6 +122,7 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
 }) {
   const available = modelRef && catalog.some(model => model.ref === modelRef);
   const selected = available ? catalog.find(model => model.ref === modelRef) : undefined;
+  const [dropFiles, setDropFiles] = useState<File[] | null>(null);
   const [open, setOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [financeOpen, setFinanceOpen] = useState(false);
@@ -176,11 +178,7 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
     }
     const files = event.dataTransfer.files ? Array.from(event.dataTransfer.files) : [];
     if (!files.length) return;
-    const images = files.filter(file => IMAGE_MIME.has(file.type)
-      || /\.(png|jpe?g|webp|gif)$/i.test(file.name));
-    const others = files.filter(file => !images.includes(file));
-    if (images.length) onUploadFiles?.(images, 'image');
-    if (others.length) onUploadFiles?.(others, 'file');
+    setDropFiles(files);
   }
 
   function onPaste(event: ClipboardEvent<HTMLDivElement>) {
@@ -582,5 +580,12 @@ export function AgentComposer({ draft, onDraftChange, isRunning, onSend, onStop,
       onPicked={applyPickedSkill} onCatalogChange={setSkillCatalog} onPhaseChange={setSkillPhase}
       onChange={onSelectedSkillIdsChange} />
   </div>, document.body)}
+    {dropFiles && <WorkspaceUploadDialog files={dropFiles} attachToComposer onClose={() => setDropFiles(null)}
+      onConfirm={(files, directory) => {
+        const images = files.filter(file => IMAGE_MIME.has(file.type) || /\.(png|jpe?g|webp|gif)$/i.test(file.name));
+        const others = files.filter(file => !images.includes(file));
+        if (images.length) onUploadFiles?.(images, 'image', directory);
+        if (others.length) onUploadFiles?.(others, 'file', directory);
+      }} />}
   </div>;
 }

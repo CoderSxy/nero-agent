@@ -348,3 +348,23 @@ test('save enforces Agent admin access and blocks traversal and symlinks', async
   assert.notEqual(linked.status, 200);
   assert.equal(await readFile(outside, 'utf8'), 'outside');
 });
+
+
+test('selected directory upload returns a downloadable original and rejects duplicate and escaping paths', async () => {
+  const app = await appWithWorkspace();
+  const headers = { authorization: 'Bearer user' };
+  async function upload(directory: string) {
+    const body = new FormData();
+    body.set('file', new File(['PPTX-original-bytes'], '演示.pptx'));
+    body.set('directory', directory);
+    return app.request('/current-workspace/upload', { method: 'POST', headers, body });
+  }
+  const response = await upload('projects');
+  assert.equal(response.status, 201);
+  const entry = await response.json() as { path: string };
+  assert.equal(entry.path, 'projects/演示.pptx');
+  const downloaded = await app.request(`/current-workspace/files/${encodeURI(entry.path)}`, { headers });
+  assert.equal(await downloaded.text(), 'PPTX-original-bytes');
+  assert.equal((await upload('projects')).status, 409);
+  assert.equal((await upload('../escape')).status, 400);
+});

@@ -4,7 +4,11 @@ import { isProtectedWorkspacePath, WorkspaceFileTree } from './WorkspaceFileTree
 
 const listWorkspaceFiles = vi.fn();
 const deleteWorkspaceFiles = vi.fn();
+const fetchWorkspaceFile = vi.fn();
+const uploadWorkspaceFile = vi.fn();
 vi.mock('./client', () => ({
+  uploadWorkspaceFile: (...args: unknown[]) => uploadWorkspaceFile(...args),
+  fetchWorkspaceFile: (...args: unknown[]) => fetchWorkspaceFile(...args),
   listWorkspaceFiles: (...args: unknown[]) => listWorkspaceFiles(...args),
   deleteWorkspaceFiles: (...args: unknown[]) => deleteWorkspaceFiles(...args),
 }));
@@ -219,4 +223,41 @@ describe('workspace file tree', () => {
     fireEvent.click(screen.getByRole('button', { name: '打开 root.txt' }));
     expect(onOpenFile).toHaveBeenCalledWith('root.txt');
   });
+});
+
+
+it('downloads the original file from its row menu without opening the preview', async () => {
+  listWorkspaceFiles.mockResolvedValue({ files: personalFiles, usage });
+  fetchWorkspaceFile.mockResolvedValue(new Blob(['original']));
+  const create = vi.fn(() => 'blob:download');
+  vi.stubGlobal('URL', { ...URL, createObjectURL: create, revokeObjectURL: vi.fn() });
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const open = vi.fn();
+  render(<WorkspaceFileTree source="personal" refreshVersion={0} onOpenFile={open} />);
+  fireEvent.click(await screen.findByRole('button', { name: 'root.txt 的更多操作' }));
+  fireEvent.click(screen.getByRole('menuitem', { name: '下载' }));
+  await waitFor(() => expect(click).toHaveBeenCalled());
+  expect(fetchWorkspaceFile).toHaveBeenCalledWith('root.txt', 'personal');
+  expect(open).not.toHaveBeenCalled();
+  click.mockRestore();
+  vi.unstubAllGlobals();
+});
+
+
+it('asks for a folder before uploading a workspace drop and never attaches it to chat', async () => {
+  listWorkspaceFiles.mockResolvedValue({ files: personalFiles, usage });
+  uploadWorkspaceFile.mockResolvedValue({ source: 'personal', path: 'docs/report.pptx', name: 'report.pptx' });
+  const attach = vi.fn();
+  const changed = vi.fn();
+  render(<WorkspaceFileTree source="personal" refreshVersion={0} onOpenFile={vi.fn()} onAttachFile={attach} onFilesChanged={changed} />);
+  await screen.findByRole('button', { name: '展开 docs' });
+  const file = new File(['pptx'], 'report.pptx');
+  fireEvent.drop(screen.getByRole('button', { name: '展开 docs' }), { dataTransfer: { types: ['Files'], files: [file] } });
+  const dialog = await screen.findByRole('dialog', { name: '上传到工作区' });
+  expect(uploadWorkspaceFile).not.toHaveBeenCalled();
+  expect(within(dialog).getByLabelText('目标目录')).toHaveProperty('value', 'docs');
+  fireEvent.click(within(dialog).getByRole('button', { name: '开始上传' }));
+  await waitFor(() => expect(uploadWorkspaceFile).toHaveBeenCalledWith(file, 'docs'));
+  await waitFor(() => expect(changed).toHaveBeenCalled());
+  expect(attach).not.toHaveBeenCalled();
 });

@@ -1,4 +1,4 @@
-import { mkdir, open, lstat, readdir, realpath, rename, rm, unlink } from 'node:fs/promises';
+import { link, mkdir, open, lstat, readdir, realpath, rename, rm, unlink } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { AuthContext } from '../auth/auth-context';
@@ -35,14 +35,16 @@ const PROTECTED_TOP_ROOTS = new Set(['shared', 'uploads', 'projects', 'threads']
 const PROTECTED_THREAD_LEAVES = new Set(['input', 'output', 'tmp']);
 
 export class WorkspaceFileService {
-  async upload(auth: AuthContext, file: File, signal?: AbortSignal): Promise<WorkspaceFileEntry> {
+  async upload(auth: AuthContext, file: File, signal?: AbortSignal, directory?: string): Promise<WorkspaceFileEntry> {
     const name = safeUploadName(file.name);
     const data = Buffer.from(await file.arrayBuffer());
     if (data.byteLength > maxFileSizeBytes()) throw new FileServiceError(413, '文件过大', 'FILE_TOO_LARGE');
     const root = await realpath(await ensureUserWorkspace(auth));
     const id = randomUUID();
-    const relativePath = `uploads/${id}/${name}`;
-    const hostPath = join(root, 'uploads', id, name);
+    const targetDirectory = directory === undefined ? `uploads/${id}` : relativeFilePath(directory);
+    if (targetDirectory.split('/').some(part => part.startsWith('.'))) throw new FilePathError();
+    const relativePath = `${targetDirectory}/${name}`;
+    const hostPath = join(root, targetDirectory, name);
     assertContained(root, hostPath);
     await assertExistingRealPath(root, dirname(hostPath));
     await assertHostWritable(data.byteLength);
@@ -68,7 +70,19 @@ export class WorkspaceFileService {
       }
       if (signal?.aborted) throw new FileServiceError(400, '上传已中断');
       await assertExistingRealPath(root, dirname(hostPath));
-      await rename(tempPath, hostPath);
+      if (directory === undefined) await rename(tempPath, hostPath);
+      else {
+        // Linking atomically refuses existing destinations, including concurrent uploads.
+        try { await link(tempPath, hostPath); }
+        catch (error) {
+          if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+            throw new FileServiceError(409, '目标目录已有同名文件，请更改文件名或选择其他目录', 'FILE_EXISTS');
+          }
+          throw error;
+        }
+        persisted = true;
+        await unlink(tempPath);
+      }
       persisted = true;
       await workspaceQuota.commit(auth.userId, data.byteLength, 1);
       committed = true;

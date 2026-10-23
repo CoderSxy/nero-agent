@@ -250,7 +250,9 @@ export function createCurrentWorkspaceFileRoutes(lookup?: ThreadLookup) {
           const form = await readLimitedFormData(c);
           const file = form.get('file');
           if (!(file instanceof File)) return c.json({ error: '缺少文件' }, 400);
-          const entry = await new WorkspaceFileService().upload(auth, file);
+          const directory = form.get('directory');
+          if (directory !== null && typeof directory !== 'string') return c.json({ error: '上传目录无效' }, 400);
+          const entry = await new WorkspaceFileService().upload(auth, file, undefined, directory ?? undefined);
           return c.json(entry, 201);
         } catch (error) { return respond(c, error); }
       },

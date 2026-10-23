@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { useState } from 'react';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentChat } from './AgentChat';
@@ -58,6 +58,7 @@ vi.mock('./attachment-client', () => ({
 beforeEach(() => {
   vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
   listThreadAttachments.mockResolvedValue([]);
+  listWorkspaceFiles.mockResolvedValue({ files: [{ path: 'uploads', type: 'directory', size: 0 }] });
   fetchWorkspaceFile.mockResolvedValue(new Blob(['x'], { type: 'application/octet-stream' }));
   listAvailableSkills.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 50 });
 });
@@ -525,7 +526,9 @@ describe('Agent conversation', () => {
     });
     composer.dispatchEvent(drop);
     expect(drop.defaultPrevented).toBe(true);
-    await waitFor(() => expect(uploadWorkspaceFile).toHaveBeenCalledWith(file));
+    expect(uploadWorkspaceFile).not.toHaveBeenCalled();
+    fireEvent.click(within(await screen.findByRole('dialog', { name: '上传到工作区' })).getByRole('button', { name: '开始上传' }));
+    await waitFor(() => expect(uploadWorkspaceFile).toHaveBeenCalledWith(file, undefined, 'uploads'));
     await waitFor(() => expect(screen.getByLabelText('附件 drop.md')).toBeTruthy());
   });
 
@@ -545,7 +548,8 @@ describe('Agent conversation', () => {
       value: { types: ['Files'], files: [image], getData: () => '' },
     });
     composer.dispatchEvent(drop);
-    await waitFor(() => expect(uploadWorkspaceFile).toHaveBeenCalledWith(image));
+    fireEvent.click(within(await screen.findByRole('dialog', { name: '上传到工作区' })).getByRole('button', { name: '开始上传' }));
+    await waitFor(() => expect(uploadWorkspaceFile).toHaveBeenCalledWith(image, undefined, 'uploads'));
     const card = await screen.findByLabelText('附件 shot.png');
     expect(card.querySelector('img')).toBeTruthy();
   });

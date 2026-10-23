@@ -66,7 +66,7 @@ export function AgentPage() {
   const [creatingThread, setCreatingThread] = useState(false);
   const [handoffThreadId, setHandoffThreadId] = useState<string | null>(null);
   const [handoffSendThreadId, setHandoffSendThreadId] = useState<string | null>(null);
-  const pendingLandingFilesRef = useRef<{ files: File[]; kind: 'file' | 'image' }[]>([]);
+  const pendingLandingFilesRef = useRef<{ files: File[]; kind: 'file' | 'image'; directory?: string }[]>([]);
   const pendingLandingPickerRef = useRef(false);
   const creatingThreadRef = useRef(false);
   const pendingFinanceCategoryRef = useRef<FinanceCategory | null>(null);
@@ -304,8 +304,8 @@ export function AgentPage() {
     onInputFocus={mobile ? undefined : () => { setLandingFocused(true); if (canCreate) void create(true); }}
     isRunning={false} sendDisabled={!canCreate || creatingThread} attachmentsDisabled={!mobile} mobileInline={mobile}
     onSend={() => void create(true, mobile)} onStop={() => undefined}
-    onUploadFiles={(files, kind) => {
-      pendingLandingFilesRef.current.push({ files, kind });
+    onUploadFiles={(files, kind, directory) => {
+      pendingLandingFilesRef.current.push({ files, kind, directory });
       setPendingLandingAction(true);
     }}
     onChooseWorkspaceFiles={() => {

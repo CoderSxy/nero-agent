@@ -49,9 +49,10 @@ export class SandboxRegistry {
     const { getPool } = await import('../auth/db');
     await getPool().query(
       `INSERT INTO app_sandbox_instances
-        (user_id, sandbox_id, container_id, status, workspace_root, last_active_at)
-       VALUES ($1, $2, $3, $4, $5, to_timestamp($6 / 1000.0))
+        (user_id, scope_id, sandbox_id, container_id, status, workspace_root, last_active_at)
+       VALUES ($1, $1, $2, $3, $4, $5, to_timestamp($6 / 1000.0))
        ON CONFLICT (user_id) DO UPDATE SET
+         scope_id = EXCLUDED.scope_id,
          sandbox_id = EXCLUDED.sandbox_id,
          container_id = EXCLUDED.container_id,
          status = EXCLUDED.status,

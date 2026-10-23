@@ -21,3 +21,4 @@ src/mastra/public/
 
 # Generated standalone egress proxy
 sandbox/egress/dist/
+local-skills/

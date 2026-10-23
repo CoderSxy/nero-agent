@@ -26,7 +26,7 @@ import { skillActivations } from './message-parts';
 import { MobileComposerDock } from './mobile/MobileComposerDock';
 import { useMobileLayout } from './mobile/useMobileLayout';
 
-type PendingUpload = { key: string; file: File };
+type PendingUpload = { key: string; file: File; directory?: string };
 
 const MESSAGE_TARGET_HIGHLIGHT_MS = 2500;
 
@@ -58,7 +58,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   initialFiles = [], initialSelectedSkillIds = [], openPickerOnMount = false, scheduledRun, onTurnActivations }: {
   title?: string; threadId: string; resourceId: string; initialMessages: MastraDBMessage[];
   initialDraft?: string; initialSelectedSkillIds?: string[]; focusComposer?: boolean; sendOnMount?: boolean;
-  initialFiles?: { files: File[]; kind: 'file' | 'image' }[]; openPickerOnMount?: boolean;
+  initialFiles?: { files: File[]; kind: 'file' | 'image'; directory?: string }[]; openPickerOnMount?: boolean;
   onMessageSent: (message: PendingUserMessage) => void;
   models: ModelSettings | null; catalog?: SafeModel[]; modelRef?: ModelRef;
   onModelChange?: (ref: ModelRef) => void; modelDisabled?: boolean; modelError?: string | null;
@@ -95,7 +95,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     if (initialFilesHandled.current) return;
     initialFilesHandled.current = true;
     if (openPickerOnMount) setPickerOpen(true);
-    for (const batch of initialFiles) uploadFiles(batch.files, batch.kind);
+    for (const batch of initialFiles) uploadFiles(batch.files, batch.kind, batch.directory);
   }, []);
   const pendingUploads = useRef(new Map<string, PendingUpload>());
   const nextAttachmentId = useRef(0);
@@ -277,8 +277,8 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     }]);
   }
 
-  async function startUpload(file: File, key = nextKey()) {
-    pendingUploads.current.set(key, { key, file });
+  async function startUpload(file: File, key = nextKey(), directory?: string) {
+    pendingUploads.current.set(key, { key, file, directory });
     setAttachments(current => {
       const existing = current.find(item => item.key === key);
       if (existing) {
@@ -291,7 +291,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
       }];
     });
     try {
-      const result = await uploadWorkspaceFile(file);
+      const result = await (directory === undefined ? uploadWorkspaceFile(file) : uploadWorkspaceFile(file, undefined, directory));
       setAttachments(current => {
         const next = current.map(item => item.key === key ? {
           ...item,
@@ -317,7 +317,7 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     }
   }
 
-  function uploadFiles(files: File[], kind: 'file' | 'image') {
+  function uploadFiles(files: File[], kind: 'file' | 'image', directory?: string) {
     const accepted = kind === 'image'
       ? files.filter(file => IMAGE_MIME.has(file.type)
         || /\.(png|jpe?g|webp|gif)$/i.test(file.name))
@@ -331,14 +331,14 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
         addOversizeAttachment(file);
         continue;
       }
-      void startUpload(file);
+      void startUpload(file, undefined, directory);
     }
   }
 
   function retryAttachment(key: string) {
     const pending = pendingUploads.current.get(key);
     if (!pending) return;
-    void startUpload(pending.file, key);
+    void startUpload(pending.file, key, pending.directory);
   }
 
   function removeAttachment(key: string) {
