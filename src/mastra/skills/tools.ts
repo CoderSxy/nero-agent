@@ -163,7 +163,7 @@ export function createSkillTools(deps: SkillToolsDeps): ToolsInput {
   const skill_search = createTool({
     id: 'skill_search',
     description:
-      'Search authorized published skill instructions and text resources. Pins versions on first hit.',
+      'Search authorized published skill instructions and text resources using space-separated keywords (matches any keyword). Results include canonical skill names: pass that exact name to skill to load instructions. Pins versions on first hit.',
     inputSchema: z.object({
       query: z.string().min(SKILL_LIMITS.SEARCH_QUERY_MIN).max(SKILL_LIMITS.SEARCH_QUERY_MAX),
       skillNames: z.array(z.string().min(1)).max(20).optional(),

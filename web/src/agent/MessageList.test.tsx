@@ -212,6 +212,19 @@ describe('message tools and stream state', () => {
     expect(screen.getByRole('alert').textContent).toContain('图表配置格式不正确');
     expect((globalThis as Record<string, unknown>)[marker]).toBeUndefined();
   });
+  it('labels skill discovery separately from web search', () => {
+    const message = { id: 'skill-search', role: 'assistant', content: { format: 2, parts: [
+      { type: 'tool-invocation', toolInvocation: { state: 'result', toolCallId: 'skill-search-1',
+        toolName: 'skill_search', args: { query: 'ppt pptx' }, result: { ok: true } } },
+      { type: 'tool-invocation', toolInvocation: { state: 'result', toolCallId: 'web-search-1',
+        toolName: 'web_search', args: { query: '今日新闻' }, result: { ok: true } } },
+    ] } };
+    render(<MessageList messages={[message] as never} isRunning={false} error={null}
+      onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+    expect(screen.getByRole('button', { name: /搜索技能 ppt pptx/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /搜索网页 今日新闻/ })).toBeTruthy();
+  });
+
   it('shows live reasoning and a bordered running process', () => {
     const message = { id: 'live', role: 'assistant', content: { format: 2, parts: [
       { type: 'reasoning', reasoning: '正在规划搜索', state: 'streaming' },

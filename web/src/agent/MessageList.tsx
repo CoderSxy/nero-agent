@@ -65,9 +65,12 @@ const TOOL_LABELS: Record<string, string> = {
   glob: '查找文件', grep: '搜索内容', read_attached_file: '读取附件', list_files: '列出文件',
   task_write: '更新任务', ask_user: '询问用户', schedule_task: '创建定时任务',
   submit_chart_data: '生成图表',
+  skill: '加载技能', skill_read: '读取技能', skill_search: '搜索技能',
+  prepare_skill_resources: '准备技能资源', run_skill_script: '运行技能脚本',
 };
 
 function toolPresentation(name: string) {
+  if (name in TOOL_LABELS && /skill/.test(name)) return { label: TOOL_LABELS[name], Icon: Wrench };
   if (/search|browse/i.test(name)) return { label: '搜索网页', Icon: Globe2 };
   if (/fetch/i.test(name)) return { label: '读取网页', Icon: Wrench };
   if (/execute|command|shell/i.test(name)) return { label: '执行命令', Icon: Terminal };

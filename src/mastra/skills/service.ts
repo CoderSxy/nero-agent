@@ -334,24 +334,34 @@ function sliceTextLines(
 function scoreText(haystack: string, query: string): number {
   if (!query) return 0;
   const lower = haystack.toLowerCase();
-  const q = query.toLowerCase();
+  const terms = searchTerms(query);
   let score = 0;
-  let idx = 0;
-  while (true) {
-    const found = lower.indexOf(q, idx);
-    if (found < 0) break;
-    score += 1;
-    idx = found + q.length;
+  for (const term of terms) {
+    let idx = 0;
+    while (true) {
+      const found = lower.indexOf(term, idx);
+      if (found < 0) break;
+      score += 1;
+      idx = found + term.length;
+    }
   }
+  // Preserve phrase relevance while allowing discovery with synonyms in one query.
+  if (terms.length > 1 && lower.includes(query.toLowerCase())) score += terms.length;
   return score;
+}
+
+function searchTerms(query: string): string[] {
+  return [...new Set(query.toLowerCase().split(/\s+/u).filter(Boolean))];
 }
 
 function extractSnippet(text: string, query: string): { snippet: string; lineRange: { start: number; end: number } } {
   const lines = text.split('\n');
   const q = query.toLowerCase();
+  const terms = searchTerms(query);
+  const exactLine = lines.findIndex(line => line.toLowerCase().includes(q));
   let start = 1;
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i]!.toLowerCase().includes(q)) {
+    if (exactLine >= 0 ? i === exactLine : terms.some(term => lines[i]!.toLowerCase().includes(term))) {
       start = i + 1;
       break;
     }
