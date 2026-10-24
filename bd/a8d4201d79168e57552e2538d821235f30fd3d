@@ -1,0 +1,44 @@
+tests/skills-search-discovery.test.ts
+  s_d4b74373b57738::t_864d6072da8290 1-71
+docs/deployment/thread-loading-performance-analysis-2026-10-24.md
+  s_d4b74373b57738::t_13e8002ff00df6 1-62
+scripts/inspect-skill-incident-traces.mjs
+  s_d4b74373b57738::t_0e1348daa4259a 11-14,16
+  s_d4b74373b57738::t_4787c3c939c1ce 1-5,7-10,15,17-31
+  s_d4b74373b57738::t_bb9d8cc7e94abe 6
+web/src/agent/MessageList.tsx
+  s_d4b74373b57738::t_f88d99b0e18591 68-69,73
+docs/deployment/skill-loading-investigation-2026-10-24.md
+  s_d4b74373b57738::t_dc58117a3212b2 25
+  s_d4b74373b57738::t_e839a2dc947cb4 1-24,26-33,35,37-46
+  s_d4b74373b57738::t_9d7e3bf3e59a81 65-77
+  s_d4b74373b57738::t_bb9d8cc7e94abe 34,36,78-142
+  s_d4b74373b57738::t_17404928bbaf99 47-64
+web/src/agent/MessageList.test.tsx
+  s_d4b74373b57738::t_9f12cd7f205ebe 215-227
+src/mastra/skills/tools.ts
+  s_d4b74373b57738::t_47380f731e8ce0 166
+src/mastra/skills/service.ts
+  s_d4b74373b57738::t_47380f731e8ce0 337,339-346,348-349,353-356,360-361,364
+scripts/patch-skill-search-release.mjs
+  s_d4b74373b57738::t_1142d9f549dc46 1-53
+scripts/probe-model-system-context.mjs
+  s_d4b74373b57738::t_a7cac84cce0e86 1-2,26-28,37,39-41
+  s_d4b74373b57738::t_50c7a4c2be9c70 3-25,29-36,38,42-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bda8d4201d79168e57552e2538d821235f30fd3d",
+  "prompts": {},
+  "sessions": {
+    "s_d4b74373b57738": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16378-eb20-7c40-bf30-9de42a6b529c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
