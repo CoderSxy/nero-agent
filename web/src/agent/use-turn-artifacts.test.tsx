@@ -1,3 +1,4 @@
+import { StrictMode } from 'react';
 import { cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useTurnArtifacts } from './use-turn-artifacts';
@@ -102,4 +103,42 @@ describe('useTurnArtifacts', () => {
     await waitFor(() => expect(result.current.byRun.has('run-1')).toBe(true));
     expect(listTurnArtifacts.mock.calls.some((call) => call[1]?.cursor === 'c1')).toBe(true);
   });
+
+  it('does not re-fetch when settled messages are replaced by equal-content new arrays', async () => {
+    listTurnArtifacts.mockImplementation(async () => ({
+      items: [item('run-1')],
+      nextCursor: null,
+    }));
+    const base = {
+      id: 'm1',
+      role: 'assistant' as const,
+      content: {
+        format: 2 as const,
+        parts: [],
+        metadata: { neroArtifactRun: { version: 1, runId: 'run-1', threadId: 'thread-a' } },
+      },
+    };
+    const { rerender } = renderHook(
+      ({ messages }) => useTurnArtifacts({ threadId: 'thread-a', messages, settledVersion: 0 }),
+      { initialProps: { messages: [{ ...base }] as any[] } },
+    );
+    await waitFor(() => expect(listTurnArtifacts).toHaveBeenCalledTimes(1));
+    const started = Date.now();
+    while (Date.now() - started < 200) {
+      rerender({ messages: [{ ...base }] as any[] });
+      await Promise.resolve();
+    }
+    expect(listTurnArtifacts).toHaveBeenCalledTimes(1);
+  });
+});
+
+it('loads artifacts after StrictMode aborts the first effect setup', async () => {
+ listTurnArtifacts.mockImplementation(async(_thread:string, options:{signal?:AbortSignal})=>{
+   await Promise.resolve();
+   if(options.signal?.aborted) throw new DOMException('aborted','AbortError');
+   return {items:[item('strict-run')],nextCursor:null};
+ });
+ const messages:any[]=[];
+ const {result}=renderHook(()=>useTurnArtifacts({threadId:'thread-a',messages,settledVersion:0}),{wrapper:StrictMode});
+ await waitFor(()=>expect(result.current.byRun.has('strict-run')).toBe(true));
 });

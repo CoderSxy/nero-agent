@@ -280,6 +280,13 @@ button.danger { color: var(--destructive); }
 .workspace-confirm > div { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 7px; }
 .workspace-confirm button { padding: 7px 10px; border: 1px solid var(--border); border-radius: 7px; font-size: 12px; }
 .workspace-confirm button:last-child { background: var(--foreground); color: var(--background); }
+.history-boundary { display: flex; flex-direction: column; gap: 8px; margin: 0 0 12px; }
+.history-boundary-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; color: var(--muted-foreground); font-size: 12px; }
+.history-boundary-row--muted { opacity: 0.8; }
+.history-boundary-action { padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--foreground); font: inherit; }
+.history-boundary-action:disabled { opacity: 0.55; }
+.deferred-history-text-preview { margin: 0; white-space: pre-wrap; word-break: break-word; max-height: 240px; overflow: auto; font: inherit; }
+.deferred-history-text-expand { margin-top: 8px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--foreground); font: inherit; }
 .chat-shell { height: 100%; min-height: 0; overflow: hidden; --chat-surface: var(--background); }
 .chat-shell [data-slot='chat-shell-bar'] { position: absolute; top: 0; left: 0; right: 0; z-index: 2; pointer-events: none; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); background: color-mix(in srgb, var(--background) 55%, transparent); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
 .chat-shell [data-slot='message-scroller'] { min-height: 0; }

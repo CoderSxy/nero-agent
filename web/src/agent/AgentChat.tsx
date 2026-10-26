@@ -27,6 +27,11 @@ import type { SkillActivationView } from './message-parts';
 import { skillActivations } from './message-parts';
 import { MobileComposerDock } from './mobile/MobileComposerDock';
 import { useMobileLayout } from './mobile/useMobileLayout';
+import { isUserMessage } from './pending-user-message';
+import { historyCoversLive } from './chat-message-reconciliation';
+import { HistoryBoundary } from './history/HistoryBoundary';
+import { mergeMessagesById } from './history-window-state';
+import type { HistoryState } from './history-window-types';
 
 type PendingUpload = { key: string; file: File; directory?: string };
 
@@ -58,7 +63,8 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   pendingUserMessages = [], onMessageSubmitted, onMessageFailed, onResponseSettled, onFilesChanged, attachRequest,
   attachmentRefreshVersion = 0, targetMessageId,   initialDraft = '', focusComposer = false, sendOnMount = false,
   initialFiles = [], initialSelectedSkillIds = [], openPickerOnMount = false, scheduledRun, onTurnActivations,
-  onOpenArtifact }: {
+  onOpenArtifact, historyState, historyValidating = false, historyLoadingBefore = false, historyLoadingAfter = false, historyError = null, onLoadBefore, onLoadAfter, onGoLatest, onHistoryRetry,
+}: {
   title?: string; threadId: string; resourceId: string; initialMessages: MastraDBMessage[];
   initialDraft?: string; initialSelectedSkillIds?: string[]; focusComposer?: boolean; sendOnMount?: boolean;
   initialFiles?: { files: File[]; kind: 'file' | 'image'; directory?: string }[]; openPickerOnMount?: boolean;
@@ -79,6 +85,15 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   scheduledRun?: ScheduledRunRef | null;
   onTurnActivations?: (activations: SkillActivationView[]) => void;
   onOpenArtifact?: (file: WorkspaceArtifact) => void;
+  historyState?: HistoryState;
+  historyValidating?: boolean;
+  historyLoadingBefore?: boolean;
+  historyLoadingAfter?: boolean;
+  historyError?: string | null;
+  onLoadBefore?: () => void;
+  onLoadAfter?: () => void;
+  onGoLatest?: () => void;
+  onHistoryRetry?: () => void;
 }) {
   const mobile = useMobileLayout();
   const [draft, setDraft] = useState(initialDraft);
@@ -119,16 +134,19 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   const requestContext = useMemo(() => chatModel && memoryModel
     ? createModelRequestContext({ chatModel, memoryModel }) : undefined, [chatModel, memoryModel]);
   const selectedModel = catalog.find(model => model.ref === (modelRef ?? chatModel));
-  const chat = useChat({ agentId: AGENT_ID, resourceId, threadId, initialMessages, requestContext,
+  // Freeze the useChat seed so prepend/pagination does not remount stream state.
+  const seededMessagesRef = useRef(initialMessages);
+  const chat = useChat({ agentId: AGENT_ID, resourceId, threadId, initialMessages: seededMessagesRef.current, requestContext,
     enableThreadSignals: true });
   const scheduledRunning = useScheduledThreadUpdates({ run: scheduledRun, threadId, resourceId,
-    setMessages: chat.setMessages, onSettled: () => {
+    setMessages: chat.setMessages, initialMessages: seededMessagesRef.current, onSettled: () => {
       onResponseSettled?.();
       onFilesChanged?.();
       refreshThreadAttachments();
       setSettledVersion((value) => value + 1);
     } });
-  const blockedReason = scheduledRunning ? '定时任务正在执行…'
+  const blockedReason = historyValidating ? '正在验证会话历史…'
+    : scheduledRunning ? '定时任务正在执行…'
     : financeSaving ? '正在保存财经分类…' : sendBlockedReason ?? (models ? null : '请先配置可用模型');
   const wasRunning = useRef(chat.isRunning);
   const [settledVersion, setSettledVersion] = useState(0);
@@ -198,10 +216,34 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   }, [attachmentRefreshVersion]);
 
   const reconciledMessages = useReconciledChatMessages({ messages: chat.messages, isRunning: chat.isRunning, threadId, resourceId });
-  const visibleMessages = withPendingUserMessages(reconciledMessages, pendingUserMessages);
+  const historyLoaded = historyState?.messages ?? [];
+  const seedIds = useMemo(() => new Set(seededMessagesRef.current.map(message => message.id)), []);
+  // Initial history is not live data: only a running tail may override canonical history.
+  const activeStart = reconciledMessages.map(isUserMessage).lastIndexOf(true);
+  const dirtySeedIds = useRef(new Set<string>());
+  if (chat.isRunning || scheduledRunning) {
+    for (const message of reconciledMessages.slice(Math.max(0,activeStart))) dirtySeedIds.current.add(message.id);
+  } else {
+    const stored = new Map(historyLoaded.map(message => [message.id,message]));
+    for (const message of reconciledMessages) {
+      const canonical = stored.get(message.id);
+      if (canonical && historyCoversLive([canonical],[message])) {
+        const custom = (value: MastraDBMessage) => typeof value.content === 'string' ? [] : (value.content.parts ?? []).filter(part => part.type.startsWith('data-'));
+        // Text/tool persistence alone does not prove later stream markers were saved.
+        if (JSON.stringify(custom(canonical)) === JSON.stringify(custom(message))) dirtySeedIds.current.delete(message.id);
+      }
+    }
+  }
+  const liveTail = historyState ? reconciledMessages.filter(message => !seedIds.has(message.id) || dirtySeedIds.current.has(message.id)) : reconciledMessages;
+  const mergedForDisplay = !historyState ? reconciledMessages : mergeMessagesById(
+    mergeMessagesById(liveTail,historyLoaded), liveTail.filter(message => dirtySeedIds.current.has(message.id)),
+  );
+  const visibleMessages = withPendingUserMessages(mergedForDisplay, pendingUserMessages);
+  const readingAnchorRef = useRef<{messageId:string;offset:number}|null>(null);
+  const prependAnchorRef = useRef<{ messageId: string; offset: number; messages: MastraDBMessage[] } | null>(null);
   const { byRun: artifactsByRun, error: artifactError, refresh: refreshArtifacts } = useTurnArtifacts({
     threadId,
-    messages: reconciledMessages,
+    messages: visibleMessages,
     settledVersion,
   });
   const displayState = runDisplayState(visibleMessages, chat.isRunning);
@@ -222,12 +264,43 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
   }, []);
   useLayoutEffect(() => {
     const viewport = document.getElementById(viewportId);
-    if (viewport && followRef.current && !targetingPending) {
+    if (!viewport) return;
+    if (prependAnchorRef.current && historyState?.messages !== prependAnchorRef.current.messages) {
+      const anchor = findMessageInViewport(viewport, prependAnchorRef.current.messageId);
+      if (anchor) {
+        const top = anchor.getBoundingClientRect().top - viewport.getBoundingClientRect().top + viewport.scrollTop;
+        viewport.scrollTop = Math.max(0, top - prependAnchorRef.current.offset);
+      }
+      prependAnchorRef.current = null;
+      return;
+    }
+    if (!prependAnchorRef.current && followRef.current && !targetingPending) {
       viewport.scrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
     }
   }, [viewportId, visibleMessages, targetingPending]);
+
+  useEffect(() => { if (historyError) prependAnchorRef.current = null; }, [historyError]);
+  function handleLoadBefore() {
+    const viewport = document.getElementById(viewportId);
+    if (viewport) {
+      for (const node of viewport.querySelectorAll('[data-message-id]')) {
+        const rect = (node as HTMLElement).getBoundingClientRect();
+        const viewRect = viewport.getBoundingClientRect();
+        if (rect.bottom > viewRect.top && rect.top < viewRect.bottom) {
+          prependAnchorRef.current = {
+            messageId: node.getAttribute('data-message-id')!,
+            offset: rect.top - viewRect.top,
+            messages: historyState?.messages ?? [],
+          };
+          break;
+        }
+      }
+    }
+    followRef.current = false;
+    onLoadBefore?.();
+  }
   useLayoutEffect(() => {
-    if (!targetMessageId || !pendingTargetKey || handledTargetKey === pendingTargetKey) return;
+    if (historyValidating || !targetMessageId || !pendingTargetKey || handledTargetKey === pendingTargetKey) return;
     const viewport = document.getElementById(viewportId);
     if (!viewport) return;
     const element = findMessageInViewport(viewport, targetMessageId);
@@ -250,13 +323,17 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     }, MESSAGE_TARGET_HIGHLIGHT_MS);
     setHandledTargetKey(pendingTargetKey);
   }, [viewportId, visibleMessages, targetMessageId, threadId, initialMessages.length,
-    pendingTargetKey, handledTargetKey]);
+    pendingTargetKey, handledTargetKey, historyValidating]);
   useEffect(() => {
     const viewport = document.getElementById(viewportId);
     const content = viewport?.querySelector('[data-slot="message-scroller-content"]');
     if (!viewport || !content || typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(() => {
       if (followRef.current) viewport.scrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
+      else if (readingAnchorRef.current && !prependAnchorRef.current) {
+        const anchor=findMessageInViewport(viewport,readingAnchorRef.current.messageId);
+        if(anchor) viewport.scrollTop += anchor.getBoundingClientRect().top - viewport.getBoundingClientRect().top - readingAnchorRef.current.offset;
+      }
     });
     observer.observe(content);
     return () => observer.disconnect();
@@ -502,18 +579,21 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     void send();
   }, [sendOnMount, draft, blockedReason, modelDisabled, chat.isRunning, chat.isAwaitingToolApproval, attachments]);
   async function approve(id: string) {
+    if (historyValidating) return;
     try { await chat.approveToolCall(id); setError(null);
       setPendingApprovalIds(value => { const next = new Set(value); next.delete(id); return next; });
       setFailedDecisions(value => { const next = new Set(value); next.delete(id); return next; }); }
     catch (cause) { setFailedDecisions(value => new Set(value).add(id)); setError(cause instanceof Error ? cause.message : '批准失败'); throw cause; }
   }
   async function decline(id: string) {
+    if (historyValidating) return;
     try { await chat.declineToolCall(id); setError(null);
       setPendingApprovalIds(value => { const next = new Set(value); next.delete(id); return next; });
       setFailedDecisions(value => { const next = new Set(value); next.delete(id); return next; }); }
     catch (cause) { setFailedDecisions(value => new Set(value).add(id)); setError(cause instanceof Error ? cause.message : '拒绝失败'); throw cause; }
   }
   async function answer(id: string, value: string | string[]) {
+    if (historyValidating) return;
     try { await chat.approveToolCall(id, value); setError(null); }
     catch (cause) { setError(cause instanceof Error ? cause.message : '提交回答失败'); throw cause; }
   }
@@ -524,8 +604,31 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     <ChatShell.Stage><ChatShell.Viewport id={viewportId} onScroll={event => {
       const viewport = event.currentTarget;
       followRef.current = viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop <= 48;
+      if (!followRef.current) {
+        const viewRect=viewport.getBoundingClientRect();
+        for(const node of viewport.querySelectorAll('[data-message-id]')) {
+          const rect=node.getBoundingClientRect();
+          if(rect.bottom>viewRect.top && rect.top<viewRect.bottom){readingAnchorRef.current={messageId:node.getAttribute('data-message-id')!,offset:rect.top-viewRect.top};break;}
+        }
+      } else readingAnchorRef.current=null;
+      if (historyState?.previousCursor && viewport.scrollTop <= 64 && !historyLoadingBefore && !prependAnchorRef.current) handleLoadBefore();
     }}><ChatShell.Content><ChatShell.Column>
-      <MessageList messages={visibleMessages} isRunning={(chat.isRunning && !displayState.answerComplete) || scheduledRunning} error={error}
+      {historyState ? (
+        <HistoryBoundary
+          hasBefore={Boolean(historyState.previousCursor) || Boolean(historyState.turns[0]?.partialBefore)}
+          hasAfter={Boolean(historyState.nextCursor) || historyState.gap}
+          gap={historyState.gap}
+          around={historyState.mode === 'around'}
+          loadingBefore={historyLoadingBefore}
+          loadingAfter={historyLoadingAfter}
+          error={historyError}
+          onLoadBefore={handleLoadBefore}
+          onLoadAfter={onLoadAfter}
+          onGoLatest={onGoLatest}
+          onRetry={onHistoryRetry}
+        />
+      ) : null}
+      <MessageList windowed={Boolean(historyState)} historyTurns={historyState?.turns} targetMessageId={targetMessageId} decisionsDisabled={historyValidating} messages={visibleMessages} isRunning={(chat.isRunning && !displayState.answerComplete) || scheduledRunning} error={error}
         approvals={visibleApprovals} pendingApprovalIds={pendingApprovalIds}
         threadAttachments={threadAttachments}
         artifactsByRun={artifactsByRun}

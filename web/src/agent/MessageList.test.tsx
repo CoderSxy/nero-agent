@@ -779,3 +779,23 @@ it('shows streamed retained artifacts without persisted metadata or canonical me
   const card = screen.getByRole('button', { name: '打开 output/deck.pptx' });
   expect(screen.getByText('模型连接中断').compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
+
+it('defers completed history reasoning until expanded and bounds a giant text preview', async () => {
+ const text='z'.repeat(13000);
+ const props:any={windowed:true,messages:[{id:'q',role:'user',content:{format:2,parts:[{type:'text',text:'question'}]}},{id:'a',role:'assistant',content:{format:2,parts:[{type:'reasoning',reasoning:'PRIVATE_REASONING_BODY'},{type:'text',text}]}}],isRunning:false,error:null,onApprove:vi.fn(),onDecline:vi.fn(),onAnswer:vi.fn()};
+ const {container}=render(<MessageList {...props}/>);
+ expect(screen.queryByText('PRIVATE_REASONING_BODY')).toBeNull();
+ expect(container.textContent?.includes(text)).toBe(false);
+ expect(screen.queryByRole('button',{name:'展开全文'})).not.toBeNull();
+ fireEvent.click(screen.getByText('推理过程'));
+ await waitFor(()=>expect(screen.queryByText('PRIVATE_REASONING_BODY')).not.toBeNull());
+});
+it('does not mount offscreen historical Markdown or message bodies', () => {
+ class Observer {constructor(private cb:IntersectionObserverCallback){} observe(){this.cb([{isIntersecting:false} as any],this as any);} disconnect(){} unobserve(){} }
+ vi.stubGlobal('IntersectionObserver',Observer);
+ const messages=Array.from({length:4},(_,i)=>[{id:`q${i}`,role:'user',content:{format:2,parts:[{type:'text',text:`QUESTION_${i}`}]}},{id:`a${i}`,role:'assistant',content:{format:2,parts:[{type:'text',text:`ANSWER_${i}`}]}}]).flat();
+ render(<MessageList {...({windowed:true,messages,isRunning:false,error:null,onApprove:vi.fn(),onDecline:vi.fn(),onAnswer:vi.fn()} as any)}/>);
+ expect(screen.queryByText('QUESTION_0')).toBeNull();
+ expect(screen.getByText('ANSWER_3')).toBeTruthy();
+ vi.unstubAllGlobals();
+});

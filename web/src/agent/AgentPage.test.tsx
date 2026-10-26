@@ -83,6 +83,16 @@ vi.mock('./use-history-search', () => ({
   }),
 }));
 vi.mock('./history-search-cache', () => ({ createHistorySearchCache: () => ({}) }));
+const windowFlag=vi.hoisted(()=>({enabled:false}));
+const historyWindowFetch=vi.hoisted(()=>vi.fn());
+vi.mock('./history-window-enabled', () => ({ isThreadHistoryWindowEnabled: () => windowFlag.enabled }));
+vi.mock('./history-window-client', async importOriginal => ({...await importOriginal<typeof import('./history-window-client')>(),fetchHistoryWindow:historyWindowFetch}));
+vi.mock('./thread-history-cache', () => ({
+  createThreadHistoryCache: () => ({
+    get: () => null, put: () => undefined, invalidate: () => undefined,
+    delete: () => undefined, clear: () => undefined, size: () => 0, totalBytes: () => 0,
+  }),
+}));
 vi.mock('./AgentChat', () => ({ AgentChat: ({ title, models, sendBlockedReason, catalog, modelRef, onModelChange,
   modelError, pendingUserMessages, onMessageSubmitted, onMessageSent, onMessageFailed, onResponseSettled,
   onFilesChanged, attachRequest, attachmentRefreshVersion,
@@ -134,6 +144,7 @@ function threadWith(models: unknown) {
 }
 
 beforeEach(() => {
+  windowFlag.enabled=false;
   listAvailableSkills.mockResolvedValue({items:[],total:0,page:1,pageSize:50});
   localStorage.clear();
   threadItems = [];
@@ -676,4 +687,22 @@ describe('history search', () => {
     expect(await screen.findByText(/管理员尚未配置公共默认模型/)).toBeTruthy();
   });
 
+});
+
+
+it('uses the enabled history window without falling back to full history', async () => {
+  windowFlag.enabled=true;
+  historyWindowFetch.mockResolvedValue({version:1,thread:{id:'thread-1',resourceId:'agent',updatedAt:new Date().toISOString(),metadata:{neroAgentModels:{chatModel:flash,memoryModel:flash}}},messages:[],turns:[],previousCursor:null,nextCursor:null,snapshotUpper:null,oversizedMessage:false});
+  renderPage('/agent/thread-1');
+  await waitFor(()=>expect(screen.getByTestId('models')).toBeTruthy());
+  expect(historyWindowFetch).toHaveBeenCalledTimes(1);
+  expect(listMessages).not.toHaveBeenCalled();
+});
+it('loads a far search target through around with the enabled window', async () => {
+  windowFlag.enabled=true;
+  historyWindowFetch.mockResolvedValue({version:1,thread:{id:'thread-1',resourceId:'agent',updatedAt:new Date().toISOString(),metadata:{neroAgentModels:{chatModel:flash,memoryModel:flash}}},messages:[],turns:[],previousCursor:'p',nextCursor:'n',snapshotUpper:'u',oversizedMessage:false});
+  renderPage('/agent/thread-1?targetMessageId=far-target');
+  await waitFor(()=>expect(screen.getByTestId('target-message').textContent).toBe('far-target'));
+  expect(historyWindowFetch).toHaveBeenCalledWith('thread-1',expect.objectContaining({around:'far-target'}));
+  expect(listMessages).not.toHaveBeenCalled();
 });

@@ -13,6 +13,7 @@ import type { Theme } from './ModelSettingsMenu';
 import { neighborAfterDeletion } from './thread-scope';
 import { useMobileLayout } from './mobile/useMobileLayout';
 import { MobileThreadActions } from './mobile/MobileThreadActions';
+import { createThreadHistoryCache, type ThreadHistoryCache } from './thread-history-cache';
 
 function initialTheme(): Theme {
   try { return localStorage.getItem('nero-agent-theme') === 'light' ? 'light' : 'dark'; }
@@ -32,6 +33,7 @@ export type AgentShellContextValue = {
   setThreadSource: (source: ThreadSource) => void;
   visibleThreads: ReturnType<typeof filterThreadsBySource>;
   historySearch: ReturnType<typeof useHistorySearch>;
+  threadHistoryCache: ThreadHistoryCache;
   theme: Theme;
   setTheme: (theme: Theme) => void;
   setChatActions: (actions: AgentShellChatActions) => void;
@@ -54,12 +56,20 @@ export function AgentShell({ user, onLogout }: { user: CurrentUser; onLogout: ()
     [list.threads, threadSource],
   );
   const historySearchCache = useMemo(() => createHistorySearchCache(), []);
+  const threadHistoryCache = useMemo(() => createThreadHistoryCache(), []);
+  useEffect(() => () => {
+    threadHistoryCache.clear();
+  }, [threadHistoryCache]);
   const historySearch = useHistorySearch({
     userId: user.id,
     threads: visibleThreads,
     cache: historySearchCache,
     scopeKey: threadSource,
   });
+  const handleLogout = () => {
+    threadHistoryCache.clear(user.id);
+    onLogout();
+  };
   const [theme, setTheme] = useState<Theme>(initialTheme);
   const [chatActions, setChatActions] = useState<AgentShellChatActions>({
     onNew: () => navigate('/agent/new'),
@@ -117,6 +127,7 @@ export function AgentShell({ user, onLogout }: { user: CurrentUser; onLogout: ()
   async function deleteThread(id: string) {
     const nextId = neighborAfterDeletion(visibleThreads, id);
     await list.deleteThread(id);
+    threadHistoryCache.delete(user.id, id);
     navigate(nextId ? `/agent/${nextId}` : '/agent/new', { replace: true });
   }
 
@@ -126,12 +137,13 @@ export function AgentShell({ user, onLogout }: { user: CurrentUser; onLogout: ()
 
   const outletContext: AgentShellContextValue = {
     user,
-    onLogout,
+    onLogout: handleLogout,
     list,
     threadSource,
     setThreadSource,
     visibleThreads,
     historySearch,
+    threadHistoryCache,
     theme,
     setTheme,
     setChatActions,
@@ -161,7 +173,7 @@ export function AgentShell({ user, onLogout }: { user: CurrentUser; onLogout: ()
           <header><h2>{user.displayName}</h2><button type="button" aria-label="关闭我的信息" onClick={() => setProfileOpen(false)}><X size={20} /></button></header>
           <p>{user.email}</p>
           <div className="mobile-profile-theme" role="group" aria-label="主题"><button type="button" aria-pressed={theme === 'light'} onClick={() => setTheme('light')}>浅色</button><button type="button" aria-pressed={theme === 'dark'} onClick={() => setTheme('dark')}>深色</button></div>
-          <button type="button" onClick={onLogout}>退出登录</button>
+          <button type="button" onClick={handleLogout}>退出登录</button>
         </section>
       </div>}
     </>}
@@ -170,7 +182,7 @@ export function AgentShell({ user, onLogout }: { user: CurrentUser; onLogout: ()
         onNew={chatActions.onNew} onSelect={(id) => navigate(`/agent/${id}`)} onDelete={deleteThread}
         onRename={list.renameThread}
         theme={theme} onThemeChange={setTheme}
-        canCreate={chatActions.canCreate} user={user} onLogout={onLogout}
+        canCreate={chatActions.canCreate} user={user} onLogout={handleLogout}
         search={historySearch} onSearchSelect={selectHistorySearchResult}
         source={threadSource} onSourceChange={changeThreadSource}
         isAdmin={user.roles.includes('admin')} />

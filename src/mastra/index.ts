@@ -36,6 +36,7 @@ import { startSkillsReconcile } from './skills/reconcile';
 import { scheduledTaskRoutes } from './scheduled-tasks/routes';
 import { resolveSkillAgentTools } from './skills/factory';
 import { skillRoutes } from './skills/routes';
+import { historyRoutes } from './history/routes';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error('DATABASE_URL 未配置，请先运行 npm run db:local:setup');
@@ -61,7 +62,8 @@ export const mastra = new Mastra({
       studioChineseMiddleware,
     ],
     apiRoutes: [...authRoutes, ...modelRoutes, ...modelAdminRoutes, ...fileRoutes,
-      ...currentWorkspaceFileRoutes, ...turnArtifactRoutes, ...financeRoutes, ...scheduledTaskRoutes, ...skillRoutes],
+      ...currentWorkspaceFileRoutes, ...turnArtifactRoutes, ...financeRoutes, ...scheduledTaskRoutes, ...skillRoutes,
+      ...historyRoutes],
     auth: {
       authenticateToken: async token => getUserByToken(token),
       mapUserToResourceId: user => resourceIdFor(authContextFromUser(user)),

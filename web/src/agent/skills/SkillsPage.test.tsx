@@ -1,3 +1,4 @@
+import { createThreadHistoryCache } from '../thread-history-cache';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -106,6 +107,7 @@ function detailFor(item: SkillManageListItem, md: string, caps?: Partial<Pick<Sk
 function shellContext(): AgentShellContextValue {
   return {
     user: { id: 'u1', email: 'a@t.test', displayName: 'A', roles: ['user'] },
+    threadHistoryCache: createThreadHistoryCache(),
     onLogout: vi.fn(),
     list: { refresh: vi.fn() } as never,
     threadSource: 'default',

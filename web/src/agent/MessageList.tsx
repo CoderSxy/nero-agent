@@ -1,4 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { HistoryTurnList } from './history/HistoryTurnList';
+import { DeferredHistoryText } from './history/DeferredHistoryText';
+import type { HistoryTurn } from './history-window-types';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { MastraDBMessage } from '@mastra/core/agent/message-list';
 import { Message } from '@mastra/playground-ui/components/Message';
 import { MarkdownRenderer } from '@mastra/playground-ui/components/MarkdownRenderer';
@@ -203,8 +206,20 @@ function HistoryAttachmentCard({ attachment }: { attachment: PreparedAttachment 
   </div>;
 }
 
+function HistoryReasoning({children,streaming}:{children:()=>ReactNode;streaming:boolean}) {
+  const [open,setOpen]=useState(streaming);
+  return <details className="process-reasoning" open={open||streaming} onToggle={event=>setOpen(event.currentTarget.open)}>
+    <summary>推理过程</summary>{(open||streaming)&&<div className="process-reasoning__content">{children()}</div>}
+  </details>;
+}
+function ToolDetails({args,result}:{args:unknown;result:unknown}) {
+  const input=summarize(args),output=result===undefined?undefined:summarize(result);
+  return <><ToolCallMono copyText={input}>{input}</ToolCallMono>{output!==undefined&&<ToolCallMono copyText={output}>{output}</ToolCallMono>}</>;
+}
+
 export function MessageList({ messages, isRunning, error, onApprove, onDecline, onAnswer, approvals = {},
-  pendingApprovalIds, threadAttachments = [], artifactsByRun, onOpenArtifact }: {
+  pendingApprovalIds, threadAttachments = [], artifactsByRun, onOpenArtifact, windowed=false, historyTurns, targetMessageId, decisionsDisabled=false }: {
+  windowed?: boolean; historyTurns?: HistoryTurn[]; targetMessageId?: string; decisionsDisabled?: boolean;
   messages: MastraDBMessage[]; isRunning: boolean; error: string | null;
   onApprove: (id: string) => Promise<void>; onDecline: (id: string) => Promise<void>;
   onAnswer: (id: string, answer: string | string[]) => Promise<void>;
@@ -217,7 +232,7 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
   const [pending, setPending] = useState<ReadonlySet<string>>(() => new Set());
   const busy = useRef(new Set<string>());
   async function decide(id: string, action: 'approve' | 'decline') {
-    if (busy.current.has(id) || approvals[id]) return;
+    if (decisionsDisabled || busy.current.has(id) || approvals[id]) return;
     busy.current.add(id); setPending(current => new Set(current).add(id));
     try { await (action === 'approve' ? onApprove(id) : onDecline(id)); }
     catch { /* AgentChat presents the API error; leave the decision available. */ }
@@ -227,7 +242,7 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
     }
   }
   async function answer(id: string, value: string | string[]) {
-    if (busy.current.has(id) || approvals[id]) return;
+    if (decisionsDisabled || busy.current.has(id) || approvals[id]) return;
     busy.current.add(id); setPending(current => new Set(current).add(id));
     try { await onAnswer(id, value); }
     catch { /* AgentChat shows the error; keep the question available. */ }
@@ -273,8 +288,7 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
       }
     }
   }
-  return <div className="message-list" aria-live="polite">
-    {orderedRows.map(({ message, sourceIndex, parts: rawParts, attachments, artifactRunId }, rowIndex) => {
+  const rendered = orderedRows.map(({ message, sourceIndex, parts: rawParts, attachments, artifactRunId }, rowIndex) => {
       const parts = rawParts.filter(part => {
         if (part.kind !== 'observation') return true;
         if (part.state === 'running' || part.state === 'buffering') {
@@ -325,6 +339,7 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
             return <ObservationMarkerBadge key={part.cycleId ?? index} toolName="已观察" args={{}}
               metadata={{ omData: part.data }} />;
           }
+          if (part.kind === 'reasoning' && windowed) return <HistoryReasoning key={index} streaming={isRunning && message === messages.at(-1)}>{() => <MarkdownRenderer streaming={part.streaming}>{part.redacted ? '提供方已隐去推理内容。' : part.text}</MarkdownRenderer>}</HistoryReasoning>;
           if (part.kind === 'reasoning') return <details key={index} className="process-reasoning" open>
             <summary className={part.streaming ? 'process-reasoning__streaming' : undefined}>推理过程</summary>
             <div className="process-reasoning__content">
@@ -335,7 +350,7 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
           if (part.kind === 'text') {
             const errorText = message.role === 'assistant' ? streamError(part.text) : null;
             return errorText ? <p key={index} role="alert" className="error">回复未完成：{errorText}</p> :
-              <RichMarkdownRenderer key={index} streaming={isRunning && message === messages.at(-1)}>{part.text}</RichMarkdownRenderer>;
+              windowed && !(isRunning && message === messages.at(-1)) ? <DeferredHistoryText key={index} text={part.text} renderFull={text=><RichMarkdownRenderer>{text}</RichMarkdownRenderer>}/> : <RichMarkdownRenderer key={index} streaming={isRunning && message === messages.at(-1)}>{part.text}</RichMarkdownRenderer>;
           }
           const tool = part.tool;
           const suspension = interaction(message, 'suspendedTools', tool);
@@ -346,7 +361,7 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
             const output = typeof result?.content === 'string'
               ? { content: result.content, isError: result.isError === true } : undefined;
             return <ChineseAskUser key={`${tool.id}-${index}`} payload={payload} result={output}
-              isAnswered={approvals[tool.id]?.status === 'approved'} isSubmitting={pending.has(tool.id)}
+              isAnswered={approvals[tool.id]?.status === 'approved'} isSubmitting={decisionsDisabled || pending.has(tool.id)}
               onSubmit={value => void answer(tool.id, value)} />;
           }
           const unresolved = !settled(tool.state);
@@ -360,14 +375,12 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
               <span className="tool-label">{label}</span>{detail && <span className="tool-detail">{detail}</span>}
               {tool.state === 'call' && isRunning && <LoaderCircle className="tool-progress" size={14} aria-hidden="true" />}
             </ToolCallHeader></ToolCallTrigger>
-            <ToolCallContent><ToolCallMono copyText={summarize(tool.args)}>{summarize(tool.args)}</ToolCallMono>
-              {tool.result !== undefined && <ToolCallMono copyText={summarize(tool.result)}>{summarize(tool.result)}</ToolCallMono>}
-            </ToolCallContent>
+            <ToolCallContent><ToolDetails args={tool.args} result={tool.result}/></ToolCallContent>
           </ToolCall>
           {tool.state === 'output-denied' && <p className="muted">已拒绝执行</p>}
           {suspension && unresolved && !needsApproval && <p className="muted" role="status">工具已暂停，等待后续输入</p>}
           {needsApproval && <ChineseToolApproval toolName={label}
-            status={approvals[tool.id]?.status} disabled={pending.has(tool.id) || !!approvals[tool.id]}
+            status={approvals[tool.id]?.status} disabled={decisionsDisabled || pending.has(tool.id) || !!approvals[tool.id]}
             onApprove={() => void decide(tool.id, 'approve')} onDecline={() => void decide(tool.id, 'decline')}>
             <span className="muted">{summarize(tool.args)}</span>
           </ChineseToolApproval>}
@@ -381,7 +394,12 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
         {message.role === 'assistant' && answerText && !(isRunning && message === messages.at(-1)) &&
           <MessageActions message={message} text={answerText} model={modelForAnswer(orderedRows, rowIndex)} />}
       </Message>;
-    })}
+    });
+  return <div className="message-list" aria-live="polite">
+    {windowed ? <HistoryTurnList turns={historyTurns} items={orderedRows.map((row,index)=>({
+      id:row.message.id,user:isUserMessage(row.message),node:rendered[index],
+      pin:row.message.id===targetMessageId || row.parts.some(part=>part.kind==='tool' && !settled(part.tool.state)),
+    }))}/> : rendered}
     {isRunning && !messages.some(message => message === messages.at(-1) && messageParts(message)
       .some(part => part.kind === 'reasoning' || part.kind === 'tool' || part.kind === 'observation')) &&
       <p className="run-status" role="status"><LoaderCircle size={14} aria-hidden="true" />正在回复…</p>}

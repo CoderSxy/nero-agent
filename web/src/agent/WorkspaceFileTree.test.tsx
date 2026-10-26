@@ -230,7 +230,8 @@ it('downloads the original file from its row menu without opening the preview', 
   listWorkspaceFiles.mockResolvedValue({ files: personalFiles, usage });
   fetchWorkspaceFile.mockResolvedValue(new Blob(['original']));
   const create = vi.fn(() => 'blob:download');
-  vi.stubGlobal('URL', { ...URL, createObjectURL: create, revokeObjectURL: vi.fn() });
+  const revoke = vi.fn();
+  vi.stubGlobal('URL', { ...URL, createObjectURL: create, revokeObjectURL: revoke });
   const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
   const open = vi.fn();
   render(<WorkspaceFileTree source="personal" refreshVersion={0} onOpenFile={open} />);
@@ -239,6 +240,8 @@ it('downloads the original file from its row menu without opening the preview', 
   await waitFor(() => expect(click).toHaveBeenCalled());
   expect(fetchWorkspaceFile).toHaveBeenCalledWith('root.txt', 'personal');
   expect(open).not.toHaveBeenCalled();
+  // Let the download cleanup finish before restoring the browser URL mock.
+  await waitFor(() => expect(revoke).toHaveBeenCalledWith('blob:download'), { timeout: 2000 });
   click.mockRestore();
   vi.unstubAllGlobals();
 });

@@ -1,3 +1,4 @@
+import { createThreadHistoryCache } from './thread-history-cache';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -63,6 +64,7 @@ function context(isAdmin: boolean): AgentShellContextValue {
       displayName: 'A',
       roles: isAdmin ? ['admin'] : ['user'],
     },
+    threadHistoryCache: createThreadHistoryCache(),
     onLogout: vi.fn(),
     list: { refresh: refreshThreadList } as never,
     threadSource: 'default',

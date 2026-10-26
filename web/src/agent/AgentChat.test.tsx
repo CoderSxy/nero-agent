@@ -1017,3 +1017,66 @@ it('shows an unavailable artifact summary and lets the user retry without sendin
   await waitFor(() => expect(screen.queryByRole('button', { name: '重新加载产物' })).toBeNull());
   expect(sendMessage).not.toHaveBeenCalled();
 });
+
+function historyProbeState(messages: any[], extra: any = {}): any {
+  return {thread:{id:'thread-1',resourceId:'agent'},messages,turns:[],previousCursor:null,nextCursor:null,snapshotUpper:'upper',mode:'latest',gap:false,scrollAnchor:null,oversizedMessage:false,turnAliases:{},...extra};
+}
+it('prefers refreshed canonical history to an unchanged chat seed', () => {
+  const old:any={id:'same',role:'assistant',createdAt:new Date(),content:{format:2,parts:[{type:'text',text:'OLD_SEED'}]}};
+  const fresh={...old,content:{format:2,parts:[{type:'text',text:'NEW_HISTORY'}]}};
+  mockMessages=[old];
+  render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[old]} historyState={historyProbeState([fresh])} onMessageSent={vi.fn()} models={models}/>);
+  expect(screen.queryByText('NEW_HISTORY')).not.toBeNull();
+  expect(screen.queryByText('OLD_SEED')).toBeNull();
+});
+it('provides forward and latest navigation for an around window with no gap', () => {
+  mockMessages=[];
+  render(<AgentChat threadId="thread-1" resourceId="agent" initialMessages={[]} historyState={historyProbeState([],{mode:'around',nextCursor:'next'})} onLoadAfter={vi.fn()} onGoLatest={vi.fn()} onMessageSent={vi.fn()} models={models}/>);
+  expect(screen.queryByRole('button',{name:'加载后续对话'})).not.toBeNull();
+  expect(screen.queryByRole('button',{name:'回到最新消息'})).not.toBeNull();
+});
+it('preserves prepend anchor through an intermediate loading render', () => {
+  const anchor:any={id:'anchor',role:'assistant',createdAt:new Date('2026-10-24T00:00:02Z'),content:{format:2,parts:[{type:'text',text:'ANCHOR'}]}};
+  const earlier={...anchor,id:'earlier',createdAt:new Date('2026-10-24T00:00:01Z')};
+  mockMessages=[anchor];
+  const base={threadId:'thread-1',resourceId:'agent',initialMessages:[anchor],historyState:historyProbeState([anchor],{previousCursor:'p1'}),onLoadBefore:vi.fn(),onMessageSent:vi.fn(),models};
+  const view=render(<AgentChat {...base}/>);
+  const viewport=view.container.querySelector('[data-slot="message-scroller-viewport"]') as HTMLElement;
+  Object.defineProperty(viewport,'clientHeight',{configurable:true,value:200});
+  Object.defineProperty(viewport,'scrollHeight',{configurable:true,value:3000});
+  viewport.getBoundingClientRect=()=>({top:0,bottom:200,left:0,right:500,width:500,height:200,x:0,y:0,toJSON(){}});
+  let contentTop=1050;
+  const node=view.container.querySelector('[data-message-id="anchor"]') as HTMLElement;
+  node.getBoundingClientRect=()=>({top:contentTop-viewport.scrollTop,bottom:contentTop-viewport.scrollTop+50,left:0,right:500,width:500,height:50,x:0,y:0,toJSON(){}});
+  viewport.scrollTop=1000; fireEvent.scroll(viewport);
+  fireEvent.click(screen.getByRole('button',{name:'加载更早的对话'}));
+  view.rerender(<AgentChat {...base} title="loading-before"/>);
+  contentTop=1550;
+  view.rerender(<AgentChat {...base} historyState={historyProbeState([earlier,anchor])}/>);
+  expect(viewport.scrollTop).toBe(1500);
+});
+
+it('retains in-place updates to seeded messages when a resumed run settles', () => {
+ const old:any={id:'resumed',role:'assistant',createdAt:new Date(),content:{format:2,parts:[{type:'text',text:'SAVED_PARTIAL'}]}};
+ const updated={...old,content:{format:2,parts:[{type:'text',text:'RESUMED_FINAL'}]}};
+ mockMessages=[old];mockRunning=true;
+ const props={threadId:'thread-1',resourceId:'agent',initialMessages:[old],historyState:historyProbeState([old]),onMessageSent:vi.fn(),models};
+ const view=render(<AgentChat {...props}/>);
+ mockMessages=[updated];view.rerender(<AgentChat {...props}/>);
+ expect(screen.queryByText('RESUMED_FINAL')).not.toBeNull();
+ mockRunning=false;view.rerender(<AgentChat {...props}/>);
+ expect(screen.queryByText('RESUMED_FINAL')).not.toBeNull();
+ expect(screen.queryByText('SAVED_PARTIAL')).toBeNull();
+});
+
+it('retains streamed custom parts when text persisted before the artifact marker', () => {
+ const old:any={id:'marker',role:'assistant',createdAt:new Date(),content:{format:2,parts:[{type:'text',text:'DONE'}]}};
+ const value={version:1,runId:'late-marker',threadId:'thread-1',revision:1,state:'completed',collectionStatus:'complete',anchorMessageId:'marker',artifacts:[{path:'output/result.txt',name:'result.txt',source:'personal',change:'created',size:1,etag:`"${'a'.repeat(64)}"`}]};
+ const updated={...old,content:{...old.content,parts:[...old.content.parts,{type:'data-nero-artifacts',data:value}]}};
+ mockMessages=[old];mockRunning=true;
+ const props={threadId:'thread-1',resourceId:'agent',initialMessages:[old],historyState:historyProbeState([old]),onMessageSent:vi.fn(),onOpenArtifact:vi.fn(),models};
+ const view=render(<AgentChat {...props}/>);
+ mockMessages=[updated];view.rerender(<AgentChat {...props}/>);
+ mockRunning=false;view.rerender(<AgentChat {...props}/>);
+ expect(screen.queryByRole('button',{name:'打开 output/result.txt'})).not.toBeNull();
+});

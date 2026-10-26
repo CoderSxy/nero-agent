@@ -4,7 +4,8 @@ import type { MastraDBMessage } from '@mastra/core/agent/message-list';
 import { accumulateChunk } from '@mastra/react';
 import { AGENT_ID, client } from './client';
 import { listTaskRuns, type RunDto } from './scheduled-tasks-api';
-import { loadScopedThread } from './thread-scope';
+import { reconcileThreadTail } from './history-tail-client';
+import { mergeMessagesById } from './history-window-state';
 import { isUserMessage } from './pending-user-message';
 
 export type ScheduledRunRef = { taskId: string; runId: string };
@@ -40,11 +41,13 @@ async function findRun(run: ScheduledRunRef): Promise<RunDto | null> {
   }
 }
 
-export function useScheduledThreadUpdates({ run, threadId, resourceId, setMessages, onSettled }: {
+export function useScheduledThreadUpdates({ run, threadId, resourceId, setMessages, onSettled, initialMessages = [] }: {
   run?: ScheduledRunRef | null;
   threadId: string;
   resourceId: string;
   setMessages: Dispatch<SetStateAction<MastraDBMessage[]>>;
+  initialMessages?: MastraDBMessage[];
+  // Polling has its own accumulated tail; loaded UI history is merged, never replaced.
   onSettled?: () => void;
 }): boolean {
   const [running, setRunning] = useState(Boolean(run));
@@ -57,6 +60,7 @@ export function useScheduledThreadUpdates({ run, threadId, resourceId, setMessag
     let finished = false;
     let streamed = false;
     let streamConversation: MastraDBMessage[] = [];
+    const controller = new AbortController();
     let lastChunkAt = 0;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let subscription: { unsubscribe: () => void } | undefined;
@@ -77,12 +81,7 @@ export function useScheduledThreadUpdates({ run, threadId, resourceId, setMessag
             metadata: { mode: 'stream', runId: chunk.runId } });
           if (!streamed) return;
           lastChunkAt = Date.now();
-          setMessages(previous => {
-            const liveIds = new Set(streamConversation.map(message => message.id));
-            const savedUserMessages = previous.filter(message => isUserMessage(message) && !liveIds.has(message.id));
-            const live = [...savedUserMessages, ...streamConversation];
-            return visibleProgress(live) > visibleProgress(previous) ? live : previous;
-          });
+          setMessages(previous => mergeMessagesById(previous, streamConversation));
         },
       }).catch(() => { lastChunkAt = 0; });
     }).catch(() => { /* Storage polling remains available when subscription setup fails. */ });
@@ -93,11 +92,21 @@ export function useScheduledThreadUpdates({ run, threadId, resourceId, setMessag
         if (disposed) return;
         const terminal = !current || TERMINAL.has(current.status);
         if (!streamed || Date.now() - lastChunkAt > 2_500 || terminal) {
-          const snapshot = await loadScopedThread(threadId, resourceId);
+          const anchorMessages = streamConversation.length ? streamConversation : initialMessages;
+          const start = anchorMessages.map(isUserMessage).lastIndexOf(true);
+          const snapshot = await reconcileThreadTail({ threadId, userId: resourceId,
+            liveMessages: start >= 0 ? anchorMessages.slice(start) : anchorMessages,
+            signal: controller.signal, followLatest: true });
           if (disposed) return;
-          const saved = snapshot.messages as MastraDBMessage[];
-          setMessages(previous => terminal || visibleProgress(saved) > visibleProgress(previous)
-            ? saved : previous);
+          const saved = snapshot;
+          setMessages(previous => {
+            const byId = new Map(previous.map(message => [message.id, message]));
+            const monotonic = saved.map(message => {
+              const live = byId.get(message.id);
+              return live && visibleProgress([live]) > visibleProgress([message]) ? live : message;
+            });
+            return mergeMessagesById(previous, monotonic);
+          });
         }
         if (terminal) {
           finished = true;
@@ -112,6 +121,7 @@ export function useScheduledThreadUpdates({ run, threadId, resourceId, setMessag
     void poll();
     return () => {
       disposed = true;
+      controller.abort();
       if (timer) clearTimeout(timer);
       subscription?.unsubscribe();
     };

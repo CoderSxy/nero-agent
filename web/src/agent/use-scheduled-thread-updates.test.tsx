@@ -9,7 +9,7 @@ const listTaskRuns = vi.hoisted(() => vi.fn());
 const loadScopedThread = vi.hoisted(() => vi.fn());
 vi.mock('./client', () => ({ AGENT_ID: 'agent', client: { getAgent: () => ({ subscribeToThread }) } }));
 vi.mock('./scheduled-tasks-api', () => ({ listTaskRuns }));
-vi.mock('./thread-scope', () => ({ loadScopedThread }));
+vi.mock('./history-tail-client', () => ({ reconcileThreadTail: async (...args: unknown[]) => { const value = await loadScopedThread(...args); return value.messages; } }));
 
 afterEach(() => { vi.useRealTimers(); vi.clearAllMocks(); });
 
@@ -163,4 +163,32 @@ describe('scheduled conversation updates', () => {
       toolInvocation: { state: 'result', result: 'sunny' } });
     unmount();
   });
+});
+
+it('keeps loaded assistant history when a scheduled poll returns a tail window', async () => {
+  const old:any={id:'old',role:'assistant',content:{format:2,parts:[{type:'text',text:'OLD_HISTORY'}]}};
+  const fresh:any={id:'new',role:'assistant',content:{format:2,parts:[{type:'text',text:'NEW_TAIL'}]}};
+  subscribeToThread.mockRejectedValue(new Error('offline'));
+  listTaskRuns.mockResolvedValue({items:[{id:'run-1',status:'succeeded'}],total:1});
+  loadScopedThread.mockResolvedValue({messages:[fresh]});
+  const {result,unmount}=renderHook(()=>{
+    const [messages,setMessages]=useState([old]);
+    useScheduledThreadUpdates({run:{taskId:'task-1',runId:'run-1'},threadId:'t',resourceId:'u',setMessages});
+    return messages;
+  });
+  await waitFor(()=>expect(result.current.some(m=>m.id==='new')).toBe(true));
+  expect(result.current.some(m=>m.id==='old')).toBe(true);
+  unmount();
+});
+
+it('anchors disconnected scheduled polling to the loaded tail so forward pages can fill gaps', async () => {
+ const old:any={id:'old-boundary',role:'user',createdAt:new Date(),content:{format:2,parts:[{type:'text',text:'previous question'}]}};
+ subscribeToThread.mockRejectedValue(new Error('offline'));
+ listTaskRuns.mockResolvedValue({items:[{id:'run-1',status:'succeeded'}],total:1});
+ loadScopedThread.mockResolvedValue({messages:[old]});
+ const {unmount}=renderHook(()=>{const [messages,setMessages]=useState([old]);void messages;
+  useScheduledThreadUpdates({...({initialMessages:[old]} as any),run:{taskId:'task-1',runId:'run-1'},threadId:'t',resourceId:'u',setMessages});});
+ await waitFor(()=>expect(loadScopedThread).toHaveBeenCalled());
+ expect(loadScopedThread.mock.calls[0]?.[0]?.liveMessages).toEqual([old]);
+ unmount();
 });

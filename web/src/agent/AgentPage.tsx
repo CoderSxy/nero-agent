@@ -5,6 +5,8 @@ import type { GetAgentResponse, GetMemoryConfigResponse } from '@mastra/client-j
 import type { MastraDBMessage } from '@mastra/core/agent/message-list';
 import { AGENT_ID, client, getFinanceCapabilities } from './client';
 import { loadScopedThread } from './thread-scope';
+import { isThreadHistoryWindowEnabled } from './history-window-enabled';
+import { useThreadHistory } from './use-thread-history';
 import { AgentChat } from './AgentChat';
 import { AgentComposer } from './AgentComposer';
 import { ConfigPanel } from './ConfigPanel';
@@ -51,13 +53,20 @@ function ModelStatusNotice({ status, error, isAdmin, onRetry }: {
 }
 
 export function AgentPage() {
-  const { user, list, historySearch, setChatActions, threadSource, setThreadSource, visibleThreads } = useOutletContext<AgentShellContextValue>();
+  const { user, list, historySearch, threadHistoryCache, setChatActions, threadSource, setThreadSource, visibleThreads } = useOutletContext<AgentShellContextValue>();
   const mobile = useMobileLayout();
   const { threadId: routeThreadId } = useParams();
   const threadId = routeThreadId === 'new' ? undefined : routeThreadId;
   const [searchParams] = useSearchParams();
   const targetMessageId = searchParams.get('targetMessageId') ?? undefined;
   const navigate = useNavigate();
+  const historyWindowEnabled = isThreadHistoryWindowEnabled();
+  const threadHistory = useThreadHistory({
+    userId: historyWindowEnabled ? user.id : null,
+    threadId: historyWindowEnabled ? threadId : null,
+    targetMessageId: historyWindowEnabled ? targetMessageId : null,
+    cache: threadHistoryCache,
+  });
   const [messages, setMessages] = useState<MastraDBMessage[]>([]);
   const [availableCatalog, setAvailableCatalog] = useState<string[] | undefined>(undefined);
   const [turnActivations, setTurnActivations] = useState<SkillActivationView[]>([]);
@@ -195,6 +204,7 @@ export function AgentPage() {
     return () => { active = false; };
   }, []);
   useEffect(() => {
+    if (historyWindowEnabled) return;
     if (!threadId) { setMessages([]); setThreadMetadata(null); setMetadataThreadId(null); return; }
     let active = true;
     setFinanceError(null);
@@ -207,7 +217,54 @@ export function AgentPage() {
       if (active) { setMessages([]); setLoadingThread(false); setNotice('会话不存在或无权访问'); navigate('/agent/new', { replace: true }); }
     });
     return () => { active = false; };
-  }, [threadId, navigate, user.id]);
+  }, [threadId, navigate, user.id, historyWindowEnabled]);
+
+  useEffect(() => {
+    if (!historyWindowEnabled) return;
+    if (!threadId) {
+      setMessages([]);
+      setThreadMetadata(null);
+      setMetadataThreadId(null);
+      setLoadingThread(false);
+      setNotice(null);
+      return;
+    }
+    setFinanceError(null);
+    if (threadHistory.status === 'loading' && !threadHistory.state.messages.length) {
+      setLoadingThread(true);
+    }
+    if (threadHistory.status === 'ready' || threadHistory.state.messages.length) {
+      setMessages(threadHistory.state.messages);
+      if (threadHistory.state.thread) {
+        setThreadMetadata(threadHistory.state.thread.metadata);
+        setMetadataThreadId(threadId);
+      }
+      setLoadingThread(false);
+      setNotice(null);
+    }
+    if (threadHistory.status === 'error' && !threadHistory.state.messages.length) {
+      setLoadingThread(false);
+      const denied = [401,403,404].includes(threadHistory.errorStatus ?? 0);
+      if (denied) {
+        setNotice(threadHistory.error ?? '会话不存在或无权访问');
+        threadHistoryCache.delete(user.id, threadId);
+        navigate('/agent/new', { replace: true });
+      } else {
+        setNotice(threadHistory.error ?? '加载历史失败');
+      }
+    }
+  }, [
+    historyWindowEnabled,
+    threadId,
+    threadHistory.status,
+    threadHistory.state.messages,
+    threadHistory.state.thread,
+    threadHistory.error,
+    threadHistory.errorStatus,
+    threadHistoryCache,
+    user.id,
+    navigate,
+  ]);
   useEffect(() => { setFinanceSaving(false); setFinanceError(null); setTurnActivations([]); }, [threadId]);
   useEffect(() => {
     let cancelled = false;
@@ -341,13 +398,13 @@ export function AgentPage() {
     modelDisabled={creatingThread} />;
   return <>
     <section className="agent-center">
-      {notice && <div role="alert" className="notice">{notice}</div>}
+      {notice && <div role="alert" className="notice">{notice}{historyWindowEnabled && threadHistory.status === 'error' && <button type="button" onClick={() => void threadHistory.retry()}>重试</button>}</div>}
       {financeError && <div role="alert" className="notice">{financeError}</div>}
       {mobile && !threadId ? <MobileInbox threads={visibleThreads} source={threadSource}
         onSourceChange={setThreadSource} onNavigate={path => navigate(path)}
         onOpenThread={id => navigate(`/agent/${encodeURIComponent(id)}`)}
         loading={list.loading} error={list.error} modelCount={catalog?.length}
-        composer={<MobileComposerDock>{modelStatusNotice}{landingComposer}</MobileComposerDock>} /> : loadingThread ? <div className="empty-chat">加载会话中…</div> : threadId && !notice ?
+        composer={<MobileComposerDock>{modelStatusNotice}{landingComposer}</MobileComposerDock>} /> : loadingThread || (historyWindowEnabled && threadId && (threadHistory.status === 'loading' || threadHistory.status === 'error' || threadHistory.state.thread?.id !== threadId)) ? <div className="empty-chat">加载会话中…</div> : threadId && !notice ?
         <AgentChat key={threadId} title={list.threads.find(thread => thread.id === threadId)?.title || '未命名会话'}
           onOpenArtifact={openWorkspaceArtifact}
           threadId={threadId} resourceId={user.id} initialMessages={messages} models={selected}
@@ -363,12 +420,14 @@ export function AgentPage() {
           financeCategory={financeCategory} financeEnabled={financeEnabled} financeSaving={financeSaving}
           onFinanceCategoryChange={value => void changeFinanceCategory(value)}
           sendBlockedReason={sendBlockedReason} onMessageSent={message => {
+            threadHistoryCache.invalidate(user.id, threadId);
             void historySearch.invalidateThread(threadId);
             void list.confirmFirstMessageTitle(threadId, message.text).catch(() => void list.refresh());
             void list.refresh();
             setFilesRefreshVersion(value => value + 1);
           }}
           onResponseSettled={() => {
+            threadHistoryCache.invalidate(user.id, threadId);
             void historySearch.invalidateThread(threadId);
             void list.refresh();
           }}
@@ -386,7 +445,17 @@ export function AgentPage() {
             setPendingByThread(current => ({ ...current,
               [threadId]: (current[threadId] ?? []).filter(item => item.id !== message.id) }));
           }}
-          targetMessageId={targetMessageId} onTurnActivations={setTurnActivations} /> :
+          targetMessageId={targetMessageId} onTurnActivations={setTurnActivations}
+          historyState={historyWindowEnabled ? threadHistory.state : undefined}
+          historyValidating={historyWindowEnabled && (!threadHistory.authorized || threadHistory.validating)}
+          historyLoadingBefore={threadHistory.loadingBefore}
+          historyLoadingAfter={threadHistory.loadingAfter}
+          historyError={threadHistory.error}
+          onLoadBefore={historyWindowEnabled ? () => { void threadHistory.loadBefore(); } : undefined}
+          onLoadAfter={historyWindowEnabled ? () => { void threadHistory.loadAfter(); } : undefined}
+          onGoLatest={historyWindowEnabled ? () => { void threadHistory.goLatest(); } : undefined}
+          onHistoryRetry={historyWindowEnabled ? () => { void threadHistory.retry(); } : undefined}
+        /> :
         <ChatShell className="chat-shell chat-shell--empty">
           <ChatShell.Stage><ChatShell.Viewport><ChatShell.Content><ChatShell.Column />
           </ChatShell.Content></ChatShell.Viewport></ChatShell.Stage>
