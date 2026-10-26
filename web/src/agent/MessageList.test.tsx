@@ -799,3 +799,29 @@ it('does not mount offscreen historical Markdown or message bodies', () => {
  expect(screen.getByText('ANSWER_3')).toBeTruthy();
  vi.unstubAllGlobals();
 });
+
+it.each([false, true])('keeps the active streamed process after intermediate narration (windowed=%s)', (windowed) => {
+  const messages = [
+    { id: 'user-live', role: 'user', content: { format: 2, parts: [{ type: 'text', text: '做一个 PPT' }] } },
+    { id: 'narration', role: 'assistant', content: { format: 2, parts: [{ type: 'text', text: '先拉资源，接着继续生成。' }] } },
+    { id: 'active-process', role: 'assistant', content: { format: 2, parts: [
+      { type: 'reasoning', reasoning: '继续读取参考资料', state: 'streaming' },
+      { type: 'tool-invocation', toolInvocation: { toolCallId: 'exec-live', toolName: 'execute_command', args: {}, state: 'call' } },
+    ] } },
+  ];
+  const view = render(<MessageList messages={messages as never} windowed={windowed} isRunning error={null} onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+  const ids = () => [...view.container.querySelectorAll('[data-message-id]')].map(node => node.getAttribute('data-message-id'));
+  expect(ids()).toEqual(['user-live', 'narration', 'active-process']);
+  expect(view.container.querySelector('[data-message-id="active-process"]')).toBe(view.container.querySelector('[data-message-id]:last-child.process-message--running'));
+  expect(view.container.querySelector('[data-message-id="active-process"] .process-status')?.textContent).toContain('正在处理');
+});
+
+it('preserves text followed by reasoning inside an active message', () => {
+  const messages = [{ id: 'continued', role: 'assistant', content: { format: 2, parts: [
+    { type: 'text', text: '阶段说明' },
+    { type: 'reasoning', reasoning: '接下来继续处理', state: 'streaming' },
+  ] } }];
+  const { container } = render(<MessageList messages={messages as never} isRunning error={null} onApprove={vi.fn()} onDecline={vi.fn()} onAnswer={vi.fn()} />);
+  const row = container.querySelector('[data-message-id="continued"]')!;
+  expect(row.textContent!.indexOf('阶段说明')).toBeLessThan(row.textContent!.indexOf('接下来继续处理'));
+});

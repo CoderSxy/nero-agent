@@ -1080,3 +1080,24 @@ it('retains streamed custom parts when text persisted before the artifact marker
  mockRunning=false;view.rerender(<AgentChat {...props}/>);
  expect(screen.queryByRole('button',{name:'打开 output/result.txt'})).not.toBeNull();
 });
+
+it('keeps active arrivals in stream order despite clock skew and equal timestamps in history mode', () => {
+  const message = (id: string, role: string, text: string, date: string): any => ({ id, role, createdAt: new Date(date), content: { format: 2, parts: [{ type: 'text', text }] } });
+  const history = [message('history-q', 'user', '旧问题', '2026-10-26T15:00:00Z'), message('history-a', 'assistant', '旧回答', '2026-10-26T15:00:01Z')];
+  mockMessages = [...history];
+  const props = { threadId: 'thread-1', resourceId: 'agent', initialMessages: history, historyState: historyProbeState(history), onMessageSent: vi.fn(), models };
+  const view = render(<AgentChat {...props} />);
+  const viewport = view.container.querySelector('[data-slot="message-scroller-viewport"]') as HTMLElement;
+  Object.defineProperty(viewport, 'clientHeight', { configurable: true, value: 200 });
+  let height = 800;
+  Object.defineProperty(viewport, 'scrollHeight', { configurable: true, get: () => height });
+  const live = [message('z-user', 'user', '新问题', '2026-10-26T14:59:00Z'), message('y-text', 'assistant', '流式阶段说明', '2026-10-26T14:59:00Z'), message('a-tail', 'assistant', '最新内容', '2026-10-26T14:59:00Z')];
+  mockRunning = true; mockMessages = [...history, ...live];
+  view.rerender(<AgentChat {...props} />);
+  const ids = () => [...view.container.querySelectorAll('[data-message-id]')].map(node => node.getAttribute('data-message-id'));
+  expect(ids()).toEqual(['history-q', 'history-a', 'z-user', 'y-text', 'a-tail']);
+  expect(viewport.scrollTop).toBe(600);
+  height = 1000; mockMessages = [...mockMessages.slice(0, -1), { ...live.at(-1), content: { format: 2, parts: [{ type: 'text', text: '最新内容继续增长' }] } }];
+  view.rerender(<AgentChat {...props} />);
+  expect(ids().at(-1)).toBe('a-tail'); expect(viewport.scrollTop).toBe(800);
+});

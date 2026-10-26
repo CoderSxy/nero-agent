@@ -86,10 +86,10 @@ diff -u /tmp/nero-expected-migrations.txt /tmp/nero-applied-migrations.txt
 `/etc/nginx/sites-available/nero-agent` 的 API location 应覆盖：
 
 ```text
-api|auth|finance|agent-skills|agent-scheduled-tasks|model-catalog|user-files|current-workspace|model-admin
+api|auth|finance|agent-skills|agent-history|agent-scheduled-tasks|model-catalog|user-files|current-workspace|model-admin
 ```
 
-沿用原来的边界匹配、鉴权和代理参数，不替换整份 Nginx 配置。修改后执行 `nginx -t`，成功后在第 5 步 reload。验收未登录 `/agent-skills/available` 和 `/agent-scheduled-tasks` 返回 JSON 401，不能是首页 HTML 200。
+沿用原来的边界匹配、鉴权和代理参数，不替换整份 Nginx 配置。修改后执行 `nginx -t`，成功后在第 5 步 reload。验收未登录 `/agent-skills/available`、`/agent-scheduled-tasks` 和 `/agent-history/threads/<threadId>/window` 返回 JSON 401，不能是首页 HTML 200。使用已登录账号打开已有会话，确认历史窗口返回 JSON 且消息可正常显示；仅检查首页和 `/api/agents` 不能证明新增业务路由已接通。
 
 ### 首次启用基础 Skills 时
 
@@ -135,7 +135,7 @@ systemctl show nero-agent -p ActiveState -p MainPID -p NRestarts --no-pager
 journalctl -u nero-agent --since '2 minutes ago' --no-pager -n 30
 docker inspect -f '{{.State.Health.Status}}' nero-agent-postgres
 curl -fsS https://agent.nerosun.cn/ | cmp - "$RELEASE_DIR/web/index.html"
-for route in auth/me finance/capabilities agent-skills/available agent-scheduled-tasks; do
+for route in auth/me finance/capabilities agent-skills/available agent-scheduled-tasks agent-history/threads/00000000-0000-0000-0000-000000000000/window; do
   curl -sS -o /dev/null -w "$route %{http_code} %{content_type}\n" "https://agent.nerosun.cn/$route"
 done
 ```

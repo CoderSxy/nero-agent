@@ -51,7 +51,7 @@ export function streamError(text: string): string | null {
       ? value.message : null;
   } catch { return null; }
 }
-export function messageParts(message: MastraDBMessage) {
+export function messageParts(message: MastraDBMessage, { preserveOrder = false }: { preserveOrder?: boolean } = {}) {
   const content = message.content;
   if (typeof content === 'string') return [{ kind: 'text', text: content }] satisfies DisplayPart[];
   const parts = Array.isArray(content.parts) ? content.parts : [];
@@ -106,7 +106,7 @@ export function messageParts(message: MastraDBMessage) {
   // A generated turn can persist its final text before the process markers are
   // appended. Keep earlier text/tool steps in place, but show the trailing
   // process before the final answer.
-  if (message.role === 'assistant') {
+  if (message.role === 'assistant' && !preserveOrder) {
     let finalTextIndex = -1;
     for (let index = items.length - 1; index >= 0; index -= 1) {
       if (items[index].kind === 'text') { finalTextIndex = index; break; }

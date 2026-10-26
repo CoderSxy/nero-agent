@@ -30,7 +30,6 @@ import { useMobileLayout } from './mobile/useMobileLayout';
 import { isUserMessage } from './pending-user-message';
 import { historyCoversLive } from './chat-message-reconciliation';
 import { HistoryBoundary } from './history/HistoryBoundary';
-import { mergeMessagesById } from './history-window-state';
 import type { HistoryState } from './history-window-types';
 
 type PendingUpload = { key: string; file: File; directory?: string };
@@ -235,9 +234,14 @@ export function AgentChat({ title = '未命名会话', threadId, resourceId, ini
     }
   }
   const liveTail = historyState ? reconciledMessages.filter(message => !seedIds.has(message.id) || dirtySeedIds.current.has(message.id)) : reconciledMessages;
-  const mergedForDisplay = !historyState ? reconciledMessages : mergeMessagesById(
-    mergeMessagesById(liveTail,historyLoaded), liveTail.filter(message => dirtySeedIds.current.has(message.id)),
-  );
+  // Persisted cursor order and stream arrival order are separate timelines:
+  // browser timestamps (and random IDs in the same millisecond) cannot order a live turn.
+  const historyIds = new Set(historyLoaded.map(message => message.id));
+  const activeLiveIds = new Set(liveTail.filter(message => dirtySeedIds.current.has(message.id)).map(message => message.id));
+  const mergedForDisplay = !historyState ? reconciledMessages : [
+    ...historyLoaded.filter(message => !activeLiveIds.has(message.id)),
+    ...liveTail.filter(message => activeLiveIds.has(message.id) || !historyIds.has(message.id)),
+  ];
   const visibleMessages = withPendingUserMessages(mergedForDisplay, pendingUserMessages);
   const readingAnchorRef = useRef<{messageId:string;offset:number}|null>(null);
   const prependAnchorRef = useRef<{ messageId: string; offset: number; messages: MastraDBMessage[] } | null>(null);

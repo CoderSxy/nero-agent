@@ -251,22 +251,23 @@ export function MessageList({ messages, isRunning, error, onApprove, onDecline, 
       setPending(current => { const next = new Set(current); next.delete(id); return next; });
     }
   }
+  let activeTurnStart = 0;
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (isUserMessage(messages[index])) { activeTurnStart = index; break; }
+  }
   const rows = messages.map((message, sourceIndex) => ({
     message,
     sourceIndex,
-    parts: messageParts(message),
+    parts: messageParts(message, { preserveOrder: isRunning && sourceIndex >= activeTurnStart }),
     attachments: attachmentsForMessage(message, threadAttachments),
     artifactRunId: readArtifactRunId(message) ?? (message.role === 'assistant'
       ? [...(artifactsByRun?.values() ?? [])].find(value => value.anchorMessageId === message.id)?.runId ?? null
       : null),
   }));
-  let activeTurnStart = 0;
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    if (isUserMessage(messages[index])) { activeTurnStart = index; break; }
-  }
   const orderedRows: typeof rows = [];
   for (const row of rows) {
-    const processOnly = row.message.role === 'assistant' && row.attachments.length === 0 &&
+    const processOnly = !(isRunning && row.sourceIndex >= activeTurnStart) &&
+      row.message.role === 'assistant' && row.attachments.length === 0 &&
       row.parts.length > 0 && row.parts.every(part => part.kind !== 'text') &&
       row.parts.some(part => part.kind === 'reasoning' || part.kind === 'observation');
     if (processOnly) {
