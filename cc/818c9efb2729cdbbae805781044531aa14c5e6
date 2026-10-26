@@ -1,0 +1,42 @@
+web/src/agent/MessageList.tsx
+  s_d4b74373b57738::t_b086251c16b603 254-257,261,269-270
+web/src/agent/MessageList.test.tsx
+  s_d4b74373b57738::t_0cc9c8eaeab52c 802-827
+web/vite.config.ts
+  s_d4b74373b57738::t_582594e936b175 17
+web/src/agent/AgentChat.tsx
+  s_d4b74373b57738::t_b086251c16b603 237-244
+web/src/agent/message-parts.ts
+  s_d4b74373b57738::t_b086251c16b603 54,109
+docs/deployment/ecs-release-from-local-build.md
+  s_d4b74373b57738::t_582594e936b175 89,92,138
+web/src/agent/AgentChat.test.tsx
+  s_d4b74373b57738::t_0cc9c8eaeab52c 1083-1103
+docs/deployment/2026-10-26-agent-memory-io-investigation.md
+  s_d4b74373b57738::t_b2509c1894b65c 7,37-39,42
+  s_d4b74373b57738::t_e846a0cd468de7 9,22-23,69,75
+  s_d4b74373b57738::t_5393363b7e72e6 3,30
+  s_d4b74373b57738::t_a1d49d7b4b5e30 34,60,70
+  s_d4b74373b57738::t_065d005d75e2eb 1-2,4-6,8,10-21,24-29,35,44-57,59,61-68,71-74
+  s_d4b74373b57738::t_47799108638217 32-33
+  s_d4b74373b57738::t_8971e55b7e3455 36,43
+  s_d4b74373b57738::t_ddf6b920af74f1 40-41
+  s_d4b74373b57738::t_7ec69430d49a11 31
+  s_d4b74373b57738::t_84a13e81f4a32e 58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cc818c9efb2729cdbbae805781044531aa14c5e6",
+  "prompts": {},
+  "sessions": {
+    "s_d4b74373b57738": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16378-eb20-7c40-bf30-9de42a6b529c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
