@@ -1,3 +1,4 @@
+import type { ReadinessReport, ReadinessInput } from './readiness';
 import { createHash } from 'node:crypto';
 import { readdir, readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -42,6 +43,7 @@ export type SkillReferenceRenameRisk = {
 };
 
 export type SkillImportReport = {
+  readiness?: ReadinessReport;
   importId: string;
   expiresAt: string;
   sourceName: string;
@@ -162,6 +164,7 @@ export type SkillSyncApi = {
 };
 
 export type SkillSyncApiDeps = {
+  checkReadiness?: (actor: SkillActor, input: Omit<ReadinessInput, "toolIds">) => Promise<ReadinessReport>;
   repository: SkillRepository;
   blobStore: BlobStore;
   isActorActive?: (userId: string) => Promise<boolean>;
@@ -211,6 +214,7 @@ export function createSkillSyncApi(deps: SkillSyncApiDeps): SkillSyncApi {
           scriptTexts[resource.path] = new TextDecoder().decode(resource.bytes);
         }
         const report: SkillImportReport = {
+          ...(deps.checkReadiness ? { readiness: await deps.checkReadiness(actor, { skillMd: preview.package.skillMd, runtime: preview.package.runtimeManifest, files: files.map(file => ({ path: file.path, hash: file.hash })) }) } : {}),
           importId: preview.importId,
           expiresAt: preview.expiresAt.toISOString(),
           sourceName: preview.package.sourceName,

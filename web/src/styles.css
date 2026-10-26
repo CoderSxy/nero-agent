@@ -666,3 +666,17 @@ button.danger { color: var(--destructive); }
 .observation-complete__section > button { display: flex; align-items: center; gap: 4px; min-height: 44px; padding: 4px 0; border: 0; background: transparent; color: var(--foreground); font: inherit; text-align: left; }
 .observation-complete button:focus-visible { outline: 2px solid var(--foreground); outline-offset: 2px; }
 .observation-complete__body pre { max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.skill-runtime-check { margin-block: 16px; padding-block: 14px; border-block: 1px solid var(--border); }
+.skill-runtime-check > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.skill-runtime-check h3 { margin: 0; font-size: 14px; font-weight: 600; }
+.skill-runtime-check > header button { flex-shrink: 0; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; }
+.skill-runtime-check > header button:focus-visible { outline: 2px solid var(--foreground); outline-offset: 2px; }
+.skill-runtime-report { margin-block: 12px; font-size: 13px; overflow-wrap: anywhere; }
+.skill-runtime-report p { margin-block: 8px; }
+.skill-runtime-title { display: flex; align-items: center; gap: 8px; }
+.skill-runtime-report[data-ready='false'] .skill-runtime-title { color: var(--status-warning); }
+.skill-runtime-report ul { display: grid; gap: 8px; padding: 0; margin-block: 12px; list-style: none; }
+.skill-runtime-report li { display: flex; align-items: flex-start; gap: 8px; }
+.skill-runtime-report li svg { flex: none; margin-top: 2px; }
+.skill-runtime-report small { color: var(--muted-foreground); }

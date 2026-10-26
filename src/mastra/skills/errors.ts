@@ -34,6 +34,7 @@ export class SkillPackageError extends Error {
 }
 
 export type SkillRepositoryErrorCode =
+  | 'RUNTIME_NOT_READY'
   | 'REVISION_CONFLICT'
   | 'NAME_CONFLICT'
   | 'DRAFT_EXISTS'

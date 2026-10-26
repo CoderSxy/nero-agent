@@ -556,6 +556,17 @@ export function createSkillRoutes(resolveService: (c: Context) => SkillService) 
         return c.json({ skill });
       }),
     }),
+    registerApiRoute(`${base}/:id/runtime-check`, {
+      method: 'POST',
+      handler: g(async (c, service) => {
+        const actor = trustedAuth(c.get('requestContext'));
+        const skillId = parseUuidParam(c.req.param('id'), 'id');
+        const body = await readJsonObject(c);
+        const version = body.version;
+        if (typeof version !== 'number' || !Number.isInteger(version) || version < 1) throw new SkillRouteError(400, 'INVALID_INPUT', 'version invalid');
+        return c.json({ report: await service.checkRuntime(actor, skillId, version, body.force === true) });
+      }),
+    }),
     registerApiRoute(`${base}/:id/publish`, {
       method: 'POST',
       handler: g(async (c, service) => {

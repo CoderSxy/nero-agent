@@ -1,3 +1,4 @@
+import { parseDependencies, parseRuntimeVersions } from './runtime-dependencies';
 import { randomUUID } from 'node:crypto';
 import { createWriteStream } from 'node:fs';
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
@@ -144,7 +145,7 @@ export function parseRuntimeManifest(bytes: Uint8Array): SkillRuntimeManifest {
     throw new SkillPackageError('JSON_INVALID', 'skill-runtime.json must be an object');
   }
   const obj = raw as Record<string, unknown>;
-  if (obj.schemaVersion !== 1) {
+  if (obj.schemaVersion !== 1 && obj.schemaVersion !== 2) {
     throw new SkillPackageError('RUNTIME_SCHEMA_UNSUPPORTED', `Unsupported skill-runtime schemaVersion: ${String(obj.schemaVersion)}`);
   }
   const runtimes = Array.isArray(obj.runtimes) ? obj.runtimes : [];
@@ -174,7 +175,8 @@ export function parseRuntimeManifest(bytes: Uint8Array): SkillRuntimeManifest {
     }
   }
   return {
-    schemaVersion: 1,
+    schemaVersion: obj.schemaVersion as 1 | 2,
+    ...(obj.schemaVersion === 2 ? { dependencies: parseDependencies(obj.dependencies), runtimeVersions: parseRuntimeVersions(obj.runtimeVersions) } : {}),
     runtimes: runtimes as SkillRuntimeManifest['runtimes'],
     entrypoints: entrypoints as string[],
     requiredTools: requiredTools as string[],

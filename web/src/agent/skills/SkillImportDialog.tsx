@@ -1,3 +1,4 @@
+import { SkillRuntimeReport } from './SkillRuntimeCheck';
 import { useState } from 'react';
 import { SkillApiError, commitSkillImport, previewSkillImport } from './skills-api';
 import type { SkillImportReport } from './types';
@@ -21,6 +22,7 @@ export function SkillImportDialog({ open, onClose, onCommitted }: SkillImportDia
     if (!file) return;
     setBusy(true);
     setError(null);
+    setReport(null);
     try {
       const result = await previewSkillImport(file);
       setReport(result.report);
@@ -69,9 +71,11 @@ export function SkillImportDialog({ open, onClose, onCommitted }: SkillImportDia
       <input aria-label="导入 ZIP" type="file" accept=".zip,application/zip" disabled={busy}
         onChange={event => void onFile(event.target.files?.[0])} />
     </label>
+    {busy && !report ? <p role="status">正在校验技能包并检查沙箱运行环境…</p> : null}
     {error ? <p role="alert">{error}</p> : null}
     {report ? <>
-      <p>来源名 {report.sourceName} · 建议规范名 {report.suggestedCanonicalName} · 兼容 {report.compatibility}</p>
+      <p>来源名 {report.sourceName} · 建议规范名 {report.suggestedCanonicalName}</p>
+      {report.readiness ? <SkillRuntimeReport report={report.readiness} /> : <p>运行环境尚未验证，保存草稿后可检查。</p>}
       {report.warnings.map(warning => <p key={warning}>{warning}</p>)}
       {report.referenceRenameRisks.length > 0 ? (
         <ul className="skill-rename-risk" aria-label="改名引用风险">

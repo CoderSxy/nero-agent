@@ -1,3 +1,4 @@
+import { createReadinessChecker } from '../src/mastra/skills/readiness';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { randomUUID } from 'node:crypto';
@@ -40,7 +41,8 @@ test('real DB: authorization readback, pin failure/conflict and per-file runtime
   const repository = createSkillRepository(pool);
   const blobStore = createBlobStore({ root });
   const releaseStore = createReleaseStore({ root, blobStore });
-  const versionService = createSkillVersionService({ repository, blobStore, releaseStore, pool });
+  const readiness = createReadinessChecker({ environment: () => ({ fingerprint: 'review-fixture', enabled: true, scriptEnabled: true, publicNetwork: false }), probe: async () => [] });
+  const versionService = createSkillVersionService({ repository, blobStore, releaseStore, pool, readiness });
   const service = createSkillService({ repository, blobStore, releaseStore, versionService, pool });
   const md = (name: string) => `---\nname: ${name}\ndescription: review fixes\n---\nInstruction body\n`;
   const bytes = (value: unknown) => new TextEncoder().encode(typeof value === 'string' ? value : JSON.stringify(value));
@@ -63,7 +65,7 @@ test('real DB: authorization readback, pin failure/conflict and per-file runtime
     assert.deepEqual((await service.getManageDetail(actor, id)).grants, grants);
 
     const save = (path: string, data: unknown) => revision().then(expectedRevision => service.saveFile(actor, { skillId: id, expectedRevision, path, bytes: bytes(data) }));
-    const runtime = { schemaVersion: 1, runtimes: ['python3'], entrypoints: ['scripts/main.py'], requiredTools: [], network: 'none' };
+    const runtime = { schemaVersion: 2, runtimes: ['python3'], entrypoints: ['scripts/main.py'], requiredTools: [], network: 'none', dependencies: {}, runtimeVersions: {} };
     await save('scripts/main.py', 'print("ok")');
     await save('skill-runtime.json', runtime);
     assert.deepEqual((await repository.getVersion(id, 1))!.runtimeManifest, runtime);
@@ -104,6 +106,8 @@ test('real DB: authorization readback, pin failure/conflict and per-file runtime
     assert.equal(rows[0]!.instructionsLoaded, true);
     const second = await service.createWorkingDraft(actor, { skillId: id, expectedRevision: await revision(), fromVersion: 1 });
     await service.deleteDraftFile(actor, { skillId: id, expectedRevision: await revision(), path: 'skill-runtime.json' });
+    await assert.rejects(async () => publishSkill(versionService, actor, { skillId: id, version: second.version.version, expectedRevision: await revision() }), { code: 'RUNTIME_NOT_READY' });
+    await service.deleteDraftFile(actor, { skillId: id, expectedRevision: await revision(), path: 'scripts/main.py' });
     const noRuntime = await publishSkill(versionService, actor, { skillId: id, version: second.version.version, expectedRevision: await revision() });
     assert.equal(noRuntime.version.runtimeManifest, null);
     const again = await service.load(context(), name);

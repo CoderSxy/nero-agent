@@ -1,3 +1,12 @@
+export type SkillReadinessItem = {
+  kind: 'platform' | 'runtime' | 'python' | 'node' | 'command' | 'tool' | 'network';
+  name: string; status: 'ok' | 'missing' | 'mismatch'; message: string; actual?: string; required?: string;
+};
+export type SkillReadinessReport = {
+  status: 'ready' | 'instructions-only' | 'blocked' | 'needs-declaration' | 'failed';
+  fingerprint: string; checkedAt: string; expiresAt: string; message: string; items: SkillReadinessItem[];
+};
+
 /** Web DTOs for agent-skills HTTP — mirror backend semantics without importing server modules. */
 
 export type SkillVisibility = 'private' | 'global' | 'restricted';
@@ -136,6 +145,7 @@ export type SkillReferenceRenameRisk = {
 };
 
 export type SkillImportReport = {
+  readiness?: SkillReadinessReport;
   importId: string;
   expiresAt: string;
   sourceName: string;

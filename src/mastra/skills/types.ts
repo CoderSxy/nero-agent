@@ -2,12 +2,21 @@ import type { AuthContext } from '../auth/auth-context';
 
 export type SkillRuntimeNetwork = 'none' | 'server-tools' | 'public';
 
+export type SkillDependency = { name: string; version?: string; module?: string };
+export type SkillRuntimeDependencies = {
+  python?: SkillDependency[];
+  node?: SkillDependency[];
+  commands?: SkillDependency[];
+};
+
 export type SkillRuntimeManifest = {
-  schemaVersion: 1;
+  schemaVersion: 1 | 2;
   runtimes: Array<'python3' | 'node' | 'bash'>;
   entrypoints: string[];
   requiredTools: string[];
   network: SkillRuntimeNetwork;
+  runtimeVersions?: Partial<Record<'python3' | 'node' | 'bash', string>>;
+  dependencies?: SkillRuntimeDependencies;
 };
 
 export type SkillResource = {

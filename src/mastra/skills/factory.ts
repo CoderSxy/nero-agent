@@ -90,15 +90,14 @@ export function getSkillRuntime(): SkillRuntimeBundle {
   const repository = createSkillRepository(pool);
   const blobStore = createBlobStore({ root });
   const releaseStore = createReleaseStore({ root, blobStore });
-  const versionService = createSkillVersionService({ repository, blobStore, releaseStore, pool });
-  const service = createSkillService({ repository, blobStore, releaseStore, versionService, pool,
-    registeredToolIds:actor=>[
-      'ask_user','web_fetch','web_search','skill','skill_read','skill_search',
-      ...(isUserFilesEnabled()?Object.keys(userFileTools):[]),...Object.keys(sandboxTools()),
-      ...(isSkillScriptExecutionEnabled()?['run_skill_script','prepare_skill_resources']:[]),
-      ...(actor.roles.includes('admin')?['start_schedule','stop_schedule']:[]),
-    ],
-  });
+  const registeredToolIds = (actor: import('./types').SkillActor) => [
+    'ask_user', 'web_fetch', 'web_search', 'skill', 'skill_read', 'skill_search',
+    ...(isUserFilesEnabled() ? Object.keys(userFileTools) : []), ...Object.keys(sandboxTools()),
+    ...(isSkillScriptExecutionEnabled() ? ['run_skill_script', 'prepare_skill_resources'] : []),
+    ...(actor.roles.includes('admin') ? ['start_schedule', 'stop_schedule'] : []),
+  ];
+  const versionService = createSkillVersionService({ repository, blobStore, releaseStore, pool, registeredToolIds });
+  const service = createSkillService({ repository, blobStore, releaseStore, versionService, pool, registeredToolIds });
 
   const processor = createSkillProcessor({ service, repository });
   const onActivation = (event: SkillActivationEvent, requestContext: RequestContext) => {

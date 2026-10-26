@@ -1,3 +1,6 @@
+import { defaultReadinessChecker } from './readiness-default';
+import type { ReadinessReport, ReadinessChecker } from './readiness';
+import { readRuntimeFromFiles } from './readiness-input';
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipWriter } from '@zip.js/zip.js';
 import { getSandboxRuntimeConfig } from '../sandbox/runtime-config';
 import type { Pool, PoolClient } from 'pg';
@@ -95,6 +98,7 @@ import {
 } from './health';
 
 export type SkillServiceDeps = {
+  readiness?: ReadinessChecker;
   registeredToolIds?: (actor:SkillActor)=>Iterable<string>;
   repository: SkillRepository;
   blobStore: BlobStore;
@@ -106,6 +110,7 @@ export type SkillServiceDeps = {
 };
 
 export type SkillService = {
+  checkRuntime: (actor: SkillActor, skillId: string, version: number, force?: boolean) => Promise<ReadinessReport>;
   listAvailable: (
     actor: SkillActor,
     query: SkillPageQuery,
@@ -380,7 +385,10 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
   const isActorActive =
     deps.isActorActive
     ?? (async (userId: string) => (await getActiveUserById(userId)) != null);
-  const syncApi = createSkillSyncApi({ repository, blobStore, isActorActive });
+  const readiness = deps.readiness ?? defaultReadinessChecker;
+  const syncApi = createSkillSyncApi({ repository, blobStore, isActorActive,
+    checkReadiness: (actor, input) => readiness.check({ ...input, toolIds: [...(deps.registeredToolIds?.(actor) ?? [])] }),
+  });
 
   async function loadCaps(actor: SkillActor, skillId: string): Promise<{
     access: SkillAccessSnapshot;
@@ -888,6 +896,15 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
         alias: input.alias,
         groupId: input.groupId,
       });
+    },
+
+    async checkRuntime(actor, id, version, force = false) {
+      const loaded = await requireCaps(actor, id);
+      assertCanViewDraft(loaded.caps);
+      const row = await repository.getVersion(id, version);
+      if (!row) throw unavailable();
+      const files = await repository.listFiles(id, version);
+      return readiness.check({ skillMd: row.skillMd, files: files.map(file => ({ path: file.path, hash: file.blobHash })), runtime: await readRuntimeFromFiles(files, blobStore), toolIds: [...(deps.registeredToolIds?.(actor) ?? [])] }, force);
     },
 
     async getManageDetail(actor, id) {

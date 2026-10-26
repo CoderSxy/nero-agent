@@ -1,3 +1,4 @@
+import { SkillRuntimeCheck } from './SkillRuntimeCheck';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import type { AgentShellContextValue } from '../AgentShell';
@@ -600,6 +601,7 @@ export function SkillsPage() {
             </nav>
           </header>
           {actionError ? <p role="alert">{actionError}</p> : null}
+          {fileVersion != null && <SkillRuntimeCheck key={`${detail.skill.id}:${fileVersion}:${detail.skill.revision}`} skillId={detail.skill.id} version={fileVersion} revision={detail.skill.revision} dirty={dirty} />}
           {tab === 'editor' ? (
             <SkillEditor
               skillMd={localSkillMd}

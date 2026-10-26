@@ -64,6 +64,7 @@ function mockService(overrides: Partial<SkillService> = {}): SkillService {
     createDraft: async () => ({ skill: { id: SKILL_A } as never, version: { version: 1 } as never }),
     createWorkingDraft: forbidden as never,
     getManageDetail: forbidden as never,
+    checkRuntime: forbidden as never,
     saveDraft: forbidden as never,
     saveFile: forbidden as never,
     deleteDraftFile: forbidden as never,
@@ -395,4 +396,23 @@ test('skill health routes hide missing skills, reject repair without manage, and
     if (prev === undefined) delete process.env.AGENT_SKILLS_ENABLED;
     else process.env.AGENT_SKILLS_ENABLED = prev;
   }
+});
+
+test('runtime check route validates version, enforces auth and passes trusted actor', async () => {
+  const previous = process.env.AGENT_SKILLS_ENABLED;
+  process.env.AGENT_SKILLS_ENABLED = 'true';
+  try {
+    const service = mockService({ checkRuntime: async (actor, id, version, force) => {
+      assert.equal(actor.userId, USER_B); assert.deepEqual(actor.roles, ['user']);
+      assert.equal(id, SKILL_A); assert.equal(version, 2); assert.equal(force, true);
+      return { status: 'blocked', fingerprint: 'test', checkedAt: '', expiresAt: '', items: [], message: '缺少依赖' };
+    } });
+    const app = buildApp(createSkillRoutes(() => service), token => token === 'b' ? user(USER_B) : null);
+    const path = `/agent-skills/${SKILL_A}/runtime-check`;
+    assert.equal((await app.request(path, { method: 'POST' })).status, 401);
+    const headers = { authorization: 'Bearer b', 'content-type': 'application/json' };
+    for (const version of [0, '2', -1, 1.5]) assert.equal((await app.request(path, { method: 'POST', headers, body: JSON.stringify({ version }) })).status, 400);
+    const response = await app.request(path, { method: 'POST', headers, body: JSON.stringify({ version: 2, force: true, userId: USER_A, roles: ['admin'] }) });
+    assert.equal(response.status, 200); assert.equal((await response.json() as any).report.status, 'blocked');
+  } finally { if (previous === undefined) delete process.env.AGENT_SKILLS_ENABLED; else process.env.AGENT_SKILLS_ENABLED = previous; }
 });

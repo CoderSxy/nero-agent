@@ -1,3 +1,4 @@
+import { pickInterpreter } from './runtime-interpreter';
 import { randomUUID } from 'node:crypto';
 import { getSandboxRuntimeConfig } from '../sandbox/runtime-config';
 import { sandboxNetworkManager } from '../sandbox/network/manager';
@@ -37,11 +38,6 @@ const DEFAULT_TIMEOUT_MS = 60_000;
 const MAX_TIMEOUT_MS = 120_000;
 const SHELL_META_RE = /[\0]/
 
-const INTERPRETERS = {
-  python3: 'python3',
-  node: 'node',
-  bash: 'bash',
-} as const;
 
 type Check<T> = { ok: true; data: T } | { ok: false; code: string; message: string };
 
@@ -131,19 +127,6 @@ function validateArgs(args: string[] | undefined): Check<string[]> {
   return { ok: true, data: list };
 }
 
-function pickInterpreter(
-  scriptPath: string,
-  runtime: SkillRuntimeManifest | null,
-): string | null {
-  const allowed = new Set(runtime?.runtimes ?? ['python3', 'node', 'bash']);
-  const lower = scriptPath.toLowerCase();
-  let choice: keyof typeof INTERPRETERS | null = null;
-  if (lower.endsWith('.py')) choice = 'python3';
-  else if (lower.endsWith('.js') || lower.endsWith('.mjs') || lower.endsWith('.cjs')) choice = 'node';
-  else if (lower.endsWith('.sh')) choice = 'bash';
-  if (!choice || !allowed.has(choice)) return null;
-  return INTERPRETERS[choice];
-}
 
 function validateScriptPath(
   rawPath: string,

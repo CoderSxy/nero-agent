@@ -1,3 +1,5 @@
+import { defaultReadinessChecker } from './readiness-default';
+import { canPublishReadiness, type ReadinessChecker } from './readiness';
 import { withSkillStorageReadLock } from './storage-lock';
 import type { Pool } from 'pg';
 import type { BlobStore } from './blob-store';
@@ -38,6 +40,8 @@ export type SkillVersionServiceHooks = {
 };
 
 export type SkillVersionServiceDeps = {
+  readiness?: ReadinessChecker;
+  registeredToolIds?: (actor: SkillActor) => Iterable<string>;
   repository: SkillRepository;
   blobStore: BlobStore;
   releaseStore: ReleaseStore;
@@ -182,6 +186,14 @@ async function publishSkillUnlocked(
         422,
       );
     }
+  }
+
+  const report = await (service.deps.readiness ?? defaultReadinessChecker).check({
+    skillMd: version.skillMd, files: files.map(file => ({ path: file.path, hash: file.blobHash })), runtime: runtimeManifest,
+    toolIds: [...(service.deps.registeredToolIds?.(actor) ?? [])],
+  }, true);
+  if (!canPublishReadiness(report)) {
+    throw new SkillRepositoryError('RUNTIME_NOT_READY', `${report.message}${report.items.filter(item => item.status !== 'ok').map(item => `；${item.message}`).join('')}`, 422);
   }
 
   const manifest = buildManifest(input.skillId, input.version, version.skillMd, files);

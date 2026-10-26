@@ -366,3 +366,9 @@ export async function searchSkillUsers(q: string) {
     await apiFetch(`/agent-skills/users?${params}`),
   );
 }
+
+export async function checkSkillRuntime(skillId: string, version: number, force = false, signal?: AbortSignal): Promise<{ report: import('./types').SkillReadinessReport }> {
+  return readJson(await apiFetch(`/agent-skills/${encodeURIComponent(skillId)}/runtime-check`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ version, force }), signal,
+  }));
+}
