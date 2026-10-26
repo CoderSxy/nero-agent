@@ -1,0 +1,95 @@
+src/mastra/skills/readiness-input.ts
+  s_d4b74373b57738::t_664e3116c0b62a 1-12
+tests/skills-readiness-docker.integration.test.ts
+  s_d4b74373b57738::t_b0c1ec4ecfb34f 1-8,10-12,14-22
+  s_d4b74373b57738::t_e50adcdf85485b 9,13
+src/mastra/skills/runtime-dependencies.ts
+  s_d4b74373b57738::t_e2ccfc91e4186c 1-4,6-50,52-63
+  s_d4b74373b57738::t_72caa1fde38161 5,51
+src/mastra/skills/service.ts
+  s_d4b74373b57738::t_664e3116c0b62a 1-3,101,113,388-391,901-907
+  s_d4b74373b57738::t_58e69537c20448 908-909
+tests/skills-readiness.test.ts
+  s_d4b74373b57738::t_decd56566e305a 17-35
+  s_d4b74373b57738::t_6e98b2edd9b179 1-16
+  s_d4b74373b57738::t_7302a7aa9d4801 72-78
+  s_d4b74373b57738::t_d0a365a682dbd8 52-71
+  s_d4b74373b57738::t_f9cdcfde79d235 36-51
+tests/skills-readiness-flow.integration.test.ts
+  s_d4b74373b57738::t_8d71f9e7880b1a 61
+  s_d4b74373b57738::t_f20d36a5c753dc 1-58,64-68
+  s_d4b74373b57738::t_1fa10e1a0d2427 59-60,62-63
+web/src/agent/skills/SkillRuntimeCheck.tsx
+  s_d4b74373b57738::t_5ea405e0589d86 17
+  s_d4b74373b57738::t_440ecff46b866a 1-16,18-50
+src/mastra/skills/versions.ts
+  s_d4b74373b57738::t_664e3116c0b62a 1-2,43-44,191-196
+  s_d4b74373b57738::t_4db1129690243c 197-198
+web/src/agent/skills/SkillImportDialog.tsx
+  s_d4b74373b57738::t_b0c1ec4ecfb34f 25,74
+  s_d4b74373b57738::t_440ecff46b866a 1,77-78
+src/mastra/skills/readiness-default.ts
+  s_d4b74373b57738::t_b0c1ec4ecfb34f 1,16
+  s_d4b74373b57738::t_664e3116c0b62a 2-15,17-20
+src/mastra/skills/factory.ts
+  s_d4b74373b57738::t_664e3116c0b62a 93-100
+tests/skills-routes.test.ts
+  s_d4b74373b57738::t_d0a365a682dbd8 67,400-417
+  s_d4b74373b57738::t_008dbe9be2261e 418
+src/mastra/skills/errors.ts
+  s_d4b74373b57738::t_664e3116c0b62a 37
+src/mastra/skills/readiness-probe.ts
+  s_d4b74373b57738::t_b0c1ec4ecfb34f 4,54-61,65-72
+  s_d4b74373b57738::t_5741841c3f3ffc 1-3,5-12,19-31,33-48,50-53,62-63,73-119
+  s_d4b74373b57738::t_608c70d5164e2f 13-18,32,49,64
+docs/superpowers/plans/2026-10-26-skill-runtime-readiness.md
+  s_d4b74373b57738::t_7460a199e35487 22-26,39,41-43
+  s_d4b74373b57738::t_5ea405e0589d86 40
+  s_d4b74373b57738::t_6e98b2edd9b179 1-21,27-38
+web/src/agent/skills/SkillsPage.tsx
+  s_d4b74373b57738::t_440ecff46b866a 1,604
+web/src/agent/skills/SkillRuntimeCheck.test.tsx
+  s_d4b74373b57738::t_3d832eacfc2689 1-20
+src/mastra/skills/package.ts
+  s_d4b74373b57738::t_e2ccfc91e4186c 1,148,178-179
+src/mastra/skills/readiness.ts
+  s_d4b74373b57738::t_b0c1ec4ecfb34f 65
+  s_d4b74373b57738::t_52ecca90c62921 1-64,66-75,77
+  s_d4b74373b57738::t_0bdd0e2e75c860 76,78-81
+web/src/styles.css
+  s_d4b74373b57738::t_440ecff46b866a 669-682
+src/mastra/skills/sync.ts
+  s_d4b74373b57738::t_664e3116c0b62a 1,46,167,217
+web/src/agent/skills/types.ts
+  s_d4b74373b57738::t_440ecff46b866a 1-9,148
+src/mastra/skills/routes.ts
+  s_d4b74373b57738::t_664e3116c0b62a 559-569
+web/src/agent/skills/skills-api.ts
+  s_d4b74373b57738::t_440ecff46b866a 369-374
+src/mastra/skills/types.ts
+  s_d4b74373b57738::t_e2ccfc91e4186c 5-11,13,18-19
+docs/superpowers/2026-10-26-skill-runtime-readiness-guide.md
+  s_d4b74373b57738::t_0dab5200519adf 1-58
+src/mastra/skills/runtime-interpreter.ts
+  s_d4b74373b57738::t_ff93604753586a 1-16
+src/mastra/skills/script-runner.ts
+  s_d4b74373b57738::t_ceec1454490e81 1
+tests/skills-review-fixes.test.ts
+  s_d4b74373b57738::t_f3e17407224f82 1,44-45,68,109-110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dabcd3f76f3badb494dd32b8da82cdd51f76b96a",
+  "prompts": {},
+  "sessions": {
+    "s_d4b74373b57738": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16378-eb20-7c40-bf30-9de42a6b529c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
