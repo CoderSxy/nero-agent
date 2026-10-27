@@ -1,0 +1,159 @@
+scripts/ops/runtime-guard.py
+  s_90de6821f6d814::t_791b1f6083ec97 119-123
+  s_90de6821f6d814::t_f2a0df893fa031 21,23,165-171
+  s_90de6821f6d814::t_af4bd1094e74c2 208-209
+  s_90de6821f6d814::t_1113120ea4762a 1-8,10-20,22,24-48,63-114,117-118,130-141,147-162,164,172-206,239-253
+  s_90de6821f6d814::t_127c1afcc0eb74 9,49-62,115-116,124-129,142-146,163,207,210-238
+deploy/systemd/nero-observability-maintenance.timer
+  s_90de6821f6d814::t_5cbc4a8a2da9ca 1-10
+src/mastra/sandbox/docker/config.ts
+  s_90de6821f6d814::t_6f460b10e183d7 12
+docs/deployment/agent-storage-recovery.md
+  s_90de6821f6d814::t_024d4a8379f402 19,46
+  s_90de6821f6d814::t_a460ecc338c0f2 140
+  s_90de6821f6d814::t_65c4c804166157 1-18,20-45,48,50-83,85,87-89,91-98,100-111,115-139,141-146
+  s_90de6821f6d814::t_9983c15b3ce90e 47
+  s_90de6821f6d814::t_7067e986c88123 49
+  s_90de6821f6d814::t_c065cf2aaf24c6 84
+  s_90de6821f6d814::t_0b02f2e197e303 86
+  s_90de6821f6d814::t_085da008b010f3 90
+  s_90de6821f6d814::t_fc8ee4b1415a05 99
+  s_90de6821f6d814::t_9438b5cde47278 112-114
+tests/storage-recovery.test.ts
+  s_90de6821f6d814::t_3c970d54cf5023 78-91
+  s_90de6821f6d814::t_c708fd71c79aec 92-120
+  s_90de6821f6d814::t_895d49468c2100 24-25
+  s_90de6821f6d814::t_aef5847278bd85 1-23,26-77
+tests/recovery-ops.test.ts
+  s_90de6821f6d814::t_63f57b561963c6 56-68
+  s_90de6821f6d814::t_2e89c2b4c7e48f 1-55
+scripts/ops/prepare-release.sh
+  s_90de6821f6d814::t_5267eebe26dd00 1-30
+compose.yaml
+  s_90de6821f6d814::t_791b1f6083ec97 8-9
+docs/superpowers/plans/2026-10-27-runtime-resource-guard.md
+  s_90de6821f6d814::t_e66696a641ea78 1-7
+  s_90de6821f6d814::t_015d33d3a90467 8-22
+src/mastra/sandbox/docker/provider.ts
+  s_90de6821f6d814::t_6f460b10e183d7 1,46
+deploy/systemd/nero-runtime-guard.service
+  s_90de6821f6d814::t_1113120ea4762a 1-2,4-19
+  s_90de6821f6d814::t_127c1afcc0eb74 3
+docs/superpowers/specs/2026-10-27-runtime-resource-guard-design.md
+  s_90de6821f6d814::t_e66696a641ea78 1-10,13-14
+  s_90de6821f6d814::t_f5e2c0c13b1d22 11-12
+docs/superpowers/specs/2026-10-26-agent-storage-recovery-design.md
+  s_90de6821f6d814::t_006f01b54ef562 14
+  s_90de6821f6d814::t_310d0b87972b69 1-13,15-32,34,36-42,44-45
+  s_90de6821f6d814::t_65c4c804166157 43
+  s_90de6821f6d814::t_0ee5b742d6c30d 33
+  s_90de6821f6d814::t_bf725e10031b23 35
+scripts/ops/monitor.sh
+  s_90de6821f6d814::t_8f7c460981d6a6 1-7,22,27-30,32-34
+  s_90de6821f6d814::t_127c1afcc0eb74 13-16
+  s_90de6821f6d814::t_6f460b10e183d7 8-12,17-21,23-26,31
+docs/superpowers/plans/2026-10-26-agent-storage-recovery.md
+  s_90de6821f6d814::t_7e210b3b15517a 37-49
+  s_90de6821f6d814::t_006f01b54ef562 9
+  s_90de6821f6d814::t_310d0b87972b69 1-8,10-36
+scripts/observability-maintenance.ts
+  s_90de6821f6d814::t_5cbc4a8a2da9ca 1-7
+src/mastra/storage/migrations.ts
+  s_90de6821f6d814::t_e28e32e9b7c5a9 1-44
+tests/runtime-resource-guard.test.ts
+  s_90de6821f6d814::t_e66696a641ea78 1-13,15-43
+  s_90de6821f6d814::t_127c1afcc0eb74 155
+  s_90de6821f6d814::t_af4bd1094e74c2 14
+  s_90de6821f6d814::t_76efc8df7a0526 112,116-117,126,147,149-154,156-184,186-187
+  s_90de6821f6d814::t_f2a0df893fa031 118-123
+  s_90de6821f6d814::t_1212ba07b37898 44-56,59-67,70-71,73-74
+  s_90de6821f6d814::t_791b1f6083ec97 75-111,148
+  s_90de6821f6d814::t_de17af74cfc757 57-58,68-69,72,113-115,124-125,127-146,185
+deploy/systemd/nero-runtime-guard.timer
+  s_90de6821f6d814::t_1113120ea4762a 1-11
+src/mastra/observability/bounded-exporter.ts
+  s_90de6821f6d814::t_006f01b54ef562 1-56
+src/mastra/sandbox/workload-policy.ts
+  s_90de6821f6d814::t_6f460b10e183d7 1-71
+tests/recovery-readiness.test.ts
+  s_90de6821f6d814::t_5875fc2946ba4f 1-8,11,13
+  s_90de6821f6d814::t_e3dc3cd5e3a0c1 9-10,12
+scripts/migrate.ts
+  s_90de6821f6d814::t_e28e32e9b7c5a9 2-3,5,7-14,17-27
+scripts/ops/backup.sh
+  s_90de6821f6d814::t_8f7c460981d6a6 1-42,45-72
+  s_90de6821f6d814::t_5cbc4a8a2da9ca 43-44
+src/mastra/observability/maintenance.ts
+  s_90de6821f6d814::t_5cbc4a8a2da9ca 1-21
+src/mastra/sandbox/execution-queue.ts
+  s_90de6821f6d814::t_2e89c2b4c7e48f 1-2,72
+tests/storage-recovery.integration.test.ts
+  s_90de6821f6d814::t_66e1d8b8e45df0 1-22,25-37,40,47-55
+  s_90de6821f6d814::t_a460ecc338c0f2 38-39,41-46
+  s_90de6821f6d814::t_16f9f2adc6c45d 23-24
+scripts/build-release-macos.sh
+  s_90de6821f6d814::t_791b1f6083ec97 53,55-56
+  s_90de6821f6d814::t_5cbc4a8a2da9ca 48-49,51,57
+  s_90de6821f6d814::t_127c1afcc0eb74 54
+  s_90de6821f6d814::t_5267eebe26dd00 50
+  s_90de6821f6d814::t_024d4a8379f402 60
+  s_90de6821f6d814::t_4fa305bda584a0 52
+src/mastra/sandbox/network/manager.ts
+  s_90de6821f6d814::t_6f460b10e183d7 1,54
+Dockerfile.mastra-build
+  s_90de6821f6d814::t_5cbc4a8a2da9ca 15-17,21-22
+deploy/systemd/nero-runtime-workloads.slice
+  s_90de6821f6d814::t_1113120ea4762a 1-16
+.env.example
+  s_90de6821f6d814::t_5cbc4a8a2da9ca 62-72
+  s_90de6821f6d814::t_791b1f6083ec97 73-77
+docs/deployment/ecs-release-from-local-build.md
+  s_90de6821f6d814::t_65c4c804166157 5-6,119-125
+  s_90de6821f6d814::t_024d4a8379f402 17
+tests/workspace-quota.test.ts
+  s_90de6821f6d814::t_024d4a8379f402 85-87,158-160
+deploy/systemd/nero-agent.service.d/99-resource-protection.conf
+  s_90de6821f6d814::t_8f7c460981d6a6 1-2,5-8,12-14,16-30,32-35
+  s_90de6821f6d814::t_1113120ea4762a 3-4,9-11,15,31,36-37
+src/mastra/index.ts
+  s_90de6821f6d814::t_e28e32e9b7c5a9 2-4,48-51,76
+  s_90de6821f6d814::t_6f621ca76e2518 77
+src/mastra/observability/runtime.ts
+  s_90de6821f6d814::t_006f01b54ef562 2,4,99
+  s_90de6821f6d814::t_e3dc3cd5e3a0c1 1,73-84,86,89-94
+  s_90de6821f6d814::t_e28e32e9b7c5a9 3,5-31,33-72,85,87-88,95-98,100-106
+  s_90de6821f6d814::t_2e89c2b4c7e48f 32
+  s_90de6821f6d814::t_3c38ce2ec34321 107-108
+src/mastra/sandbox/docker/client.ts
+  s_90de6821f6d814::t_6f460b10e183d7 4,47,53,59,77
+src/mastra/storage/readiness.ts
+  s_90de6821f6d814::t_e28e32e9b7c5a9 1-21
+deploy/systemd/nero-observability-maintenance.service
+  s_90de6821f6d814::t_5cbc4a8a2da9ca 1-16
+deploy/systemd/nero-runtime.slice
+  s_90de6821f6d814::t_1113120ea4762a 1-11
+deploy/systemd/nero-runtime-emergency.service
+  s_90de6821f6d814::t_127c1afcc0eb74 1-18
+.dockerignore
+  s_90de6821f6d814::t_ed27440e0bfbc3 12-14,22-24
+.gitignore
+  s_90de6821f6d814::t_36b78d2d1b9ecf 24-27
+scripts/ops/wait-ready.mjs
+  s_90de6821f6d814::t_d48cba77ab57a7 1-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "85fcad792bd9101146b9fbdb5a9553bf25d5df95",
+  "prompts": {},
+  "sessions": {
+    "s_90de6821f6d814": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a177f7-6ea4-7433-bc53-8e6a32967ae3",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "sxy <545231960@qq.com>"
+    }
+  }
+}
