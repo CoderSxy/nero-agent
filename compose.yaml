@@ -5,6 +5,8 @@ services:
     image: postgres:16
     container_name: nero-agent-postgres
     restart: unless-stopped
+    mem_limit: 384m
+    memswap_limit: 384m
     env_file: .env.postgres
     ports:
       - "127.0.0.1:5433:5432"

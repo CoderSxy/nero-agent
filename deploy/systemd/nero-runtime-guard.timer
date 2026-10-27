@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Nero workload ownership and host memory every 15 seconds
+
+[Timer]
+OnBootSec=15s
+OnUnitInactiveSec=15s
+AccuracySec=1s
+Unit=nero-runtime-guard.service
+
+[Install]
+WantedBy=timers.target

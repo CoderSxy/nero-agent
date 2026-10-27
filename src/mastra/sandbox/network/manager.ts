@@ -1,3 +1,4 @@
+import { workloadPolicy } from '../workload-policy';
 import { networkAttachmentsMatch } from '../docker/network-state';
 import type { DockerEngine } from '../docker/client';
 import { createDockerodeEngine } from '../docker/client';
@@ -50,7 +51,7 @@ export class SandboxNetworkManager {
         if (proxies.length > 1)
             throw new Error('Ambiguous sandbox egress containers');
         const expectedImage=await this.engine.resolveImageId?.(config.proxyImage);
-        if (proxy && (!networkAttachmentsMatch(proxy,[inside.Id,outside.Id]) || (expectedImage&&proxy.Image!==expectedImage) || proxy.Config?.User!=='10001:10001' || proxy.HostConfig?.ReadonlyRootfs!==true || !proxy.HostConfig?.CapDrop?.includes('ALL') || proxy.Config?.Labels?.['nero.egress.fingerprint'] !== fingerprint || proxy.HostConfig?.NetworkMode !== outside.Id || proxy.HostConfig?.Sysctls?.['net.ipv4.ip_forward'] !== '0' || proxy.HostConfig?.Privileged || Object.keys(proxy.HostConfig?.PortBindings ?? {}).length)) {
+        if (proxy && (!workloadPolicy.compatible(proxy) || !networkAttachmentsMatch(proxy,[inside.Id,outside.Id]) || (expectedImage&&proxy.Image!==expectedImage) || proxy.Config?.User!=='10001:10001' || proxy.HostConfig?.ReadonlyRootfs!==true || !proxy.HostConfig?.CapDrop?.includes('ALL') || proxy.Config?.Labels?.['nero.egress.fingerprint'] !== fingerprint || proxy.HostConfig?.NetworkMode !== outside.Id || proxy.HostConfig?.Sysctls?.['net.ipv4.ip_forward'] !== '0' || proxy.HostConfig?.Privileged || Object.keys(proxy.HostConfig?.PortBindings ?? {}).length)) {
             await this.engine.remove(proxy.Id, true);
             proxy = undefined;
         }

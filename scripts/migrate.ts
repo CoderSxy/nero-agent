@@ -1,27 +1,27 @@
-import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { access } from 'node:fs/promises';
 import { getPool } from '../src/mastra/auth/db';
+import { loadMigrations, checkMigrations, applyMigrations } from '../src/mastra/storage/migrations';
 
-const directory = join(process.cwd(), 'migrations');
-const pool = getPool();
-const connection = await pool.connect();
-try {
-  await connection.query('BEGIN');
-  await connection.query(`CREATE TABLE IF NOT EXISTS app_schema_migrations (
-    name TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
-  )`);
-  for (const file of (await readdir(directory)).filter(name => /^\d+_.+\.sql$/.test(name)).sort()) {
-    const already = await connection.query('SELECT 1 FROM app_schema_migrations WHERE name = $1', [file]);
-    if (already.rowCount) continue;
-    await connection.query(await readFile(join(directory, file), 'utf8'));
-    await connection.query('INSERT INTO app_schema_migrations(name) VALUES($1)', [file]);
-    console.log(`Applied ${file}`);
-  }
-  await connection.query('COMMIT');
-} catch (error) {
-  await connection.query('ROLLBACK');
-  throw error;
-} finally {
-  connection.release();
-  await pool.end();
+const args = process.argv.slice(2);
+if (args.some(arg => arg !== '--check')) throw new Error('Usage: migrate.mjs [--check]');
+// Bundled release resolves beside migrate.mjs; source invocation resolves repository migrations.
+let directory = process.env.APP_MIGRATIONS_DIR ?? fileURLToPath(new URL('./migrations', import.meta.url));
+if (!process.env.APP_MIGRATIONS_DIR) {
+  try { await access(directory); } catch { directory = join(process.cwd(), 'migrations'); }
 }
+const migrations = await loadMigrations(directory);
+const pool = getPool();
+try {
+  const connection = await pool.connect();
+  try {
+    await connection.query("SET statement_timeout = '60s'");
+    if (args.includes('--check')) { await checkMigrations(connection, migrations); console.log('Migration check passed'); }
+    else {
+      const committed = await applyMigrations(connection, migrations);
+      console.log(`Committed ${committed.length} migrations: ${committed.join(', ')}`);
+      await checkMigrations(connection, migrations);
+    }
+  } finally { connection.release(); }
+} finally { await pool.end(); }

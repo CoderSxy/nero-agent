@@ -2,6 +2,8 @@
 
 适用于现有 ECS：后端由 `nero-agent.service` 运行，入口 `/opt/nero-agent/current/mastra/index.mjs`；Nginx 静态根 `/opt/nero-agent/current/web`；后端工作目录 `/var/lib/nero-agent`。ECS 不执行 npm install 或应用构建。
 
+> 2026-10-26 内存/I/O 事故恢复请先按 [安全恢复运行手册](agent-storage-recovery.md) 执行；不要直接恢复自启或套用第 5 步重启。新包已附带 ops 与 systemd 防护模板。
+
 **普通更新只需：1 构建 → 2 上传 → 3 校验解压 → 4 判断是否有额外处理 → 5 切换 → 6 验收。** 没有新迁移、配置或镜像变化时，第 4 步全部跳过。任何检查失败立即停止，不继续切换。
 
 ## 1.【本地 Mac｜项目根目录｜每次必做】构建与检查
@@ -12,7 +14,7 @@ sh scripts/build-release-macos.sh
 
 必须等脚本成功并打印两个 SHA-256，再进入下一步。失败时 dist 可能仍保留旧包，不能上传它们充当新版本。Docker 拉基础镜像若提示本地代理端口 connection refused，修正 Docker Desktop 的代理配置后重试。
 
-脚本生成 Linux/amd64 后端和 Web 静态包，自动带入全部 SQL 迁移、migrate.mjs 和 Linux 依赖，检查 DuckDB 原生依赖并排除本地数据库、环境文件和 macOS 依赖。不要额外上传本机 `.mastra/output`、`.env` 或 node_modules。
+脚本生成 Linux/amd64 后端和 Web 静态包，自动带入全部 SQL 迁移、migrate.mjs 和 Linux 依赖，检查目标平台依赖并排除本地数据库、环境文件和 macOS 依赖。不要额外上传本机 `.mastra/output`、`.env` 或 node_modules。
 
 只有开发了新的数据库结构变更时，才需要先新增下一个编号的 SQL 迁移；正常发布无需编写迁移。不要修改线上已执行过的旧 SQL 来更新数据库。
 
@@ -114,7 +116,13 @@ MODEL_CAPABILITY_PROBE_ENABLED=false
 
 ## 5.【ECS Workbench｜每次必做】切换并重启
 
-已有服务必须确实使用 current 入口；首次部署或修改过服务配置时先核对 `systemctl cat nero-agent` 和 `nginx -T`。完成第 4 步所有适用项后执行：
+已有服务必须确实使用 current 入口；首次部署或修改过服务配置时先核对 `systemctl cat nero-agent` 和 `nginx -T`。完成第 4 步所有适用项后，**每次都必须**先运行候选包迁移检查（不是只有新迁移时才检查）：
+
+```bash
+/usr/local/bin/node --env-file=/opt/nero-agent/.env "$RELEASE_DIR/mastra/migrate.mjs" --check
+```
+
+失败时停止切换，先完成备份和迁移。安装了恢复防护 drop-in 的服务启动前也会执行同一检查。通过后执行：
 
 ```bash
 nginx -t

@@ -1,0 +1,19 @@
+[Unit]
+Description=Independent Nero resource guard and orphan task recovery
+OnFailure=nero-runtime-emergency.service
+Requires=nero-runtime-workloads.slice
+After=nero-runtime-workloads.slice docker.service
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/bin/python3 /opt/nero-agent/current/mastra/ops/runtime-guard.py
+MemoryMax=64M
+CPUQuota=25%
+TasksMax=32
+TimeoutStartSec=45
+NoNewPrivileges=yes
+PrivateTmp=yes
+# Stay outside nero-runtime.slice so its OOM/cgroup.kill cannot kill this guard.
+Slice=system.slice

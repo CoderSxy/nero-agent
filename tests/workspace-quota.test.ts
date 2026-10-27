@@ -82,7 +82,9 @@ test('write and output over quota are rejected', async () => {
   }
 });
 
-test('disk protection thresholds and host quota fail closed', () => {
+test('disk protection thresholds and host quota fail closed', t => {
+  const previous = snapshotEnv(['WORKSPACE_DISK_WARN_RATIO', 'WORKSPACE_DISK_BLOCK_RATIO', 'WORKSPACE_HOST_QUOTA_VERIFIED', 'SANDBOX_FILE_WRITE_ENABLED']);
+  t.after(() => restoreEnv(previous));
   process.env.WORKSPACE_DISK_WARN_RATIO = '0.8';
   process.env.WORKSPACE_DISK_BLOCK_RATIO = '0.9';
   assert.doesNotThrow(() => assertWritable(100, 0.5));
@@ -153,11 +155,12 @@ test('WorkspaceFileService batchDelete frees quota and rescan matches disk', asy
   }
 });
 
-test('host disk protection checks filesystem usage independently of user quota', async () => {
+test('host disk protection checks filesystem usage independently of user quota', async t => {
+  const previous = snapshotEnv(['WORKSPACE_ROOT', 'WORKSPACE_DISK_BLOCK_RATIO']);
+  t.after(() => restoreEnv(previous));
   process.env.WORKSPACE_ROOT = await mkdtemp(join(tmpdir(), 'quota-host-'));
   process.env.WORKSPACE_DISK_BLOCK_RATIO = '0';
   await assert.rejects(() => assertHostWritable(1), DiskProtectionError);
-  process.env.WORKSPACE_DISK_BLOCK_RATIO = '0.9';
 });
 
 test('FileService accepts a 10 MiB write and rejects one extra byte with FILE_TOO_LARGE', async () => {

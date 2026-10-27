@@ -9,7 +9,9 @@ web
 docs
 tests
 sandbox
-deploy
+deploy/*
+!deploy/systemd/
+!deploy/systemd/**
 dist
 src/mastra/public
 *.db
@@ -17,3 +19,6 @@ src/mastra/public
 *.duckdb
 *.duckdb.wal
 *.log
+
+**/__pycache__
+**/*.pyc

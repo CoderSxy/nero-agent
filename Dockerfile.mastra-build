@@ -12,10 +12,14 @@ RUN npm ci --no-audit --no-fund
 
 COPY tsconfig.json ./
 COPY src ./src
-COPY scripts/migrate.ts ./scripts/migrate.ts
+COPY scripts/migrate.ts scripts/observability-maintenance.ts ./scripts/
+COPY scripts/ops ./ops
+COPY deploy/systemd ./systemd
 COPY migrations ./migrations
 RUN npm run build:mastra \
     && ./node_modules/.bin/esbuild scripts/migrate.ts --bundle --platform=node --format=esm --packages=external --outfile=.mastra/output/migrate.mjs \
+    && ./node_modules/.bin/esbuild scripts/observability-maintenance.ts --bundle --platform=node --format=esm --packages=external --outfile=.mastra/output/maintenance.mjs \
+    && cp -R ops systemd .mastra/output/ \
     && cp -R migrations .mastra/output/migrations \
     && find .mastra/output -maxdepth 2 -type f \
       \( -name '*.duckdb' -o -name '*.duckdb.wal' -o -name '*.db' -o -name '*.db-wal' -o -name '*.db-shm' \) -delete \

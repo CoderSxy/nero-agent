@@ -45,10 +45,19 @@ docker buildx build \
 
 test -s "$TEMP_BACKEND_DIR/index.mjs"
 test -s "$TEMP_BACKEND_DIR/migrate.mjs"
+test -s "$TEMP_BACKEND_DIR/maintenance.mjs"
+test -s "$TEMP_BACKEND_DIR/ops/backup.sh"
+test -s "$TEMP_BACKEND_DIR/ops/prepare-release.sh"
+test -s "$TEMP_BACKEND_DIR/ops/monitor.sh"
+test -s "$TEMP_BACKEND_DIR/ops/wait-ready.mjs"
+test -s "$TEMP_BACKEND_DIR/ops/runtime-guard.py"
+for guard_unit in nero-runtime.slice nero-runtime-workloads.slice nero-runtime-guard.service nero-runtime-guard.timer nero-runtime-emergency.service; do
+  test -s "$TEMP_BACKEND_DIR/systemd/$guard_unit"
+done
+test -s "$TEMP_BACKEND_DIR/systemd/nero-agent.service.d/99-resource-protection.conf"
 test -f "$TEMP_BACKEND_DIR/migrations/001_identity.sql"
 NATIVE_BINDING="$TEMP_BACKEND_DIR/node_modules/@duckdb/node-bindings-linux-x64/duckdb.node"
-test -s "$NATIVE_BINDING"
-if ! file "$NATIVE_BINDING" | grep -q 'ELF 64-bit.*x86-64'; then
+if [ -e "$NATIVE_BINDING" ] && ! file "$NATIVE_BINDING" | grep -q 'ELF 64-bit.*x86-64'; then
   echo 'DuckDB native binding is not Linux x86-64.' >&2
   exit 1
 fi

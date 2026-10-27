@@ -1,0 +1,16 @@
+[Unit]
+Description=Shared pool for sandbox, skill, readiness and egress containers
+
+[Slice]
+MemoryAccounting=yes
+MemoryHigh=384M
+MemoryMax=512M
+MemorySwapMax=0
+CPUAccounting=yes
+CPUQuota=75%
+TasksMax=256
+IOAccounting=yes
+IOReadBandwidthMax=/var/lib/nero-agent 10M
+IOWriteBandwidthMax=/var/lib/nero-agent 10M
+IOReadBandwidthMax=/data/mastra 10M
+IOWriteBandwidthMax=/data/mastra 10M

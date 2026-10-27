@@ -1,0 +1,16 @@
+[Unit]
+Description=Nero independent PostgreSQL observability partition maintenance
+
+[Service]
+Type=oneshot
+User=nero-agent
+Group=nero-agent
+WorkingDirectory=/var/lib/nero-agent
+EnvironmentFile=/opt/nero-agent/.env
+ExecStart=/usr/local/bin/node --env-file=/opt/nero-agent/.env /opt/nero-agent/current/mastra/maintenance.mjs
+MemoryMax=192M
+MemorySwapMax=0
+CPUQuota=25%
+TimeoutStartSec=65
+NoNewPrivileges=yes
+PrivateTmp=yes

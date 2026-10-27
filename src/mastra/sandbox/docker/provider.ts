@@ -1,3 +1,4 @@
+import { workloadPolicy } from '../workload-policy';
 import { dockerSandboxCreateOptions, validateDockerCreateConfig } from './config';
 import type { DockerEngine } from './client';
 import type { SandboxProvider } from '../provider';
@@ -42,7 +43,7 @@ export class DockerSandboxProvider implements SandboxProvider {
           const info = await this.engine.inspect(existing.containerId);
           const old = info?.Config?.Labels?.['nero.sandbox.fingerprint'];
           const expectedImage = await this.engine.resolveImageId?.(image);
-          if ((expectedImage && info?.Image !== expectedImage)
+          if (!workloadPolicy.compatible(info) || (expectedImage && info?.Image !== expectedImage)
             || !networkAttachmentsMatch(info, [network?.networkId ?? 'none'])
             || (old && old !== fingerprint)
             || (!old && (config.networkMode !== 'none' || config.dependenciesEnabled || config.bashEnabled))

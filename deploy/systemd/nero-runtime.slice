@@ -1,0 +1,11 @@
+[Unit]
+Description=Nero application and all task containers combined budget
+
+[Slice]
+MemoryAccounting=yes
+MemoryHigh=768M
+MemoryMax=960M
+MemorySwapMax=0
+CPUAccounting=yes
+CPUQuota=150%
+TasksMax=512

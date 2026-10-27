@@ -22,3 +22,6 @@ src/mastra/public/
 # Generated standalone egress proxy
 sandbox/egress/dist/
 local-skills/
+# Python operational-script cache
+__pycache__/
+*.pyc

@@ -9,6 +9,7 @@ export const SANDBOX_PIDS_LIMIT = 128;
 export const SANDBOX_TMPFS_TMP = 'rw,noexec,nosuid,size=256m';
 
 export type DockerHostConfig = {
+  CgroupParent?: string;
   Privileged?: boolean;
   NetworkMode?: string;
   PidMode?: string;

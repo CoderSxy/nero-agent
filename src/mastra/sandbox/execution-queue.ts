@@ -1,3 +1,5 @@
+import { sandboxMaxConcurrent } from '../workspace/config';
+
 export class ExecutionQueue {
   private readonly threadTails = new Map<string, Promise<void>>();
   private readonly userPending = new Map<string, number>();
@@ -67,4 +69,4 @@ export class ExecutionQueue {
   }
 }
 
-export const commandQueue = new ExecutionQueue(2);
+export const commandQueue = new ExecutionQueue(sandboxMaxConcurrent());

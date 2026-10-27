@@ -1,6 +1,7 @@
 import type { DockerCreateOptions } from './config';
 import type { SandboxCommandResult, SandboxExecuteOptions } from '../types';
 import type Docker from 'dockerode';
+import { workloadPolicy } from '../workload-policy';
 
 export type DockerInspect = {
   Id: string;
@@ -43,17 +44,19 @@ async function resolveImageRef(docker: Docker, image: string | undefined): Promi
   }
 }
 
-export async function createDockerodeEngine(dockerInstance?: Docker): Promise<DockerEngine> {
+export async function createDockerodeEngine(dockerInstance?: Docker, policy = workloadPolicy): Promise<DockerEngine> {
   const { default: DockerConstructor } = await import('dockerode');
   const docker = dockerInstance ?? new DockerConstructor();
   return {
     async resolveImageId(image){const ref=await resolveImageRef(docker,image);return (await docker.getImage(ref!).inspect()).Id},
     async create(options) {
+      options = await policy.beforeCreate(options);
       const Image = await resolveImageRef(docker, options.Image);
       const container = await docker.createContainer({ ...options, Image });
       return { id: container.id };
     },
     async start(id) {
+      if (policy.enabled()) await policy.beforeUse(await docker.getContainer(id).inspect(), true);
       await docker.getContainer(id).start();
     },
     async inspect(id) {
@@ -71,6 +74,7 @@ export async function createDockerodeEngine(dockerInstance?: Docker): Promise<Do
     },
     async exec(id, command, args, options) {
       const container = docker.getContainer(id);
+      if (policy.enabled()) await policy.beforeUse(await container.inspect());
       if (options.abortSignal?.aborted) throw new Error('Sandbox command aborted');
       const exec = await container.exec({
         Cmd: [command, ...args],

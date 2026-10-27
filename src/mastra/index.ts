@@ -1,13 +1,7 @@
 import { Mastra } from '@mastra/core/mastra';
-import { PostgresStore } from '@mastra/pg';
-import { DuckDBStore } from '@mastra/duckdb';
-import { MastraCompositeStore } from '@mastra/core/storage';
-import {
-  MastraStorageExporter,
-  MastraPlatformExporter,
-  Observability,
-  SensitiveDataFilter,
-} from '@mastra/observability';
+import { createStorageRuntime } from './observability/runtime';
+import { assertStorageReady } from './storage/readiness';
+import { getPool } from './auth/db';
 import { agent } from './agents/agent';
 import { submitChartDataTool } from './agents/chart-data-tool';
 import { authRoutes } from './auth/routes';
@@ -51,6 +45,10 @@ const configuredStudioAuth = studioProxyKey && studioAdminId ? createStudioProxy
   roles: ['admin'],
 }) : studioAuth;
 
+await assertStorageReady(getPool());
+const storageRuntime = createStorageRuntime();
+await storageRuntime.storage.init();
+
 export const mastra = new Mastra({
   studio: { auth: configuredStudioAuth },
   server: {
@@ -69,34 +67,14 @@ export const mastra = new Mastra({
       mapUserToResourceId: user => resourceIdFor(authContextFromUser(user)),
     },
   },
-  bundler: {
-    externals: ['@duckdb/node-bindings'],
-  },
   agents: { agent },
   tools: { submitChartDataTool, startScheduleTool, stopScheduleTool, tavilySearchTool, executeCommandTool, executeBashTool, ...userFileTools,
     financeSearchTool, financeInterfaceInfoTool, financeFetchTool,
     // App skill tools only when AGENT_SKILLS_ENABLED=true; never native Agent.skills auto-tools.
     ...resolveSkillAgentTools() },
   schedules: createScheduledTaskHooks(),
-  storage: new MastraCompositeStore({
-    id: 'composite-storage',
-    default: new PostgresStore({
-      id: 'mastra-storage',
-      connectionString: databaseUrl,
-    }),
-    domains: {
-      observability: await new DuckDBStore().getStore('observability'),
-    },
-  }),
-  observability: new Observability({
-    configs: {
-      default: {
-        serviceName: 'mastra',
-        exporters: [new MastraStorageExporter(), new MastraPlatformExporter()],
-        spanOutputProcessors: [new SensitiveDataFilter()],
-      },
-    },
-  }),
+  storage: storageRuntime.storage,
+  observability: storageRuntime.observability,
 });
 
 startScheduledTaskReconcile(mastra.schedules);
